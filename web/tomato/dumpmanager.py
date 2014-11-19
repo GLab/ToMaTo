@@ -59,6 +59,15 @@ class EditErrorGroupForm(ErrorGroupForm):
 @wrap_rpc
 def group_list(api, request, site=None, organization=None):	
 	errorgroup = api.errorgroup_list()
+	for e in errorgroup:
+		e['frontend_mod'] = {'sources':[]}
+		for s in e['dump_contents']['source']:
+			if s == 'backend':
+				e['frontend_mod']['sources'].append('backend')
+			if s.startswith('host'):
+				e['frontend_mod']['sources'].append('hostmanager')
+		 
+		
 	return render(request, "dumpmanager/list.html", {'errorgroup_list': errorgroup})
 
 @wrap_rpc
@@ -147,3 +156,12 @@ def dump_export(api, request, source, dump_id,data=False):
 
 def dump_export_with_data(request, source, dump_id):
 	return dump_export(request, source, dump_id, True)
+
+@wrap_rpc
+def refresh(api, request):
+	if request.method == "POST":
+		res = api.errordumps_force_refresh()
+		return HttpResponse(json.dumps({"success": True, "result": res}))
+	else:
+		return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+		

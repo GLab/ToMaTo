@@ -122,3 +122,15 @@ def errorgroup_remove(group_id):
     """
     from ..dumpmanager import api_errorgroup_remove
     api_errorgroup_remove(group_id)
+    
+def errordumps_force_refresh():
+    """
+    Force a refresh of dumps.
+    This is done automatically in a longer interval.
+    To get instant access to all dumps, call this function.
+    
+    Return value:
+      The time in seconds it takes until all dumps should be collected.
+    """
+    from ..dumpmanager import api_force_refresh
+    return api_force_refresh()

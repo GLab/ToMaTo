@@ -18,7 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-function loadbusy(evt) {
+function loadbusy(evt,message) {
 	if (evt && evt.button == 1) return;
 	var busyloader = $('\
 			<div style="background:#c0c0c0;\
@@ -39,10 +39,11 @@ function loadbusy(evt) {
 					font-size: 30px;\
 					text-align:center;\
 					z-index:12;">\
-					<div class="panel-body"><h1>Loading Topology Editor</h1><img src="/img/loading_big.gif" alt="loading..."/>\</div>\
+					<div class="panel-body"><h1>'+message+'</h1><img src="/img/loading_big.gif" alt="loading..."/>\</div>\
 				</div>\
 			');
 	$('body').append(busyloader);
+	window.scrollTo(0,0);
 }
 
 

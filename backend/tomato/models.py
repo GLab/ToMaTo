@@ -33,6 +33,7 @@ from resources.profile import Profile #@UnusedImport
 from accounting import Usage, UsageStatistics, UsageRecord, Quota #@UnusedImport
 from link import LinkMeasurement #@UnusedImport
 from host import Host
+from lib.keyvaluestore import KeyValuePair #@UnusedImport
 
 from django.db import models
 

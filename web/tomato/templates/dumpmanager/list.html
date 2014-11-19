@@ -17,13 +17,24 @@
 	<tr>
 	<th>Description</th>
 	<th>&#35; Dumps</th>
-	<th></th>
+	<th>Last Dump</th>
+	{% if request.session.user.hasDebugFlag %}
+		<th></th>
+	{% endif %}
 	</tr>
 	{% for errorgroup in errorgroup_list %}
 	  	<tr>
-	    	<td><a href="{%url "dumpmanager.group_info" errorgroup.group_id %}">{{errorgroup.description}}</a></td>  
+	    	<td>
+	    		<a href="{%url "dumpmanager.group_info" errorgroup.group_id %}">{{errorgroup.description}}</a>
+	    		(
+	    		{% for s in errorgroup.frontend_mod.sources %}
+	    			{{s}} 
+	    		{% endfor %}
+	    		)
+	    	</td>  
 			<td>{{errorgroup.count}}</td>
-			{% if request.session.user.isGlobalHostManager %}
+			<td>{{errorgroup.last_timestamp | todate}}</td>
+			{% if request.session.user.hasDebugFlag %}
 	  			<td align="right">
 	  				<form style="padding: 0px;margin:0px;">
 	  				  <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span></button>
@@ -45,5 +56,31 @@
 	<p>No Dumps</p>
 {% endif %}
 
+
+
+<script>
+function refreshdumps() {
+	loadbusy(event,'Refreshing Dumps <small><p style="margin-top:0.3cm;" id="refreshdumps_remaining"></p></small>');
+	
+	var xmlhttp=new XMLHttpRequest();
+	xmlhttp.open("POST","{%url "dumpmanager.refresh"%}",false);
+	xmlhttp.send();
+	res = JSON.parse(xmlhttp.responseText)
+	if (!res.success) {
+		console.log(res);
+		location.reload();
+	} else {
+		timeToReload = res.result + 2;
+		secCounter = timeToReload
+		update_ind = function(){
+			document.getElementById('refreshdumps_remaining').innerHTML=Math.max(0,secCounter--) + " seconds remaining"
+		};
+		update_ind();
+		setInterval(update_ind,1000);
+		setTimeout(function(){location.reload()},1000 * timeToReload);
+	}
+}
+</script>
+<button onClick="refreshdumps()" class="btn btn-info"><span class="glyphicon glyphicon-refresh"></span> Refresh Dumps</button>
 
 {% endblock %}
