@@ -21,7 +21,7 @@ from django.shortcuts import render, redirect
 import xmlrpclib, json, urllib, socket, hashlib
 from .. import settings
 from .error import Error #@UnresolvedImport
-from ..error import renderError
+from ..error import renderError, ajaxError
 
 def getauth(request):
     auth = request.session.get("auth")
@@ -149,6 +149,8 @@ class wrap_json:
             try:
                 res = self.fun(api, *args, **data)
                 return HttpResponse(json.dumps({"success": True, "result": res}))
+            except Error, e:
+                return ajaxError(e)
             except xmlrpclib.Fault, f:
                 return HttpResponse(json.dumps({"success": False, "error": f.faultString}))
             except xmlrpclib.ProtocolError, e:
