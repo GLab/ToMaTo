@@ -8,18 +8,22 @@ class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, data=None, type=None, dump=None, module=MODULE):
+	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE):
 		self.type = type or self.TYPE
 		self.code = code
 		self.message = message
 		self.data = data or {}
 		self.module = module
-		if dump is not None:
-			self.todump = dump
+		if todump is not None:
+			self.todump = todump
 		else:
 			self.todump = not isinstance(self, UserError)
 		
+	
 	def group_id(self):
+		"""
+		Returns a group ID. This should be the same for errors thrown due to the same reason.
+		"""
 		return hashlib.md5(
 						json.dumps({
 									'code':self.code,
@@ -27,26 +31,43 @@ class Error(Exception):
 									'message':self.message,
 									'module':self.module})
 						).hexdigest()
-
-	@property
-	def raw(self):
-		return self.__dict__
 	
 	def dump(self):
+		"""
+		dump this error through the dump manager.
+		"""
 		dumpError(self)
 
 	@property
+	def raw(self):
+		"""
+		creates a dict representation of this error.
+		"""
+		return self.__dict__
+
+	@property
 	def rawstr(self):
+		"""
+		creates a string representation of this error.
+		"""
 		return json.dumps(self.raw)
 
 	@staticmethod
 	def parse(raw):
 		return TYPES.get(raw["type"], Error)(**raw)
+	
+	@staticmethod
+	def parsestr(rawstr):
+		"""
+		creates an Error object from the string representation
+		"""
+		raw = json.loads(rawstr)
+		return Error.parse(raw)
 
 	@classmethod
-	def check(cls, condition, code, message, dump=None, *args, **kwargs):
+	def check(cls, condition, code, message, todump=None, *args, **kwargs):
 		if condition: return
-		exception = cls(code=code, message=message, dump=dump, *args, **kwargs)
+		exception = cls(code=code, message=message, todump=todump, *args, **kwargs)
 		exception.dump()
 		raise exception
 
