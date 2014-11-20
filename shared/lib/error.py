@@ -35,6 +35,10 @@ class Error(Exception):
 	def dump(self):
 		dumpError(self)
 
+	@property
+	def rawstr(self):
+		return json.dumps(self.raw)
+
 	@staticmethod
 	def parse(raw):
 		return TYPES.get(raw["type"], Error)(**raw)
