@@ -152,7 +152,7 @@ def edit(api, request, name):
 				form.fields["name"].help_text=None
 				return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form, 'message_after':geolocation_script})
 			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 			
 	else:
 		if name:
@@ -163,7 +163,7 @@ def edit(api, request, name):
 			form = EditSiteForm(api, name, siteInfo)
 			return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form, 'message_after':geolocation_script})
 		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
+			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
 
 def get_site_location(site_name,api):
 	geoloc = api.site_info(site_name)['geolocation']

@@ -211,13 +211,13 @@ def edit(api, request, res_id=None):
 				api.resource_modify(formData["res_id"],data)
 				return HttpResponseRedirect(reverse("tomato.profile.info", kwargs={"res_id": res_id}))
 			else:
-				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
+				return render(request, "error/fault.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
 		else:
 			label = request.POST["label"]
 			if label:
 				return render(request, "form.html", {'form': form, "heading":"Edit Device Profile '"+label+"'"})
 			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
@@ -231,4 +231,4 @@ def edit(api, request, res_id=None):
 				form = EditKVMqmForm(res_id, origData)
 			return render(request, "form.html", {'form': form, "heading":"Edit "+res_info['attrs']['tech']+" Device Profile '"+res_info['attrs']['label']+"'"})
 		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})

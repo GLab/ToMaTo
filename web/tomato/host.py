@@ -102,7 +102,7 @@ def add(api, request, site=None):
 				form.fields['site'].initial=site
 			return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
 		else:
-			return render(request, "main/error.html",{'type':'No site available','text':'You need a site first before you can add hosts.'})
+			return render(request, "error/fault.html",{'type':'No site available','text':'You need a site first before you can add hosts.'})
 
 @wrap_rpc
 def remove(api, request, name=None):
@@ -128,7 +128,7 @@ def edit(api, request, name=None):
 			if name:
 				return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
 			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if name:
 			hostinfo=api.host_info(name)
@@ -137,7 +137,7 @@ def edit(api, request, name=None):
 			form.fields["enabled"].initial = hostinfo["enabled"]
 			return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
 		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def usage(api, request, name): #@ReservedAssignment

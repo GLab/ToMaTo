@@ -219,20 +219,20 @@ def edit_torrent(api, request, res_id=None):
 														'creation_date':creation_date})
 				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 			else:
-				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
+				return render(request, "error/fault.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
 		else:
 			label = request.POST["label"]
 			if label:
 				return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+label+"' ("+request.POST["tech"]+")"})
 			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
 			form = ChangeTemplateTorrentForm(res_id, {'res_id': res_id})
 			return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 
 @wrap_rpc
@@ -258,13 +258,13 @@ def edit(api, request, res_id=None):
 				api.resource_modify(res_id,attrs)
 				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 			else:
-				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
+				return render(request, "error/fault.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
 		else:
 			label = request.POST["label"]
 			if label:
 				return render(request, "form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+request.POST['tech']+")"})
 			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
@@ -273,5 +273,5 @@ def edit(api, request, res_id=None):
 			form = EditTemplateForm(res_id, (origData['tech']=="kvmqm"), origData)
 			return render(request, "form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 

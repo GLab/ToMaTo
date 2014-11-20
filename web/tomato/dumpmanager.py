@@ -117,14 +117,14 @@ def group_edit(api, request, group_id):
 			if group_id:
 				return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
 			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if group_id:
 			errorgroupinfo=api.errorgroup_info(group_id,False)
 			form = EditErrorGroupForm(api, group_id, errorgroupinfo)
 			return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
 		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 
 @wrap_rpc

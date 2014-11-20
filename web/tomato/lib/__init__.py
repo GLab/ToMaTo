@@ -20,7 +20,8 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect
 import xmlrpclib, json, urllib, socket, hashlib
 from .. import settings
-from .error import Error
+from .error import Error #@UnresolvedImport
+from ..error import renderError
 
 def getauth(request):
     auth = request.session.get("auth")
@@ -110,6 +111,8 @@ class wrap_rpc:
         except Exception, e:
             import traceback
             traceback.print_exc()
+            if isinstance(e, Error):
+                return renderError(request, e)
             if isinstance(e, socket.error):
                 import os
                 etype = "Socket error"
@@ -133,7 +136,7 @@ class wrap_rpc:
                 etype = e.__class__.__name__
                 ecode = ""
                 etext = e.message
-            return render(request, "main/error.html", {'type': etype, 'code': ecode, 'text': etext}, status=500)
+            return render(request, "error/fault.html", {'type': etype, 'code': ecode, 'text': etext}, status=500)
         
 class wrap_json:
     def __init__(self, fun):

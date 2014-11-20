@@ -114,13 +114,13 @@ def edit(api, request, res_id = None):
 										   				'show_as_common': formData['show_as_common']})
 				return HttpResponseRedirect(reverse("tomato.external_network.list"))
 			else:
-				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network.'})
+				return render(request, "error/fault.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network.'})
 		else:
 			kind = request.POST["kind"]
 			if kind:
 				return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+kind+"'"})
 			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
@@ -129,4 +129,4 @@ def edit(api, request, res_id = None):
 			form = EditNetworkForm(res_id, origData)
 			return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+res_info['attrs']['label']+"'"})
 		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})

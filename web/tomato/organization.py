@@ -130,7 +130,7 @@ def edit(api, request, name=None):
 				form.fields["name"].help_text=None
 				return render(request, "form.html", {"heading": "Editing Organization '"+name+"'", 'form': form})
 			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 			
 	else:
 		if name:
@@ -138,7 +138,7 @@ def edit(api, request, name=None):
 			form = EditOrganizationForm(orgaInfo)
 			return render(request, "form.html", {"heading": "Editing Organization '"+name+"'", 'form': form})
 		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
+			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def usage(api, request, name): #@ReservedAssignment
