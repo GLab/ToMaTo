@@ -21,7 +21,7 @@ from django.shortcuts import render, redirect
 import xmlrpclib, json, urllib, socket, hashlib
 from .. import settings
 from .error import Error #@UnresolvedImport
-from ..error import renderError, ajaxError
+from .handleerror import renderError, ajaxError, renderFault, ajaxFault
 
 def getauth(request):
     auth = request.session.get("auth")
@@ -109,35 +109,8 @@ class wrap_rpc:
             api = getapi(request)
             return self.fun(api, request, *args, **kwargs)
         except Exception, e:
-            import traceback
-            traceback.print_exc()
-            if isinstance(e, Error):
-                return renderError(request, e)
-            if isinstance(e, socket.error):
-                import os
-                etype = "Socket error"
-                ecode = e.errno
-                etext = os.strerror(e.errno)
-            elif isinstance(e, AuthError):
-                request.session['forward_url'] = request.build_absolute_uri()
-                return redirect("tomato.main.login")
-            elif isinstance(e, xmlrpclib.ProtocolError):
-                etype = "RPC protocol error"
-                ecode = e.errcode
-                etext = e.errmsg
-                if ecode in [401, 403]:
-                    request.session['forward_url'] = request.build_absolute_uri()
-                    return redirect("tomato.main.login")
-            elif isinstance(e, xmlrpclib.Fault):
-                etype = "RPC call error"
-                ecode = e.faultCode
-                etext = e.faultString
-            else:
-                etype = e.__class__.__name__
-                ecode = ""
-                etext = e.message
-            return render(request, "error/fault.html", {'type': etype, 'code': ecode, 'text': etext}, status=500)
-        
+            return renderFault(request, e)
+            
 class wrap_json:
     def __init__(self, fun):
         self.fun = fun
@@ -149,14 +122,8 @@ class wrap_json:
             try:
                 res = self.fun(api, *args, **data)
                 return HttpResponse(json.dumps({"success": True, "result": res}))
-            except Error, e:
-                return ajaxError(e)
-            except xmlrpclib.Fault, f:
-                return HttpResponse(json.dumps({"success": False, "error": f.faultString}))
-            except xmlrpclib.ProtocolError, e:
-                return HttpResponse(json.dumps({"success": False, "error": 'Error %s: %s' % (e.errcode, e.errmsg)}), status=e.errcode if e.errcode in [401, 403] else 200)                
-            except Exception, exc:
-                return HttpResponse(json.dumps({"success": False, "error": '%s:%s' % (exc.__class__.__name__, exc)}))                
+            except Exception, e:
+                return ajaxFault(e)                
         except xmlrpclib.ProtocolError, e:
             return HttpResponse(json.dumps({"success": False, "error": 'Error %s: %s' % (e.errcode, e.errmsg)}), status=e.errcode if e.errcode in [401, 403] else 200)
         except xmlrpclib.Fault, f:
