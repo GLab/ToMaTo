@@ -12,7 +12,9 @@
 {% if debuginfos %}
 	<table><tbody>
 	{% for tr in debuginfos %}
-		<th>{{tr.th}}</th><td>{{tr.td}}</td>
+		<th>{{tr.th}}:</th><td>{{tr.td}}</td>
 	{% endfor %}
 	</tbody></table>
 {% endif %}
+
+{% endblock %}

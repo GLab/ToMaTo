@@ -9,15 +9,21 @@ import xmlrpclib, json, socket
 from django.http import HttpResponse
 
 def interpretError(error):
-    debuginfos = [] # list of {th,td} dicts which will create a key-value table via a template for debug users
-    errormsg = "Message: "+error.message+" | Module: "+error.module+' | Data: '+str(error.data) # message to show to the user
-    typemsg = error.type+" ("+error.code+")" # message to use as heading on error page
+    debuginfos_dict = {} # list of key-value pairs, where the key and value must be strings to be shown to humans
+    errormsg = "Message: "+error.message+" | Module: "+error.module # message to show to the user
+    typemsg = error.code+" ("+error.type +" error)" # message to use as heading on error page
     ajaxinfos = {} # information which the editor can use to handle the exception
     responsecode = 500 # which HTTP response status code to use
     
-    #TODO: insert some magic here.
+    data = error.data
     
+    #TODO: insert some magic here. The following line is just a workaround / catch-all solution.
+    debuginfos_dict = data
     
+    #now, return everything.
+    debuginfos = []
+    for inf in debuginfos_dict.keys():
+        debuginfos.append({'th':inf,'td':debuginfos_dict[inf]})
     return (typemsg, errormsg, debuginfos, ajaxinfos, responsecode)
 
 
