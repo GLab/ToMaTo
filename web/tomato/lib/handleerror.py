@@ -7,7 +7,6 @@ from error import Error, UserError, InternalError #@UnresolvedImport
 from django.shortcuts import render, redirect
 import xmlrpclib, json, socket
 from django.http import HttpResponse
-from .. import AuthError
 
 def interpretError(error):
     debuginfos = [] # list of {th,td} dicts which will create a key-value table via a template for debug users
@@ -33,6 +32,7 @@ def renderError(request, error):
 
 def renderFault (request, fault):
     import traceback
+    from . import AuthError
     traceback.print_exc()
     if isinstance(fault, Error):
         return renderError(request, fault)
