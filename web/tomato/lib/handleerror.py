@@ -7,19 +7,19 @@ from error import Error, UserError, InternalError #@UnresolvedImport
 from django.shortcuts import render, redirect
 import xmlrpclib, json, socket
 from django.http import HttpResponse
-from . import AuthError
+from .. import AuthError
 
 def interpretError(error):
-    debuginfos = []
-    errormsg = "Message: "+error.message+" | Module: "+error.module+' | Data: '+str(error.data)
-    typemsg = error.type+" ("+error.code+")"
-    ajaxinfos = {}
-    
+    debuginfos = [] # list of {th,td} dicts which will create a key-value table via a template for debug users
+    errormsg = "Message: "+error.message+" | Module: "+error.module+' | Data: '+str(error.data) # message to show to the user
+    typemsg = error.type+" ("+error.code+")" # message to use as heading on error page
+    ajaxinfos = {} # information which the editor can use to handle the exception
+    responsecode = 500 # which HTTP response status code to use
     
     #TODO: insert some magic here.
     
     
-    return (typemsg, errormsg, debuginfos, ajaxinfos)
+    return (typemsg, errormsg, debuginfos, ajaxinfos, responsecode)
 
 
 
@@ -28,15 +28,15 @@ def interpretError(error):
 
 
 def renderError(request, error):
-    typemsg, errormsg, debuginfos, _ = interpretError(error)
-    return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos}, status=500)
+    typemsg, errormsg, debuginfos, _, responsecode = interpretError(error)
+    return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos}, status=responsecode)
 
 def renderFault (request, fault):
     import traceback
     traceback.print_exc()
     if isinstance(fault, Error):
         return renderError(request, fault)
-    if isinstance(fault, socket.error):
+    elif isinstance(fault, socket.error):
         import os
         etype = "Socket error"
         ecode = fault.errno
