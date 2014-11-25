@@ -17,8 +17,9 @@ def interpretError(error):
     
     data = error.data
     
-    #TODO: insert some magic here. The following line is just a workaround / catch-all solution.
+    #TODO: insert some magic here. The following two lines is just a workaround / catch-all solution.
     debuginfos_dict = data
+    ajaxinfos = data
     
     #now, return everything.
     debuginfos = []

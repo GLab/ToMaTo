@@ -9,7 +9,8 @@
 
 	{{errormsg}}
 	
-{% if debuginfos %}
+{% if request.session.user.hasDebugFlag %}
+	<h2>Error Details</h2>
 	<table><tbody>
 	{% for tr in debuginfos %}
 		<th>{{tr.th}}:</th><td>{{tr.td}}</td>
