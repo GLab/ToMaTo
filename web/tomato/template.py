@@ -29,6 +29,8 @@ import datetime
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
+from lib.error import UserError #@UnresolvedImport
+
 techs=[
 		{"name": "kvmqm", "label": "KVM"},
 		{"name": "openvz", "label": "OpenVZ"},
@@ -214,26 +216,19 @@ def edit_torrent(api, request, res_id=None):
 			torrent_data = base64.b64encode(f.read())
 			res_info = api.resource_info(formData['res_id'])
 			creation_date = str(formData['creation_date'])
-			if res_info['type'] == 'template':
-				api.resource_modify(formData["res_id"],{'torrent_data':torrent_data,
-														'creation_date':creation_date})
-				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
-			else:
-				return render(request, "error/fault.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
-		else:
-			label = request.POST["label"]
-			if label:
-				return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+label+"' ("+request.POST["tech"]+")"})
-			else:
-				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+			UserError.check(res_info['type'] == 'template',UserError.INVALID_PARAMETER,"This resource is not a template", data={'id':formData['res_id']})
+			api.resource_modify(formData["res_id"],{'torrent_data':torrent_data,
+													'creation_date':creation_date})
+			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
+		label = request.POST["label"]
+		UserError.check(label, UserError.INVALID_DATA, "Form transmission failed.")
+		return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+label+"' ("+request.POST["tech"]+")"})
 	else:
-		if res_id:
-			res_info = api.resource_info(res_id)
-			form = ChangeTemplateTorrentForm(res_id, {'res_id': res_id})
-			return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
-		else:
-			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
-
+		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
+		res_info = api.resource_info(res_id)
+		form = ChangeTemplateTorrentForm(res_id, {'res_id': res_id})
+		return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
+		
 
 @wrap_rpc
 def edit(api, request, res_id=None):
@@ -243,35 +238,28 @@ def edit(api, request, res_id=None):
 			formData = form.cleaned_data
 			creation_date = str(formData['creation_date'])
 			res_inf = api.resource_info(res_id)
-			if res_inf['type'] == 'template':
-				attrs = {'label':formData['label'],
-							'restricted': formData['restricted'],
-							'subtype':formData['subtype'],
-							'preference':formData['preference'],
-							'description':formData['description'],
-							'creation_date':creation_date,
-							'nlXTP_installed':formData['nlXTP_installed'],
-							'icon':formData['icon'],
-							'show_as_common':formData['show_as_common']}
-				if res_inf['tech'] == "kvmqm":
-					attrs['kblang'] = formData['kblang']
-				api.resource_modify(res_id,attrs)
-				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
-			else:
-				return render(request, "error/fault.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
-		else:
-			label = request.POST["label"]
-			if label:
-				return render(request, "form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+request.POST['tech']+")"})
-			else:
-				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+			UserError.check(res_inf['type'] == 'template',UserError.INVALID_PARAMETER,"This resource is not a template", data={'id':formData['res_id']})
+			attrs = {'label':formData['label'],
+						'restricted': formData['restricted'],
+						'subtype':formData['subtype'],
+						'preference':formData['preference'],
+						'description':formData['description'],
+						'creation_date':creation_date,
+						'nlXTP_installed':formData['nlXTP_installed'],
+						'icon':formData['icon'],
+						'show_as_common':formData['show_as_common']}
+			if res_inf['tech'] == "kvmqm":
+				attrs['kblang'] = formData['kblang']
+			api.resource_modify(res_id,attrs)
+			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
+		label = request.POST["label"]
+		UserError.check(label, UserError.INVALID_DATA, "Form transmission failed.")
+		return render(request, "form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+request.POST['tech']+")"})
 	else:
-		if res_id:
-			res_info = api.resource_info(res_id)
-			origData = res_info['attrs']
-			origData['res_id'] = res_id
-			form = EditTemplateForm(res_id, (origData['tech']=="kvmqm"), origData)
-			return render(request, "form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
-		else:
-			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
-
+		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
+		res_info = api.resource_info(res_id)
+		origData = res_info['attrs']
+		origData['res_id'] = res_id
+		form = EditTemplateForm(res_id, (origData['tech']=="kvmqm"), origData)
+		return render(request, "form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
+		

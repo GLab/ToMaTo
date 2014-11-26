@@ -27,6 +27,8 @@ from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
+from lib.error import UserError #@UnresolvedImport
+
 class ErrorDumpForm(BootstrapForm):
 	source = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.", widget=forms.HiddenInput())
 	dump_id = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.", widget=forms.HiddenInput())
@@ -111,20 +113,15 @@ def group_edit(api, request, group_id):
 			formData = form.cleaned_data
 			api.errorgroup_modify(group_id,{"description": formData["description"]})
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info", kwargs={"group_id": group_id}))
-		else:
-			if not group_id:
-				group_id=request.POST["group_id"]
-			if group_id:
-				return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
-			else:
-				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+		if not group_id:
+			group_id=request.POST["group_id"]
+		UserError.check(group_id, UserError.INVALID_DATA, "Form transmission failed.")
+		return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
 	else:
-		if group_id:
-			errorgroupinfo=api.errorgroup_info(group_id,False)
-			form = EditErrorGroupForm(api, group_id, errorgroupinfo)
-			return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
-		else:
-			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+		UserError.check(group_id, UserError.INVALID_DATA, "No error group specified.")
+		errorgroupinfo=api.errorgroup_info(group_id,False)
+		form = EditErrorGroupForm(api, group_id, errorgroupinfo)
+		return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
 
 
 @wrap_rpc

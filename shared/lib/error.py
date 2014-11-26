@@ -100,7 +100,7 @@ class InternalError(Error):
 	INVALID_PARAMETER = "invalid_parameter"
 	CONFIGURATION_ERROR = "configuration_error"
 	RESOURCE_ERROR = "resource_error"
-	ASSERTION = "assertion"
+	ASSERTION = "assertion" 
 
 
 @ErrorType
@@ -126,6 +126,7 @@ class UserError(Error):
 	AMBIGUOUS = "ambiguous" # The request was ambiguous
 	ALREADY_EXISTS = "already_exists" # The object can not be created because it already exists
 	NO_RESOURCES = "no_resources" # No resources to satisfy this request
+	INVALID_DATA = "invalid data" #The user sent invalid data in a request (i.e., webfrontend forms)
 
 
 @ErrorType

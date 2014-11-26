@@ -28,6 +28,8 @@ from admin_common import organization_name_list, BootstrapForm, RemoveConfirmFor
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
+from lib.error import UserError #@UnresolvedImport
+
 class SiteForm(BootstrapForm):
 	name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
 	description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
@@ -147,24 +149,19 @@ def edit(api, request, name):
 		else:
 			if not name:
 				name=request.POST["name"]
-			if name:
-				form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-				form.fields["name"].help_text=None
-				return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form, 'message_after':geolocation_script})
-			else:
-				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
-			
-	else:
-		if name:
-			siteInfo = api.site_info(name)
-			siteInfo['geolocation_longitude'] = siteInfo['geolocation'].get('longitude',0)
-			siteInfo['geolocation_latitude'] = siteInfo['geolocation'].get('latitude',0)
-			del siteInfo['geolocation']
-			form = EditSiteForm(api, name, siteInfo)
+			UserError.check(name, UserError.INVALID_DATA, "Form transmission failed.")
+			form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+			form.fields["name"].help_text=None
 			return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form, 'message_after':geolocation_script})
-		else:
-			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
-
+	else:
+		UserError.check(name, UserError.INVALID_DATA, "No site specified.")
+		siteInfo = api.site_info(name)
+		siteInfo['geolocation_longitude'] = siteInfo['geolocation'].get('longitude',0)
+		siteInfo['geolocation_latitude'] = siteInfo['geolocation'].get('latitude',0)
+		del siteInfo['geolocation']
+		form = EditSiteForm(api, name, siteInfo)
+		return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form, 'message_after':geolocation_script})
+		
 def get_site_location(site_name,api):
 	geoloc = api.site_info(site_name)['geolocation']
 	return {'longitude':geoloc.get('longitude',0),

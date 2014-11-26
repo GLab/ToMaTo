@@ -25,6 +25,8 @@ from django.core.urlresolvers import reverse
 
 from tomato.crispy_forms.layout import Layout
 
+from lib.error import UserError #@UnresolvedImport
+
 
 class NetworkForm(BootstrapForm):
 	kind = forms.CharField(label="Kind",max_length=255)
@@ -106,27 +108,20 @@ def edit(api, request, res_id = None):
 		form = EditNetworkForm(res_id, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			if api.resource_info(formData['res_id'])['type'] == 'network':
-				api.resource_modify(formData["res_id"],{'label':formData['label'],
-														'preference':formData['preference'],
-														'description':formData['description'],
-										   				'big_icon':formData['big_icon'],
-										   				'show_as_common': formData['show_as_common']})
-				return HttpResponseRedirect(reverse("tomato.external_network.list"))
-			else:
-				return render(request, "error/fault.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network.'})
-		else:
-			kind = request.POST["kind"]
-			if kind:
-				return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+kind+"'"})
-			else:
-				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+			UserError.check(api.resource_info(formData['res_id'])['type'] == 'network',UserError.INVALID_PARAMETER,"This resource is not a template", data={'id':formData['res_id']})
+			api.resource_modify(formData["res_id"],{'label':formData['label'],
+													'preference':formData['preference'],
+													'description':formData['description'],
+									   				'big_icon':formData['big_icon'],
+									   				'show_as_common': formData['show_as_common']})
+			return HttpResponseRedirect(reverse("tomato.external_network.list"))
+		kind = request.POST["kind"]
+		UserError.check(kind, UserError.INVALID_DATA, "Form transmission failed.")
+		return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+kind+"'"})
 	else:
-		if res_id:
-			res_info = api.resource_info(res_id)
-			origData = res_info['attrs']
-			origData['res_id'] = res_id
-			form = EditNetworkForm(res_id, origData)
-			return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+res_info['attrs']['label']+"'"})
-		else:
-			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
+		res_info = api.resource_info(res_id)
+		origData = res_info['attrs']
+		origData['res_id'] = res_id
+		form = EditNetworkForm(res_id, origData)
+		return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+res_info['attrs']['label']+"'"})

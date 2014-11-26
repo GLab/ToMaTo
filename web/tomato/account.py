@@ -30,6 +30,8 @@ from django.utils.html import conditional_escape
 
 from lib import wrap_rpc, getapi, AuthError, serverInfo
 
+from lib.error import UserError #@UnresolvedImport
+
 from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
@@ -355,10 +357,13 @@ def register(api, request):
 					api = getapi(request)
 					request.session["user"] = api.user  
 				return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": account["name"]}))
-			except:
-				import traceback
-				print traceback.print_exc()
-				form._errors["name"] = form.error_class(["This name is already taken"])
+			except UserError, e:
+				if e.code == UserError.ALREADY_EXISTS:
+					import traceback
+					print traceback.print_exc()
+					form._errors["name"] = form.error_class(["This name is already taken"])
+				else:
+					raise
 	else:
 		form = AdminAccountRegisterForm(api) if api.user else AccountRegisterForm(api) 
 	return render(request, "form.html", {"form": form, "heading":"Register New Account"})

@@ -27,6 +27,8 @@ from admin_common import BootstrapForm, RemoveConfirmForm, Buttons, append_empty
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
+from lib.error import UserError #@UnresolvedImport
+
 class HostForm(BootstrapForm):
 	name = forms.CharField(max_length=255,help_text="The host's name. This is also its unique id.")
 	address = forms.CharField(max_length=255,help_text="The host's IP address.")
@@ -122,23 +124,18 @@ def edit(api, request, name=None):
 			formData = form.cleaned_data
 			api.host_modify(name,{"name": formData["name"], "address": formData["address"], "rpcurl": formData["rpcurl"], 'site':formData["site"], "enabled": formData["enabled"],'description_text':formData['description_text']})
 			return HttpResponseRedirect(reverse("tomato.host.info", kwargs={"name": formData["name"]}))
-		else:
-			if not name:
-				name=request.POST["name"]
-			if name:
-				return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
-			else:
-				return render(request, "error/fault.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+		if not name:
+			name=request.POST["name"]
+		UserError.check(name, UserError.INVALID_DATA, "Form transmission failed.")
+		return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
 	else:
-		if name:
-			hostinfo=api.host_info(name)
-			form = EditHostForm(api, name, hostinfo)
-			form.fields["site"].initial = hostinfo["site"]
-			form.fields["enabled"].initial = hostinfo["enabled"]
-			return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
-		else:
-			return render(request, "error/fault.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
-
+		UserError.check(name, UserError.INVALID_DATA, "No host specified.")
+		hostinfo=api.host_info(name)
+		form = EditHostForm(api, name, hostinfo)
+		form.fields["site"].initial = hostinfo["site"]
+		form.fields["enabled"].initial = hostinfo["enabled"]
+		return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
+		
 @wrap_rpc
 def usage(api, request, name): #@ReservedAssignment
 	if not api.user:

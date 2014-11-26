@@ -68,8 +68,10 @@ def renderFault (request, fault):
         etext = fault.message
     return render(request, "error/fault.html", {'type': etype, 'code': ecode, 'text': etext}, status=500)
         
-def renderMessage(request, heading, message, data, responsecode=500):
+def renderMessage(request, message, heading=None, data={}, responsecode=500):
     debuginfos = []
+    if heading is None:
+        heading = message
     for k in data.keys():
         debuginfos.append({'th':k,'td':data[k]})
     return render(request, 
