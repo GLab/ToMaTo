@@ -2285,11 +2285,13 @@ var Component = Class.extend({
 		 		if (options.callback) options.callback(t, result[0], result[1]);
 				t.triggerEvent({operation: "action", phase: "end", action: action, params: params});
 				t.updateDependent();
+				editor.rextfv_status_updater.add(t, 30);
 		 	},
 		 	errorFn: function(error) {
 		 		showError(error);
 		 		t.update();
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
+				editor.rextfv_status_updater.add(t, 5);
 		 	}
 		});
 	},
@@ -3341,6 +3343,7 @@ var IconElement = Element.extend({
 		this._super(topology, data, canvas);
 		this.iconSize = {x: 32, y:32};
 		this.busy = false;
+		editor.rextfv_status_updater.add(this, 1);
 	},
 	iconUrl: function() {
 		return "img/" + this.data.type + "32.png";
@@ -3363,23 +3366,56 @@ var IconElement = Element.extend({
 			this.errIcon.attr({'src':'/img/pixel.png'})
 		}
 		
-		//set state icon
 		if (this.busy) {
 			this.stateIcon.attr({src: "img/loading.gif", opacity: 1.0});
+			this.stateIcon.attr({title: "Action Running..."});
+			this.rextfvIcon.attr({src: "img/pixel.png", opacity: 0.0});
+			this.rextfvIcon.attr({title: ""});
 			return;			
 		}
+
+		//set state icon
 		switch (this.data.state) {
 			case "started":
 				this.stateIcon.attr({src: "img/started.png", opacity: 1.0});
+				this.stateIcon.attr({title: "State: Started"});
 				break;
 			case "prepared":
 				this.stateIcon.attr({src: "img/prepared.png", opacity: 1.0});
+				this.stateIcon.attr({title: "State: Prepared"});
 				break;
 			case "created":
 			default:
 				this.stateIcon.attr({src: "img/pixel.png", opacity: 0.0});
+				this.stateIcon.attr({title: "State: Created"});
 				break;
 		}
+		
+		//set RexTFV icon
+		if (this.rextfvStatusSupport() && this.data.state=="started") {
+			rextfv_stat = this.data.attrs.rextfv_run_status;
+			if (rextfv_stat.readable) {
+				if (rextfv_stat.isAlive) {
+					this.rextfvIcon.attr({src: "img/loading.gif", opacity: 1.0});
+					this.rextfvIcon.attr({title: "Executable Archive: Running"});
+				} else {
+					if (rextfv_stat.done) {
+						this.rextfvIcon.attr({src: "img/tick.png", opacity: 1.0});
+						this.rextfvIcon.attr({title: "Executable Archive: Done"});
+					} else {
+						this.rextfvIcon.attr({src: "img/cross.png", opacity: 1.0});
+						this.rextfvIcon.attr({title: "Executable Archive: Unknown. Probably crashed."});
+					}
+				}
+			} else {
+				this.rextfvIcon.attr({src: "img/pixel.png", opacity: 0.0});
+				this.rextfvIcon.attr({title: ""});
+			}
+		} else {
+			this.rextfvIcon.attr({src: "img/pixel.png", opacity: 0.0});
+			this.rextfvIcon.attr({title: ""});
+		}
+		
 	},
 	getRectObj: function() {
 		return this.rect[0];
@@ -3389,7 +3425,8 @@ var IconElement = Element.extend({
 		this.icon = this.canvas.image(this.iconUrl(), pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
 		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.attrs.name);
 		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
-		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y-this.iconSize.y/2-10, 16, 16);
+		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2, pos.y-this.iconSize.y/2-10, 16, 16);
+		this.rextfvIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2, pos.y-this.iconSize.y/2+8, 16, 16);
 		this.stateIcon.attr({opacity: 0.0});
 		this.updateStateIcon();
 		//hide icon below rect to disable special image actions on some browsers
@@ -3414,7 +3451,8 @@ var IconElement = Element.extend({
 		var pos = this.getAbsPos();
 		this.icon.attr({src: this.iconUrl(), x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-15});
-		this.errIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y-this.iconSize.y/2-10});
+		this.errIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2-10});
+		this.rextfvIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2+8});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.attrs.name});
 		this.updateStateIcon();
@@ -4028,6 +4066,68 @@ var NetworkStore = Class.extend({
 	}
 });
 
+var RexTFV_status_updater = Class.extend({
+	init: function(options) {
+		this.options = options;
+		this.elements = [];
+	},
+	updateAll: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
+		toRemove = [];
+		//iterate through all entries, update them, and then update their retry-count according to the refreshed data.
+		//do not remove elements while iterating. instead, put to-be-removed entries in the toRemove array.
+		for (var i=0; i<t.elements.length; i++) {
+			entry = t.elements[i];
+			entry.element.update();
+			if (entry.element.rextfvStatusSupport() && entry.element.data.attrs.rextfv_run_status.running) {
+				entry.tries = 1;
+			} else {
+				entry.tries--;
+				if (entry.tries < 0) {
+					toRemove.push(entry)
+				}
+			}
+		}
+		//remove entries marked as to-remove.
+		for (var i=0; i<toRemove.length; i++) {
+			t.remove(toRemove[i]);
+		}
+	},
+	add: function(el,tries) { //every entry has a number of retries and an element attached to it.
+								// retries are decreased when the status is something else than "running".
+								// retries are set to 1 if the status is "running".
+								// the idea is that the system might need some time to detect RexTFV activity after uploading the archive or starting a device.
+								// retries == 1 is the default. if retries < 0, the entry is removed. This means, after the status is set to "not running",
+								// the editor will update the element twice before removing it.
+		
+		
+		//first, search whether this element is already monitored. If yes, update number of tries if necessary (keep the bigger one). exit funciton if found.
+		for (var i=0; i<this.elements.length; i++) {
+			if (this.elements[i].element == el) {
+				found = true;
+				if (this.elements[i].tries < tries)
+					this.elements[i].tries = tries;
+				return
+			}
+		}
+		
+		//if the search hasn't found anything, simply append this.
+		this.elements.push({
+			element: el,
+			tries: tries
+		})
+	},
+	// usually only called by this. removes an entry.
+	remove: function(entry) {
+		for (var i=0; i<this.elements.length; i++) {
+			entry_found = this.elements[i];
+			if (entry_found == entry) {
+				this.elements.splice(i,1);
+				return;
+			}
+		}
+	}
+});
+
 var Mode = {
 	select: "select",
 	connect: "connect",
@@ -4039,6 +4139,9 @@ var Mode = {
 var Editor = Class.extend({
 	init: function(options) {
 		this.options = options;
+		
+		this.rextfv_status_updater = new RexTFV_status_updater(); //has to be created before any element.
+		var t = this;
 		
 		this.allowRestrictedTemplates= false;
 		this.allowRestrictedProfiles = false;
@@ -4063,12 +4166,12 @@ var Editor = Class.extend({
 		this.buildMenu(this);
 		this.setMode(Mode.select);
 		
+		
 		this.sites_dict = {};
 		for (s in this.sites) {
 			this.sites_dict[this.sites[s].name] = this.sites[s];
 		}
 				
-		var t = this;
 		this.workspace.setBusy(true);
 		ajax ({
 			url: "topology/"+options.topology+"/info",
@@ -4092,6 +4195,8 @@ var Editor = Class.extend({
 				t.workspace.updateTopologyTitle();
 			}
 		});
+
+		setInterval(function(){t.rextfv_status_updater.updateAll(t.rextfv_status_updater)}, 1200);
 	},
 	triggerEvent: function(event) {
 		log(event);
