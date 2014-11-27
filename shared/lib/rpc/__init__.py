@@ -9,7 +9,7 @@ def unwrapXmlRpcError(err):
 	if not isinstance(err, Fault):
 		return TransportError(code=TransportError.UNKNOWN, message=repr(err), module="hostmanager")
 	if err.faultCode == 999:
-		return Error.parse(err.faultString)
+		return Error.parsestr(err.faultString)
 	elif err.faultCode == 300:
 		return TransportError(code=TransportError.UNAUTHORIZED, module="hostmanager")
 	elif err.faultCode == 500:
