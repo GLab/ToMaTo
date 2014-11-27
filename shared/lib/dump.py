@@ -283,7 +283,7 @@ def dumpException(**kwargs):
 		return True
 	return False
 
-	return dumpUnknownException(type_, value, trace)
+	return dumpUnknownException(type_, value, trace, **kwargs)
 
 	
 	
@@ -293,7 +293,7 @@ def dumpException(**kwargs):
 	
 # function to handle an exception where no special handler is available.
 # Should only be called by dumpException	
-def dumpUnknownException(type_, value, trace):
+def dumpUnknownException(type_, value, trace, **kwargs):
 	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
 	exception_forid = {"type": type_.__name__, "value": re.sub("[0-9]","",str(value)), "trace": trace}
 	exception_id = hashlib.md5(json.dumps(exception_forid)).hexdigest()
@@ -307,18 +307,20 @@ def dumpUnknownException(type_, value, trace):
 
 # function to handle an Error from tomato.lib.error.py
 def dumpError(error):
-	if not error.todump:
-		return None
-	error.todump=False
-	
-	(type_, value, trace) = sys.exc_info()
-	trace = traceback.extract_tb(trace) if trace else None
-	data = {"exception":{"trace":trace}}
-	
-	description = error.__dict__
-	del description['todump']
-	
-	exception_id = error.group_id()
-	
-	return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
-
+	try:
+		if not error.todump:
+			return None
+		error.todump=False
+		
+		(type_, value, trace) = sys.exc_info()
+		trace = traceback.extract_tb(trace) if trace else None
+		data = {"exception":{"trace":trace}}
+		
+		description = error.__dict__
+		del description['todump']
+		
+		exception_id = error.group_id()
+		
+		return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
+	except:
+		dumpException(originalError=error)
