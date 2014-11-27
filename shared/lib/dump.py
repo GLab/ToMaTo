@@ -316,7 +316,7 @@ def dumpError(error):
 	data = {"exception":{"trace":trace}}
 	
 	description = error.__dict__
-	del description['dump']
+	del description['todump']
 	
 	exception_id = error.group_id()
 	
