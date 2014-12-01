@@ -550,7 +550,7 @@ var errorWindow = Window.extend({
 				width: 600,
 				autoShow: true,
 				buttons: {
-					Cancel: function() {
+					OK: function() {
 						t.remove();
 						t = null;
 					}
@@ -570,36 +570,46 @@ var errorWindow = Window.extend({
 		//Create the content of the error window
 		this.errorContent = $('<div>');
 
+		console.log(error);
+		
 		if(error.parsedResponse) {
-			this.addError(error.parsedResponse);
+			this.errorContent.after(this.addError(error.parsedResponse.error));
 		} else {
-			this.addText(error.originalResponse);
+			this.errorContent.after(this.addText(error.originalResponse));
 		}
 		
-		this.errorContent.after('<p>'+this.options.error_message_appendix+'</p>');
-		
+		if(!(editor.options.isDebugUser && editor.options.debug_mode)) {
+			this.errorContent.after('<p style="color: #cccccc">'+this.options.error_message_appendix+'</p>');
+		}
 		this.errorContent.after($('</div>'));
 		this.div.append(this.errorContent);
 	},
 
 	addError: function(error) {
 		//Show additional information for debug users like the errorcode, the errormessage and errordata for debugusers
-		if(editor.options.isDebugUser && editor.options.debug_mode) {
-			var errorCodeType = $('<p>'+error.code+' '+error.message+"</p>");
-			this.errorContent.after(errorCodeType);
-		}
+		var content = $('');
 		
-		var errorMessage = $('<p>'+error.message+'</p>');
-		this.errorContent.after(errorMessage);
+		this.setTitle("Error: "+error.typemsg);
+		
+		var errorMessage = $('<p>'+error.errormsg+'</p>');
+		content.after(errorMessage);
 		
 		if(editor.options.isDebugUser && editor.options.debug_mode) {
-			var errorData = $('<p>'+error.data+'</p>');
-			this.errorContent.after(errorData);
+			
+			content.after($('<b>Error details:</b>'))
+			var errorDebugInfos = $('<table />');
+			
+			for(var line=0;line<error.debuginfos.length;line++) {
+				errorDebugInfos.append($('<tr><th>'+error.debuginfos[line].th+'</th><td>'+error.debuginfos[line].td+'</td></tr>'));
+			}
+			content.after(errorDebugInfos);
 		}
+		return content;
 	},
+	
 	addText: function(text) {
-		var message = $('<p>'+text+'</p>');
-		this.errorContent.after(message);
+		var message = $('<pre>'+text+'</pre>');
+		return message;
 	}
 });
 
