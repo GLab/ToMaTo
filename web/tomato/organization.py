@@ -29,6 +29,8 @@ from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
+from lib.error import UserError #@UnresolvedImport
+
 class OrganizationForm(BootstrapForm):
 	name = forms.CharField(max_length=50, help_text="The name of the organization. Must be unique to all organizations. e.g.: ukl")
 	description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
@@ -122,24 +124,18 @@ def edit(api, request, name=None):
 													  'description_text':formData['description_text']
 													  })
 			return HttpResponseRedirect(reverse("tomato.organization.info", kwargs={"name": formData["name"]}))
-		else:
-			if not name:
-				name=request.POST["name"]
-			if name:
-				form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-				form.fields["name"].help_text=None
-				return render(request, "form.html", {"heading": "Editing Organization '"+name+"'", 'form': form})
-			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
-			
+		if not name:
+			name=request.POST["name"]
+		UserError.check(name, UserError.INVALID_DATA, "Form transmission failed.")
+		form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+		form.fields["name"].help_text=None
+		return render(request, "form.html", {"heading": "Editing Organization '"+name+"'", 'form': form})
 	else:
-		if name:
-			orgaInfo = api.organization_info(name)
-			form = EditOrganizationForm(orgaInfo)
-			return render(request, "form.html", {"heading": "Editing Organization '"+name+"'", 'form': form})
-		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
-
+		UserError.check(name, UserError.INVALID_DATA, "No organization specified.")
+		orgaInfo = api.organization_info(name)
+		form = EditOrganizationForm(orgaInfo)
+		return render(request, "form.html", {"heading": "Editing Organization '"+name+"'", 'form': form})
+		
 @wrap_rpc
 def usage(api, request, name): #@ReservedAssignment
 	if not api.user:

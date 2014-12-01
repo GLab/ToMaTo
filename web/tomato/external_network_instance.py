@@ -26,6 +26,8 @@ from tomato.crispy_forms.layout import Layout
 
 from django.core.urlresolvers import reverse
 
+from lib.error import UserError #@UnresolvedImport
+
 class NetworkInstanceForm(BootstrapForm):
 	host = forms.CharField(label="Host")
 	bridge = forms.CharField(max_length=255,label="Bridge",help_text="TODO: write a useful help text here...")
@@ -155,26 +157,19 @@ def edit(api, request, res_id = None):
 		form = EditNetworkInstanceForm(res_id, api, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			if api.resource_info(formData['res_id'])['type'] == 'network_instance':
-				api.resource_modify(formData["res_id"],{'host':formData['host'],
-														'bridge':formData['bridge'],
-														'network':formData['network'],
-														'kind':formData['network']}) 
-				return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": network_id(api, formData['network'])}))
-			else:
-				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network instance.'})
-		else:
-			host = request.POST["host"]
-			if host:
-				return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+host})
-			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+			UserError.check(api.resource_info(formData['res_id'])['type'] == 'network_instance',UserError.INVALID_PARAMETER,"This resource is not an external network instance", data={'id':formData['res_id']})
+			api.resource_modify(formData["res_id"],{'host':formData['host'],
+													'bridge':formData['bridge'],
+													'network':formData['network'],
+													'kind':formData['network']}) 
+			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": network_id(api, formData['network'])}))
+		host = request.POST["host"]
+		UserError.check(host, UserError.INVALID_DATA, "Form transmission failed.")
+		return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+host})
 	else:
-		if res_id:
-			res_info = api.resource_info(res_id)
-			origData = res_info['attrs']
-			origData['res_id'] = res_id
-			form = EditNetworkInstanceForm(res_id, api, origData)
-			return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+res_info['attrs']['host']})
-		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
+		res_info = api.resource_info(res_id)
+		origData = res_info['attrs']
+		origData['res_id'] = res_id
+		form = EditNetworkInstanceForm(res_id, api, origData)
+		return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+res_info['attrs']['host']})

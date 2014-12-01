@@ -1,0 +1,21 @@
+{% extends "main/base.html" %}
+
+{% block title %}
+<title>Error: {{typemsg}}</title> 
+{% endblock %}
+
+{% block content %}
+<h1>Error: {{typemsg}}</h1>
+
+	{{errormsg}}
+	
+{% if request.session.user.hasDebugFlag %}
+	<h2>Error Details</h2>
+	<table><tbody>
+	{% for tr in debuginfos %}
+		<th>{{tr.th}}:</th><td>{{tr.td}}</td>
+	{% endfor %}
+	</tbody></table>
+{% endif %}
+
+{% endblock %}
