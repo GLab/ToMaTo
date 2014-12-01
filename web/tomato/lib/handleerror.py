@@ -10,15 +10,16 @@ from django.http import HttpResponse
 
 def interpretError(error):
     debuginfos_dict = {} # list of key-value pairs, where the key and value must be strings to be shown to humans
-    errormsg = "Message: "+error.message+" | Module: "+error.module # message to show to the user
+    errormsg = error.onscreemessage # message to show to the user
     typemsg = error.code+" ("+error.type +" error)" # message to use as heading on error page
     ajaxinfos = {} # information which the editor can use to handle the exception
-    responsecode = 500 # which HTTP response status code to use
+    responsecode = error.httpcode # which HTTP response status code to use
     
     data = error.data
     
     #TODO: insert some magic here. The following two lines is just a workaround / catch-all solution.
     debuginfos_dict = data
+    debuginfos_dict['Module'] = error.module
     ajaxinfos = data
     
     #now, return everything.
@@ -85,17 +86,18 @@ def renderMessage(request, message, heading=None, data={}, responsecode=500):
 
 
 def ajaxError(error):
-    typemsg, errormsg, debuginfos, ajaxinfos = interpretError(error)
+    typemsg, errormsg, debuginfos, ajaxinfos, responsecode = interpretError(error)
     return HttpResponse(
                         json.dumps(
                                    {"success": False, 
-                                    "error": {'raw': error.raw(), 
+                                    "error": {'raw': error.raw, 
                                               'typemsg': typemsg, 
                                               'errormsg': errormsg, 
                                               'debuginfos': debuginfos, 
                                               'ajaxinfos': ajaxinfos}
                                     }
-                                   )
+                                   ),
+                        status = responsecode
                         )
     
 
