@@ -1,4 +1,5 @@
 {% extends "main/base.html" %}
+{% load tomato %}
 
 {% block title %}
 <title>Error: {{typemsg}}</title> 
@@ -7,7 +8,7 @@
 {% block content %}
 <h1>Error: {{typemsg}}</h1>
 
-	{{errormsg}}
+	<p>{{errormsg}}</p>
 	
 {% if request.session.user.hasDebugFlag %}
 	<h2>Error Details</h2>
@@ -16,6 +17,8 @@
 		<th>{{tr.th}}:</th><td>{{tr.td}}</td>
 	{% endfor %}
 	</tbody></table>
+{% else %}
+	<p>If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" target="_help">file a bug report</a>.</p>
 {% endif %}
 
 {% endblock %}
