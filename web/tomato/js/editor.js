@@ -502,15 +502,7 @@ var Window = Class.extend({
 var showError = function(error) {
 	
 	if (ignoreErrors) return;
-	switch(error.toLowerCase()) {
-		case "over quota":
-			var overquotastr = "You are over quota. If you are a newly registered user, please wait until your account has been approved. Otherwise, contact an administrator.";
-			
-			errorWindow({error: {originalResponse: overquotastr,},userErrorFlag: true});
-			break;
-		default:
-			var errWindow = new errorWindow({error: { originalResponse: error,},userErrorFlag: true});
-	}
+	new errorWindow({error: { originalResponse: error,},userErrorFlag: true});
 }
 
 
@@ -1157,7 +1149,7 @@ var PermissionsWindow = Window.extend({
 											showError("This user is already in the list.");
 									},
 									errorFn: function(error) {
-								 		this.errorWindow = new errorWindow({error:error});
+								 		new errorWindow({error:error});
 									},
 								});
 								t.username = null;
@@ -1251,7 +1243,7 @@ var PermissionsWindow = Window.extend({
 				}
 			},
 			errorFn: function(error){
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 				t.backToView(username);
 			}
 		})
@@ -1572,7 +1564,7 @@ var Topology = Class.extend({
 				t.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "end", attrs: attrs});
 		 	},
 		 	errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 				t.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "error", attrs: attrs});
 		 	}
 		});
@@ -1596,7 +1588,7 @@ var Topology = Class.extend({
 				t.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "end", action: action, params: params});
 		 	},
 		 	errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 				t.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "error", action: action, params: params});
 		 	}
 		});
@@ -1672,7 +1664,7 @@ var Topology = Class.extend({
 				t.onUpdate();
 			},
 			errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 				obj.paintRemove();
 				t.pendingNames.remove(data.name);
 				t.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "error", attrs: data});
@@ -1704,7 +1696,7 @@ var Topology = Class.extend({
 					el2.onConnected();
 				},
 				errorFn: function(error) {
-			 		this.errorWindow = new errorWindow({error:error});
+			 		new errorWindow({error:error});
 					obj.paintRemove();
 					t.editor.triggerEvent({component: "connection", object: obj, operation: "create", phase: "error", attrs: data});
 				}
@@ -1841,7 +1833,7 @@ var Topology = Class.extend({
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 		 	}
 		});
 	},
@@ -2235,7 +2227,7 @@ var Component = Class.extend({
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 		 	}
 		});
 	},
@@ -2326,7 +2318,7 @@ var Component = Class.extend({
 				if (callback) callback();
 		 	},
 		 	errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 		 		t.setBusy(false);
 				t.triggerEvent({operation: "update", phase: "error"});
 		 	}
@@ -2351,7 +2343,7 @@ var Component = Class.extend({
 				t.triggerEvent({operation: "modify", phase: "end", attrs: attrs});
 		 	},
 		 	errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 		 		t.update();
 				t.triggerEvent({operation: "modify", phase: "error", attrs: attrs});
 		 	}
@@ -2381,7 +2373,7 @@ var Component = Class.extend({
 				editor.rextfv_status_updater.add(t, 30);
 		 	},
 		 	errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 		 		t.update();
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
 				editor.rextfv_status_updater.add(t, 5);
@@ -2715,7 +2707,7 @@ var Connection = Component.extend({
 						t.elements[i].remove();
 		 	},
 		 	errorFn: function(error) {
-		 		this.errorWindow = new errorWindow({error:error});
+		 		new errorWindow({error:error});
 		 		t.setBusy(false);
 				t.triggerEvent({operation: "remove", phase: "error"});
 		 	}
@@ -3159,7 +3151,7 @@ var Element = Component.extend({
 					t.triggerEvent({operation: "remove", phase: "end"});
 			 	},
 			 	errorFn: function(error) {
-			 		this.errorWindow = new errorWindow({error:error});
+			 		new errorWindow({error:error});
 			 		t.setBusy(false);
 					t.triggerEvent({operation: "remove", phase: "error"});
 			 	}

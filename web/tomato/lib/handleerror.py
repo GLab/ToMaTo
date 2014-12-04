@@ -11,7 +11,6 @@ from django.http import HttpResponse
 def interpretError(error):
     debuginfos_dict = {} # list of key-value pairs, where the key and value must be strings to be shown to humans
     errormsg = error.onscreenmessage # message to show to the user
-    print error
     typemsg = error.code+" ("+error.type +" error)" # message to use as heading on error page
     ajaxinfos = {} # information which the editor can use to handle the exception
     responsecode = error.httpcode # which HTTP response status code to use
