@@ -506,10 +506,10 @@ var showError = function(error) {
 		case "over quota":
 			var overquotastr = "You are over quota. If you are a newly registered user, please wait until your account has been approved. Otherwise, contact an administrator.";
 			
-			errorWindow({error: {originalResponse: overquotastr,},});
+			errorWindow({error: {originalResponse: overquotastr,},userErrorFlag: true});
 			break;
 		default:
-			var errWindow = new errorWindow({error: { originalResponse: error,},});
+			var errWindow = new errorWindow({error: { originalResponse: error,},userErrorFlag: true});
 	}
 }
 
@@ -527,6 +527,7 @@ var errorWindow = Window.extend({
 						t = null;
 					}
 				},
+				userErrorFlag: false,
 				error_message_appendix: editor.options.error_message_appendix,
 			};
 		
@@ -550,7 +551,7 @@ var errorWindow = Window.extend({
 			this.errorContent.after(this.addText(error.originalResponse));
 		}
 		
-		if(!editor.options.isDebugUser || !editor.options.debug_mode) {
+		if(!(editor.options.isDebugUser || editor.options.debug_mode) && !options.userErrorFlag) {
 			this.errorContent.after('<p style="color: #a0a0a0">'+this.options.error_message_appendix+'</p>');
 		}
 		this.errorContent.after($('</div>'));
