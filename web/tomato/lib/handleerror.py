@@ -3,7 +3,7 @@ Created on Nov 20, 2014
 
 @author: Tim Gerhard
 '''
-from error import Error, UserError, InternalError #@UnresolvedImport
+from error import Error, UserError, InternalError, getCodeMsg #@UnresolvedImport
 from django.shortcuts import render, redirect
 import xmlrpclib, json, socket
 from django.http import HttpResponse
@@ -12,7 +12,10 @@ def interpretError(error):
     debuginfos_dict = {} # list of key-value pairs, where the key and value must be strings to be shown to humans
     errormsg = error.onscreenmessage # message to show to the user
     print error
-    typemsg = error.code+" ("+error.type +" error)" # message to use as heading on error page
+    
+    entity_name = error.data['entity'] if 'entity' in error.data else "Entity"
+    typemsg = getCodeMsg(error.code, entity_name.title()) # message to use as heading on error page
+    
     ajaxinfos = {} # information which the editor can use to handle the exception
     responsecode = error.httpcode # which HTTP response status code to use
     
