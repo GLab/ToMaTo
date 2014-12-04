@@ -11,7 +11,6 @@ from django.http import HttpResponse
 def interpretError(error):
     debuginfos_dict = {} # list of key-value pairs, where the key and value must be strings to be shown to humans
     errormsg = error.onscreenmessage # message to show to the user
-    print error
     
     entity_name = error.data['entity'] if 'entity' in error.data else "Entity"
     typemsg = getCodeMsg(error.code, entity_name.title()) # message to use as heading on error page
