@@ -502,7 +502,7 @@ var Window = Class.extend({
 var showError = function(error) {
 	
 	if (ignoreErrors) return;
-	new errorWindow({error: { originalResponse: error,},userErrorFlag: true});
+	new errorWindow({error: { originalResponse: error,},show_error_appendix: true});
 }
 
 
@@ -519,7 +519,7 @@ var errorWindow = Window.extend({
 						t = null;
 					}
 				},
-				userErrorFlag: false,
+				show_error_appendix: false,
 				error_message_appendix: editor.options.error_message_appendix,
 			};
 		
@@ -543,7 +543,7 @@ var errorWindow = Window.extend({
 			this.errorContent.after(this.addText(error.originalResponse));
 		}
 		
-		if(!(editor.options.isDebugUser || editor.options.debug_mode) && !options.userErrorFlag) {
+		if(!(editor.options.isDebugUser || editor.options.debug_mode) && !options.show_error_appendix) {
 			this.errorContent.after('<p style="color: #a0a0a0">'+this.options.error_message_appendix+'</p>');
 		}
 		this.errorContent.after($('</div>'));
