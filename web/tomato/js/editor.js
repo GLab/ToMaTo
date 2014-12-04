@@ -17,14 +17,17 @@ var settings = {
 
 var ignoreErrors = false;
 
-var showError = function(msg) {
+
+
+var showError = function(error) {
+	console.log(error);
 	if (ignoreErrors) return;
-	switch(msg.toLowerCase()) {
+	switch(error.toLowerCase()) {
 		case "over quota":
 			showError("You are over quota. If you are a newly registered user, please wait until your account has been approved. Otherwise, contact an administrator.");
 			break;
 		default:
-			alert("Error: "+msg);
+			alert("Error: "+error);
 	}
 }
 
@@ -42,9 +45,19 @@ var ajax = function(options) {
 	 			window.location.reload();
 	 			return;
 	 		}
-	 		if (res.status != 200) return options.errorFn ? options.errorFn(res.statusText) : null;
-	 		var msg = $.parseJSON(res.responseText);
-	 		if (! msg.success) return options.errorFn ? options.errorFn(msg.error) : null;
+	 		var	errorobject = {originalResponse: res.responseText,responseCode: res.status};
+	 		var msg = res.responseText;
+	 		try {
+	 			msg = $.parseJSON(res.responseText);
+ 				errorobject.parsedResponse = msg;
+ 			} catch (e){
+ 			}
+	 		if (res.status != 200) {
+	 			return options.errorFn ? options.errorFn(errorobject) : null;
+ 			}
+	 		if (! msg.success) {
+	 			return options.errorFn ? options.errorFn(errorobject) : null;
+	 		}
 	 		return options.successFn ? options.successFn(msg.result) : null;
 	 	}
 	});
@@ -526,6 +539,77 @@ var Window = Class.extend({
 	},
 	getDiv: function() {
 		return this.div;
+	}
+});
+
+var errorWindow = Window.extend({
+	init: function(options) {
+		var t = this;
+		this.windowOptions = {title: "Error",
+				modal: true,
+				width: 600,
+				autoShow: true,
+				buttons: {
+					OK: function() {
+						t.remove();
+						t = null;
+					}
+				},
+				error_message_appendix: editor.options.error_message_appendix,
+			};
+		
+		//Copy error to new variable and remove it from the options dict
+		var error = options.error;
+		delete options.error;
+		
+		for (var key in options) {
+			this.windowOptions[key] = options[key];
+		}
+		this._super(this.windowOptions);
+		
+		//Create the content of the error window
+		this.errorContent = $('<div>');
+
+		console.log(error);
+		
+		if(error.parsedResponse) {
+			this.errorContent.after(this.addError(error.parsedResponse.error));
+		} else {
+			this.errorContent.after(this.addText(error.originalResponse));
+		}
+		
+		if(!(editor.options.isDebugUser && editor.options.debug_mode)) {
+			this.errorContent.after('<p style="color: #cccccc">'+this.options.error_message_appendix+'</p>');
+		}
+		this.errorContent.after($('</div>'));
+		this.div.append(this.errorContent);
+	},
+
+	addError: function(error) {
+		//Show additional information for debug users like the errorcode, the errormessage and errordata for debugusers
+		var content = $('');
+		
+		this.setTitle("Error: "+error.typemsg);
+		
+		var errorMessage = $('<p>'+error.errormsg+'</p>');
+		content.after(errorMessage);
+		
+		if(editor.options.isDebugUser && editor.options.debug_mode) {
+			
+			content.after($('<b>Error details:</b>'))
+			var errorDebugInfos = $('<table />');
+			
+			for(var line=0;line<error.debuginfos.length;line++) {
+				errorDebugInfos.append($('<tr><th>'+error.debuginfos[line].th+'</th><td>'+error.debuginfos[line].td+'</td></tr>'));
+			}
+			content.after(errorDebugInfos);
+		}
+		return content;
+	},
+	
+	addText: function(text) {
+		var message = $('<pre>'+text+'</pre>');
+		return message;
 	}
 });
 
@@ -1066,7 +1150,9 @@ var PermissionsWindow = Window.extend({
 										} else
 											showError("This user is already in the list.");
 									},
-									errorFn: showError
+									errorFn: function(error) {
+								 		this.errorWindow = new errorWindow({error:error});
+									},
 								});
 								t.username = null;
 							}
@@ -1158,7 +1244,7 @@ var PermissionsWindow = Window.extend({
 					t.backToView(username);
 				}
 			},
-			errorFn: function(msg){
+			errorFn: function(error){
 				showError("Error while setting user permission: "+msg);
 				t.backToView(username);
 			}
@@ -2288,7 +2374,7 @@ var Component = Class.extend({
 				editor.rextfv_status_updater.add(t, 30);
 		 	},
 		 	errorFn: function(error) {
-		 		showError(error);
+		 		this.errorWindow = new errorWindow({error:error});
 		 		t.update();
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
 				editor.rextfv_status_updater.add(t, 5);
@@ -4146,6 +4232,7 @@ var Editor = Class.extend({
 		this.allowRestrictedTemplates= false;
 		this.allowRestrictedProfiles = false;
 		this.allowRestrictedNetworks = false;
+		this.isDebugUser = options.isDebugUser;
 		for (var i=0; i<this.options.user.flags.length; i++) {
 			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedProfiles = true;
 			if (this.options.user.flags[i] == "restricted_templates") this.allowRestrictedTemplates= true;

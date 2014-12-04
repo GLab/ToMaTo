@@ -8,12 +8,17 @@ class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE):
+	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=500,onscreenmessage=None):
 		self.type = type or self.TYPE
 		self.code = code
+		self.httpcode = httpcode
 		self.message = message
 		self.data = data or {}
 		self.module = module
+		if onscreenmessage is None:
+			self.onscreenmessage = message
+		else:
+			self.onscreenmessage = onscreenmessage
 		if todump is not None:
 			self.todump = todump
 		else:
@@ -67,7 +72,7 @@ class Error(Exception):
 	@classmethod
 	def check(cls, condition, code, message, todump=None, *args, **kwargs):
 		if condition: return
-		exception = cls(code=code, message=message, todump=todump, *args, **kwargs)
+		exception = cls(code=code, message=message,todump=todump, *args, **kwargs)
 		exception.dump()
 		raise exception
 
@@ -79,7 +84,7 @@ class Error(Exception):
 		return "%s %s error [%s]: %s (%r)" % (self.module, self.type, self.code, self.message or "", self.data)
 
 	def __repr__(self):
-		return "Error(module=%r, type=%r, code=%r, message=%r, data=%r)" % (self.module, self.type, self.code, self.message, self.data)
+		return "Error(module=%r, type=%r, code=%r, message=%r, data=%r, onscreenmessage=%r)" % (self.module, self.type, self.code, self.message, self.data,self.onscreenmessage)
 
 
 def ErrorType(Type):
