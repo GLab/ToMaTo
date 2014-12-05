@@ -552,7 +552,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 	def remove(self):
 		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		UserError.check(not self.elements.all(), code=UserError.NOT_EMPTY, message="Host still has active elements")
-		UserError.check(not self.connections.all(), "Host still has active connections")
+		UserError.check(not self.connections.all(), code=UserError.NOT_EMPTY, message="Host still has active connections")
 		logging.logMessage("remove", category="host", name=self.name)
 		try:
 			for res in self.getProxy().resource_list():
