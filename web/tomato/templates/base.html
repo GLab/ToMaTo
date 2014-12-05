@@ -129,7 +129,7 @@ head.appendChild(style);
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">{% if request.session.user.isHostManager %}Hosts/Resources{%else%}Info{%endif%} <span class="caret"></span></a>
 					<ul class="dropdown-menu">
-						<li><a href="{%url "organization.list"%}">Organizations</a></li>
+						<li><a href="{%url "admin.organization.list"%}">Organizations</a></li>
 						<li><a href="{%url "site.map"%}">Sites map</a></li>
 						{% if request.session.user %}
 							<li class="divider"></li>

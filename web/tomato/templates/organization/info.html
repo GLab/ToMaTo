@@ -9,7 +9,7 @@
 {% block content %}
 
 <form>
-  <button type="submit" formaction="{%url "organization.list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> All Organizations</button>
+  <button type="submit" formaction="{%url "admin.organization.list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> All Organizations</button>
 </form>
 
 <h1>Organization "{{organization.description}}"</h1>
@@ -54,12 +54,12 @@
   {%endif%}
   <button type="submit" formaction="{%url "organization_hosts" organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Hosts</button>
   <button type="submit" formaction="{%url "organization_external_networks" organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> External Network Instances</button>
-  <a class="btn btn-info" href="javascript:window.open('{%url "organization.usage" organization.name%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
+  <a class="btn btn-info" href="javascript:window.open('{%url "admin.organization.usage" organization.name%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
   {% if request.session.user and request.session.user|args:organization.name|call:"isHostManager" %}
 	<div class="skip-xs"></div>
 	<button type="submit" formaction="{%url "site.add" organization.name%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add Site</button>
-	<button type="submit" formaction="{%url "organization.edit" organization.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> Edit Organization</button>
-	<button type="submit" formaction="{%url "organization.remove" organization.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> Remove Organization</button>
+	<button type="submit" formaction="{%url "admin.organization.edit" organization.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> Edit Organization</button>
+	<button type="submit" formaction="{%url "admin.organization.remove" organization.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> Remove Organization</button>
   {% endif %}
 </form>
 

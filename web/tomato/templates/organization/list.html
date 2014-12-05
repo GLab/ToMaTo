@@ -14,7 +14,7 @@
 
 	{% if organizations|length > 10 and request.session.user and request.session.user.isGlobalHostManager %}
       <form>
-    	<button type="submit" formaction="{%url "organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
+    	<button type="submit" formaction="{%url "admin.organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
       </form>
 	{% endif %}
 
@@ -23,7 +23,7 @@
 	{% for orga in organizations %}
 		<div class="col-md-4 col-sm-6 col-xs-12">
 			<div class="organization">
-				<a href="{%url "organization.info" orga.name%}" style="color:black; text-decoration:none;">
+				<a href="{%url "admin.organization.info" orga.name%}" style="color:black; text-decoration:none;">
 					<div class="page-header"><h3>{{orga.description}}</h3></div>
 					
 					{% if orga.image_url %}
@@ -53,7 +53,7 @@
 
 {% if request.session.user and request.session.user.isGlobalHostManager %}
 	<form>
-	<button type="submit" formaction="{%url "organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
+	<button type="submit" formaction="{%url "admin.organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
 	</form>
 {% endif %}
 
