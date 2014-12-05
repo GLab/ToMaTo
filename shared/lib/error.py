@@ -188,9 +188,13 @@ type_translator = {
 				}
 
 def getCodeMsg(code, entity="Entity"):
+	if code is None:
+		return "Unknown Error Type"
 	return type_translator[code][0] % {'entity':entity}
 
 def getCodeHTTPErrorCode(code):
+	if code is None:
+		return httplib.INTERNAL_SERVER_ERROR
 	return type_translator[code][1]
 
 

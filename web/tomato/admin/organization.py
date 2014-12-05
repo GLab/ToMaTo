@@ -13,7 +13,7 @@ from django.core.urlresolvers import reverse
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc, AuthError
-from . import identical, add_function, edit_function, InputTransformerForm, RemoveConfirmForm
+from . import add_function, edit_function, remove_function, InputTransformerForm, RemoveConfirmForm
 
 
 
@@ -41,17 +41,17 @@ class OrganizationForm(InputTransformerForm):
             'description_text',
             self.buttons
         )
-        if self.is_valid():
-            self.helper.form_action = reverse(edit, kwargs={"name": self.cleaned_data["name"]})
         
 class AddOrganizationForm(OrganizationForm):
     title = "Add Organization"
+    formaction = "tomato.admin.organization.add"
     def __init__(self, *args, **kwargs):
         super(AddOrganizationForm, self).__init__(*args, **kwargs)
     
 class EditOrganizationForm(OrganizationForm):
     buttons = Buttons.cancel_save
     title = "Editing Organization '%(name)s'"
+    formaction = "tomato.admin.organization.edit"
     def __init__(self, *args, **kwargs):
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
@@ -59,7 +59,10 @@ class EditOrganizationForm(OrganizationForm):
         
     
 class RemoveOrganizationForm(RemoveConfirmForm):
-    pass
+    redirect_after = "tomato.admin.organization.list"
+    message="Are you sure you want to remove the organization '%(name)s'?"
+    title="Remove Organization '%(name)s'"
+        
     
 
 @wrap_rpc
@@ -94,8 +97,6 @@ def info(api, request, name):
 def add(api, request):
     return add_function(request,
                         Form=AddOrganizationForm,
-                        clean_formargs=[],
-                        clean_formkwargs={},
                         create_function=api.organization_create,
                         modify_function=api.organization_modify
                         )
@@ -104,26 +105,20 @@ def add(api, request):
 def edit(api, request, name=None):
     return edit_function(request,
                          Form=EditOrganizationForm,
-                         clean_formargs=[api.organization_info(name)],
-                         clean_formkwargs={},
                          modify_function=api.organization_modify,
-                         primary_value=name
+                         primary_value=name,
+                         clean_formargs=[api.organization_info(name)]
                          )
     
-    
-    
-    
-#still TODO
+
     
 @wrap_rpc
-def remove(api, request, name=None):
-    if request.method == 'POST':
-        form = RemoveConfirmForm(request.POST)
-        if form.is_valid():
-            api.organization_remove(name)
-            return HttpResponseRedirect(reverse("tomato.organization.list"))
-    form = RemoveConfirmForm.build(reverse("tomato.organization.remove", kwargs={"name": name}))
-    return render(request, "form.html", {"heading": "Remove Organization", "message_before": "Are you sure you want to remove the organization '"+name+"'?", 'form': form})
+def remove(api, request, name):
+    return remove_function(request,
+                           Form=RemoveOrganizationForm,
+                           delete_function=api.organization_remove,
+                           primary_value=name
+                           )
 
 @wrap_rpc
 def usage(api, request, name): #@ReservedAssignment

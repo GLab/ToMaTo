@@ -44,39 +44,47 @@ class RenderableForm(BootstrapForm):
     message = None
     def __init__(self, *args, **kwargs):
         super(RenderableForm, self).__init__(*args, **kwargs)
-        self.title = self.title % args[0]
-        if self.message is not None:
-            self.message = self.message % args[0]
     def create_response(self, request):
         args = {'form': self, "heading":self.title}
         if self.message is not None:
-            args['message'] = self.message
+            args['message_before'] = self.message
         return render(request, "form.html", args)
     
-class InputTransformerForm(RenderableForm):
+class ActionForm(RenderableForm):
+    formaction = None
+    primary_key = "id"
+    def __init__(self, *args, **kwargs):
+        super(ActionForm, self).__init__(*args, **kwargs)
+        found_form_action = False
+        if len(args)>0:
+            self.title = self.title % args[0]
+            if self.message is not None:
+                self.message = self.message % args[0]
+            if self.primary_key in args[0]:
+                self.helper.form_action = reverse(self.formaction, kwargs={self.primary_key: args[0][self.primary_key]})
+                found_form_action = True
+        if not found_form_action:
+            if self.is_valid():
+                self.helper.form_action = reverse(self.formaction, kwargs={self.primary_key: self.cleaned_data[self.primary_key]})
+    
+class InputTransformerForm(ActionForm):
     def get_values(self):
         return self.cleaned_data
 
 class ConfirmForm(RenderableForm):
-    @classmethod
-    def build(cls, action, buttons=Buttons.cancel_continue):
-        obj = cls()
-        obj.helper.form_action = action
-        obj.helper.layout = Layout(buttons)
-        return obj
+    buttons = Buttons.cancel_continue
+    def __init__(self, name, *args, **kwargs):
+        super(ConfirmForm, self).__init__(*args, **kwargs)
+        self.helper.layout = Layout(self.buttons)
+        self.message = self.message % {'name': name}
+        self.title = self.title % {'name': name}
 
 class RemoveConfirmForm(ConfirmForm):
-    @classmethod
-    def build(cls, action):
-        return ConfirmForm.build(action, Buttons.cancel_remove)
+    buttons = Buttons.cancel_remove
 
 
 
 
-#helper functions
-
-def identical(arg):
-    return arg
 
 
 
@@ -90,8 +98,8 @@ def identical(arg):
 
 def add_function(request, 
                  Form,
-                 clean_formargs, clean_formkwargs,
-                 create_function, modify_function):
+                 create_function, modify_function,
+                 clean_formargs=[], clean_formkwargs={}):
     if request.method == 'POST':
         print request.POST
         form = Form(request.POST)
@@ -115,8 +123,8 @@ def add_function(request,
 
 def edit_function(request,
                   Form,
-                  clean_formargs, clean_formkwargs,
-                  modify_function, 
+                  modify_function,
+                  clean_formargs=[], clean_formkwargs={},
                   primary_value = None):
     if request.method=='POST':
         form = Form(request.POST)
@@ -136,6 +144,17 @@ def edit_function(request,
         
 
 
-
+def remove_function(request,
+                    Form,
+                    delete_function,
+                    primary_value,
+                    clean_formargs=[], clean_formkwargs={}):
+    if request.method == 'POST':
+        form = Form(primary_value, request.POST)
+        if form.is_valid():
+            delete_function(primary_value)
+            return HttpResponseRedirect(reverse(form.redirect_after))
+    form = Form(primary_value)
+    return form.create_response(request)
 
 
