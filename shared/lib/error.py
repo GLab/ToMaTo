@@ -1,5 +1,6 @@
 import os, hashlib, json
 from dump import dumpError
+import httplib
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
@@ -8,13 +9,16 @@ class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=500,onscreenmessage=None):
+	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=None,onscreenmessage=None):
 		self.type = type or self.TYPE
 		self.code = code
-		self.httpcode = httpcode
 		self.message = message
 		self.data = data or {}
 		self.module = module
+		if httpcode is None:
+			self.httpcode = getCodeHTTPErrorCode(code)
+		else:
+			self.httpcode = httpcode
 		if onscreenmessage is None:
 			self.onscreenmessage = message
 		else:
@@ -131,7 +135,7 @@ class UserError(Error):
 	AMBIGUOUS = "ambiguous" # The request was ambiguous
 	ALREADY_EXISTS = "already_exists" # The object can not be created because it already exists
 	NO_RESOURCES = "no_resources" # No resources to satisfy this request
-	INVALID_DATA = "invalid data" #The user sent invalid data in a request (i.e., webfrontend forms)
+	INVALID_DATA = "invalid_value"
 
 
 @ErrorType
@@ -142,6 +146,52 @@ class TransportError(Error):
 	SSL = "ssl"
 	CONNECT = "connect"
 	RPC = "rpc"
+	
+	
+# This is used by other functions. It maps error types to onscreen error types (i.e., better readable), and HTTP response codes.
+type_translator = {
+				# The details here are not really interesting to the user since they cannot do something about it anyway.
+				# Thus, just show an internal error with code 500 in this case.
+				InternalError.HOST_ERROR:			("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.INVALID_NEXT_STATE:	("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.UPCAST:				("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.MUST_OVERRIDE:		("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.WRONG_DATA:			("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.INVALID_STATE:		("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.COMMAND_FAILED:		("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.INVALID_PARAMETER:	("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.CONFIGURATION_ERROR:	("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.RESOURCE_ERROR:		("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				InternalError.ASSERTION:			("Internal Error",httplib.INTERNAL_SERVER_ERROR),
+				
+				# These Errors are more important to the user
+				UserError.ENTITY_DOES_NOT_EXIST:	("%(entity)s not found",httplib.NOT_FOUND),
+				UserError.UNSUPPORTED_ACTION:		("Unsupported Action",httplib.METHOD_NOT_ALLOWED),
+				UserError.UNSUPPORTED_ATTRIBUTE:	("Unsupported Attribute",httplib.BAD_REQUEST),
+				UserError.INVALID_STATE:			("Invalid State",httplib.CONFLICT),
+				UserError.ENTITY_BUSY:				("%(entity)s Busy",httplib.CONFLICT),
+				UserError.UNABLE_TO_CONNECT:		("Unable to Connect",httplib.CONFLICT),
+				UserError.ALREADY_CONNECTED:		("Already Connected",httplib.CONFLICT),
+				UserError.DIFFERENT_USER:			("Different User",httplib.UNAUTHORIZED),
+				UserError.UNSUPPORTED_TYPE:			("Unsupported Type",httplib.BAD_REQUEST),
+				UserError.INVALID_CONFIGURATION:	("Invalid Configuration",httplib.BAD_REQUEST),
+				UserError.INVALID_VALUE:			("Invalid Value",httplib.BAD_REQUEST),
+				UserError.NO_DATA_AVAILABLE:		("No Data Available",httplib.CONFLICT),
+				UserError.COMMAND_FAILED:			("Command Failed",httplib.INTERNAL_SERVER_ERROR),
+				UserError.DENIED:					("Denied",httplib.UNAUTHORIZED),
+				UserError.NOT_LOGGED_IN:			("Not Logged in",httplib.UNAUTHORIZED),
+				UserError.NOT_EMPTY:				("Not Empty",httplib.CONFLICT),
+				UserError.TIMED_OUT:				("Timed Out",httplib.INTERNAL_SERVER_ERROR),
+				UserError.AMBIGUOUS:				("Ambiguous",httplib.BAD_REQUEST),
+				UserError.ALREADY_EXISTS:			("%s Already Exists",httplib.CONFLICT),
+				UserError.NO_RESOURCES:				("No Resources",httplib.SERVICE_UNAVAILABLE)
+				}
+
+def getCodeMsg(code, entity="Entity"):
+	return type_translator[code][0] % {'entity':entity}
+
+def getCodeHTTPErrorCode(code):
+	return type_translator[code][1]
 
 
 def assert_(condition, message, code=InternalError.ASSERTION, *args, **kwargs):
