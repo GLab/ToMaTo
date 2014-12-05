@@ -1,3 +1,23 @@
+# -*- coding: utf-8 -*-
+
+# ToMaTo (Topology management software) 
+# Copyright (C) 2014 Integrated Communication Systems Lab, University of Kaiserslautern
+#
+# This file is part of the ToMaTo project
+#
+# ToMaTo is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 '''
 Created on Dec 4, 2014
 
@@ -45,6 +65,7 @@ class OrganizationForm(InputTransformerForm):
 class AddOrganizationForm(OrganizationForm):
     title = "Add Organization"
     formaction = "tomato.admin.organization.add"
+    formaction_haskeys = False
     def __init__(self, *args, **kwargs):
         super(AddOrganizationForm, self).__init__(*args, **kwargs)
     
@@ -59,6 +80,8 @@ class EditOrganizationForm(OrganizationForm):
         
     
 class RemoveOrganizationForm(RemoveConfirmForm):
+    primary_key = 'name'
+    formaction = "tomato.admin.organization.remove"
     redirect_after = "tomato.admin.organization.list"
     message="Are you sure you want to remove the organization '%(name)s'?"
     title="Remove Organization '%(name)s'"
@@ -93,6 +116,15 @@ def info(api, request, name):
     return render(request, "organization/info.html", {'organization': orga, 'sites': sites})
 
 
+
+@wrap_rpc
+def usage(api, request, name): #@ReservedAssignment
+    if not api.user:
+        raise AuthError()
+    usage=api.organization_usage(name)
+    return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Organization %s' % name})
+
+
 @wrap_rpc
 def add(api, request):
     return add_function(request,
@@ -110,8 +142,6 @@ def edit(api, request, name=None):
                          clean_formargs=[api.organization_info(name)]
                          )
     
-
-    
 @wrap_rpc
 def remove(api, request, name):
     return remove_function(request,
@@ -119,10 +149,3 @@ def remove(api, request, name):
                            delete_function=api.organization_remove,
                            primary_value=name
                            )
-
-@wrap_rpc
-def usage(api, request, name): #@ReservedAssignment
-    if not api.user:
-        raise AuthError()
-    usage=api.organization_usage(name)
-    return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Organization %s' % name})

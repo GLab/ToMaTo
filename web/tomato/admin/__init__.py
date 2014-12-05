@@ -1,3 +1,25 @@
+# -*- coding: utf-8 -*-
+
+# ToMaTo (Topology management software) 
+# Copyright (C) 2014 Integrated Communication Systems Lab, University of Kaiserslautern
+#
+# This file is part of the ToMaTo project
+#
+# ToMaTo is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import copy
+
 from django import forms
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
@@ -8,6 +30,24 @@ from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from tomato.crispy_forms.helper import FormHelper
 
 from ..lib.error import UserError #@UnresolvedImport
+
+
+# helper functions
+def append_empty_choice(choicelist):
+    res = list(choicelist)
+    res.insert(0,("","Please Select:"))
+    return res
+
+def organization_name_list(api):
+    l = api.organization_list()
+    res = []
+    for organization in l:
+        res.append((organization["name"],organization["description"] or organization["name"]))
+    res.sort()
+    return res
+
+
+
 
 
 
@@ -31,28 +71,51 @@ class Buttons:
     cancel_remove =    createButtons(icon="trash", label="Remove", class_="btn-warning")
 
 class BootstrapForm(forms.Form):
+    helper = FormHelper()
     def __init__(self, *args, **kwargs):
         super(BootstrapForm, self).__init__(*args, **kwargs)
-        self.helper = FormHelper()
         self.helper.form_class = 'form-horizontal'
         self.helper.form_method = "post"
         self.helper.label_class = 'col-lg-4 col-sm-4'
         self.helper.field_class = 'col-lg-6 col-sm-8'
 
 class RenderableForm(BootstrapForm):
-    title = "Untitled"
+    title = "Untitled Form"
     message = None
+    message_after = None
     def __init__(self, *args, **kwargs):
         super(RenderableForm, self).__init__(*args, **kwargs)
     def create_response(self, request):
         args = {'form': self, "heading":self.title}
         if self.message is not None:
             args['message_before'] = self.message
+        if self.message_after is not None:
+            args['message_after'] = self.message_after
         return render(request, "form.html", args)
     
-class ActionForm(RenderableForm):
-    formaction = None
+class RedirectAfterForm(RenderableForm):
     primary_key = "id"
+    redirect_after = None
+    redirect_after_key = None
+    redirect_after_useargs = True
+    redirect_after_targetkey = None
+    def __init__(self, *args, **kwargs):
+        super(RedirectAfterForm, self).__init__(*args, **kwargs)
+        if self.redirect_after_key is None:
+            self.redirect_after_key = self.primary_key
+        if self.redirect_after_targetkey is None:
+            self.redirect_after_targetkey = self.redirect_after_key
+    def get_redirect_after(self, redirect_value = None):
+        if redirect_value is None:
+            redirect_value = self.cleaned_data[self.redirect_after_key]
+        kwargs = {}
+        if self.redirect_after_useargs:
+            kwargs = {self.redirect_after_targetkey:redirect_value}
+        return HttpResponseRedirect(reverse(self.redirect_after, kwargs=kwargs))
+    
+class ActionForm(RedirectAfterForm):
+    formaction = None
+    formaction_haskeys = True
     def __init__(self, *args, **kwargs):
         super(ActionForm, self).__init__(*args, **kwargs)
         found_form_action = False
@@ -60,18 +123,31 @@ class ActionForm(RenderableForm):
             self.title = self.title % args[0]
             if self.message is not None:
                 self.message = self.message % args[0]
+            if self.message_after is not None:
+                self.message_after = self.message_after % args[0]
             if self.primary_key in args[0]:
-                self.helper.form_action = reverse(self.formaction, kwargs={self.primary_key: args[0][self.primary_key]})
+                if self.formaction_haskeys:
+                    self.helper.form_action = reverse(self.formaction, kwargs={self.primary_key: args[0][self.primary_key]})
+                else:
+                    self.helper.form_action = reverse(self.formaction)
                 found_form_action = True
         if not found_form_action:
-            if self.is_valid():
+            if self.is_valid() and self.formaction_haskeys:
                 self.helper.form_action = reverse(self.formaction, kwargs={self.primary_key: self.cleaned_data[self.primary_key]})
-    
+            else:
+                self.helper.form_action = reverse(self.formaction)
+        
+            
 class InputTransformerForm(ActionForm):
+    def __init__(self, data=None, *args, **kwargs):
+        data = self.input_values(copy.deepcopy(data))
+        super(InputTransformerForm, self).__init__(*args, **kwargs)
+    def input_values(self, formData):
+        return formData
     def get_values(self):
-        return self.cleaned_data
+        return copy.deepcopy(self.cleaned_data)
 
-class ConfirmForm(RenderableForm):
+class ConfirmForm(RedirectAfterForm):
     buttons = Buttons.cancel_continue
     def __init__(self, name, *args, **kwargs):
         super(ConfirmForm, self).__init__(*args, **kwargs)
@@ -99,10 +175,11 @@ class RemoveConfirmForm(ConfirmForm):
 def add_function(request, 
                  Form,
                  create_function, modify_function,
+                 formargs=[], formkwargs={},
                  clean_formargs=[], clean_formkwargs={}):
     if request.method == 'POST':
         print request.POST
-        form = Form(request.POST)
+        form = Form(*formargs, data=request.POST, **formkwargs)
         if form.is_valid():
             formData = form.get_values()
             create_values = []
@@ -112,11 +189,12 @@ def add_function(request,
                 del formData[key]
             create_function(*create_values)
             modify_function(primary_value,formData)
-            return HttpResponseRedirect(reverse(form.redirect_after, kwargs={form.primary_key: primary_value}))
+            return form.get_redirect_after()
         else:
             return form.create_response(request)
     else:
-        form = Form(*clean_formargs, **clean_formkwargs)
+        clean_formkwargs.update(formkwargs)
+        form = Form(*(formargs + clean_formargs), **(clean_formkwargs) )
         return form.create_response(request)
 
 
@@ -124,22 +202,24 @@ def add_function(request,
 def edit_function(request,
                   Form,
                   modify_function,
+                  formargs=[], formkwargs={},
                   clean_formargs=[], clean_formkwargs={},
                   primary_value = None):
     if request.method=='POST':
-        form = Form(request.POST)
+        form = Form(*formargs, data=request.POST, **formkwargs)
         if form.is_valid():
             formData = form.get_values()
             primary_value = formData[form.primary_key]
             del formData[form.primary_key]
             modify_function(primary_value,formData)
-            return HttpResponseRedirect(reverse(form.redirect_after, kwargs={form.primary_key: primary_value}))
+            return form.get_redirect_after()
         if not primary_value:
             primary_value=request.POST[form.primary_key]
         UserError.check(primary_value, UserError.INVALID_DATA, "Form transmission failed.")
         return form.create_response(request)
     else:
-        form = Form(*clean_formargs,**clean_formkwargs)
+        clean_formkwargs.update(formkwargs)
+        form = Form(*(formargs + clean_formargs), **(clean_formkwargs) )
         return form.create_response(request)
         
 
@@ -148,12 +228,13 @@ def remove_function(request,
                     Form,
                     delete_function,
                     primary_value,
+                    formargs=[], formkwargs={},
                     clean_formargs=[], clean_formkwargs={}):
     if request.method == 'POST':
-        form = Form(primary_value, request.POST)
+        form = Form(*formargs, name=primary_value, data=request.POST, **formkwargs)
         if form.is_valid():
             delete_function(primary_value)
-            return HttpResponseRedirect(reverse(form.redirect_after))
+            return form.get_redirect_after()
     form = Form(primary_value)
     return form.create_response(request)
 

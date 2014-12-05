@@ -1,5 +1,8 @@
 eclipse.preferences.version=1
 encoding//tomato/account.py=utf-8
+encoding//tomato/admin/__init__.py=utf-8
+encoding//tomato/admin/organization.py=utf-8
+encoding//tomato/admin/site.py=utf-8
 encoding//tomato/admin_common.py=utf-8
 encoding//tomato/ajax.py=utf-8
 encoding//tomato/connection.py=utf-8
@@ -23,7 +26,7 @@ encoding//tomato/lib/__init__.py=utf-8
 encoding//tomato/main.py=utf-8
 encoding//tomato/profile.py=utf-8
 encoding//tomato/settings.py=utf-8
-encoding//tomato/site.py=utf-8
+encoding//tomato/site_map.py=utf-8
 encoding//tomato/template.py=utf-8
 encoding//tomato/topology.py=utf-8
 encoding//tomato/tutorial.py=utf-8
