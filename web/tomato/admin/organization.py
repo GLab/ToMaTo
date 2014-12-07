@@ -33,11 +33,11 @@ from django.core.urlresolvers import reverse
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc, AuthError
-from . import add_function, edit_function, remove_function, InputTransformerForm, RemoveConfirmForm
+from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm
 
 
 
-class OrganizationForm(InputTransformerForm):
+class OrganizationForm(AddEditForm):
     
     name = forms.CharField(max_length=50, help_text="The name of the organization. Must be unique to all organizations. e.g.: ukl")
     description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
@@ -80,11 +80,12 @@ class EditOrganizationForm(OrganizationForm):
         
     
 class RemoveOrganizationForm(RemoveConfirmForm):
-    primary_key = 'name'
+    redirect_after_useargs = False
     formaction = "tomato.admin.organization.remove"
     redirect_after = "tomato.admin.organization.list"
     message="Are you sure you want to remove the organization '%(name)s'?"
     title="Remove Organization '%(name)s'"
+    primary_key = 'name'
         
     
 

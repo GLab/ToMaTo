@@ -30,6 +30,7 @@ from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from tomato.crispy_forms.helper import FormHelper
 
 from ..lib.error import UserError #@UnresolvedImport
+from django.template.defaultfilters import title
 
 
 # helper functions
@@ -99,6 +100,7 @@ class RedirectAfterForm(RenderableForm):
     redirect_after_key = None
     redirect_after_useargs = True
     redirect_after_targetkey = None
+    redirect_after_targetvalue = None
     def __init__(self, *args, **kwargs):
         super(RedirectAfterForm, self).__init__(*args, **kwargs)
         if self.redirect_after_key is None:
@@ -107,7 +109,10 @@ class RedirectAfterForm(RenderableForm):
             self.redirect_after_targetkey = self.redirect_after_key
     def get_redirect_after(self, redirect_value = None):
         if redirect_value is None:
-            redirect_value = self.cleaned_data[self.redirect_after_key]
+            if self.redirect_after_targetvalue is not None:
+                redirect_value = self.redirect_after_targetvalue
+            else:
+                redirect_value = self.cleaned_data[self.redirect_after_key]
         kwargs = {}
         if self.redirect_after_useargs:
             kwargs = {self.redirect_after_targetkey:redirect_value}
@@ -116,9 +121,17 @@ class RedirectAfterForm(RenderableForm):
 class ActionForm(RedirectAfterForm):
     formaction = None
     formaction_haskeys = True
+    formaction_key = None
+    formaction_targetkey = None
+    formaction_targetvalue = None
     def __init__(self, *args, **kwargs):
+        print self.formaction_targetvalue
         super(ActionForm, self).__init__(*args, **kwargs)
         found_form_action = False
+        if self.formaction_key is None:
+            self.formaction_key = self.primary_key
+        if self.formaction_targetkey is None:
+            self.formaction_targetkey = self.formaction_key
         if len(args)>0:
             self.title = self.title % args[0]
             if self.message is not None:
@@ -127,13 +140,19 @@ class ActionForm(RedirectAfterForm):
                 self.message_after = self.message_after % args[0]
             if self.primary_key in args[0]:
                 if self.formaction_haskeys:
-                    self.helper.form_action = reverse(self.formaction, kwargs={self.primary_key: args[0][self.primary_key]})
+                    target_value = self.formaction_targetvalue
+                    if target_value is None:
+                        target_value = args[0][self.primary_key]
+                    self.helper.form_action = reverse(self.formaction, kwargs={self.formaction_targetkey: target_value})
                 else:
                     self.helper.form_action = reverse(self.formaction)
                 found_form_action = True
+        if (not found_form_action) and self.formaction_haskeys and self.formaction_targetvalue is not None:
+            self.helper.form_action = reverse(self.formaction, kwargs={self.formaction_targetkey: self.formaction_targetvalue})
+            found_form_action = True
         if not found_form_action:
             if self.is_valid() and self.formaction_haskeys:
-                self.helper.form_action = reverse(self.formaction, kwargs={self.primary_key: self.cleaned_data[self.primary_key]})
+                self.helper.form_action = reverse(self.formaction, kwargs={self.formaction_targetkey: self.cleaned_data[self.primary_key]})
             else:
                 self.helper.form_action = reverse(self.formaction)
         
@@ -141,15 +160,28 @@ class ActionForm(RedirectAfterForm):
 class InputTransformerForm(ActionForm):
     def __init__(self, data=None, *args, **kwargs):
         data = self.input_values(copy.deepcopy(data))
-        super(InputTransformerForm, self).__init__(*args, **kwargs)
+        super(InputTransformerForm, self).__init__(*args, data=data, **kwargs)
     def input_values(self, formData):
         return formData
     def get_values(self):
         return copy.deepcopy(self.cleaned_data)
+    
+class AddEditForm(InputTransformerForm):
+    def __init__(self, data=None, *args, **kwargs):
+        super(AddEditForm, self).__init__(data=data, *args, **kwargs)
+        if data is not None:
+            self.title = self.title % data
+            if self.message is not None:
+                self.message = self.message % data
+            if self.message_after is not None:
+                self.message_after = self.message_after % data
 
-class ConfirmForm(RedirectAfterForm):
+class ConfirmForm(ActionForm):
     buttons = Buttons.cancel_continue
+    formaction_haskeys = True
     def __init__(self, name, *args, **kwargs):
+        self.formaction_targetvalue = name
+        self.redirect_after_targetvalue = name
         super(ConfirmForm, self).__init__(*args, **kwargs)
         self.helper.layout = Layout(self.buttons)
         self.message = self.message % {'name': name}
@@ -178,7 +210,6 @@ def add_function(request,
                  formargs=[], formkwargs={},
                  clean_formargs=[], clean_formkwargs={}):
     if request.method == 'POST':
-        print request.POST
         form = Form(*formargs, data=request.POST, **formkwargs)
         if form.is_valid():
             formData = form.get_values()

@@ -145,11 +145,11 @@ class EditSiteForm(SiteForm):
     
 class RemoveSiteForm(RemoveConfirmForm):
     redirect_after_useargs = False
-    redirect_after = "tomato.admin.site.list"
     formaction = "tomato.admin.site.remove"
-    formaction_haskeys = False
+    redirect_after = "tomato.admin.site.list"
     message="Are you sure you want to remove the site '%(name)s'?"
     title="Remove Site '%(name)s'"
+    primary_key = 'name'
     
     
 @wrap_rpc
