@@ -1,0 +1,31 @@
+{% extends "main/base.html" %}
+{% load tomato %}
+
+{% block title %}
+<title>Error page - G-Lab ToMaTo</title> 
+{% endblock %}
+
+{% block content %}
+<h1>An Exception Occured.</h1>
+
+
+
+<b>Type:</b> {{type}}<br/>
+<b>Description:</b> {{text}}<br/>
+
+{% if request.session.user.hasDebugFlag %}
+<br/><b>Traceback:</b><table><tbody>
+{% for t in traceback %}
+<tr>
+	<td rowspan=2><small>{{t.0}}</small>, line {{t.1}}</td><td style="padding-left: 0.8cm;"><small>in</small> <tt>{{t.2}}</tt></td>
+</tr>
+<tr>
+	<td style="padding-left: 1cm; padding-bottom: 0.5cm;"><tt>{{t.3}}</tt></td>
+</tr>
+{% endfor %}
+</tbody></table>
+{% else %}
+	<p>If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" target="_help">file a bug report</a>.</p>
+{% endif %}
+
+{% endblock %}

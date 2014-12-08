@@ -5,7 +5,7 @@ Created on Nov 20, 2014
 '''
 from error import Error, UserError, InternalError, getCodeMsg #@UnresolvedImport
 from django.shortcuts import render, redirect
-import xmlrpclib, json, socket
+import xmlrpclib, json, socket, sys
 from django.http import HttpResponse
 
 def interpretError(error):
@@ -70,7 +70,8 @@ def renderFault (request, fault):
         etype = fault.__class__.__name__
         ecode = ""
         etext = fault.message
-    return render(request, "error/fault.html", {'type': etype, 'code': ecode, 'text': etext}, status=500)
+    _, _, etraceback =sys.exc_info()
+    return render(request, "error/exception.html", {'type': etype, 'text': etext, 'traceback': traceback.extract_tb(etraceback)}, status=500)
         
 def renderMessage(request, message, heading=None, data={}, responsecode=500):
     debuginfos = []
