@@ -39,7 +39,7 @@ from django.core.urlresolvers import reverse
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc, AuthError
-from . import add_function, edit_function, remove_function, InputTransformerForm, RemoveConfirmForm, append_empty_choice, organization_name_list
+from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list
 
 
 geolocation_script = '<script>\n\
@@ -75,7 +75,7 @@ geolocation_script = '<script>\n\
     </script>'
 
 
-class SiteForm(InputTransformerForm):
+class SiteForm(AddEditForm):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
     description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
     description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)

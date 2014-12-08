@@ -61,9 +61,9 @@
 <form>
   <button type="submit" 
   {%if site%}
-    formaction="{%url "host.add" site%}"
+    formaction="{%url "admin.host.add" site%}"
   {%else%}
-    formaction="{%url "host.add"%}" 
+    formaction="{%url "admin.host.add"%}" 
   {%endif%}
   class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
 </form>
@@ -121,7 +121,7 @@
 	    		{% endif %}
 			{% endif %}
 			
-	    	<td><a href="{%url "host.info" host.name %}">{{host.name}}</a></td>
+	    	<td><a href="{%url "admin.host.info" host.name %}">{{host.name}}</a></td>
 
 	    	<td>{{host.address}}</td>
 	    	
@@ -234,9 +234,9 @@
 <form>
   <button type="submit" 
   {%if site%}
-    formaction="{%url "host.add" site%}"
+    formaction="{%url "admin.host.add" site%}"
   {%else%}
-    formaction="{%url "host.add"%}" 
+    formaction="{%url "admin.host.add"%}" 
   {%endif%}
   class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
 </form>

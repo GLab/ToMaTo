@@ -116,16 +116,6 @@ def info(api, request, name):
     sites = api.site_list(organization=name)
     return render(request, "organization/info.html", {'organization': orga, 'sites': sites})
 
-
-
-@wrap_rpc
-def usage(api, request, name): #@ReservedAssignment
-    if not api.user:
-        raise AuthError()
-    usage=api.organization_usage(name)
-    return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Organization %s' % name})
-
-
 @wrap_rpc
 def add(api, request):
     return add_function(request,
