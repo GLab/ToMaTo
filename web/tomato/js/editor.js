@@ -3060,7 +3060,14 @@ var Element = Component.extend({
 				});
 				var t = this;							
 				var div = $('<div/>');
-				this.upload_form = $('<form method="post" id="upload_form" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\');"/></form>');
+				this.upload_form = $('<form method="post" id="upload_form" enctype="multipart/form-data" action="'+url+'" target="upload_target">\
+								<div class="input-group">\
+				                    <span class="btn btn-primary btn-file input-group-btn">\
+				                        Browse <input type="file" name="upload" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\'); $(this).parents(\'.input-group\').find(\':text.form-control\').val(this.value.replace(/\\\\/g, \'/\').replace(/.*\\//, \'\'));"/>\
+				                    </span>\
+									<input type="text" class="form-control" readonly>\
+								</div>\
+						</form>');
 				div.append(this.upload_form);
 				this.info = new Window({
 					title: window_title, 
