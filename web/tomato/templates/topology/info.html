@@ -52,7 +52,6 @@
   {% if tutorial_info.state.enabled %}
   var tutorial_base_url = "{{tutorial_info.data.base_url}}";
   var tutorial_steps = {{tutorial_info.steps|safe}};
-  var tutorial_state__initial = {{tutorial_info.state.data|jsonify}}
   {% endif %}
   
   var editor = new Editor({

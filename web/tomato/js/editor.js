@@ -690,9 +690,12 @@ var TutorialWindow = Window.extend({
 	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.tutorialVisible) { //don't waste cpu time if not needed... trigger function may be complex.
 			if (this.tutorialSteps[this.tutorialState.step].trigger != undefined) {
-				if (this.tutorialSteps[this.tutorialState.step].trigger(triggerObj)) {
-					this.tutorialGoForth();
+				try {
+					if (this.tutorialSteps[this.tutorialState.step].trigger(triggerObj)) {
+						this.tutorialGoForth();
+					}
 				}
+				finally {}
 			}
 		}
 	},

@@ -13,7 +13,7 @@ function getTutorialData() {
 	if (editor != undefined) {
 		return editor.workspace.tutorialWindow.getData();
 	} else {
-		return tutorial_state__initial
+		return false;
 	}
 }
 
