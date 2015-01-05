@@ -29,8 +29,9 @@
 		<br/>\
 		<p class="tutorialCommand">Add 3 OpenVZ nodes around the switch and name them <i>node1</i>, <i>node2</i> and <i>node3</i></p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp1) tutorial_data.tmp1 = 0;
-			if (! tutorial_data.tmp2) tutorial_data.tmp2 = 0;
+			var data = getTutorialData();
+			if (! data.tmp1) data.tmp1 = 0;
+			if (! data.tmp2) data.tmp2 = 0;
 			if (compareToMask(event, {
 				operation: "create",
 				component: "element",
@@ -38,17 +39,19 @@
 				attrs: {
 					type: "openvz"
 				},
-			})) tutorial_data.tmp1++;
+			})) data.tmp1++;
 			if (compareToMask(event, {
 				operation: "modify",
 				component: "element",
 				phase: "end"
-			})) tutorial_data.tmp2++;
-			if (tutorial_data.tmp1 >= 3 && tutorial_data.tmp2 >= 3) {
-				tutorial_data.tmp1 = 0;
-				tutorial_data.tmp2 = 0;
+			})) data.tmp2++;
+			if (data.tmp1 >= 3 && data.tmp2 >= 3) {
+				data.tmp1 = 0;
+				data.tmp2 = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data)
 			return false;
 		}
 	},
@@ -56,16 +59,19 @@
 		text: '<p class="tutorialExplanation">Now connect everything with the switch.</p><br/>\
 		<p class="tutorialCommand">Connect the 3 nodes with to the switch.</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			if (compareToMask(event, {
 				operation: "create",
 				component: "connection",
 				phase: "end"
-			})) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 3) {
-				tutorial_data.tmp = 0;
+			})) data.tmp++;
+			if (data.tmp >= 3) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		}
 	},
@@ -81,16 +87,19 @@
 		</p>\
 		<p class="tutorialCommand">Configure the IP addresses of the nodes.</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			if (compareToMask(event, {
 				operation: "modify",
 				component: "element",
 				phase: "end"
-			})) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 3) {
-				tutorial_data.tmp = 0;
+			})) data.tmp++;
+			if (data.tmp >= 3) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		}
 	},
@@ -99,17 +108,20 @@
 		<br/>\
 		<p class="tutorialCommand">Start the topology.</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			if (compareToMask(event, {
 				operation: "action",
 				component: "element",
 				phase: "end",
 				action: "start"
-			})) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 4) {
-				tutorial_data.tmp = 0;
+			})) data.tmp++;
+			if (data.tmp >= 4) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		}
 	},
@@ -189,17 +201,20 @@
 		text: '<p class="tutorialExplanation">Now we are ready and can start the switch and controller again.</p><br/>\
 		<p class="tutorialCommand">Start the switch and the controller.</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			if (compareToMask(event, {
 				operation: "action",
 				component: "element",
 				phase: "end",
 				action: "start"
-			})) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-				tutorial_data.tmp = 0;
+			})) data.tmp++;
+			if (data.tmp >= 2) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		}
 	},

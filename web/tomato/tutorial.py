@@ -57,9 +57,15 @@ def start(api, request):
 		request.session["id"] = session_id
 		form = ConfirmForm.build(reverse("tomato.tutorial.start")+"?"+urllib.urlencode({"token": correct_token, "url": url}))
 		return render(request, "form.html", {"heading": "Load tutorial", "message_before": "Are you sure you want to load the tutorial from the following URL? <pre>"+url+"</pre>", 'form': form})
-	_, _, top_dict = loadTutorial(url)
-	top_dict['topology']['attrs']['_tutorial_url'] = url
-	top_dict['topology']['attrs']['_tutorial_status'] = 0
+	tut_inf, _, top_dict = loadTutorial(url)
+	data = {}
+	if 'initial_data' in tut_inf:
+		data = tut_inf['initial_data']
+		
+	top_dict['topology']['attrs']['_tutorial_state'] = {'enabled': True,
+														'url': url,
+													    'step': 0,
+													    'data': data}
 	top_id, _, _, _ = api.topology_import(top_dict)
 	return redirect("tomato.topology.info", id=top_id)
 

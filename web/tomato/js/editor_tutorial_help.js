@@ -9,6 +9,14 @@ compareToMask ( {a:1} , {a:2} ) == false      (first object has property "a", bu
 compareToMask ( { x: {a:1, b:2} , y: 4 } , { x: {a:1} } ) == true      (check is done recursively)
 */
 
+function getTutorialData() {
+	return editor.tutorialWindow.getData();
+}
+
+function setTutorialData(data) {
+	return editor.tutorialWindow.setData(data);
+}
+
 function compareToMask (obj,mask) {
 
 	//check if both are no objects. If yes, return the result of comparing them

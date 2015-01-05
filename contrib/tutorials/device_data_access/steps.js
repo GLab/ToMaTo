@@ -9,19 +9,21 @@
 			},
 			{
 			trigger:function(obj) {
-					
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 				var match = compareToMask(obj, {
 					action: "prepare",
 					component: "element",
 					operation: "action",
 					phase: "end"
 				});
-				if (match) tutorial_data.tmp++;
-				if (tutorial_data.tmp >= 2) {
-					tutorial_data.tmp = 0;
+				if (match) data.tmp++;
+				if (data.tmp >= 2) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 				}
+				setTutorialData(data);
 				return false;
 	
 				
@@ -92,18 +94,21 @@ The simulation will create some output on your console and also create data in a
 			},
 			{
 			trigger: function(obj) { 
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 				var match = compareToMask(obj, {
 					action: "stop",
 					component: "element",
 					operation: "action",
 					phase: "end"
 				});
-				if (match) tutorial_data.tmp++;
-				if (tutorial_data.tmp >= 2) {
-					tutorial_data.tmp = 0;
+				if (match) data.tmp++;
+				if (data.tmp >= 2) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 				}
+				setTutorialData(data)
 				return false;
 			},
 			text:	'<p class="tutorialExplanation">\
@@ -123,7 +128,8 @@ The simulation will create some output on your console and also create data in a
 			},
 			{
 			trigger: function(obj) { 
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 				var match = compareToMask(obj, {
 					component: "element",
 					operation: "create",
@@ -136,17 +142,19 @@ The simulation will create some output on your console and also create data in a
 						}
 					},
 				}); 
-				if(match) tutorial_data.tmp++;
+				if(match) data.tmp++;
 				match = compareToMask(obj, {
 					component: "connection",
 					operation: "create",
 					phase: "end",
 				});
-				if(match) tutorial_data.tmp++;
+				if(match) data.tmp++;
 				if(match>=2) {
-					tutorial_data.tmp = 0;
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 				}
+				setTutorialData(data);
 				return false;
 			},
 			text:	'</p>\
@@ -183,18 +191,21 @@ The simulation will create some output on your console and also create data in a
 			},
 			{
 			trigger: function(obj) { 
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 				var match = compareToMask(obj, {
 					action: "start",
 					component: "element",
 					operation: "action",
 					phase: "end"
 				});
-				if (match) tutorial_data.tmp++;
-				if (tutorial_data.tmp >= 2) {
-					tutorial_data.tmp = 0;
+				if (match) _data.tmp++;
+				if (data.tmp >= 2) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 				}
+				setTutorialData(data);
 				return false;
 			},
 			text:	'<p class="tutorialExplanation">\

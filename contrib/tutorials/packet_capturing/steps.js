@@ -7,17 +7,18 @@
 			},
 			{
 			trigger:function(obj) {
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 				var match = compareToMask(obj, {
 					action: "start",
 					component: "element",
 					operation: "action",
 					phase: "end"
 				});
-				if (match) tutorial_data.tmp++;
-				console.log("tutorial_data.tmp: "+tutorial_data.tmp);				
-				if (tutorial_data.tmp >= 3) {
-					tutorial_data.tmp = 0;
+				if (match) data.tmp++;
+				console.log("tutorial_data.tmp: "+data.tmp);				
+				if (data.tmp >= 3) {
+					data.tmp = 0;
 					return true;
 				}
 				return false;

@@ -622,7 +622,7 @@ var TutorialWindow = Window.extend({
 				
 			this.editor = options.editor
 				
-			this.tutorialStatus = options.tutorial_status || 0;
+			this.tutorialState = options.tutorial_state;
 			
 			//create UI
 			var t = this
@@ -664,23 +664,23 @@ var TutorialWindow = Window.extend({
 		this.tutorialVisible = vis;
 	},
 	tutorialGoBack: function() {
-		if (this.tutorialStatus > 0) {
-			this.tutorialStatus--;
+		if (this.tutorialState.step > 0) {
+			this.tutorialState.step--;
 			this.skipButton.show();
 			this.closeButton.hide();
 		}
-		if (this.tutorialStatus == 0) {
+		if (this.tutorialState.step == 0) {
 			this.backButton.hide();
 		}
 		this.updateText();
 		this.updateStatusToBackend();
 	},
 	tutorialGoForth: function() {
-		if (this.tutorialStatus + 1 < this.tutorialSteps.length) {
-			this.tutorialStatus++;	
+		if (this.tutorialState.step + 1 < this.tutorialSteps.length) {
+			this.tutorialState.step++;	
 			this.backButton.show();
 		}
-		if (this.tutorialStatus + 1 == this.tutorialSteps.length) {
+		if (this.tutorialState.step + 1 == this.tutorialSteps.length) {
 			this.skipButton.hide();
 			this.closeButton.show();
 		}
@@ -689,8 +689,8 @@ var TutorialWindow = Window.extend({
 	},
 	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.tutorialVisible) { //don't waste cpu time if not needed... trigger function may be complex.
-			if (this.tutorialSteps[this.tutorialStatus].trigger != undefined) {
-				if (this.tutorialSteps[this.tutorialStatus].trigger(triggerObj)) {
+			if (this.tutorialSteps[this.tutorialState.step].trigger != undefined) {
+				if (this.tutorialSteps[this.tutorialState.step].trigger(triggerObj)) {
 					this.tutorialGoForth();
 				}
 			}
@@ -701,13 +701,13 @@ var TutorialWindow = Window.extend({
 		this.tutorialSteps = tutorial_steps
 		
 		//set visible buttons
-		if (this.tutorialStatus == 0) {
+		if (this.tutorialState.step == 0) {
 			this.backButton.hide();
 			this.skipButton.show();
 			this.closeButton.hide();
 		} else {
 			this.backButton.show();
-			if (this.tutorialStatus == this.tutorialSteps.length - 1) {
+			if (this.tutorialState.step == this.tutorialSteps.length - 1) {
 				this.skipButton.hide();
 				this.closeButton.show();
 			} else {
@@ -721,16 +721,16 @@ var TutorialWindow = Window.extend({
 	},
 	updateText: function() {
 		if (!this.tutorialVisible) return;
-		var text = this.tutorialSteps[this.tutorialStatus].text;
+		var text = this.tutorialSteps[this.tutorialState.step].text;
 		this.text.empty();
 		this.text.append(text);
 
-		this.setTitle("Tutorial [" + (this.tutorialStatus+1) + "/" + this.tutorialSteps.length + "]");
+		this.setTitle("Tutorial [" + (this.tutorialState.step+1) + "/" + this.tutorialSteps.length + "]");
 		
 		//dirty hack: un-set the window's height property
 		this.div[0].style.height = "";
 		
-		var helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
+		var helpUrl=this.tutorialSteps[this.tutorialState.step].help_page;
 		if (helpUrl) {
 			this.helpLinkTarget=help_baseUrl+"/"+helpUrl;
 			this.helpButton.show();
@@ -738,18 +738,25 @@ var TutorialWindow = Window.extend({
 			this.helpButton.hide();
 		}
 		
-		var skipButtonText = this.tutorialSteps[this.tutorialStatus].skip_button;
+		var skipButtonText = this.tutorialSteps[this.tutorialState.step].skip_button;
 		if (skipButtonText) {
 			this.skipButton[0].value = skipButtonText;
 		} else {
 			this.skipButton[0].value = "Skip";
 		}
 	},
+	getData: function() {
+		return this.tutorialState.data;
+	},
+	setData: function(data) {
+		this.tutorialState.data = data;
+		this.updateStatusToBackend();
+	}
 	updateStatusToBackend: function() {
 		ajax({
 			url: 'topology/'+this.editor.topology.id+'/modify',
 		 	data: {attrs: {
-		 					_tutorial_status: this.tutorialStatus
+		 					_tutorial_state: this.tutorialState
 		 					},
 		 			}
 		});
@@ -1324,7 +1331,7 @@ var Workspace = Class.extend({
 			width:500,
 			closeOnEscape: false,
 			tutorialVisible:this.editor.options.tutorial,
-			tutorial_status:this.editor.options.tutorial_status,
+			tutorial_state:this.editor.options.tutorial_state,
 			hideCloseButton: true,
 			editor: this.editor
 		});
