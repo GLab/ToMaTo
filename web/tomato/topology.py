@@ -79,7 +79,7 @@ def _display(api, request, info, tutorial_state):
 		'res_json': json.dumps(res),
 		'sites_json': json.dumps(sites),
 		'caps_json': json.dumps(caps),
-		'tutorial_info': {'state': tutorial_state,
+		'tutorial_info':{'state': tutorial_state,
 						 'steps':tut_steps,
 						 'data': tut_data},
 		'permission_list':permission_list,
@@ -94,7 +94,7 @@ def info(api, request, id): #@ReservedAssignment
 	info=api.topology_info(id)
 	
 	#Load Tutorial.
-	tutorial_state = {}
+	tutorial_state = {'enabled':False}
 	#Legacy Tutorial saves (#TODO: remove this in the next release) 
 	tut_stat = None
 	tut_url = None
@@ -106,15 +106,13 @@ def info(api, request, id): #@ReservedAssignment
 			tut_url = info['attrs']['_tutorial_url']
 			if info['attrs'].has_key('_tutorial_status'):
 				tut_stat = info['attrs']['_tutorial_status']
-		tutorial_state = {'enabled':True,
+			tutorial_state = {'enabled':True,
 						  'url':tut_url,
-						  'step':tut_stat}
+						  'step':tut_stat,
+						  'data':{}}
 	#New Tutorial saves. These have higher preference than the legacy ones
 	if info['attrs'].has_key('_tutorial_state'):
-		if info['attrs']['_tutorial_state']['enabled']:
-			tutorial_state = info['attrs']['_tutorial_state']
-		else:
-			tutorial_state = {}
+		tutorial_state = info['attrs']['_tutorial_state']
 				
 	return _display(api, request, info, tutorial_state);
 

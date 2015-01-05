@@ -19,7 +19,7 @@
 <script language="JavaScript" type="text/javascript" src="js/editor.js"></script>
 
 
-{% if tutorial_info %}
+{% if tutorial_info.state.enabled %}
 	<script language="JavaScript" type="text/javascript" src="js/editor_tutorial_help.js"></script>
 {% endif %}
 
@@ -49,19 +49,20 @@
 <script language="JavaScript" type="text/javascript">
   display_issues($("#browser_issues"));
   help_baseUrl = "{%externalurl 'help' %}";
-  {% if tutorial_info %}
+  {% if tutorial_info.state.enabled %}
   var tutorial_base_url = "{{tutorial_info.data.base_url}}";
   var tutorial_steps = {{tutorial_info.steps|safe}};
+  var tutorial_state__initial = {{tutorial_info.state.data|jsonify}}
   {% endif %}
   
   var editor = new Editor({
   	menu_container: $('#menu'),
   	workspace_container: $('#workspace'),
-  	{% if tutorial_info %}
-  		tutorial: true,
-		tutorial_state: {{tutorial_info.state}},
+  	{% if tutorial_info.state.enabled %}
+  		tutorial_show: true,
+		tutorial_state: {{tutorial_info.state|jsonify}},
   	{% else %}
-  		tutorial:false,
+  		tutorial_show:false,
   	{% endif %}
   	
   	safe_mode: true,

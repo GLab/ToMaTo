@@ -10,11 +10,15 @@ compareToMask ( { x: {a:1, b:2} , y: 4 } , { x: {a:1} } ) == true      (check is
 */
 
 function getTutorialData() {
-	return editor.tutorialWindow.getData();
+	if (editor != undefined) {
+		return editor.workspace.tutorialWindow.getData();
+	} else {
+		return tutorial_state__initial
+	}
 }
 
 function setTutorialData(data) {
-	return editor.tutorialWindow.setData(data);
+	if (editor != undefined) return editor.workspace.tutorialWindow.setData(data);
 }
 
 function compareToMask (obj,mask) {

@@ -751,7 +751,7 @@ var TutorialWindow = Window.extend({
 	setData: function(data) {
 		this.tutorialState.data = data;
 		this.updateStatusToBackend();
-	}
+	},
 	updateStatusToBackend: function() {
 		ajax({
 			url: 'topology/'+this.editor.topology.id+'/modify',
@@ -1330,7 +1330,7 @@ var Workspace = Class.extend({
 			buttons: {},
 			width:500,
 			closeOnEscape: false,
-			tutorialVisible:this.editor.options.tutorial,
+			tutorialVisible:this.editor.options.tutorial_show,
 			tutorial_state:this.editor.options.tutorial_state,
 			hideCloseButton: true,
 			editor: this.editor
