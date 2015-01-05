@@ -4289,6 +4289,7 @@ var Editor = Class.extend({
 						if (t.topology.data.attrs._initialized!=undefined)
 							t.topology.initialDialog();
 				t.workspace.updateTopologyTitle();
+				t.options.onready();
 			}
 		});
 

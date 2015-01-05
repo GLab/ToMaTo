@@ -66,10 +66,10 @@ def _display(api, request, info, tutorial_state):
 		del s['organization']
 		s['organization'] = orga
 
-	tut_data, tut_steps = None, None
+	tut_data, tut_steps, initscript = None, None, None
 	try:
 		if tutorial_state['url']:
-			tut_data, tut_steps, _ = loadTutorial(tutorial_state['url'])
+			tut_data, tut_steps, _, _, initscript = loadTutorial(tutorial_state['url'])
 	except:
 		pass
 
@@ -81,7 +81,8 @@ def _display(api, request, info, tutorial_state):
 		'caps_json': json.dumps(caps),
 		'tutorial_info':{'state': tutorial_state,
 						 'steps':tut_steps,
-						 'data': tut_data},
+						 'data': tut_data,
+						 'initscript': initscript},
 		'permission_list':permission_list,
 	})	
 	return res

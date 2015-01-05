@@ -74,10 +74,18 @@
   	isGlobalOwner: "{{user.flags.global_owner}}",
   	isDebugUser: {{request.session.user.hasDebugFlag|jsonify}},
   	permission_list: {{permission_list|safe}},
-  	error_message_appendix: 'If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}" style="color: blue;" target="_blank">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" style="color: blue;" target="_help">file a bug report</a>.'
-
+  	error_message_appendix: 'If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}" style="color: blue;" target="_blank">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" style="color: blue;" target="_help">file a bug report</a>.',
+	onready: function(){
+		{% if tutorial_info.state.enabled %}
+		{{tutorial_info.initscript|safe}}
+		{%endif%}
+	}
   	
   });
+  
+
+  
+  
 </script>
 
 {% endblock %}
