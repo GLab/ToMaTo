@@ -138,6 +138,7 @@ def cached(timeout=None, maxSize=100, autoupdate=False):
 	return wrap
 
 def init():
+	global cache_updater
 	cache_updater = CacheUpdater()
 	cache_updater.start_updating(5*60) #refresh every five minutes. For most caches, this usually means iterating through a list without doing anything.
 	
