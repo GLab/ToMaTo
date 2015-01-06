@@ -125,7 +125,7 @@ def resource_remove(id): #@ReservedAssignment
 	return {}
 
 @checkauth
-def resource_info(id, *args, **kwargs): #@ReservedAssignment
+def resource_info(id, include_torrent_data=False): #@ReservedAssignment
 	"""
 	Retrieves information about a resource.
 	
@@ -158,7 +158,10 @@ def resource_info(id, *args, **kwargs): #@ReservedAssignment
 	  exist* is raised.
 	"""
 	res = _getResource(int(id))
-	return res.info(*args, **kwargs)
+	kwargs = {}
+	if res.type=="template":
+		kwargs['include_torrent_data'] = include_torrent_data
+	return res.info(**kwargs)
 	
 from .. import resources
 from ..lib.error import UserError

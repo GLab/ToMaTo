@@ -128,7 +128,6 @@ class Template(resources.Resource):
 		if include_torrent_data:
 			if self.restricted:
 				UserError.check(currentUser().hasFlag(Flags.RestrictedTemplates))
-			info['attrs']['torrent_data'] = base64.b64encode(self.torrent_data)
 		else:
 			if self.torrent_data:
 				del info["attrs"]["torrent_data"]
