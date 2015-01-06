@@ -21,8 +21,3 @@ from django.shortcuts import render
 import json
 
 from lib import wrap_rpc
-
-@wrap_rpc
-def usage(api, request, id): #@ReservedAssignment
-	usage=api.connection_usage(id)
-	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Connection #%d' % int(id)})

@@ -35,3 +35,32 @@ def organization(api, request, name): #@ReservedAssignment
         raise AuthError()
     usage=api.organization_usage(name)
     return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Organization %s' % name})
+
+@wrap_rpc
+def topology(api, request, id): #@ReservedAssignment
+    if not api.user:
+        raise AuthError()
+    usage=api.topology_usage(id)
+    return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Topology #%d' % int(id)})
+
+@wrap_rpc
+def element(api, request, id): #@ReservedAssignment
+    if not api.user:
+        raise AuthError()
+    usage=api.element_usage(id)
+    return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Element #%d' % int(id)})
+
+
+@wrap_rpc
+def connection(api, request, id): #@ReservedAssignment
+    if not api.user:
+        raise AuthError()
+    usage=api.connection_usage(id)
+    return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Connection #%d' % int(id)})
+
+@wrap_rpc
+def account(api, request, id): #@ReservedAssignment
+    if not api.user:
+        raise AuthError()
+    usage=api.account_usage(id)
+    return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Account %s' % id})

@@ -49,7 +49,7 @@
 			{%endif%}
 			
 			{% if request.session.user.isHostManager %}
-				<a href="{%url "host.list"%}" class="btn btn-default btn-lg">Manage Hosts</a>
+				<a href="{%url "admin.host.list"%}" class="btn btn-default btn-lg">Manage Hosts</a>
 			{%endif%}
 		{%else%}
 			<span style="margin-left:0.3cm; margin-right:0.3cm;"></span>

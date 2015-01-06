@@ -23,11 +23,6 @@ import json
 from lib import wrap_rpc
 
 @wrap_rpc
-def usage(api, request, id): #@ReservedAssignment
-	usage=api.element_usage(id)
-	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Element #%d' % int(id)})
-
-@wrap_rpc
 def console(api, request, id): #@ReservedAssignment
 	info=api.element_info(id)
 	top=api.topology_info(info["topology"])
