@@ -69,6 +69,7 @@ def loadTutorial(url):
 	data = json.load(urllib2.urlopen(url))
 	steps_str = None
 	tut_data = {}
+	initscript_str = ""
 	if "steps_str" in data:
 		steps_str = data["steps_str"]
 	if "steps_file" in data:
