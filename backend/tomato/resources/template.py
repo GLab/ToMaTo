@@ -127,7 +127,7 @@ class Template(resources.Resource):
 		
 		if include_torrent_data:
 			if self.restricted:
-				UserError.check(currentUser().hasFlag(Flags.RestrictedTemplates))
+				UserError.check(currentUser().hasFlag(Flags.RestrictedTemplates), UserError.DENIED, "You need access to restricted templates in order to access this one.", data={'id':self.id})
 		else:
 			if self.torrent_data:
 				del info["attrs"]["torrent_data"]
