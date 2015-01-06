@@ -18,10 +18,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django import forms
-import base64
+import base64, re
 from lib import wrap_rpc, serverInfo
 from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons, append_empty_choice
 import datetime
@@ -216,7 +216,7 @@ def edit_torrent(api, request, res_id=None):
 			torrent_data = base64.b64encode(f.read())
 			res_info = api.resource_info(formData['res_id'])
 			creation_date = str(formData['creation_date'])
-			UserError.check(res_info['type'] == 'template',UserError.INVALID_PARAMETER,"This resource is not a template", data={'id':formData['res_id']})
+			UserError.check(res_info['type'] == 'template',UserError.INVALID_RESOURCE_TYPE,"This resource is not a template", data={'id':formData['res_id']})
 			api.resource_modify(formData["res_id"],{'torrent_data':torrent_data,
 													'creation_date':creation_date})
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
@@ -238,7 +238,7 @@ def edit(api, request, res_id=None):
 			formData = form.cleaned_data
 			creation_date = str(formData['creation_date'])
 			res_inf = api.resource_info(res_id)
-			UserError.check(res_inf['type'] == 'template',UserError.INVALID_PARAMETER,"This resource is not a template", data={'id':formData['res_id']})
+			UserError.check(res_inf['type'] == 'template',UserError.INVALID_RESOURCE_TYPE,"This resource is not a template", data={'id':formData['res_id']})
 			attrs = {'label':formData['label'],
 						'restricted': formData['restricted'],
 						'subtype':formData['subtype'],
@@ -248,7 +248,7 @@ def edit(api, request, res_id=None):
 						'nlXTP_installed':formData['nlXTP_installed'],
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common']}
-			if res_inf['tech'] == "kvmqm":
+			if res_inf['attrs']['tech'] == "kvmqm":
 				attrs['kblang'] = formData['kblang']
 			api.resource_modify(res_id,attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
@@ -263,3 +263,13 @@ def edit(api, request, res_id=None):
 		form = EditTemplateForm(res_id, (origData['tech']=="kvmqm"), origData)
 		return render(request, "form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		
+@wrap_rpc
+def download_torrent(api, request, res_id):
+	res_inf = api.resource_info(res_id, include_torrent_data=True)
+	UserError.check(res_inf['type'] == 'template',UserError.INVALID_RESOURCE_TYPE,"This resource is not a template", data={'id':res_inf['id']})
+	UserError.check('torrent_data' in res_inf['attrs'],UserError.NO_DATA_AVAILABLE,"This template does not have a torrent file", data={'id':res_inf['id']})
+	tdata = base64.b64decode(res_inf['attrs']['torrent_data'])
+	filename = re.sub('[^\w\-_\. :]', '_', res_inf['attrs']['name'] ) + ".torrent"
+	response = HttpResponse(tdata, content_type="application/json")
+	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+	return response

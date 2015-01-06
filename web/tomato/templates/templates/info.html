@@ -123,6 +123,14 @@
 		<th>Description:</th>
 		<td>{{template.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 	</tr>
+	{% if not template.attrs.restricted or "restricted_templates" in request.session.user.flags %}
+	<tr>
+		<th>Torrent File</th>
+		<td>
+			<form><button type="submit" formaction="{%url "template.download_torrent" template.id%}" class="btn btn-info"><span class="glyphicon glyphicon-floppy-save"></span></button></form>
+		</td>
+	</tr>
+	{% endif %}
 </table>
 
 <div class="skip-sm"></div>
