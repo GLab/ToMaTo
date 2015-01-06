@@ -131,6 +131,11 @@ def resource_info(id, include_torrent_data=False): #@ReservedAssignment
 	
 	Parameter *id*:
 	  The parameter *id* identifies the resource by giving its unique id.
+	  
+	Parameter *include_torrent_data*:
+	  boolean, only useful for templates.
+	  if true, the return value includes the base64-encoded torrent file.
+	  This may throw an error when a user without access to it tries to access a restricted template.
 
 	Return value:
 	  The return value of this method is a dict containing information
@@ -148,10 +153,9 @@ def resource_info(id, include_torrent_data=False): #@ReservedAssignment
 	  on the *type* of the resource. If this resource does not have attributes,
 	  this field is ``{}``.	
 	  
-	``include_torrent_data``
-	  boolean, only useful for templates.
-	  if true, the return value includes the base64-encoded torrent file.
-	  This may throw an error when a user without access to it tries to access a restricted template.
+	``torrent_data``
+	  base64-encoded torrent file to access the template's image file.
+	  Only used for templates if this is requested by these arguments
 
 	Exceptions:
 	  If the given resource does not exist an exception *resource does not
