@@ -1,6 +1,7 @@
 import os, hashlib, json
 from dump import dumpError
 import httplib
+from duplicity.errors import UserError
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
@@ -135,6 +136,7 @@ class UserError(Error):
 	AMBIGUOUS = "ambiguous" # The request was ambiguous
 	ALREADY_EXISTS = "already_exists" # The object can not be created because it already exists
 	NO_RESOURCES = "no_resources" # No resources to satisfy this request
+	INVALID_RESOURCE_TYPE = "invalid_resource_type" # user requested an existing resource, but it is of the wrong type
 	INVALID_DATA = "invalid_value"
 
 
@@ -184,7 +186,8 @@ type_translator = {
 				UserError.TIMED_OUT:				("Timed Out",httplib.INTERNAL_SERVER_ERROR),
 				UserError.AMBIGUOUS:				("Ambiguous",httplib.BAD_REQUEST),
 				UserError.ALREADY_EXISTS:			("%s Already Exists",httplib.CONFLICT),
-				UserError.NO_RESOURCES:				("No Resources",httplib.SERVICE_UNAVAILABLE)
+				UserError.NO_RESOURCES:				("No Resources",httplib.SERVICE_UNAVAILABLE),
+				UserError.INVALID_RESOURCE_TYPE:	("Invalid Resource Type", httplib.BAD_REQUEST)
 				}
 
 def getCodeMsg(code, entity="Entity"):
