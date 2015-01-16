@@ -63,7 +63,7 @@ starttime = time.time()
 
 from . import resources, host, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
-from lib import util #@UnresolvedImport
+from lib import util, cache #@UnresolvedImport
 
 scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
 
@@ -85,6 +85,7 @@ def start():
 	scheduler.start()
 	dump.init()
 	dumpmanager.init()# important: must be called after dump.init()
+	cache.init()# this does not depend on anything (except the scheduler variable being initialized), and nothing depends on this. No need to hurry this.
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
