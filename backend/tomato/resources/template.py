@@ -21,6 +21,8 @@ from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os.path, base64, hashlib, shutil
+from tomato import currentUser
+from ..auth import Flags
 
 
 
@@ -120,10 +122,15 @@ class Template(resources.Resource):
 		except:
 			return False
 
-	def info(self):
+	def info(self, include_torrent_data = False):
 		info = resources.Resource.info(self)
-		if self.torrent_data:
-			del info["attrs"]["torrent_data"]
+		
+		if include_torrent_data:
+			if self.restricted:
+				UserError.check(currentUser().hasFlag(Flags.RestrictedTemplates), UserError.DENIED, "You need access to restricted templates in order to access this one.", data={'id':self.id})
+		else:
+			if self.torrent_data:
+				del info["attrs"]["torrent_data"]
 		info["attrs"]["ready"] = {
 			"backend": self.isReady(),
 			"hosts": {
