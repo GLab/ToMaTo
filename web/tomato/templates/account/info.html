@@ -40,7 +40,7 @@ While waiting for the account activation you can create and design topologies bu
 	</tr>
 	<tr>
 		<th>Organization:</th>
-		<td><a href="{%url "organization.info" account.organization%}">{{organization.description}}</a></td>
+		<td><a href="{%url "admin.organization.info" account.organization%}">{{organization.description}}</a></td>
 	</tr>
 	<tr>
 		<th>Email:</th>
@@ -92,7 +92,7 @@ While waiting for the account activation you can create and design topologies bu
   <button type="submit" formaction="{%url "account.accept" id=account.id%}" class="btn btn-success"><span class="glyphicon glyphicon-check"></span> Accept Account</button>
 {% endif %}  
 {% if request.session.user|args:account.organization|call:"isAdmin" or account.id == request.session.user.id %}
-  <a class="btn btn-info" href="javascript:window.open('{%url "account.usage" account.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
+  <a class="btn btn-info" href="javascript:window.open('{%url "usage.account" account.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
   <button type="submit" formaction="{%url "account.edit" id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> Edit Account</button>
 {% endif %}
 {% if request.session.user|args:account.organization|call:"isAdmin" %}

@@ -101,7 +101,7 @@ While waiting for the account activation you can create and design topologies bu
     <td enhancetable_customkey="{{top.usage.usage.memory}}">{{top.usage.usage.memory|filesizeformat}}</td>
     <td enhancetable_customkey="{{top.usage.usage.diskspace}}">{{top.usage.usage.diskspace|filesizeformat}}</td>
     <td class="icononly">
-    	<a href="javascript:window.open('{%url "topology.usage" top.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><img src="/img/chart_bar.png"/></a>
+    	<a href="javascript:window.open('{%url "usage.topology" top.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><img src="/img/chart_bar.png"/></a>
     </td>
   </tr>
 {% endfor %}

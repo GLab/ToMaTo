@@ -118,13 +118,6 @@ def info(api, request, id): #@ReservedAssignment
 	return _display(api, request, info, tutorial_state);
 
 @wrap_rpc
-def usage(api, request, id): #@ReservedAssignment
-	if not api.user:
-		raise AuthError()
-	usage=api.topology_usage(id)
-	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Topology #%d' % int(id)})
-
-@wrap_rpc
 def create(api, request):
 	if not api.user:
 		raise AuthError()

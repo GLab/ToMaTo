@@ -390,9 +390,3 @@ def remove(api, request, id=None):
 	form = RemoveConfirmForm.build(reverse("tomato.account.remove", kwargs={"id": id}))
 	return render(request, "form.html", {"heading": "Remove Account", "message_before": "Are you sure you want to remove the account '"+id+"'?", 'form': form})
 
-@wrap_rpc
-def usage(api, request, id): #@ReservedAssignment
-	if not api.user:
-		raise AuthError()
-	usage=api.account_usage(id)
-	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Account %s' % id})

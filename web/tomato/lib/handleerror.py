@@ -106,6 +106,8 @@ def ajaxError(error):
     
 
 def ajaxFault (fault): # stuff that happens in the actual function call
+    import traceback
+    traceback.print_exc()
     if isinstance(fault, Error):
         return ajaxError(fault)
     elif isinstance(fault, xmlrpclib.Fault):
