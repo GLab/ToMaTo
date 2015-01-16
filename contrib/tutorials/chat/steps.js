@@ -24,7 +24,8 @@
 			You can move this tutorial window if it covers your work space.</p>\
 			<p class="tutorialCommand">Add two OpenVZ devices to your topology</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "create",
 				component: "element",
@@ -33,11 +34,13 @@
 					type: "openvz"
 				},
 				});
-			if(match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-					tutorial_data.tmp = 0;
+			if(match) data.tmp++;
+			if (data.tmp >= 2) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 			}
+			setTutorialData(data);
 			return false;
 		},
 		help_page: 'TopologyDesign'
@@ -49,16 +52,19 @@
 			You can also change the name of your devices and its hostname if you want to.</p>\
 			<p class="tutorialCommand">Rename the devices to "alice" and "bob"</p>',
 			trigger: function(event) {
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 				if (compareToMask(event, {
 					operation: "modify",
 					component: "element",
 					phase: "end"
-				})) tutorial_data.tmp++;
-				if (tutorial_data.tmp >= 2) {
-					tutorial_data.tmp = 0;
+				})) data.tmp++;
+				if (data.tmp >= 2) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 				}
+				setTutorialData(data);
 				return false;
 			}
 	},
@@ -77,18 +83,21 @@
 		text: '<p class="tutorialExplanation">Before we can install the chat client we have to prepare and start our virtual machines.<br/> Preparing will create the VM on one of the testbed hosts but not start it yet.<br /> We have two options to do this. The first option is to right-click our devices and select </i>Prepare</i><br />The other way to do this is to use the <i>Prepare</i>-Button in the menu.<br/></p>\
 <p class="tutorialCommand">Prepare your virtual devices. This may take a few seconds.</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "action",
 				action: "prepare",
 				component: "element",
 				phase: "end",
 			});
-			if(match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-					tutorial_data.tmp = 0;
+			if(match) data.tmp++;
+			if (data.tmp >= 2) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 			}
+			setTutorialData(data);
 			return false;
 		}
 	},
@@ -125,19 +134,21 @@ These buttons are smart and know the states of the elements. If you select <i>st
 			<p>Download: <a href="'+tutorial_base_url+'install_python.tar.gz"  class="download" download="install_python.tar.gz">Python install package</a></p>\
 			<p class="tutorialCommand">Upload the <i>install_python.tar.gz</i> archive to both VMs.</p>',
 		trigger: function(event) {
-
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "action",
 				phase: "end", 
 				action: "rextfv_upload_use",
 				component: "element"
 			});
-			if(match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-					tutorial_data.tmp = 0;
+			if(match) data.tmp++;
+			if (data.tmp >= 2) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 			}
+			setTutorialData(data);
 			return false;
 		},
 		help_page: 'ExecutableArchives'
@@ -164,18 +175,21 @@ These buttons are smart and know the states of the elements. If you select <i>st
 		<p>Download: <a href="'+tutorial_base_url+'chat_client.tar.gz" class="download" download="chat_client.tar.gz">Chat client software</a></p>\
 		<p class="tutorialCommand">Upload the <i>chat_client.tar.gz</i> archive to both VMs.</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 					operation: "action",
 					phase: "end", 
 					action: "rextfv_upload_use",
 					component: "element"
 				});
-			if(match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-					tutorial_data.tmp = 0;
+			if(match) data.tmp++;
+			if (data.tmp >= 2) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 			}
+			setTutorialData(data);
 			return false;
 		},
 		help_page: 'ExecutableArchives'
@@ -199,16 +213,19 @@ These buttons are smart and know the states of the elements. If you select <i>st
 		text: '<p class="tutorialExplanation">Now both nodes are running and we can test the chat client. You can access the VMs using a VNC console. To open this console, right-click on the element and selct <i>Console</i>. There are different VNC clients available but the most compatible is <i>NoVNC</i>.</p>\
 <p class="tutorialCommand">Open the consoles of both VMs</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "console-dialog",
 				component: "element"
 			});
-			if (match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-				tutorial_data.tmp = 0;
+			if (match) data.tmp++;
+			if (data.tmp >= 2) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		},
 		help_page: 'TopologyInteraction'
@@ -245,18 +262,21 @@ The switch is also a virtual element, it uses VPN technology to connect elements
 That is one advantage of using switches: Once your VM is connected to a switch, you just have to stop that switch to add other elements to it, your VM can stay online.</p>\
 <p class="tutorialCommand">Stop both existing VMs</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "action",
 				component: "element",
 				action: "stop",
 				phase: "end"
 			});
-			if (match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-				tutorial_data.tmp = 0;
+			if (match) data.tmp++;
+			if (data.tmp >= 2) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		},
 		help_page: 'NetworkTypes'
@@ -276,17 +296,20 @@ That is one advantage of using switches: Once your VM is connected to a switch, 
 		text: '<p class="tutorialExplanation">You already know how to connect elements from the first part of the tutorial.</p>\
 <p class="tutorialCommand">Connect both VMs to the switch</b>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "create",
 				component: "connection",
 				phase: "end"
 			});
-			if (match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-				tutorial_data.tmp = 0;
+			if (match) data.tmp++;
+			if (data.tmp >= 2) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		}
 	},
@@ -374,17 +397,20 @@ This chat agent will send a message every 3 seconds.</p>\
 		text: '<p class="tutorialExplanation">Do not forget to connect these agents to the switch.</p>\
 <p class="tutorialCommand">Connect both agents to the switch</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "create",
 				component: "connection",
 				phase: "end"
 			});
-			if (match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 2) {
-				tutorial_data.tmp = 0;
+			if (match) data.tmp++;
+			if (data.tmp >= 2) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		}
 	},
@@ -392,18 +418,21 @@ This chat agent will send a message every 3 seconds.</p>\
 		text: '<p class="tutorialExplanation">Now you can start the whole topology again.</p>\
 <p class="tutorialCommand">Start the topology</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "action",
 				component: "element",
 				action: "start",
 				phase: "end"
 			});
-			if (match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 5) {
-				tutorial_data.tmp = 0;
+			if (match) data.tmp++;
+			if (data.tmp >= 5) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		},
 		help_page: 'devices'
@@ -424,19 +453,20 @@ Note that you can not type any text into the consoles of these agents as the Rep
 		text: '<p class="tutorialExplanation">Now we will add a delay of 2 seconds to a link and check if we can see the difference. Open the attributes ofthe link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a delay of 2000 ms on one of the directions.</p>\
 <p class="tutorialCommand">Add 2 seconds delay to one link</p>',
 		trigger: function(event) {
+			var data = getTutorialData();
 			return compareToMask(event, {
 				operation: "modify",
 				component: "connection",
 				phase: "end",
 				attrs: {
-					delay_from: tutorial_data.delay
+					delay_from: data.delay
 				}
 			}) || compareToMask(event, {
 				operation: "modify",
 				component: "connection",
 				phase: "end",
 				attrs: {
-					delay_to: tutorial_data.delay
+					delay_to: data.delay
 				}
 			});
 		},
@@ -539,18 +569,21 @@ You can use this connection to exchange files with your nodes and to use externa
 		text: '<p class="tutorialExplanation">To delete your VMs and free the resources, click the <i>Destroy</i> button in the top menu.</p>\
 <p class="tutorialCommand">Destroy the topology</p>',
 		trigger: function(event) {
-			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+			var data = getTutorialData();
+			if (! data.tmp) data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "action",
 				component: "element",
 				action: "destroy",
 				phase: "end"
 			});
-			if (match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 5) {
-				tutorial_data.tmp = 0;
+			if (match) data.tmp++;
+			if (data.tmp >= 5) {
+				data.tmp = 0;
+				setTutorialData(data);
 				return true;
 			}
+			setTutorialData(data);
 			return false;
 		}
 	},

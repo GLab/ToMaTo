@@ -30,29 +30,30 @@
 			},
 			{
 			trigger:function(obj) { 
-				
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 				mask = {
 					action: "prepare",
 					component: "element",
 					operation: "action",
 					phase: "begin"
 				};
-				if(compareToMask(obj,mask)) tutorial_data.tmp +=1;
+				if(compareToMask(obj,mask)) data.tmp +=1;
 				mask = {
 					action: "start",
 					component: "element",
 					operation: "action",
 					phase: "begin"
 				};				
-				if(compareToMask(obj,mask) && tutorial_data.tmp >= 1) {
-					tutorial_data.tmp++;
-					
+				if(compareToMask(obj,mask) && data.tmp >= 1) {
+					data.tmp++;
 				}
-				if(tutorial_data.tmp >= 3) {
-					tutorial_data.tmp = 0;
+				if(data.tmp >= 3) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 				}
+				setTutorialData(data);
 				return false;
 				
 			  },
@@ -66,23 +67,25 @@
 			},
 			{ 
 			trigger:function(obj) { 
-				
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 				mask = {
 					component: "element",
 					operation: "console-dialog",
 				};
-				if(compareToMask(obj,mask)) tutorial_data.tmp +=1;
+				if(compareToMask(obj,mask)) data.tmp +=1;
 				mask = {
 					action: "start",
 					component: "element",
 					operation: "action",
 					phase: "begin"
 				};					
-				if(compareToMask(obj,mask) && tutorial_data.tmp >= 1) {
-					tutorial_data.tmp = 0;
+				if(compareToMask(obj,mask) && data.tmp >= 1) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
 				}
+				setTutorialData(data);
 				return false;
 				
 				
@@ -125,26 +128,27 @@
 			},
 			{
 			trigger:function(obj) { 
-				
-				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var data = getTutorialData();
+				if (! data.tmp) data.tmp = 0;
 
 				mask = {
 					component: "element",
 					operation: "create",
 					phase: "end"
 				};
-				if(compareToMask(obj,mask) && tutorial_data.tmp < 1) tutorial_data.tmp +=1;
+				if(compareToMask(obj,mask) && data.tmp < 1) data.tmp +=1;
 				mask = {
 					action: "start",
 					component: "element",
 					operation: "action",
 					phase: "begin"
 				};				
-				if(compareToMask(obj,mask) && tutorial_data.tmp >= 1) {
-					tutorial_data.tmp = 0;
+				if(compareToMask(obj,mask) && data.tmp >= 1) {
+					data.tmp = 0;
+					setTutorialData(data);
 					return true;
-					
 				}
+				setTutorialData(data);
 				return false;
 			},
 			text:	'<p class="tutorialExplanation">\

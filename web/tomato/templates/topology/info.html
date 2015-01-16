@@ -19,7 +19,7 @@
 <script language="JavaScript" type="text/javascript" src="js/editor.js"></script>
 
 
-{% if tutorial_data %}
+{% if tutorial_info.state.enabled %}
 	<script language="JavaScript" type="text/javascript" src="js/editor_tutorial_help.js"></script>
 {% endif %}
 
@@ -49,22 +49,19 @@
 <script language="JavaScript" type="text/javascript">
   display_issues($("#browser_issues"));
   help_baseUrl = "{%externalurl 'help' %}";
-  {% if tutorial_data %}
-  var tutorial_base_url = "{{tutorial_data.base_url}}";
-  var tutorial_steps = {{tutorial_steps|safe}};
-  {% if tutorial_data.data %}
-  var tutorial_data = {{tutorial_data.data|jsonify}};
-  {% endif %}
+  {% if tutorial_info.state.enabled %}
+  var tutorial_base_url = "{{tutorial_info.data.base_url}}";
+  var tutorial_steps = {{tutorial_info.steps|safe}};
   {% endif %}
   
   var editor = new Editor({
   	menu_container: $('#menu'),
   	workspace_container: $('#workspace'),
-  	{% if tutorial_data %}
-  		tutorial: true,
-		tutorial_status: {{tutorial_status}},
+  	{% if tutorial_info.state.enabled %}
+  		tutorial_show: true,
+		tutorial_state: {{tutorial_info.state|jsonify}},
   	{% else %}
-  		tutorial:false,
+  		tutorial_show:false,
   	{% endif %}
   	
   	safe_mode: true,
@@ -77,10 +74,18 @@
   	isGlobalOwner: "{{user.flags.global_owner}}",
   	isDebugUser: {{request.session.user.hasDebugFlag|jsonify}},
   	permission_list: {{permission_list|safe}},
-  	error_message_appendix: 'If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}" style="color: blue;" target="_blank">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" style="color: blue;" target="_help">file a bug report</a>.'
-
+  	error_message_appendix: 'If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}" style="color: blue;" target="_blank">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" style="color: blue;" target="_help">file a bug report</a>.',
+	onready: function(){
+		{% if tutorial_info.state.enabled %}
+		{{tutorial_info.initscript|safe}}
+		{%endif%}
+	}
   	
   });
+  
+
+  
+  
 </script>
 
 {% endblock %}

@@ -1,5 +1,5 @@
 {
-  "data": {
+  "initial_data": {
     "templates": {
       "node": "chat_node",
       "monitor": "chat_monitor",

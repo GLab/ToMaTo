@@ -55,7 +55,7 @@ def list(api, request, show_all=False, organization=None):
 		top['processed'] = {'timeout_critical': top['timeout'] - time.time() < serverInfo()['topology_timeout']['warning']}
 	return render(request, "topology/list.html", {'top_list': toplist, 'organization': organization, 'orgas': orgas, 'show_all': show_all, 'tut_in_top_list':tut_in_top_list})
 
-def _display(api, request, info, tut_url, tut_stat):
+def _display(api, request, info, tutorial_state):
 	caps = api.capabilities()
 	res = api.resource_list()
 	sites = api.site_list()
@@ -66,10 +66,10 @@ def _display(api, request, info, tut_url, tut_stat):
 		del s['organization']
 		s['organization'] = orga
 
-	tut_data, tut_steps = None, None
+	tut_data, tut_steps, initscript = None, None, None
 	try:
-		if tut_url:
-			tut_data, tut_steps, _ = loadTutorial(tut_url)
+		if tutorial_state['url']:
+			tut_data, tut_steps, _, _, initscript = loadTutorial(tutorial_state['url'])
 	except:
 		pass
 
@@ -79,9 +79,10 @@ def _display(api, request, info, tut_url, tut_stat):
 		'res_json': json.dumps(res),
 		'sites_json': json.dumps(sites),
 		'caps_json': json.dumps(caps),
-		'tutorial_steps':tut_steps,
-		'tutorial_status':tut_stat,
-		'tutorial_data': tut_data,
+		'tutorial_info':{'state': tutorial_state,
+						 'steps':tut_steps,
+						 'data': tut_data,
+						 'initscript': initscript},
 		'permission_list':permission_list,
 	})	
 	return res
@@ -92,6 +93,10 @@ def info(api, request, id): #@ReservedAssignment
 	if not api.user:
 		raise AuthError()
 	info=api.topology_info(id)
+	
+	#Load Tutorial.
+	tutorial_state = {'enabled':False}
+	#Legacy Tutorial saves (#TODO: remove this in the next release) 
 	tut_stat = None
 	tut_url = None
 	allow_tutorial = True
@@ -102,7 +107,15 @@ def info(api, request, id): #@ReservedAssignment
 			tut_url = info['attrs']['_tutorial_url']
 			if info['attrs'].has_key('_tutorial_status'):
 				tut_stat = info['attrs']['_tutorial_status']
-	return _display(api, request, info, tut_url, tut_stat);
+			tutorial_state = {'enabled':True,
+						  'url':tut_url,
+						  'step':tut_stat,
+						  'data':{}}
+	#New Tutorial saves. These have higher preference than the legacy ones
+	if info['attrs'].has_key('_tutorial_state'):
+		tutorial_state = info['attrs']['_tutorial_state']
+				
+	return _display(api, request, info, tutorial_state);
 
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment

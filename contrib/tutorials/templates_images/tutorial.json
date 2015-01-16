@@ -1,5 +1,5 @@
 {
-  "data": {
+  "initial_data": {
 	"tmp": "0"
   },
   "steps_file": "steps.js",
