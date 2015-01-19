@@ -102,7 +102,7 @@ class Cache:
 	def clear(self):
 		with self._lock:
 			self._values = {}
-			self._order = {}
+			self._order = []
 	def update_all(self):
 		if self._autoupdate:
 			for key in list(self._order): #since maxsize is bounded, this is not a scaling problem.
