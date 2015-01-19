@@ -225,7 +225,8 @@ class DumpSource:
 			fetch_results = self.dump_fetch_list(self.dump_get_last_fetch())
 			self.dump_set_last_fetch(this_fetch_time)
 			return fetch_results
-		except:
+		except Exception, exc:
+			InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc, data={"source": repr(self)}).dump()
 			return []
 
 

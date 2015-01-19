@@ -82,7 +82,9 @@ class Error(Exception):
 
 	@classmethod
 	def wrap(cls, error, code=UNKNOWN, message=None, *args, **kwargs):
-		return cls(code=code, message=message or str(error), *args, **kwargs)
+		exception = cls(code=code, message=message or str(error), *args, **kwargs)
+		exception.dump()
+		return exception
 
 	def __str__(self):
 		return "%s %s error [%s]: %s (%r)" % (self.module, self.type, self.code, self.message or "", self.data)
