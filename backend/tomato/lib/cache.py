@@ -130,7 +130,7 @@ class CachedMethod:
 def cached(timeout=None, maxSize=100, autoupdate=False):
 	def wrap(fn):
 		_cache = Cache(fn=fn, timeout=timeout, maxSize=maxSize, autoupdate=autoupdate)
-		call = CachedMethod(fn, _cache)
+		call = CachedMethod(_cache)
 		call.__name__ = fn.__name__
 		call.__doc__ = fn.__doc__
 		call.__dict__.update(fn.__dict__)
