@@ -2323,13 +2323,11 @@ var Component = Class.extend({
 			data: {fetch: fetch},
 		 	successFn: function(result) {
 		 		t.updateData(result);
-		 		t.setBusy(false);
 				t.triggerEvent({operation: "update", phase: "end"});
 				if (callback) callback();
 		 	},
 		 	errorFn: function(error) {
 		 		new errorWindow({error:error});
-		 		t.setBusy(false);
 				t.triggerEvent({operation: "update", phase: "error"});
 		 	}
 		});
@@ -2355,6 +2353,7 @@ var Component = Class.extend({
 		 	errorFn: function(error) {
 		 		new errorWindow({error:error});
 		 		t.update();
+		 		t.setBusy(false);
 				t.triggerEvent({operation: "modify", phase: "error", attrs: attrs});
 		 	}
 		});
@@ -2385,6 +2384,7 @@ var Component = Class.extend({
 		 	errorFn: function(error) {
 		 		new errorWindow({error:error});
 		 		t.update();
+		 		t.setBusy(false);
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
 				editor.rextfv_status_updater.add(t, 5);
 		 	}
