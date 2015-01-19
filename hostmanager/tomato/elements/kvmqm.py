@@ -176,7 +176,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 	
-	rextfv_max_size = 512000 # depends on _nlxtp_create_device_and_mountpoint.
+	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
 
 	TYPE = "kvmqm"
 	CAP_ACTIONS = {
@@ -433,7 +433,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		if not os.path.exists(self._nlxtp_path("")):
 			os.makedirs(self._nlxtp_path(""))
 		if not os.path.exists(self._nlxtp_device_filename()):
-			vfat.create(self._nlxtp_device_filename(), 524288) # size (last argument) depends on nlxtp_max_size
+			vfat.create(self._nlxtp_device_filename(), KVMQM.rextfv_max_size/1024) # size (last argument) depends on nlxtp_max_size
 	
 	
 		
