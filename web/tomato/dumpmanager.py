@@ -20,7 +20,7 @@ import json, re
 
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, AuthError
+from lib import wrap_rpc, wrap_json, AuthError
 from django.http import HttpResponseRedirect, HttpResponse
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
@@ -154,11 +154,8 @@ def dump_export(api, request, source, dump_id,data=False):
 def dump_export_with_data(request, source, dump_id):
 	return dump_export(request, source, dump_id, True)
 
-@wrap_rpc
-def refresh(api, request):
-	if request.method == "POST":
-		res = api.errordumps_force_refresh()
-		return HttpResponse(json.dumps({"success": True, "result": res}))
-	else:
-		return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+@wrap_json
+def refresh(api):
+    res = api.errordumps_force_refresh()
+    return res
 		
