@@ -249,20 +249,21 @@ var TextAreaElement = FormElement.extend({
 var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
-		
-		this.element = $('<div class="col-sm-12">').append('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
-		if (options.disabled) this.element.attr({disabled: true});
+
+		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
+		this.element = $('<div class="col-sm-12">').append(this.checkbox);
+		if (options.disabled) this.checkbox.attr({disabled: true});
 		var t = this;
-		this.element.change(function() {
+		this.checkbox.change(function() {
 			t.onChanged(this.checked);
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.element[0].checked;
+		return this.checkbox[0].checked;
 	},
 	setValue: function(value) {
-		this.element[0].checked = value;
+		this.checkbox[0].checked = value;
 	}
 });
 
