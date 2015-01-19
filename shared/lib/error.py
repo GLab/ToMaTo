@@ -189,15 +189,14 @@ type_translator = {
 				UserError.INVALID_RESOURCE_TYPE:	("Invalid Resource Type", httplib.BAD_REQUEST)
 				}
 
+def _translate(code):
+	return type_translator.get(code, ("Unexpected Error", httplib.INTERNAL_SERVER_ERROR))
+
 def getCodeMsg(code, entity="Entity"):
-	if code is None:
-		return "Unknown Error Type"
-	return type_translator[code][0] % {'entity':entity}
+	return _translate(code)[0] % {'entity':entity}
 
 def getCodeHTTPErrorCode(code):
-	if code is None:
-		return httplib.INTERNAL_SERVER_ERROR
-	return type_translator[code][1]
+	return _translate(code)[1]
 
 
 def assert_(condition, message, code=InternalError.ASSERTION, *args, **kwargs):
