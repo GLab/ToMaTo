@@ -1,7 +1,6 @@
 import os, hashlib, json
 from dump import dumpError
 import httplib
-from duplicity.errors import UserError
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
