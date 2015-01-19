@@ -416,7 +416,6 @@ var TemplateElement = FormElement.extend({
 
 var Window = Class.extend({
 	init: function(options) {
-		log(options);
 		this.options = options;
 		this.options.position = options.position || ['center',200];
 		this.div = $('<div style="overflow:visible;"/>').dialog({
@@ -1861,7 +1860,6 @@ var Topology = Class.extend({
 		var openWithEditor = openWithEditor_html[0];
 		if (this.data.attrs._notes_autodisplay) {
 			openWithEditor.checked = true;
-			console.log("check");
 		}
 		dialog.append($('<br/>'))
 		dialog.append(openWithEditor_html);
