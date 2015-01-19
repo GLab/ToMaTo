@@ -30,8 +30,8 @@ from django.core.urlresolvers import reverse
 from lib.error import UserError #@UnresolvedImport
 
 class ErrorDumpForm(BootstrapForm):
-	source = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.", widget=forms.HiddenInput())
-	dump_id = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.", widget=forms.HiddenInput())
+	source = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.", widget=forms.HiddenInput())
+	dump_id = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.", widget=forms.HiddenInput())
 	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
 		super(ErrorDumpForm, self).__init__(*args, **kwargs)
@@ -42,7 +42,7 @@ class ErrorDumpForm(BootstrapForm):
 		)
 	
 class ErrorGroupForm(BootstrapForm):
-	description = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.")
+	description = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.")
 	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
 		super(ErrorGroupForm, self).__init__(*args, **kwargs)
@@ -88,7 +88,7 @@ def group_clear(api,request,group_id):
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",  kwargs={"group_id": group_id}))
 	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_clear", kwargs={"group_id": group_id}))
 	group_desc = api.errorgroup_info(group_id, include_dumps=False)['description']
-	return render(request, "form.html", {"heading": "Clear Errogroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_desc+"' from all dumps?", 'form': form})
+	return render(request, "form.html", {"heading": "Clear Errorgroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_desc+"' from all dumps?", 'form': form})
 
 
 @wrap_rpc
