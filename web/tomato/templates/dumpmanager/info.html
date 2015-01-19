@@ -38,8 +38,11 @@
 		{% if errordump.type == "Exception" %}
 			<td>{{errordump.description.type}}: {{errordump.description.subject}}</td>	
 		{% else %}
+		{% if errordump.type == "Error" %}
+			<td>{{errordump.description.type}} error: {{errordump.description.message}}</td>
+		{% else %}
 			<td>{{errordump.description}}</td>	
-		{% endif %}
+		{% endif %}{% endif %}
 		<td>{{errordump.timestamp|todate}}</td>
 		<td>
 			<form style="margin:0px;padding:0px;" method="post">
