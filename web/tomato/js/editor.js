@@ -4179,7 +4179,7 @@ var RexTFV_status_updater = Class.extend({
 		for (var i=0; i<t.elements.length; i++) {
 			entry = t.elements[i];
 			success = true;
-			if (entry in editor.topology.elements) {
+			if (entry.element in editor.topology.elements) {
 				editor.topology.elements[entry.element].update(undefined, undefined, true); //hide errors.
 			} else {
 				success = false;
@@ -4207,17 +4207,15 @@ var RexTFV_status_updater = Class.extend({
 								// retries == 1 is the default. if retries < 0, the entry is removed. This means, after the status is set to "not running",
 								// the editor will update the element twice before removing it.
 		
-		
+
 		//first, search whether this element is already monitored. If yes, update number of tries if necessary (keep the bigger one). exit funciton if found.
 		for (var i=0; i<this.elements.length; i++) {
 			if (this.elements[i].element == el.id) {
-				found = true;
 				if (this.elements[i].tries < tries)
 					this.elements[i].tries = tries;
 				return
 			}
 		}
-		
 		//if the search hasn't found anything, simply append this.
 		this.elements.push({
 			element: el.id,
