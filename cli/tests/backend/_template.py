@@ -1,4 +1,4 @@
-from lib import testCase, testSuite
+from lib.tests import testCase, testSuite
 
 @testCase("dummy")
 def testDummy():
