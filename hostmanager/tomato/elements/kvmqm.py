@@ -568,7 +568,7 @@ class KVMQM_Interface(elements.Element):
 		else:
 			self.used_addresses = []
 		info = elements.Element.info(self)
-		info["attrs"]["name"] = "eth%d" % self.num
+		info["attrs"]["name"] = "eth%d" % (self.num or 0)
 		return info
 
 	def updateUsage(self, usage, data):
