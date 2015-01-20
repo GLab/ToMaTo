@@ -50,10 +50,17 @@ class ErrorGroup(models.Model):
 		self.delete()
 
 
-def create_group(group_id):
+def create_group(group_id, description=None):
+	desc = description or group_id
+	if isinstance(desc, dict) and "message" in desc:
+		desc = desc["message"]
+	if not isinstance(desc, str):
+		desc = str(desc)
+	if len(desc) > 100:
+		desc = desc[:100] + " ..."
 	gr = ErrorGroup.objects.create(
 		group_id=group_id,
-		description=group_id
+		description=desc
 	)
 	gr.save()
 	return gr
@@ -291,7 +298,7 @@ def insert_dump(dump, source):
 		if get_group(dump['group_id']) is None:
 			from auth import mailFlaggedUsers, Flags
 			must_fetch_data = True
-			create_group(dump['group_id'])
+			create_group(dump['group_id'], dump['description'])
 			mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
 				"A new group of error has been found, with ID %s. It has first been observed on %s." % (
 				dump['group_id'], source.dump_source_name()))
