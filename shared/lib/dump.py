@@ -324,3 +324,6 @@ def dumpError(error):
 		return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
 	except:
 		dumpException(originalError=error)
+
+import error
+error.dumpError = dumpError

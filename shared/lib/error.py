@@ -1,6 +1,7 @@
 import os, hashlib, json
-from dump import dumpError
 import httplib
+
+dumpError = None
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}

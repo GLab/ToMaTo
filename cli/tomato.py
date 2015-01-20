@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urllib
-from lib import getConnection, SafeTransportWithCerts, ServerProxy
+from lib import getConnection, createUrl
 def parseArgs():
 	"""
 	Defines required and optional arguments for the cli and parses them out of sys.argv.
@@ -10,6 +10,10 @@ def parseArgs():
 	Available Arguments are:
 		Argument *--help*:
 			Prints a help text for the available arguments
+		Argument *--url*:
+			The whole URL of the server
+		Argument *--protocol*:
+			Protocol of the server
 		Argument *--hostname*:
 			Address of the host of the server
 		Argument *--port*:
@@ -33,10 +37,12 @@ def parseArgs():
 	"""
 	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
 	parser.add_argument('--help', action='help')
-	parser.add_argument("--hostname" , "-h", required=True, help="the host of the server")
+	parser.add_argument("--url" , "-u", required=False, help="the whole URL of the server")
+	parser.add_argument("--protocol" , required=False, default="http+xmlrpc", help="the protocol of the server")
+	parser.add_argument("--hostname" , "-h", required=False, help="the host of the server")
 	parser.add_argument("--port", "-p", default=8000, help="the port of the server")
 	parser.add_argument("--ssl", "-s", action="store_true", default=False, help="whether to use ssl")
-	parser.add_argument("--client_cert", required=False, default=None, help="path of the ssl certificate")
+	parser.add_argument("--client_cert", "-c", required=False, default=None, help="path of the ssl certificate")
 	parser.add_argument("--username", "-U", help="the username to use for login")
 	parser.add_argument("--password", "-P", help="the password to use for login")
 	parser.add_argument("--file", "-f", help="a file to execute")
@@ -46,6 +52,8 @@ def parseArgs():
 		options.username=raw_input("Username: ")
 	if not options.password and not options.client_cert:
 		options.password=getpass.getpass("Password: ")
+	if options.ssl and options.protocol == "http+xmlrpc":
+		options.protocol = "https+xmlrpc"
 	return options
 
 
@@ -149,7 +157,8 @@ def run():
 
 	"""
 	options = parseArgs()
-	api = getConnection(options.hostname, options.port, options.ssl, options.username, options.password, options.client_cert)
+	url = options.url if options.url else createUrl(options.protocol, options.hostname, options.port, options.username, options.password)
+	api = getConnection(url, options.client_cert)
 	locals = getLocals(api)
 	if options.arguments:
 		runSource(locals, "\n".join(options.arguments))

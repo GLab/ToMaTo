@@ -572,6 +572,9 @@ class RPCProxy:
 	def multicall(self, *callargs):
 		return MultiCallProxy(self, callargs)
 
+	def _listMethods(self):
+		return self.__getattr__("$list$")()
+
 	def __getattr__(self, name):
 		if not name in self._methods:
 			raise AttributeError(name)
