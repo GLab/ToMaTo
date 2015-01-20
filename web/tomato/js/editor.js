@@ -695,7 +695,7 @@ var TutorialWindow = Window.extend({
 						this.tutorialGoForth();
 					}
 				}
-				finally {}
+				catch(e) {}
 			}
 		}
 	},
