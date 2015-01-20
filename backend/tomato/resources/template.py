@@ -49,7 +49,7 @@ class Template(resources.Resource):
 	subtype = attributes.attribute("subtype", str)
 	torrent_data = attributes.attribute("torrent_data", str)
 	restricted = attributes.attribute("restricted", bool)
-	kblang = attributes.attribute("kblang",str,null=False,default="en-US")
+	kblang = attributes.attribute("kblang",str,null=False,default="en-us")
 	# hosts: [TemplateOnHost]
 	
 	TYPE = "template"
