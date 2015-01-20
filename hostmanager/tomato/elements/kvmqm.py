@@ -572,10 +572,11 @@ class KVMQM_Interface(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
-		ifname = self.interfaceName()
-		if net.ifaceExists(ifname):
-			traffic = sum(net.trafficInfo(ifname))
-			usage.updateContinuous("traffic", traffic, data)
+		if self.state == ST_STARTED:
+			ifname = self.interfaceName()
+			if net.ifaceExists(ifname):
+				traffic = sum(net.trafficInfo(ifname))
+				usage.updateContinuous("traffic", traffic, data)
 			
 KVMQM_Interface.__doc__ = DOC_IFACE
 
