@@ -695,7 +695,7 @@ var TutorialWindow = Window.extend({
 						this.tutorialGoForth();
 					}
 				}
-				finally {}
+				catch(e) {}
 			}
 		}
 	},
@@ -1839,7 +1839,12 @@ var Topology = Class.extend({
 		 				}
 					} 
 		 		});
-		 		win.add($("<pre></pre>").text(JSON.stringify(result, undefined, 2)));
+		 		div = $('<div></div>');
+		 		new PrettyJSON.view.Node({
+		 			data: result,
+		 			el: div
+		 		});
+		 		win.add(div);
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
@@ -2232,7 +2237,12 @@ var Component = Class.extend({
 		 				}
 					} 
 		 		});
-		 		win.add($("<pre></pre>").text(JSON.stringify(result, undefined, 2)));
+		 		div = $('<div></div>');
+		 		new PrettyJSON.view.Node({
+		 			data: result,
+		 			el: div
+		 		});
+		 		win.add(div);
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
