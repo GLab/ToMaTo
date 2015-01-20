@@ -279,7 +279,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		assert self.state == ST_PREPARED
 		kblang = self.kblang
 		if kblang is None:
-			kblang = self.template.kblang
+			kblang = self._template().kblang
 		qm.configure(self.vmid, cores=self.cpus, memory=self.ram, keyboard=kblang, tablet=self.usbtablet,
 			hda=self._imagePath(), fda=self._nlxtp_device_filename())
 
