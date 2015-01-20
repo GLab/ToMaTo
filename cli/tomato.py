@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urllib
+import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urlparse
 from lib import getConnection, createUrl
 def parseArgs():
 	"""
@@ -100,7 +100,11 @@ def runFile(locals, file, options):
 	def shell():
 		runInteractive(locals)
 	locals["shell"] = shell
-	locals["__hostname__"] = options.hostname
+	if options.url:
+		parsed = urlparse.urlparse(options.url)
+		locals["__hostname__"] = parsed.hostname
+	else:
+		locals["__hostname__"] = options.hostname
 	__builtins__.__dict__.update(locals)
 	locals["__name__"]="__main__"
 	locals["__file__"]=file
