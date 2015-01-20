@@ -334,6 +334,8 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	def _useImage(self, path_, backing=False):
 		assert self.state == ST_PREPARED
 		if backing:
+			if os.path.exists(self._imagePath()):
+				os.unlink(self._imagePath())
 			qemu_img.create(self._imagePath(), backingImage=path_)
 		else:
 			io.copy(path_, self._imagePath())
