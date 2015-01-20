@@ -154,8 +154,8 @@ def dump_export(api, request, source, dump_id,data=False):
 def dump_export_with_data(request, source, dump_id):
 	return dump_export(request, source, dump_id, True)
 
-@wrap_json
-def refresh(api):
-    res = api.errordumps_force_refresh()
-    return res
+@wrap_rpc
+def refresh(api,request):
+	api.errordumps_force_refresh()
+	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
 		

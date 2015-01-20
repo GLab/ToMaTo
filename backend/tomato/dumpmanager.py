@@ -310,14 +310,20 @@ def update_source(source):
 		insert_dump(e, source)
 
 
-def update_all():
+def update_all(async=True):
 	def cycle_all():
 		for s in getDumpSources():  #a removed host while iterating is caught by this, since dumpSource.getUpdates() will return [] in this case
-			thread.start_new_thread(update_source,
-				(s,))  #host might need longer to respond. no reason not to parallelize this
-			time.sleep(1)  #do not connect to all hosts at the same time. There is no need to rush.
+			if async:
+				thread.start_new_thread(update_source,(s,))  #host might need longer to respond. no reason not to parallelize this
+			else:
+				update_all(s)
+			if async:
+				time.sleep(1)  #do not connect to all hosts at the same time. There is no need to rush.
 
-	thread.start_new_thread(cycle_all, ())
+	if async:
+		thread.start_new_thread(cycle_all, ())
+	else:
+		cycle_all()
 	return len(getDumpSources())
 
 
@@ -411,4 +417,4 @@ def api_errordump_remove(source, dump_id):
 			
 def api_force_refresh():
 	if checkPermissions():
-		return update_all()
+		return update_all(async=False)
