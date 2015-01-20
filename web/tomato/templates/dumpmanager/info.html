@@ -60,28 +60,21 @@ function showDump(source, dump_id, include_data) {
 		<td>{{errordump.dump_id}}</td>
 		<td>{{errordump.software_version.version}}</td>
 		<td>{{errordump.type}}</td>
-		{% if errordump.type == "Exception" %}
-			<td>{{errordump.description.type}}: {{errordump.description.subject}}</td>	
+		<td style="white-space:normal;">
+        {% if errordump.type == "Exception" %}
+			{{errordump.description.type}}: {{errordump.description.subject}}
 		{% else %}
 		{% if errordump.type == "Error" %}
-			<td>{{errordump.description.type}} error: {{errordump.description.message}}</td>
+			{{errordump.description.type}} error: {{errordump.description.message}}
 		{% else %}
-			<td>{{errordump.description}}</td>	
+			{{errordump.description}}
 		{% endif %}{% endif %}
-		<td>{{errordump.timestamp|todate}}</td>
+		</td>
+        <td>{{errordump.timestamp|todate}}</td>
 		<td>
 			<form style="margin:0px;padding:0px;" method="post">
-			<div class="btn-group">
-				<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown">
-	    			<span class="glyphicon glyphicon-download-alt"></span>
-				  <span class="caret"></span>
-				</button>
-				<ul class="dropdown-menu" role="menu">
-	    			<li><a onClick="showDump('{{errordump.source}}','{{errordump.dump_id}}',true); return false" style="cursor:pointer;"><span class="glyphicon glyphicon-floppy-saved"></span> Download with data</a></li>
-	    			<li><a onClick="showDump('{{errordump.source}}','{{errordump.dump_id}}',false); return false" style="cursor:pointer;"}"><span class="glyphicon glyphicon-floppy-remove"></span> Download without data</a></li>
-	   			</ul>	
-	   			
-	   		</div>
+			<button type="button" class="btn btn-info" onclick="showDump('{{errordump.source}}','{{errordump.dump_id}}',true); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span>&nbsp;</button>
+            &nbsp;
 	   		<button type="submit" formaction="{%url "dumpmanager.dump_remove" errordump.source errordump.dump_id %}" class="btn btn-danger">&nbsp;<span class="glyphicon glyphicon-trash"></span>&nbsp;</button>
 			</form>
 		</td>
