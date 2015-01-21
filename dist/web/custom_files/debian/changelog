@@ -1,3 +1,19 @@
+tomato-web (3.4.3) stable; urgency=medium
+
+  * Fixed save button on initial topology create dialog being greyed out
+  * Fixed pointers not displaying
+  * Fixed ip hint error due to race condition
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 21 Oct 2014 12:16:20 +0200
+
+tomato-web (3.4.1) stable; urgency=medium
+
+  * added some more buttons to start page
+  * bugfix: users with orgaAdmin or orgaHostsManager flags are now assumed to 
+    be admins/hostsmanagers by the webfrontend when no organization is given
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Jul 2014 09:31:15 +0200
+
 tomato-web (3.4) stable; urgency=medium
 
   * Quota support per user/organization
