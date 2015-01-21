@@ -341,7 +341,8 @@ def aggregate():
 	for orga in host.getAllOrganizations():
 		orga.updateUsage()
 	for h in host.getAll():
-		h.updateUsage()
+		if h.enabled:
+			h.updateUsage()
 
 @util.wrap_task
 @db.commit_after
