@@ -1127,7 +1127,8 @@ def synchronizeHost(host):
 @util.wrap_task
 def synchronize():
 	for host in getAll():
-		scheduler.scheduleOnce(0, synchronizeHost, host)  # @UndefinedVariable
+		if host.enabled:
+			scheduler.scheduleOnce(0, synchronizeHost, host)  # @UndefinedVariable
 
 
 @util.wrap_task
