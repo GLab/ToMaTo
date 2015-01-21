@@ -3,6 +3,9 @@
 
 import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urlparse
 from lib import getConnection, createUrl
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
 def parseArgs():
 	"""
 	Defines required and optional arguments for the cli and parses them out of sys.argv.
@@ -35,7 +38,7 @@ def parseArgs():
 		Parsed command-line arguments
 	
 	"""
-	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
+	parser = argparse.ArgumentParser(description="ToMaTo RPC Client", add_help=False)
 	parser.add_argument('--help', action='help')
 	parser.add_argument("--url" , "-u", required=False, help="the whole URL of the server")
 	parser.add_argument("--protocol" , required=False, default="http+xmlrpc", help="the protocol of the server")
