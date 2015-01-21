@@ -18,7 +18,7 @@
 from ..lib.cache import cached #@UnresolvedImport
 import time
 
-@cached(timeout=300)
+@cached(timeout=3600, autoupdate=True)
 def server_info():
 	"""
 	undocumented
