@@ -244,7 +244,9 @@ class DumpSource:
 		this_fetch_time = time.time() - self.dump_clock_offset()
 		try:
 			fetch_results = self.dump_fetch_list(self.dump_get_last_fetch())
-			self.dump_set_last_fetch(this_fetch_time)
+			if len(fetch_results)>0: #if the list is empty, no need to set this. However, if the list is empty for incorrect reasons (i.e., errors), 
+									#we may still be able to get the dumps when the error is resolved.
+				self.dump_set_last_fetch(this_fetch_time)
 			return fetch_results
 		except Exception, exc:
 			InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc, data={"source": repr(self)}).dump()
