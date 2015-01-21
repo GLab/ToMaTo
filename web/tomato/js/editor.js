@@ -500,7 +500,6 @@ var Window = Class.extend({
 	}
 });
 var showError = function(error) {
-	
 	if (ignoreErrors) return;
 	new errorWindow({error: { originalResponse: error,},show_error_appendix: true});
 }
@@ -1740,11 +1739,12 @@ var Topology = Class.extend({
 			if (el.busy) continue;
 			if (el.parent) continue;
 			if (el.actionEnabled(action)) {
+				ids++;
 				el.action(action, {
 					noask: true,
-					callback: cb
+					callback: cb,
+					noUpdate: options.noUpdate
 				});
-				ids++;
 			}
 		}
 		if (ids <= 0 && options.callback) options.callback();
@@ -1810,8 +1810,8 @@ var Topology = Class.extend({
 				}
 			});			
 		}
-		this.action_delegate("stop", {noask: true, callback: function() {
-			t.action_delegate("destroy", {noask: true, callback: function() {
+		this.action_delegate("stop", {noask: true, noUpdate: true, callback: function() {
+			t.action_delegate("destroy", {noask: true, noUpdate: true, callback: function() {
 				if (t.elementCount()) {
 					for (var elId in t.elements) {
 						if (t.elements[elId].parent) continue;
@@ -2387,7 +2387,7 @@ var Component = Class.extend({
 		 		t.setBusy(false);
 		 		if (options.callback) options.callback(t, result[0], result[1]);
 				t.triggerEvent({operation: "action", phase: "end", action: action, params: params});
-				t.updateDependent();
+				if (! options.noUpdate) t.updateDependent();
 				editor.rextfv_status_updater.add(t, 30);
 		 	},
 		 	errorFn: function(error) {
