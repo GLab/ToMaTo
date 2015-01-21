@@ -176,7 +176,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 	
-	rextfv_max_size = 512000 # depends on _nlxtp_create_device_and_mountpoint.
+	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
 
 	TYPE = "kvmqm"
 	CAP_ACTIONS = {
@@ -279,7 +279,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		assert self.state == ST_PREPARED
 		kblang = self.kblang
 		if kblang is None:
-			kblang = self.template.kblang
+			kblang = self._template().kblang
 		qm.configure(self.vmid, cores=self.cpus, memory=self.ram, keyboard=kblang, tablet=self.usbtablet,
 			hda=self._imagePath(), fda=self._nlxtp_device_filename())
 
@@ -334,6 +334,8 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	def _useImage(self, path_, backing=False):
 		assert self.state == ST_PREPARED
 		if backing:
+			if os.path.exists(self._imagePath()):
+				os.unlink(self._imagePath())
 			qemu_img.create(self._imagePath(), backingImage=path_)
 		else:
 			io.copy(path_, self._imagePath())
@@ -433,7 +435,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		if not os.path.exists(self._nlxtp_path("")):
 			os.makedirs(self._nlxtp_path(""))
 		if not os.path.exists(self._nlxtp_device_filename()):
-			vfat.create(self._nlxtp_device_filename(), 524288) # size (last argument) depends on nlxtp_max_size
+			vfat.create(self._nlxtp_device_filename(), KVMQM.rextfv_max_size/1024) # size (last argument) depends on nlxtp_max_size
 	
 	
 		
@@ -566,14 +568,15 @@ class KVMQM_Interface(elements.Element):
 		else:
 			self.used_addresses = []
 		info = elements.Element.info(self)
-		info["attrs"]["name"] = "eth%d" % self.num
+		info["attrs"]["name"] = "eth%d" % (self.num or 0)
 		return info
 
 	def updateUsage(self, usage, data):
-		ifname = self.interfaceName()
-		if net.ifaceExists(ifname):
-			traffic = sum(net.trafficInfo(ifname))
-			usage.updateContinuous("traffic", traffic, data)
+		if self.state == ST_STARTED:
+			ifname = self.interfaceName()
+			if net.ifaceExists(ifname):
+				traffic = sum(net.trafficInfo(ifname))
+				usage.updateContinuous("traffic", traffic, data)
 			
 KVMQM_Interface.__doc__ = DOC_IFACE
 

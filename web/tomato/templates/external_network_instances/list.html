@@ -155,7 +155,7 @@
 	  </tr>
 	{% for ni in nis %}
 	  <tr>
-	  	<td><a href="{%url "host.info" ni.attrs.host%}">{{ni.attrs.host}}</a></td>
+	  	<td><a href="{%url "admin.host.info" ni.attrs.host%}">{{ni.attrs.host}}</a></td>
 	  	<td>{{ni.attrs.bridge}}</td>
 	  	<td>{{ni.attrs.network}}</td>
 	    

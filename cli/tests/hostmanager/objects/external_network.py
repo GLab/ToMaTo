@@ -6,7 +6,7 @@ from openvz import tearDown as openvzTearDown
 
 def checkCreate(indent=""):
 	print indent + "creating external_network element..."
-	res = element_create("external_network")
+	res = element_create("external_network", attrs={'network': 'internet'})
 	assert res["id"]
 	print indent + "\tID: %d" % res["id"]
 	return res["id"]

@@ -1,4 +1,4 @@
-from lib import testSuite
+from lib.tests import testSuite
 
 import element, connection, topology, tasks, organization, sites, misc
 

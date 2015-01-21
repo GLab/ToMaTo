@@ -1,4 +1,4 @@
-from lib import testCase, testSuite, unicodeTestString
+from lib.tests import testCase, testSuite, unicodeTestString
 
 from organization import setUp as setUpOrga, tearDown as tearDownOrga, randomName
 

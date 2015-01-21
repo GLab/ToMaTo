@@ -20,7 +20,7 @@ from .. import resources, config
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError #@UnresolvedImport
-import os.path, base64, hashlib, shutil
+import os, os.path, base64, hashlib, shutil
 from tomato import currentUser
 from ..auth import Flags
 
@@ -49,7 +49,7 @@ class Template(resources.Resource):
 	subtype = attributes.attribute("subtype", str)
 	torrent_data = attributes.attribute("torrent_data", str)
 	restricted = attributes.attribute("restricted", bool)
-	kblang = attributes.attribute("kblang",str,null=False,default="en-US")
+	kblang = attributes.attribute("kblang",str,null=False,default="en-us")
 	# hosts: [TemplateOnHost]
 	
 	TYPE = "template"
@@ -111,7 +111,10 @@ class Template(resources.Resource):
 		if self.tech and os.path.exists(self.getTorrentPath()):
 			os.remove(self.getTorrentPath())
 		if self.tech and os.path.exists(self.getPath()):
-			shutil.rmtree(self.getPath())
+			if os.path.isdir(self.getPath()):
+				shutil.rmtree(self.getPath())
+			else:
+				os.remove(self.getPath())
 		resources.Resource.remove(self)
 
 	def isReady(self):

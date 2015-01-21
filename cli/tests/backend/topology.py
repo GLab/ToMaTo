@@ -1,4 +1,4 @@
-from lib import testCase, testSuite, unicodeTestString, createStarTopology
+from lib.tests import testCase, testSuite, unicodeTestString, createStarTopology
 
 def setUp(name):
 	print "Creating topology..."

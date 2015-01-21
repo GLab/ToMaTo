@@ -10,7 +10,7 @@ class KeyValuePair(attributes.Mixin, models.Model):
 
     key = models.CharField(max_length=255, unique=True)
     attrs = db.JSONField(default={})
-    value = attributes.attribute("data", unicode, default="")
+    value = attributes.attribute("data")
     
     def set(self, value):
         self.value = value

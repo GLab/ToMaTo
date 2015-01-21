@@ -20,7 +20,7 @@ import json, re
 
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, AuthError
+from lib import wrap_rpc, wrap_json, AuthError
 from django.http import HttpResponseRedirect, HttpResponse
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
@@ -30,8 +30,8 @@ from django.core.urlresolvers import reverse
 from lib.error import UserError #@UnresolvedImport
 
 class ErrorDumpForm(BootstrapForm):
-	source = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.", widget=forms.HiddenInput())
-	dump_id = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.", widget=forms.HiddenInput())
+	source = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.", widget=forms.HiddenInput())
+	dump_id = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.", widget=forms.HiddenInput())
 	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
 		super(ErrorDumpForm, self).__init__(*args, **kwargs)
@@ -42,7 +42,7 @@ class ErrorDumpForm(BootstrapForm):
 		)
 	
 class ErrorGroupForm(BootstrapForm):
-	description = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.")
+	description = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.")
 	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
 		super(ErrorGroupForm, self).__init__(*args, **kwargs)
@@ -88,7 +88,7 @@ def group_clear(api,request,group_id):
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",  kwargs={"group_id": group_id}))
 	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_clear", kwargs={"group_id": group_id}))
 	group_desc = api.errorgroup_info(group_id, include_dumps=False)['description']
-	return render(request, "form.html", {"heading": "Clear Errogroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_desc+"' from all dumps?", 'form': form})
+	return render(request, "form.html", {"heading": "Clear Errorgroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_desc+"' from all dumps?", 'form': form})
 
 
 @wrap_rpc
@@ -155,10 +155,7 @@ def dump_export_with_data(request, source, dump_id):
 	return dump_export(request, source, dump_id, True)
 
 @wrap_rpc
-def refresh(api, request):
-	if request.method == "POST":
-		res = api.errordumps_force_refresh()
-		return HttpResponse(json.dumps({"success": True, "result": res}))
-	else:
-		return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+def refresh(api,request):
+	api.errordumps_force_refresh()
+	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
 		

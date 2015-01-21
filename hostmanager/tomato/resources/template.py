@@ -35,7 +35,7 @@ class Template(resources.Resource):
 	name = models.CharField(max_length=50)
 	preference = models.IntegerField(default=0)
 	torrent_data = attributes.attribute("torrent_data", str)
-	kblang = attributes.attribute("kblang",str,null=False,default="en-US")
+	kblang = attributes.attribute("kblang",str,null=False,default="en-us")
 	
 	TYPE = "template"
 

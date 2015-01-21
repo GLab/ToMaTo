@@ -56,14 +56,14 @@ class OpenVZ_Interface(generic.VMInterface):
 	
 	
 	def modify_ip4address(self,val):
-		if not '/' in val:
+		if val and not '/' in val:
 			val+='/24'		
 		self.ip4address = val
 		if self.element:
 			self.element.modify({"ip4address": val})
 	
 	def modify_ip6address(self,val):
-		if not '/' in val:
+		if val and not '/' in val:
 			val+='/64'		
 		self.ip6address = val
 		if self.element:

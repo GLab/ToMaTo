@@ -249,20 +249,21 @@ var TextAreaElement = FormElement.extend({
 var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
-		
-		this.element = $('<div class="col-sm-12">').append('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
-		if (options.disabled) this.element.attr({disabled: true});
+
+		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
+		this.element = $('<div class="col-sm-12">').append(this.checkbox);
+		if (options.disabled) this.checkbox.attr({disabled: true});
 		var t = this;
-		this.element.change(function() {
+		this.checkbox.change(function() {
 			t.onChanged(this.checked);
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.element[0].checked;
+		return this.checkbox[0].checked;
 	},
 	setValue: function(value) {
-		this.element[0].checked = value;
+		this.checkbox[0].checked = value;
 	}
 });
 
@@ -415,7 +416,6 @@ var TemplateElement = FormElement.extend({
 
 var Window = Class.extend({
 	init: function(options) {
-		log(options);
 		this.options = options;
 		this.options.position = options.position || ['center',200];
 		this.div = $('<div style="overflow:visible;"/>').dialog({
@@ -500,7 +500,6 @@ var Window = Class.extend({
 	}
 });
 var showError = function(error) {
-	
 	if (ignoreErrors) return;
 	new errorWindow({error: { originalResponse: error,},show_error_appendix: true});
 }
@@ -695,7 +694,7 @@ var TutorialWindow = Window.extend({
 						this.tutorialGoForth();
 					}
 				}
-				finally {}
+				catch(e) {}
 			}
 		}
 	},
@@ -1740,11 +1739,12 @@ var Topology = Class.extend({
 			if (el.busy) continue;
 			if (el.parent) continue;
 			if (el.actionEnabled(action)) {
+				ids++;
 				el.action(action, {
 					noask: true,
-					callback: cb
+					callback: cb,
+					noUpdate: options.noUpdate
 				});
-				ids++;
 			}
 		}
 		if (ids <= 0 && options.callback) options.callback();
@@ -1810,8 +1810,8 @@ var Topology = Class.extend({
 				}
 			});			
 		}
-		this.action_delegate("stop", {noask: true, callback: function() {
-			t.action_delegate("destroy", {noask: true, callback: function() {
+		this.action_delegate("stop", {noask: true, noUpdate: true, callback: function() {
+			t.action_delegate("destroy", {noask: true, noUpdate: true, callback: function() {
 				if (t.elementCount()) {
 					for (var elId in t.elements) {
 						if (t.elements[elId].parent) continue;
@@ -1839,7 +1839,12 @@ var Topology = Class.extend({
 		 				}
 					} 
 		 		});
-		 		win.add($("<pre></pre>").text(JSON.stringify(result, undefined, 2)));
+		 		div = $('<div></div>');
+		 		new PrettyJSON.view.Node({
+		 			data: result,
+		 			el: div
+		 		});
+		 		win.add(div);
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
@@ -1860,7 +1865,6 @@ var Topology = Class.extend({
 		var openWithEditor = openWithEditor_html[0];
 		if (this.data.attrs._notes_autodisplay) {
 			openWithEditor.checked = true;
-			console.log("check");
 		}
 		dialog.append($('<br/>'))
 		dialog.append(openWithEditor_html);
@@ -2233,7 +2237,12 @@ var Component = Class.extend({
 		 				}
 					} 
 		 		});
-		 		win.add($("<pre></pre>").text(JSON.stringify(result, undefined, 2)));
+		 		div = $('<div></div>');
+		 		new PrettyJSON.view.Node({
+		 			data: result,
+		 			el: div
+		 		});
+		 		win.add(div);
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
@@ -2315,7 +2324,7 @@ var Component = Class.extend({
 		this.configWindow.show();
 		this.triggerEvent({operation: "attribute-dialog"});
 	},
-	update: function(fetch, callback) {
+	update: function(fetch, callback, hide_errors) {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
 		ajax({
@@ -2323,13 +2332,11 @@ var Component = Class.extend({
 			data: {fetch: fetch},
 		 	successFn: function(result) {
 		 		t.updateData(result);
-		 		t.setBusy(false);
 				t.triggerEvent({operation: "update", phase: "end"});
 				if (callback) callback();
 		 	},
 		 	errorFn: function(error) {
-		 		new errorWindow({error:error});
-		 		t.setBusy(false);
+		 		if (!hide_errors) new errorWindow({error:error});
 				t.triggerEvent({operation: "update", phase: "error"});
 		 	}
 		});
@@ -2355,6 +2362,7 @@ var Component = Class.extend({
 		 	errorFn: function(error) {
 		 		new errorWindow({error:error});
 		 		t.update();
+		 		t.setBusy(false);
 				t.triggerEvent({operation: "modify", phase: "error", attrs: attrs});
 		 	}
 		});
@@ -2379,12 +2387,13 @@ var Component = Class.extend({
 		 		t.setBusy(false);
 		 		if (options.callback) options.callback(t, result[0], result[1]);
 				t.triggerEvent({operation: "action", phase: "end", action: action, params: params});
-				t.updateDependent();
+				if (! options.noUpdate) t.updateDependent();
 				editor.rextfv_status_updater.add(t, 30);
 		 	},
 		 	errorFn: function(error) {
 		 		new errorWindow({error:error});
 		 		t.update();
+		 		t.setBusy(false);
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
 				editor.rextfv_status_updater.add(t, 5);
 		 	}
@@ -4179,9 +4188,16 @@ var RexTFV_status_updater = Class.extend({
 		//do not remove elements while iterating. instead, put to-be-removed entries in the toRemove array.
 		for (var i=0; i<t.elements.length; i++) {
 			entry = t.elements[i];
-			entry.element.update();
-			if (entry.element.rextfvStatusSupport() && entry.element.data.attrs.rextfv_run_status.running) {
-				entry.tries = 1;
+			success = true;
+			if (entry.element in editor.topology.elements) {
+				editor.topology.elements[entry.element].update(undefined, undefined, true); //hide errors.
+			} else {
+				success = false;
+			}
+			if (success && 
+				editor.topology.elements[entry.element].rextfvStatusSupport() &&
+				editor.topology.elements[entry.element].data.attrs.rextfv_run_status.running) {
+					entry.tries = 1;
 			} else {
 				entry.tries--;
 				if (entry.tries < 0) {
@@ -4194,27 +4210,25 @@ var RexTFV_status_updater = Class.extend({
 			t.remove(toRemove[i]);
 		}
 	},
-	add: function(el,tries) { //every entry has a number of retries and an element attached to it.
-								// retries are decreased when the status is something else than "running".
-								// retries are set to 1 if the status is "running".
+	add: function(el,tries) { //every entry has a number of retries and an element ID attached to it.
+								// retries are decreased when the status is something else than "running" (i.e., done, no RexTFV support, etc.).
 								// the idea is that the system might need some time to detect RexTFV activity after uploading the archive or starting a device.
+								// retries are set to 1 if the status is "running".
 								// retries == 1 is the default. if retries < 0, the entry is removed. This means, after the status is set to "not running",
 								// the editor will update the element twice before removing it.
 		
-		
+
 		//first, search whether this element is already monitored. If yes, update number of tries if necessary (keep the bigger one). exit funciton if found.
 		for (var i=0; i<this.elements.length; i++) {
-			if (this.elements[i].element == el) {
-				found = true;
+			if (this.elements[i].element == el.id) {
 				if (this.elements[i].tries < tries)
 					this.elements[i].tries = tries;
 				return
 			}
 		}
-		
 		//if the search hasn't found anything, simply append this.
 		this.elements.push({
-			element: el,
+			element: el.id,
 			tries: tries
 		})
 	},

@@ -50,10 +50,17 @@ class ErrorGroup(models.Model):
 		self.delete()
 
 
-def create_group(group_id):
+def create_group(group_id, description=None):
+	desc = description or group_id
+	if isinstance(desc, dict) and "message" in desc:
+		desc = desc["message"]
+	if not isinstance(desc, str):
+		desc = str(desc)
+	if len(desc) > 100:
+		desc = desc[:100] + " ..."
 	gr = ErrorGroup.objects.create(
 		group_id=group_id,
-		description=group_id
+		description=desc
 	)
 	gr.save()
 	return gr
@@ -225,7 +232,8 @@ class DumpSource:
 			fetch_results = self.dump_fetch_list(self.dump_get_last_fetch())
 			self.dump_set_last_fetch(this_fetch_time)
 			return fetch_results
-		except:
+		except Exception, exc:
+			InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc, data={"source": repr(self)}).dump()
 			return []
 
 
@@ -290,7 +298,7 @@ def insert_dump(dump, source):
 		if get_group(dump['group_id']) is None:
 			from auth import mailFlaggedUsers, Flags
 			must_fetch_data = True
-			create_group(dump['group_id'])
+			create_group(dump['group_id'], dump['description'])
 			mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
 				"A new group of error has been found, with ID %s. It has first been observed on %s." % (
 				dump['group_id'], source.dump_source_name()))
@@ -309,14 +317,20 @@ def update_source(source):
 		insert_dump(e, source)
 
 
-def update_all():
+def update_all(async=True):
 	def cycle_all():
 		for s in getDumpSources():  #a removed host while iterating is caught by this, since dumpSource.getUpdates() will return [] in this case
-			thread.start_new_thread(update_source,
-				(s,))  #host might need longer to respond. no reason not to parallelize this
-			time.sleep(1)  #do not connect to all hosts at the same time. There is no need to rush.
+			if async:
+				thread.start_new_thread(update_source,(s,))  #host might need longer to respond. no reason not to parallelize this
+			else:
+				update_all(s)
+			if async:
+				time.sleep(1)  #do not connect to all hosts at the same time. There is no need to rush.
 
-	thread.start_new_thread(cycle_all, ())
+	if async:
+		thread.start_new_thread(cycle_all, ())
+	else:
+		cycle_all()
 	return len(getDumpSources())
 
 
@@ -410,4 +424,4 @@ def api_errordump_remove(source, dump_id):
 			
 def api_force_refresh():
 	if checkPermissions():
-		return update_all()
+		return update_all(async=False)
