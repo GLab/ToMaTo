@@ -1,8 +1,9 @@
 - .*
-- /tests
-- /lib
-+ */
 - *~
 - *.pyc
-- tests
-- lib
++ tomato.py
++ lib
++ tests
++ lib/**
++ tests/**
+- *

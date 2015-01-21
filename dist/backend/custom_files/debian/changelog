@@ -1,3 +1,19 @@
+tomato-backend (3.5) stable; urgency=medium
+
+  * Error dump management
+  * Faster backend/hostmanager interface based on SSL and JSON-RPC
+  * More robust KVM library
+  * Preparing tinc switches in parallel to improve speed
+  * Missing subnet expressions (e.g. /24) will now be automatically added to addresses
+  * Restricted network functionality
+  * Statistics: Show active topologies
+  * KVM templates can now define keyboard language
+  * Template torrents can now be downloaded
+  * Automatically updating caches to improve worst-case performance
+  * Ability to select a site for the whole topology
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 21 Jan 2015 11:42:35 +0100
+
 tomato-backend (3.4.3) stable; urgency=medium
 
   * Fixed double connection delete

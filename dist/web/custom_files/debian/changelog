@@ -1,3 +1,25 @@
+tomato-web (3.5) stable; urgency=medium
+
+  * Error dump management
+  * Faster backend/hostmanager interface based on SSL and JSON-RPC
+  * More robust KVM library
+  * Better error pages
+  * Executable archive status shown in editor next to element
+  * Upload own image now offers to configure the element before upload
+  * Restructured admin templates
+  * Moved dynimg functionality to javascript for better performance
+  * Disabled right-click buttons for busy elements
+  * Added a disabled host symbols for the host list
+  * Some design changes
+  * Statistics: Show active topologies
+  * Restricted network functionality
+  * Template torrents can now be downloaded
+  * Added option to run an initscript after loading a tutorial
+  * Storing tutorial data in topology
+  * Ability to select a site for the whole topology
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 21 Jan 2015 11:44:34 +0100
+
 tomato-web (3.4.3) stable; urgency=medium
 
   * Fixed save button on initial topology create dialog being greyed out

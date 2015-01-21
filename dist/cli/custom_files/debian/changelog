@@ -1,0 +1,58 @@
+tomato-cli (3.5) stable; urgency=medium
+
+  * Faster backend/hostmanager interface based on SSL and JSON-RPC
+  * Code cleanup
+  * Added documentation
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 21 Jan 2015 11:51:26 +0100
+
+tomato-cli (2.4) stable; urgency=low
+
+  * Unicode support
+  * Automatic repair functionality
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 03 Nov 2011 10:26:12 +0100
+
+tomato-cli (2.3) stable; urgency=low
+
+  * Improved overall error tolerance
+  * Multithreaded backend
+  * Improved resource reservation
+  * Hostserver partial download support
+  * Checking uploaded images
+  * List ordering
+  * Shared SSH connections
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 19 Sep 2011 13:44:25 +0200
+
+tomato-cli (2.2) stable; urgency=low
+
+  * More stability, error tolerance and robustnes
+  * Usage of TC instead of dummynet
+  * External VPN access
+  * Advanced topology import/export
+  * Notes on all topology elements
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 30 Aug 2011 13:25:43 +0200
+
+tomato-cli (2.1) stable; urgency=low
+
+  * Improved stability and error detection
+  * Programmable repy devices
+  * Improved packet capturing
+  * Timeout notification
+  * Improved template management 
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 10 Aug 2011 10:30:59 +0200
+
+tomato-cli (2.0.0) stable; urgency=low
+
+  * CLI for 2.0.0
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 08 Jul 2011 12:47:07 +0200
+
+tomato-cli (1.4.1) stable; urgency=low
+
+  * First release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 05 May 2011 23:54:47 +0200
