@@ -3,6 +3,7 @@ import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip
 from . import anyjson as json
 from .cmd import run, CommandError  # @UnresolvedImport
 from .. import config, scheduler
+from .error import InternalError
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
@@ -135,12 +136,12 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 				with open(filename, "r") as f:
 					dump = json.load(f)
 			except:
-				raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, dump=True)
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, todump=True)
 		else:
 			if dump_id in dumps:
 				dump = dumps[dump_id].copy()
 			else:
-				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, dump=True)
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, todump=True)
 
 		if push_to_dumps:
 			dumps[dump_id] = dump.copy()
@@ -174,7 +175,7 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 						if compress_data:
 							dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']), 9))
 				except:
-					raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, dump=True)
+					raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, todump=True)
 		return dump
 
 
