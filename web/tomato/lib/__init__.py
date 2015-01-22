@@ -17,8 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
-import xmlrpclib, json, urllib, socket, hashlib
+import xmlrpclib, urllib, hashlib
+from . import anyjson as json
 from .. import settings
 from .error import Error #@UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault

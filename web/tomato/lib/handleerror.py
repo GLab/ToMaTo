@@ -5,7 +5,8 @@ Created on Nov 20, 2014
 '''
 from error import Error, UserError, InternalError, getCodeMsg #@UnresolvedImport
 from django.shortcuts import render, redirect
-import xmlrpclib, json, socket, sys
+import xmlrpclib, socket, sys
+from . import anyjson as json
 from django.http import HttpResponse
 
 def interpretError(error):

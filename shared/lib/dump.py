@@ -1,5 +1,6 @@
-import sys, os, time, json, traceback, hashlib, zlib, threading, re, base64, gzip
+import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip
 
+from . import anyjson as json
 from .cmd import run, CommandError  # @UnresolvedImport
 from .. import config, scheduler
 

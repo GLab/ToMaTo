@@ -1,25 +1,6 @@
 import socket, select, os
 
-JSON = False
-try:
-	if not JSON:
-		import simplejson as json
-
-		JSON = json.__name__
-except ImportError:
-	pass
-try:
-	if not JSON:
-		import ujson as json
-
-		JSON = json.__name__
-except ImportError:
-	pass
-if not JSON:
-	import json
-
-	JSON = json.__name__
-# print "Using %s" % JSON
+from . import anyjson as json
 
 class Port:
 	def fileno(self):

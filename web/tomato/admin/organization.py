@@ -23,7 +23,6 @@ Created on Dec 4, 2014
 
 @author: t-gerhard
 '''
-import json
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import render

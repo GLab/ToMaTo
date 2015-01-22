@@ -1,5 +1,6 @@
-import time, json, zlib, threading, thread, base64
+import time, zlib, threading, thread, base64
 from django.db import models
+from .lib import anyjson as json
 
 import host
 from .lib import attributes, db, keyvaluestore  # @UnresolvedImport

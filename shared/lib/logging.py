@@ -1,5 +1,6 @@
 from datetime import datetime
-import sys, os, gzip, bz2, time, json, traceback, hashlib
+import sys, time, traceback, hashlib
+from . import anyjson as json
 
 class JSONLogger:
   def __init__(self, path):
