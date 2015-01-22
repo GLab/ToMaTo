@@ -115,8 +115,11 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 		#save it (in the dumps array, and on disk)
 		with open(get_absolute_path(dump_id, True), "w") as f:
 			json.dump(dump_meta, f)
-		with gzip.GzipFile(get_absolute_path(dump_id, False), "w", 9) as f:
-			f.write(json.dumps(data))
+		fp = gzip.GzipFile(get_absolute_path(dump_id, False), "w", 9)
+		try:
+			fp.write(json.dumps(data))
+		finally:
+			fp.close()
 		dumps[dump_id] = dump_meta
 
 	return dump_id
@@ -170,10 +173,13 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 			elif dump_file_version == 1:
 				filename = get_absolute_path(dump_id, False, 1)
 				try:
-					with gzip.GzipFile(filename, "r") as f:
-						dump['data'] = json.loads(f.read())
-						if compress_data:
-							dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']), 9))
+					fp = gzip.GzipFile(filename, "r")
+					try:
+						dump['data'] = json.loads(fp.read())
+					finally:
+						fp.close()
+					if compress_data:
+						dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']), 9))
 				except:
 					raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, todump=True)
 		return dump
@@ -279,12 +285,6 @@ def dumpException(**kwargs):
 	if issubclass(type_, Error):
 		return dumpError(value)
 	
-	# check whether this is a common exception that doesn't need to be dumped
-	from ..lib.rpc.xmlrpc import ErrorUnauthorized
-	if issubclass(type_, ErrorUnauthorized):
-		return True
-	return False
-
 	return dumpUnknownException(type_, value, trace, **kwargs)
 
 	
