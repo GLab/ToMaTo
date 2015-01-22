@@ -70,10 +70,8 @@ class ServerProxy(object):
                 #print "%f, %f, %s(%s, %s)" % (after, after-before, name, args, kwargs)
                 return res
             except xmlrpclib.Fault, e:
-                print e.faultCode
                 if e.faultCode == 999:
                     e = Error.parsestr(e.faultString)
-                    print e.group_id()
                 raise e
         return _call
 
