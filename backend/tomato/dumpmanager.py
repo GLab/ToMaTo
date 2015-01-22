@@ -59,6 +59,8 @@ def create_group(group_id, description=None):
 		desc = str(desc)
 	if len(desc) > 100:
 		desc = desc[:100] + " ..."
+	if not desc:
+		desc = group_id
 	gr = ErrorGroup.objects.create(
 		group_id=group_id,
 		description=desc
