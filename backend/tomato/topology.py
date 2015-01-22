@@ -256,6 +256,13 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		else:
 			elements = [el.id for el in self.elements.all()]
 			connections = [con.id for con in self.connections.all()]
+		has_prepared=False
+		has_started=False
+		for el in self.elements.all():
+			if el.state=='prepared':
+				has_prepared = True
+			if el.state=="started":
+				has_started = True
 		usage = self.totalUsage.getRecords(type="5minutes").order_by("-end")
 		attrs = self.attrs.copy()
 		attrs['site'] = self.site.name if self.site else None
@@ -266,7 +273,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 			"elements": elements,
 			"connections": connections,
 			"usage": usage[0].info() if usage else None,
-			"timeout": self.timeout
+			"timeout": self.timeout,
+			"state_max": "started" if has_started else ('prepared' if has_prepared else 'created')
 		}
 		
 	def updateUsage(self):
