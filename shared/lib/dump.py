@@ -114,9 +114,9 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 
 		#save it (in the dumps array, and on disk)
 		with open(get_absolute_path(dump_id, True), "w") as f:
-			json.dump(dump_meta, f, indent=2)
+			json.dump(dump_meta, f)
 		with gzip.GzipFile(get_absolute_path(dump_id, False), "w", 9) as f:
-			f.write(json.dumps(data, indent=2))
+			f.write(json.dumps(data))
 		dumps[dump_id] = dump_meta
 
 	return dump_id

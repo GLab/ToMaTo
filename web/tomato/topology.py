@@ -157,6 +157,6 @@ def export(api, request, id):
 		raise AuthError()
 	top = api.topology_export(id)
 	filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3.json"
-	response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
+	response = HttpResponse(json.orig.dumps(top, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response

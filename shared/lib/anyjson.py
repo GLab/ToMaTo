@@ -4,6 +4,7 @@ dump = None
 load = None
 
 import json as _json
+orig = _json
 try:
 	import simplejson as _json
 except ImportError:

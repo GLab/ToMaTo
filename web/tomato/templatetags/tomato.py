@@ -12,7 +12,10 @@ register = template.Library()
 
 @register.filter
 def jsonify(o, pretty=False):
-	return mark_safe(json.dumps(o, indent=bool(pretty)))
+	if pretty:
+		return mark_safe(json.orig.dumps(o, indent=True))
+	else:
+		return mark_safe(json.dumps(o))
 
 @register.simple_tag
 @register.filter
