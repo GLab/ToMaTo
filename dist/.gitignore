@@ -10,7 +10,7 @@ hostmanager/tomato-hostmanager*
 web/tomato-web*
 meta/tomato-host-proxmox/debian/files
 meta/tomato-host-proxmox/debian/tomato-host-proxmox
-cli/tomato-cli-*
+cli/tomato-cli*
 repy/tomato-repy-*
 repy/tomato-repy/debian/tomato-repy
 repy/repy_orig
