@@ -18,7 +18,6 @@
 
 import os
 from django.http import HttpResponse
-from tomato.lib import cached
 from .lib import anyjson as json
 
 def ls_img(request):

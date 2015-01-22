@@ -139,7 +139,7 @@ def import_(api, request):
 			api.topology_modify(id_, {'_initialized': True})
 			if errors != []:
 				errors = ["%s %s: failed to set %s=%r, %s" % (type_, cid, key, val, err) for type_, cid, key, val, err in errors]
-				note = "Errors occured during import:\n" + "\n".join(errors);
+				note = "Errors occured during import:\n" + "\n".join(errors)
 				t = api.topology_info(id_)
 				if t['attrs'].has_key('_notes') and t['attrs']['_notes']:
 					note += "\n__________\nOriginal Notes:\n" + t['attrs']['_notes']

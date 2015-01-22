@@ -20,7 +20,7 @@ import re
 
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, wrap_json, AuthError
+from lib import wrap_rpc, AuthError
 from .lib import anyjson as json
 from django.http import HttpResponseRedirect, HttpResponse
 
