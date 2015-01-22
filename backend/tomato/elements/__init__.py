@@ -416,7 +416,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		pass
 		
 	@classmethod
-	@cached(timeout=3600)
+	@cached(timeout=3600, maxSize=None)
 	def getCapabilities(cls, host_):
 		if not host_:
 			host_ = host.getAll()[0]

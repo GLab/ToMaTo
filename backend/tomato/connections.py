@@ -427,7 +427,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 				stopping_list.remove(self)
 		
 	@classmethod
-	@cached(timeout=3600)
+	@cached(timeout=3600, maxSize=None)
 	def getCapabilities(cls, type_, host_):
 		if not host_:
 			host_ = getAllHosts()[0]

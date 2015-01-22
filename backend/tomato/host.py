@@ -1058,7 +1058,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 	return hosts[0]
 
 
-@cached(timeout=3600)
+@cached(timeout=3600, autoupdate=True)
 def getElementTypes():
 	types = set()
 	for h in getAll():
@@ -1066,7 +1066,7 @@ def getElementTypes():
 	return types
 
 
-@cached(timeout=3600)
+@cached(timeout=3600, autoupdate=True)
 def getElementCapabilities(type_):
 	# FIXME: merge capabilities
 	caps = {}
@@ -1077,7 +1077,7 @@ def getElementCapabilities(type_):
 	return caps
 
 
-@cached(timeout=3600)
+@cached(timeout=3600, autoupdate=True)
 def getConnectionTypes():
 	types = set()
 	for h in getAll():
@@ -1085,7 +1085,7 @@ def getConnectionTypes():
 	return types
 
 
-@cached(timeout=3600)
+@cached(timeout=3600, autoupdate=True)
 def getConnectionCapabilities(type_):
 	# FIXME: merge capabilities
 	caps = {}
