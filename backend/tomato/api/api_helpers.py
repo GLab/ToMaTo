@@ -16,12 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import currentUser
-from ..lib.rpc.xmlrpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.error import UserError  #@UnresolvedImport
 
 def checkauth(fn):
 	def call(*args, **kwargs):
 		if not currentUser():
-			raise ErrorUnauthorized()
+			raise UserError(UserError.NOT_LOGGED_IN, message="not logged in")
 		return fn(*args, **kwargs)
 	call.__name__ = fn.__name__
 	call.__doc__ = fn.__doc__
