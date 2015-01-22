@@ -39,21 +39,18 @@ class ImportTopologyForm(BootstrapForm):
 		)
 @wrap_rpc
 def list(api, request, show_all=False, organization=None):
-	if not api.user:
-		raise AuthError()
-	toplist=api.topology_list(showAll=show_all, organization=organization)
-	orgas=api.organization_list()
-	tut_in_top_list = False
-	for top in toplist:
-		tut_in_top_list_old = tut_in_top_list
-		if top['attrs'].has_key('_tutorial_url'):
-			top['attrs']['tutorial_url'] = top['attrs']['_tutorial_url']
-			tut_in_top_list = True
-		if top['attrs'].has_key('_tutorial_disabled'):
-			top['attrs']['tutorial_disabled'] = top['attrs']['_tutorial_disabled']
-			if top['attrs']['tutorial_disabled']:
-				tut_in_top_list = tut_in_top_list_old
-		top['processed'] = {'timeout_critical': top['timeout'] - time.time() < serverInfo()['topology_timeout']['warning']}
+    if not api.user:
+        raise AuthError()
+    toplist=api.topology_list(showAll=show_all, organization=organization)
+    orgas=api.organization_list()
+    tut_in_top_list = False
+    for top in toplist:
+        top['attrs']['tutorial_enabled'] = ( 
+                top['attrs'].has_key('_tutorial_url') and not (top['attrs']['_tutorial_disabled'] if top['attrs'].has_key('_tutorial_disabled') else False) #old tutorials
+            ) or (
+                top['attrs']['_tutorial_state']['enabled'] if (top['attrs'].has_key('_tutorial_state') and top['attrs']['_tutorial_state'].has_key('enabled')) else top['attrs'].has_key('_tutorial_state') #new tutorials      
+            )
+        top['processed'] = {'timeout_critical': top['timeout'] - time.time() < serverInfo()['topology_timeout']['warning']}
 	return render(request, "topology/list.html", {'top_list': toplist, 'organization': organization, 'orgas': orgas, 'show_all': show_all, 'tut_in_top_list':tut_in_top_list})
 
 def _display(api, request, info, tutorial_state):
