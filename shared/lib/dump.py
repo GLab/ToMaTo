@@ -297,7 +297,7 @@ def dumpException(**kwargs):
 # Should only be called by dumpException	
 def dumpUnknownException(type_, value, trace, **kwargs):
 	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
-	exception_forid = {"type": type_.__name__, "value": re.sub("[0-9]","",str(value)), "trace": trace}
+	exception_forid = {"type": type_.__name__, "value": re.sub("[a-fA-F0-9]+","x",str(value)), "trace": trace}
 	exception_id = hashlib.md5(json.dumps(exception_forid)).hexdigest()
 	description = {"subject": exception['value'], "type": exception['type']}
 
