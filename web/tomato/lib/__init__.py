@@ -17,8 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
-import xmlrpclib, json, urllib, socket, hashlib
+import xmlrpclib, urllib, hashlib
+from . import anyjson as json
 from .. import settings
 from .error import Error #@UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault
@@ -70,10 +70,8 @@ class ServerProxy(object):
                 #print "%f, %f, %s(%s, %s)" % (after, after-before, name, args, kwargs)
                 return res
             except xmlrpclib.Fault, e:
-                print e.faultCode
                 if e.faultCode == 999:
                     e = Error.parsestr(e.faultString)
-                    print e.group_id()
                 raise e
         return _call
 

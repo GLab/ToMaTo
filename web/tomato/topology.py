@@ -20,7 +20,8 @@ from django.shortcuts import render, redirect
 from django import forms
 from django.http import HttpResponse
 
-import json, re, time
+import re, time
+from .lib import anyjson as json
 
 from tutorial import loadTutorial
 from lib import wrap_rpc, AuthError, serverInfo
@@ -138,7 +139,7 @@ def import_(api, request):
 			api.topology_modify(id_, {'_initialized': True})
 			if errors != []:
 				errors = ["%s %s: failed to set %s=%r, %s" % (type_, cid, key, val, err) for type_, cid, key, val, err in errors]
-				note = "Errors occured during import:\n" + "\n".join(errors);
+				note = "Errors occured during import:\n" + "\n".join(errors)
 				t = api.topology_info(id_)
 				if t['attrs'].has_key('_notes') and t['attrs']['_notes']:
 					note += "\n__________\nOriginal Notes:\n" + t['attrs']['_notes']
@@ -156,6 +157,6 @@ def export(api, request, id):
 		raise AuthError()
 	top = api.topology_export(id)
 	filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3.json"
-	response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
+	response = HttpResponse(json.orig.dumps(top, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response

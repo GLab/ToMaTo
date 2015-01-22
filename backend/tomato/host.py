@@ -21,9 +21,10 @@ from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging, error  # @UnresolvedImport
 from lib.cache import cached  # @UnresolvedImport
 from lib.error import TransportError, InternalError, UserError, Error
+from .lib import anyjson as json
 from auth import Flags
 from dumpmanager import DumpSource
-import time, hashlib, threading, datetime, json, zlib, base64, sys
+import time, hashlib, threading, datetime, zlib, base64, sys
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -45,8 +46,8 @@ class RemoteWrapper:
 				except Error, err:
 					if isinstance(err, TransportError):
 						self._proxy = None
-						if retries:
-							print "Retrying after error on %s: %s" % (self._host, err)
+						if retries >= 0:
+							print "Retrying after error on %s: %s, retries left: %d" % (self._host, err, retries)
 							continue
 						if not err.data:
 							err.data = {}

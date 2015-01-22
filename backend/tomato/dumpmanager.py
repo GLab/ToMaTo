@@ -1,5 +1,6 @@
-import time, json, zlib, threading, thread, base64
+import time, zlib, threading, thread, base64
 from django.db import models
+from .lib import anyjson as json
 
 import host
 from .lib import attributes, db, keyvaluestore  # @UnresolvedImport
@@ -58,6 +59,8 @@ def create_group(group_id, description=None):
 		desc = str(desc)
 	if len(desc) > 100:
 		desc = desc[:100] + " ..."
+	if not desc:
+		desc = group_id
 	gr = ErrorGroup.objects.create(
 		group_id=group_id,
 		description=desc

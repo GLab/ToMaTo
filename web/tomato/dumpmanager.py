@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import json, re
+import re
 
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, wrap_json, AuthError
+from lib import wrap_rpc, AuthError
+from .lib import anyjson as json
 from django.http import HttpResponseRedirect, HttpResponse
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
@@ -156,7 +157,7 @@ def dump_export(api, request, source, dump_id,data=False):
 		raise AuthError()
 	dump = api.errordump_info(source,dump_id,data)
 	filename = re.sub('[^\w\-_\. :]', '_', source.lower() + "__" + dump_id ) + ".errordump.json"
-	response = HttpResponse(json.dumps(dump, indent = 2), content_type="application/json")
+	response = HttpResponse(json.orig.dumps(dump, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response
 

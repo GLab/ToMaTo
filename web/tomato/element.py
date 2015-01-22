@@ -18,8 +18,6 @@
 
 from django.shortcuts import render
 
-import json
-
 from lib import wrap_rpc
 
 @wrap_rpc

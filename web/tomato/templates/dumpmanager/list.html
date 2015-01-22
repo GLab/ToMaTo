@@ -31,7 +31,7 @@
 	    		)
 	    	</td>  
 			<td>{{errorgroup.count}}</td>
-			<td>{{errorgroup.last_timestamp|todate}}</td>
+			<td enhancetable_customkey="{{errorgroup.last_timestamp}}">{{errorgroup.last_timestamp|todate}}</td>
 			{% if request.session.user.hasDebugFlag %}
 	  			<td align="right">
 	  				<form style="padding: 0px;margin:0px;">

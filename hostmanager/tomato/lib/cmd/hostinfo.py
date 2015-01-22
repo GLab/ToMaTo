@@ -95,7 +95,11 @@ def problems():
 	else:
 		if not os.access("/etc/vz/conf", os.R_OK):
 			problems.append("Config: /etc/vz/conf is not readable")
-			
+
+	#/etc/pve/openvz/ve-default.conf-sample exists?
+	if not os.access("/etc/pve/openvz/ve-default.conf-sample", os.F_OK):
+		problems.append("Config: /etc/pve/openvz/ve-default.conf-sample does not exist")
+
 	#hostname resolvable?
 	try:
 		etchostname = socket.gethostname()

@@ -29,16 +29,14 @@ Created on Dec 4, 2014
 
 @author: t-gerhard
 '''
-import json
 
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
 from django import forms
 from django.core.urlresolvers import reverse
 
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
-from ..lib import wrap_rpc, AuthError
+from ..lib import wrap_rpc
 from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list
 
 

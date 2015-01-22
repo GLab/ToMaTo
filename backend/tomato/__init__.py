@@ -57,7 +57,7 @@ def handleError():
 	logging.logException()
 
 from lib import tasks #@UnresolvedImport
-scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=10)
+scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=25)
 
 starttime = time.time()
 
