@@ -56,7 +56,13 @@ function showDump(source, dump_id, include_data) {
 	</tr>
 {% for errordump in errorgroup.dumps %}
 	<tr>
-		<td>{{errordump.source}}</td>
+		<td>
+			{% if errordump.source___link %}
+				<a href="{% url 'admin.host.info' errordump.source___link %}">{{errordump.source}}</a>
+			{% else %}
+				{{errordump.source}}
+			{% endif %}
+			</td>
 		<td>{{errordump.dump_id}}</td>
 		<td>{{errordump.software_version.version}}</td>
 		<td>{{errordump.type}}</td>
