@@ -27,9 +27,7 @@
 	    	<td>
 	    		<a href="{%url "dumpmanager.group_info" errorgroup.group_id %}">{{errorgroup.description}}</a>
 	    		(
-	    		{% for s in errorgroup.frontend_mod.sources %}
-	    			{{s}} 
-	    		{% endfor %}
+	    		{% for s in errorgroup.frontend_mod.sources %}{{s}}{% endfor %}
 	    		)
 	    	</td>  
 			<td>{{errorgroup.count}}</td>

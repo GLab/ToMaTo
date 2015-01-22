@@ -64,11 +64,16 @@ def group_list(api, request, site=None, organization=None):
 	errorgroup = api.errorgroup_list()
 	for e in errorgroup:
 		e['frontend_mod'] = {'sources':[]}
+		host_count = 0
 		for s in e['dump_contents']['source']:
 			if s == 'backend':
 				e['frontend_mod']['sources'].append('backend')
 			if s.startswith('host'):
-				e['frontend_mod']['sources'].append('hostmanager')
+				host_count+=1
+		if host_count>0:
+			if len(e['frontend_mod']['sources'])>0:
+				e['frontend_mod']['sources'].append(", ")
+			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
 		 
 		
 	return render(request, "dumpmanager/list.html", {'errorgroup_list': errorgroup})
@@ -76,6 +81,10 @@ def group_list(api, request, site=None, organization=None):
 @wrap_rpc
 def group_info(api, request, group_id):
 	errorgroup = api.errorgroup_info(group_id,include_dumps=True)
+	for errordump in errorgroup['dumps']:
+		errordump['source___link'] = None
+		if errordump['source'].startswith('host:'):
+			errordump['source___link'] = errordump['source'].replace('host:','')
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup})
 
 @wrap_rpc
