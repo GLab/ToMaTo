@@ -1,4 +1,4 @@
-import os, random, textwrap,threading, tarfile, shutil, re, urllib2, sys, json
+import os, random, textwrap,threading, tarfile, re, urllib2, sys, json
 import argparse, getpass
 from time import sleep
 from lib import getConnection, upload

@@ -46,8 +46,8 @@ class RemoteWrapper:
 				except Error, err:
 					if isinstance(err, TransportError):
 						self._proxy = None
-						if retries:
-							print "Retrying after error on %s: %s" % (self._host, err)
+						if retries >= 0:
+							print "Retrying after error on %s: %s, retries left: %d" % (self._host, err, retries)
 							continue
 						if not err.data:
 							err.data = {}
