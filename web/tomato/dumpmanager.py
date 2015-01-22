@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import json, re
+import re
 
 from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc, wrap_json, AuthError
+from .lib import anyjson as json
 from django.http import HttpResponseRedirect, HttpResponse
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons

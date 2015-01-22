@@ -18,10 +18,11 @@
 
 
 from lib import wrap_rpc, security_token
+from .lib import anyjson as json
 from admin_common import ConfirmForm
 from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
-import json, uuid
+import uuid
 import urllib2, urllib
 from urlparse import urljoin
 from settings import tutorial_list_url

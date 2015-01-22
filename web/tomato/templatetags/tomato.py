@@ -4,7 +4,7 @@ from django.template.defaultfilters import timesince
 from django import template
 from ..lib import getVersion, serverInfo, security_token
 from django.utils.safestring import mark_safe
-import json
+from ..lib import anyjson as json
 
 
 

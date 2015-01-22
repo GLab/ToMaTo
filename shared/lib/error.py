@@ -1,5 +1,7 @@
-import os, hashlib, json
+import os, hashlib
 import httplib
+
+from . import anyjson as json
 
 dumpError = None
 
