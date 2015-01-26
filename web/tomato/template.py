@@ -58,7 +58,7 @@ class TemplateForm(BootstrapForm):
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
 	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
 	icon = forms.URLField(label="Icon", help_text="URL of a 32x32 icon to use for elements of this template, leave empty to use the default icon", required=False)
-	kblang = forms.CharField(max_length=50,label="Keyboard Layout",widget = forms.widgets.Select(choices=kblang_options))
+	kblang = forms.CharField(max_length=50,label="Keyboard Layout",widget = forms.widgets.Select(choices=kblang_options), help_text="Only for KVM templates", required=False)
 	def __init__(self, *args, **kwargs):
 		super(TemplateForm, self).__init__(*args, **kwargs)
 		self.fields['creation_date'].initial=datetime.date.today()
@@ -81,11 +81,19 @@ class AddTemplateForm(TemplateForm):
             'show_as_common',
             'restricted',
             'nlXTP_installed',
+            'kblang',
             'icon',
             'creation_date',
             'torrentfile',
             Buttons.cancel_add
         )
+	def is_valid(self):
+		valid = super(AddTemplateForm, self).is_valid()
+		if not valid:
+			return valid
+		if self.cleaned_data['tech'] == 'kvmqm':
+			valid = (self.cleaned_data['kblang'] is not None)
+		return valid
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
