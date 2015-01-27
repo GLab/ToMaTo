@@ -22,7 +22,7 @@ from accounting import UsageStatistics
 from auth import Flags
 from auth.permissions import Permissions, PermissionMixin, Role
 from . import scheduler, host
-from .lib.error import UserError
+from .lib.error import UserError #@UnresolvedImport
 
 class TimeoutStep:
 	INITIAL = 0
@@ -254,15 +254,10 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 			elements = [el.info() for el in self.getElements()]
 			connections = [con.info() for con in self.getConnections()]
 		else:
-			elements = [el.id for el in self.elements.all()]
-			connections = [con.id for con in self.connections.all()]
-		has_prepared=False
-		has_started=False
-		for el in self.elements.all():
-			if el.state=='prepared':
-				has_prepared = True
-			if el.state=="started":
-				has_started = True
+			elements = [el.id for el in self.elements.only('id')]
+			connections = [con.id for con in self.connections.only('id')]
+		has_prepared=self.elements.filter(state='prepared').exists()
+		has_started=self.elements.filter(state='started').exists()
 		usage = self.totalUsage.getRecords(type="5minutes").order_by("-end")
 		attrs = self.attrs.copy()
 		attrs['site'] = self.site.name if self.site else None
