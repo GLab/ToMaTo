@@ -64,7 +64,12 @@ class Template(resources.Resource):
 		for attr in ["name", "tech", "torrent_data"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Template needs attribute",
 				data={"attribute": attr})
+		if 'kblang' in attrs:
+			kblang = attrs['kblang']
+			del attrs['kblang'] 
 		resources.Resource.init(self, *args, **kwargs)
+		if kblang:
+			self.modify({'kblang':kblang})
 		self.modify_torrent_data(self.torrent_data) #might have been set before name or tech 
 				
 	def upcast(self):

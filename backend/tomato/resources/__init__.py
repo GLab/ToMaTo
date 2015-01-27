@@ -37,9 +37,12 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 		self.save()
 		try:
 			self.modify(attrs)
-		except:
-			self.remove()
-			raise
+		except Exception, e:
+			try:
+				self.remove()
+			except:
+				pass
+			raise e
 		
 	def upcast(self):
 		if not self.type in TYPES:
@@ -107,10 +110,13 @@ def create(type_, attrs=None):
 	try:
 		res.init(attrs)
 		res.save()
-	except:
+	except Exception, e:
 		if res.id:
-			res.remove()
-		raise
+			try:
+				res.remove()
+			except:
+				pass
+		raise e
 	return res
 
 def init():
