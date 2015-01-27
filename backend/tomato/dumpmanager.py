@@ -159,7 +159,7 @@ class ErrorDump(attributes.Mixin, models.Model):
 		self.delete()
 
 
-def create_dump(dump, source):
+def create_dump(dump, source, nosave=False):
 	d = ErrorDump.objects.create(
 		source=source.dump_source_name(),
 		dump_id=dump['dump_id'],
@@ -169,8 +169,8 @@ def create_dump(dump, source):
 	d.description = dump['description']
 	d.type = dump['type']
 	d.software_version = dump['software_version']
-	d.save()
-	d.group.shrink()
+	if not nosave:
+		d.save()
 	return d
 
 
@@ -301,7 +301,7 @@ def find_source_by_name(source_name):
 	return None
 
 
-def insert_dump(dump, source):
+def insert_dump(dump, source, nosave=False):
 	with lock_db:
 		source_name = source.dump_source_name()
 		must_fetch_data = False
@@ -321,7 +321,7 @@ def insert_dump(dump, source):
 				dump['group_id'], source.dump_source_name()))
 
 		#insert the dump.
-		dump_db = create_dump(dump, source)
+		dump_db = create_dump(dump, source, nosave=nosave)
 
 		#if needed, load data
 		if must_fetch_data:
@@ -329,9 +329,16 @@ def insert_dump(dump, source):
 
 
 def update_source(source):
-	new_entries = source.dump_getUpdates()
-	for e in new_entries:
-		insert_dump(e, source)
+	try:
+		new_entries = source.dump_getUpdates()
+		for e in new_entries:
+			insert_dump(e, source, nosave=True)
+	finally:
+		for group in getAll_group():
+			with lock_db:
+				group.shrink()
+				group.dumps.save()
+			
 
 
 def update_all(async=True):
