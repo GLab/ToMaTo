@@ -13,17 +13,27 @@ from .lib.error import InternalError, UserError # @UnresolvedImport
 class ErrorGroup(models.Model):
 	group_id = models.CharField(max_length=255, primary_key=True)
 	description = models.CharField(max_length=255)
+	removed_dumps = models.IntegerField(default = 0)
 	#dumps: [ErrorDump]
 
 	def update_description(self, description):
 		self.description = description
 		self.save()
+		
+	def shrink(self):
+		c = self.dumps.count()
+		if c > 10:
+			torem = self.dumps.order_by('timestamp')[5:c-5]
+			self.removed_dumps += torem.count()
+			self.dumps.filter(pk__in=list(torem.values_list("id", flat=True))).delete()
+			self.save()
+			
 
 	def info(self):
 		res = {
 			'group_id': self.group_id,
 			'description': self.description,
-			'count': 0,
+			'count': self.removed_dumps,
 			'last_timestamp': 0,
 		    'data_available':False,
             'dump_contents':{}
@@ -99,7 +109,7 @@ class ErrorDump(attributes.Mixin, models.Model):
 	data_available = attributes.attribute("data_available", bool, False)
 	type = attributes.attribute("origin", unicode, "")
 	software_version = attributes.attribute("software_version", dict, "")
-	timestamp = attributes.attribute("timestamp", float, 0)
+	timestamp = models.IntegerField(default=0)
 
 	class Meta:
 		unique_together = (("source", "dump_id"))
@@ -160,6 +170,7 @@ def create_dump(dump, source):
 	d.type = dump['type']
 	d.software_version = dump['software_version']
 	d.save()
+	d.group.shrink()
 	return d
 
 
