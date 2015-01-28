@@ -124,7 +124,6 @@ def add(api, request, site=None):
     return add_function(request,
                         Form=AddHostForm,
                         create_function=api.host_create,
-                        modify_function=api.host_modify,
                         clean_formkwargs= ({'site':site} if site is not None else {}),
                         formkwargs = {'site_namelist':append_empty_choice(site_name_list(api))}
                         )

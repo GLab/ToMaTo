@@ -165,7 +165,6 @@ def add(api, request, organization=None):
     return add_function(request,
                         Form=AddSiteForm,
                         create_function=api.site_create,
-                        modify_function=api.site_modify,
                         clean_formkwargs= ({'organization':organization} if organization is not None else {}),
                         formkwargs = {'orga_namelist':append_empty_choice(organization_name_list(api))}
                         )

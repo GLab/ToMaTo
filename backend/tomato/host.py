@@ -154,12 +154,13 @@ def getAllOrganizations(**kwargs):
 	return list(Organization.objects.filter(**kwargs))
 
 
-def createOrganization(name, description=""):
+def createOrganization(name, description="", attrs={}):
 	UserError.check(currentUser().hasFlag(Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
 	logging.logMessage("create", category="site", name=name, description=description)
 	organization = Organization(name=name)
 	organization.save()
-	organization.init({"description": description})
+	attrs.update({"description": description})
+	organization.init(attrs)
 	return organization
 
 
@@ -243,7 +244,7 @@ def getAllSites(**kwargs):
 	return list(Site.objects.filter(**kwargs))
 
 
-def createSite(name, organization, description=""):
+def createSite(name, organization, description="", attrs={}):
 	orga = getOrganization(organization)
 	UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
 		data={"name": organization})
@@ -254,7 +255,8 @@ def createSite(name, organization, description=""):
 	logging.logMessage("create", category="site", name=name, description=description)
 	site = Site(name=name, organization=orga)
 	site.save()
-	site.init({"description": description})
+	attrs.update({'description':description})
+	site.init(attrs)
 	return site
 
 
@@ -997,6 +999,8 @@ def create(name, site, attrs=None):
 	user = currentUser()
 	UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
 		code=UserError.DENIED, message="Not enough permissions")
+	for attr in ["address", "rpcurl"]:
+		UserError.check(attr in attrs.keys(), code=UserError.INVALID_CONFIGURATION, message="Missing attribute for host: %s" % attr)
 	host = Host(name=name, site=site)
 	host.init(attrs)
 	host.save()
