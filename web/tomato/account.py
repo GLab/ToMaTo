@@ -38,51 +38,30 @@ from django.core.urlresolvers import reverse
 
 
 
-CategoryTranslationDict = {
-		   'manager_user_global':'Global User Management',
-		   'manager_user_orga':'Organization-Internal User Management',
-		   'manager_host_global':'Global Host Management',
-		   'manager_host_orga':'Organization-Internal Host Management',
-		   'user':'User',
-		   'error_management':"Error Management",
-		   'other':'Other'
-		}
-
-category_order = [
-		'manager_user_global',
-		'manager_user_orga',
-		'manager_host_global',
-		'manager_host_orga',
-		'error_management',
-		'user'
-	]
-
-def render_account_flag_fixedlist(api, value, flags=None, flag_categories=None):
-	FlagTranslationDict = flags or api.account_flags()
-	categories = flag_categories or api.account_flag_categories()
-	
-	catlist = category_order
-	for cat in categories.keys():
-		if not cat in catlist:
-			catlist.append(cat)
+# value: flags of account to display
+# flags: all flags
+def render_account_flag_fixedlist(api, value, flag_config=None):
+	if flag_config is None:
+		flag_config = api.account_flag_configuration()
+	FlagTranslationDict = flag_config['flags']
+	categories = flag_config['categories']
 	
 	output = []
-	isFirst = True
+	isFirst = True #is first category (set to Flase after first category has been found)
 	
-	for cat in catlist:
-		if cat in categories: #categories come from the backend, cat from the frontend. ignore categories which are not used by the backend.
-			foundOne = False
-			for v in categories[cat]:
-				if v in value:
-					if not foundOne:
-						if not isFirst:
-							output.append('</ul>')
-						else:
-							isFirst = False
-						output.append('<ul>')
-						output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
-						foundOne = True
-					output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
+	for cat in categories:
+		foundOne = False #found a match in current category
+		for v in cat['flags']:
+			if v in value:
+				if not foundOne:
+					if not isFirst:
+						output.append('</ul>') #first to.display entry of current category. close other category first, if this is not the first category.
+					else:
+						isFirst = False
+					output.append('<ul>')
+					output.append('<b>' + cat['onscreentitle'] + '</b>')
+					foundOne = True
+				output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
 		
 	return output
 			
@@ -107,42 +86,40 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 		has_id = attrs and 'id' in attrs
 		final_attrs = self.build_attrs(attrs, name=name)
 		str_values = set([force_unicode(v) for v in value])
-	
-		FlagTranslationDict = self.api.account_flags()
-		categories = self.api.account_flag_categories()
-		catlist = category_order
 		
+		config = self.api.account_flag_configuration()
+	
+		FlagTranslationDict = config['flags']
+		categories = config['categories']
+		
+		#algorithm similar to render_account_flag_fixedlist
 		output = []
 		isFirst = True
-		for cat in categories.keys():
-			if not cat in catlist:
-				catlist.append(cat)
 		
-		for cat in catlist:
-			if cat in categories: #categories come from the backend, cat from the frontend. ignore categories which are not used by the backend.
-				foundOne = False
-				for v in categories[cat]:
-					if not foundOne:
-						if not isFirst:
-							output.append('<br />')
-						else:
-							isFirst = False
-						output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
-						foundOne = True
-						
-					if has_id:
-						final_attrs = dict(final_attrs, id='%s_%s' % (attrs['id'], self.choices.index((v,FlagTranslationDict.get(v,v)))))
-						label_for = u' for="%s"' % final_attrs['id']
+		for cat in categories:
+			foundOne = False
+			for v in cat['flags']:
+				if not foundOne:
+					if not isFirst:
+						output.append('<br />')
 					else:
-						label_for = ''
-						
-					cb = forms.widgets.CheckboxInput(final_attrs, check_test=lambda value: value in str_values)
-					option_value = force_unicode(v)
-					rendered_cb = cb.render(name, option_value)
-					option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
-					output.append(u'<label style="font-weight:normal;" class="checkbox%s">' % (self.inline_class))
-					output.append(rendered_cb.replace("form-control", "") + option_label)
-					output.append('</label>')
+						isFirst = False
+					output.append('<b>' + cat['onscreentitle'] + '</b>')
+					foundOne = True
+					
+				if has_id:
+					final_attrs = dict(final_attrs, id='%s_%s' % (attrs['id'], self.choices.index((v,FlagTranslationDict.get(v,v)))))
+					label_for = u' for="%s"' % final_attrs['id']
+				else:
+					label_for = ''
+					
+				cb = forms.widgets.CheckboxInput(final_attrs, check_test=lambda value: value in str_values)
+				option_value = force_unicode(v)
+				rendered_cb = cb.render(name, option_value)
+				option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
+				output.append(u'<label style="font-weight:normal;" class="checkbox%s">' % (self.inline_class))
+				output.append(rendered_cb.replace("form-control", "") + option_label)
+				output.append('</label>')
 		output.append('</ul>')
 		return mark_safe(u'\n'.join(output))
 	
@@ -257,8 +234,7 @@ def list(api, request, with_flag=None, organization=True):
 		organization_description = api.organization_info(organization)['description']
 	accs = api.account_list(organization=organization)
 	orgas = api.organization_list()
-	flags = api.account_flags()
-	flag_categories = api.account_flag_categories()
+	flag_config = api.account_flag_configuration()
 	if with_flag:
 		acclist_new = []
 		for acc in accs:
@@ -266,7 +242,7 @@ def list(api, request, with_flag=None, organization=True):
 				acclist_new.append(acc)
 		accs = acclist_new
 	for acc in accs:
-		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,acc['flags'],flags=flags, flag_categories=flag_categories)))
+		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,acc['flags'], flag_config=flag_config)))
 	return render(request, "account/list.html", {'accounts': accs, 'orgas': orgas, 'with_flag': with_flag, 'organization':organization, 'organization_description':organization_description})
 
 @wrap_rpc

@@ -72,30 +72,46 @@ flags = {
 	Flags.OrgaAdminContact: "OrgaAdminContact: User receives mails to a specific organization"
 }
 
-categories = {
-	'manager_user_global': [
+categories = [
+			{'title': 'manager_user_global',
+			 'onscreentitle': 'Global User Management',
+			 'flags': [
 						Flags.GlobalAdmin,
 						Flags.GlobalToplOwner,
 						Flags.GlobalToplManager,
 						Flags.GlobalToplUser,
 						Flags.GlobalAdminContact
-						],
-	'manager_user_orga': [
+						]},
+			{'title': 'manager_user_orga',
+			 'onscreentitle': 'Organization-Internal User Management',
+			 'flags': [
 						Flags.OrgaAdmin,
 						Flags.OrgaToplOwner,
 						Flags.OrgaToplManager,
 						Flags.OrgaToplUser,
 						Flags.OrgaAdminContact
-						],
-	'manager_host_global': [
+						]},
+			{'title': 'manager_host_global',
+			 'onscreentitle': 'Global Host Management',
+			 'flags': [
 						Flags.GlobalHostManager,
 						Flags.GlobalHostContact
-						],
-	'manager_host_orga': [
+						]},
+			{'title': 'manager_host_orga',
+			 'onscreentitle': 'Organization-Internal Host Management',
+			 'flags': [
 						Flags.OrgaHostManager,
 						Flags.OrgaHostContact
-						],
-	'user': [
+						]},
+			{'title': 'error_management',
+			 'onscreentitle': 'Error Management',
+			 'flags': [
+						Flags.Debug,
+						Flags.ErrorNotify
+						]},
+			{'title': 'user',
+			 'onscreentitle': 'User Settings',
+			 'flags': [
 						Flags.NoTopologyCreate,
 						Flags.OverQuota,
 						Flags.RestrictedProfiles,
@@ -103,12 +119,9 @@ categories = {
 						Flags.RestrictedNetworks,
 						Flags.NewAccount,
 						Flags.NoMails
-						],
-	'error_management': [
-						Flags.Debug,
-						Flags.ErrorNotify
-						]
-	}
+						]}
+			]
+		
 
 orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
 						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.RestrictedNetworks, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
