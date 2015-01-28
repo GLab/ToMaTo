@@ -226,7 +226,7 @@ def add_function(request,
             for key in form.create_keys:
                 create_values.append(formData[key])
                 del formData[key]
-            create_function(*create_values,formData)
+            create_function(*create_values,**{'attrs':formData})
             return form.get_redirect_after()
         else:
             return form.create_response(request)
