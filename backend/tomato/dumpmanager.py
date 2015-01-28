@@ -337,8 +337,7 @@ def update_source(source):
 		for group in getAll_group():
 			with lock_db:
 				group.shrink()
-				group.dumps.save()
-			
+
 
 
 def update_all(async=True):
