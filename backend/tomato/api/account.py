@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
+from imaplib import Flags
 
 
 def _getAccount(name):
@@ -172,11 +173,21 @@ def account_flags():
 	"""
 	return flags
 
+#deprecated
 def account_flag_categories():
 	"""
 	Returns a dict which puts flags into different categories
 	"""
-	return categories
+	res = {}
+	for cat in categories:
+		res[cat['title']] = cat['flags']
+	return res
+
+def account_flag_configuration():
+	return {
+		'flags': flags,
+		'categories': categories
+		}
 		
 def account_mail(name, subject, message, from_support=False):
 	"""
