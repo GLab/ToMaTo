@@ -1,3 +1,12 @@
+tomato-web (3.5.1) stable; urgency=medium
+
+  * Compatibility fixes for old django
+  * Using fastest JSON implementation
+  * UI fixes for dump manager
+  * Added /key.pem to retrieve backend key
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 28 Jan 2015 09:46:27 +0100
+
 tomato-web (3.5) stable; urgency=medium
 
   * Error dump management

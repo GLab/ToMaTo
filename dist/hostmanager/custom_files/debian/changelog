@@ -1,3 +1,10 @@
+tomato-hostmanager (3.5.1) stable; urgency=medium
+
+  * Detecting problems with missing OpenVZ config files
+  * Using fastest available JSON implementation
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 28 Jan 2015 09:49:15 +0100
+
 tomato-hostmanager (3.5) stable; urgency=medium
 
   * Error dump management
