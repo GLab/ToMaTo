@@ -21,9 +21,10 @@ from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging, error  # @UnresolvedImport
 from lib.cache import cached  # @UnresolvedImport
 from lib.error import TransportError, InternalError, UserError, Error
+from .lib import anyjson as json
 from auth import Flags
 from dumpmanager import DumpSource
-import time, hashlib, threading, datetime, json, zlib, base64, sys
+import time, hashlib, threading, datetime, zlib, base64, sys
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -45,8 +46,8 @@ class RemoteWrapper:
 				except Error, err:
 					if isinstance(err, TransportError):
 						self._proxy = None
-						if retries:
-							print "Retrying after error on %s: %s" % (self._host, err)
+						if retries >= 0:
+							print "Retrying after error on %s: %s, retries left: %d" % (self._host, err, retries)
 							continue
 						if not err.data:
 							err.data = {}
@@ -1058,7 +1059,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 	return hosts[0]
 
 
-@cached(timeout=3600)
+@cached(timeout=3600, autoupdate=True)
 def getElementTypes():
 	types = set()
 	for h in getAll():
@@ -1066,7 +1067,7 @@ def getElementTypes():
 	return types
 
 
-@cached(timeout=3600)
+@cached(timeout=3600, autoupdate=True)
 def getElementCapabilities(type_):
 	# FIXME: merge capabilities
 	caps = {}
@@ -1077,7 +1078,7 @@ def getElementCapabilities(type_):
 	return caps
 
 
-@cached(timeout=3600)
+@cached(timeout=3600, autoupdate=True)
 def getConnectionTypes():
 	types = set()
 	for h in getAll():
@@ -1085,7 +1086,7 @@ def getConnectionTypes():
 	return types
 
 
-@cached(timeout=3600)
+@cached(timeout=3600, autoupdate=True)
 def getConnectionCapabilities(type_):
 	# FIXME: merge capabilities
 	caps = {}
@@ -1127,7 +1128,8 @@ def synchronizeHost(host):
 @util.wrap_task
 def synchronize():
 	for host in getAll():
-		scheduler.scheduleOnce(0, synchronizeHost, host)  # @UndefinedVariable
+		if host.enabled:
+			scheduler.scheduleOnce(0, synchronizeHost, host)  # @UndefinedVariable
 
 
 @util.wrap_task

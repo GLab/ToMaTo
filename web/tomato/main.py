@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
 from django import forms
@@ -36,6 +36,10 @@ def index(request):
 @wrap_rpc
 def statistics(api, request):
 	return render(request, "main/statistics.html", {"stats": api.statistics()})
+
+@wrap_rpc
+def backend_key(api, request):
+	return HttpResponse(api.server_info()['public_key'], content_type='text/plain')
 
 class LoginForm(forms.Form):
 	username = forms.CharField(max_length=255)

@@ -33,7 +33,7 @@ def _getHost(name):
 	UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"name": name})
 	return h
 
-@cached(timeout=6*3600)
+@cached(timeout=6*3600, autoupdate=True)
 def organization_list():
 	"""
 	undocumented
@@ -80,7 +80,7 @@ def organization_usage(name): #@ReservedAssignment
 	orga = _getOrganization(name)
 	return orga.totalUsage.info()	
 
-@cached(timeout=6*3600)
+@cached(timeout=6*3600, autoupdate=True)
 def site_list(organization=None):
 	"""
 	undocumented
@@ -127,7 +127,7 @@ def site_remove(name):
 	site.remove()
 	site_list.invalidate()
 
-@cached(timeout=300)
+@cached(timeout=300, maxSize=1000, autoupdate=True)
 def host_list(site=None, organization=None):
 	"""
 	undocumented

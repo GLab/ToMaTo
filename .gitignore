@@ -23,3 +23,6 @@ backend/htmlcov
 backend/templates
 docs/presentations
 backend/dumps
+cli/ovz
+docs/static/doc
+cli/tests/backend/old

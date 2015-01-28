@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import json
-import datetime
+from . import anyjson as json
 from django.db import models, transaction
 from django.core import validators
 from .. import config
@@ -29,18 +28,6 @@ which can be serialized even though upon deserialization they will remain
 strings.
 """
 
-class JSONDateEncoder(json.JSONEncoder):
-	def default(self, obj):
-		if isinstance(obj, basestring):
-			return obj
-		elif isinstance(obj, datetime.datetime):
-			return obj.strftime('%Y-%m-%d %H:%M:%S')
-		elif isinstance(obj, datetime.date):
-			return obj.strftime('%Y-%m-%d')
-		elif isinstance(obj, datetime.time):
-			return obj.strftime('%H:%M:%S')
-		return json.JSONEncoder.default(self, obj)
-
 class JSONField(models.TextField):
 	description = "Data that serializes and deserializes into and out of JSON."
 
@@ -48,12 +35,12 @@ class JSONField(models.TextField):
 	__metaclass__ = models.SubfieldBase
 
 	def _dumps(self, data):
-		return JSONDateEncoder().encode(data)
+		return json.dumps(data)
 
 	def _loads(self, str_):
 		if config.MAINTENANCE:
 			return str_
-		return json.loads(str_, encoding="UTF-8")
+		return json.loads(str_)
 
 	def db_type(self):
 		return 'text'

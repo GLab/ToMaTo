@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import json, re
+import re
 
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, wrap_json, AuthError
+from lib import wrap_rpc, AuthError
+from .lib import anyjson as json
 from django.http import HttpResponseRedirect, HttpResponse
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
@@ -63,11 +64,16 @@ def group_list(api, request, site=None, organization=None):
 	errorgroup = api.errorgroup_list()
 	for e in errorgroup:
 		e['frontend_mod'] = {'sources':[]}
+		host_count = 0
 		for s in e['dump_contents']['source']:
 			if s == 'backend':
 				e['frontend_mod']['sources'].append('backend')
 			if s.startswith('host'):
-				e['frontend_mod']['sources'].append('hostmanager')
+				host_count+=1
+		if host_count>0:
+			if len(e['frontend_mod']['sources'])>0:
+				e['frontend_mod']['sources'].append(", ")
+			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
 		 
 		
 	return render(request, "dumpmanager/list.html", {'errorgroup_list': errorgroup})
@@ -75,6 +81,10 @@ def group_list(api, request, site=None, organization=None):
 @wrap_rpc
 def group_info(api, request, group_id):
 	errorgroup = api.errorgroup_info(group_id,include_dumps=True)
+	for errordump in errorgroup['dumps']:
+		errordump['source___link'] = None
+		if errordump['source'].startswith('host:'):
+			errordump['source___link'] = errordump['source'].replace('host:','')
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup})
 
 @wrap_rpc
@@ -147,7 +157,7 @@ def dump_export(api, request, source, dump_id,data=False):
 		raise AuthError()
 	dump = api.errordump_info(source,dump_id,data)
 	filename = re.sub('[^\w\-_\. :]', '_', source.lower() + "__" + dump_id ) + ".errordump.json"
-	response = HttpResponse(json.dumps(dump, indent = 2), content_type="application/json")
+	response = HttpResponse(json.orig.dumps(dump, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response
 

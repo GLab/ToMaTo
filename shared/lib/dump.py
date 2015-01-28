@@ -1,7 +1,9 @@
-import sys, os, time, json, traceback, hashlib, zlib, threading, re, base64, gzip
+import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip
 
+from . import anyjson as json
 from .cmd import run, CommandError  # @UnresolvedImport
 from .. import config, scheduler
+from .error import InternalError
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
@@ -112,9 +114,12 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 
 		#save it (in the dumps array, and on disk)
 		with open(get_absolute_path(dump_id, True), "w") as f:
-			json.dump(dump_meta, f, indent=2)
-		with gzip.GzipFile(get_absolute_path(dump_id, False), "w", 9) as f:
-			f.write(json.dumps(data, indent=2))
+			json.dump(dump_meta, f)
+		fp = gzip.GzipFile(get_absolute_path(dump_id, False), "w", 9)
+		try:
+			fp.write(json.dumps(data))
+		finally:
+			fp.close()
 		dumps[dump_id] = dump_meta
 
 	return dump_id
@@ -134,12 +139,12 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 				with open(filename, "r") as f:
 					dump = json.load(f)
 			except:
-				raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, dump=True)
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, todump=True)
 		else:
 			if dump_id in dumps:
 				dump = dumps[dump_id].copy()
 			else:
-				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, dump=True)
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, todump=True)
 
 		if push_to_dumps:
 			dumps[dump_id] = dump.copy()
@@ -168,12 +173,15 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 			elif dump_file_version == 1:
 				filename = get_absolute_path(dump_id, False, 1)
 				try:
-					with gzip.GzipFile(filename, "r") as f:
-						dump['data'] = json.loads(f.read())
-						if compress_data:
-							dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']), 9))
+					fp = gzip.GzipFile(filename, "r")
+					try:
+						dump['data'] = json.loads(fp.read())
+					finally:
+						fp.close()
+					if compress_data:
+						dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']), 9))
 				except:
-					raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, dump=True)
+					raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, todump=True)
 		return dump
 
 
@@ -277,12 +285,6 @@ def dumpException(**kwargs):
 	if issubclass(type_, Error):
 		return dumpError(value)
 	
-	# check whether this is a common exception that doesn't need to be dumped
-	from ..lib.rpc.xmlrpc import ErrorUnauthorized
-	if issubclass(type_, ErrorUnauthorized):
-		return True
-	return False
-
 	return dumpUnknownException(type_, value, trace, **kwargs)
 
 	
@@ -295,7 +297,7 @@ def dumpException(**kwargs):
 # Should only be called by dumpException	
 def dumpUnknownException(type_, value, trace, **kwargs):
 	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
-	exception_forid = {"type": type_.__name__, "value": re.sub("[0-9]","",str(value)), "trace": trace}
+	exception_forid = {"type": type_.__name__, "value": re.sub("[a-fA-F0-9]+","x",str(value)), "trace": trace}
 	exception_id = hashlib.md5(json.dumps(exception_forid)).hexdigest()
 	description = {"subject": exception['value'], "type": exception['type']}
 

@@ -128,6 +128,8 @@ class CachedMethod:
 		self._cache.clear()	
 	
 def cached(timeout=None, maxSize=100, autoupdate=False):
+	if maxSize is None:
+		maxSize = 10000
 	def wrap(fn):
 		_cache = Cache(fn=fn, timeout=timeout, maxSize=maxSize, autoupdate=autoupdate)
 		call = CachedMethod(_cache)

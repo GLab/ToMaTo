@@ -1,5 +1,7 @@
-import os, hashlib, json
+import os, hashlib, re
 import httplib
+
+from . import anyjson as json
 
 dumpError = None
 
@@ -38,7 +40,7 @@ class Error(Exception):
 						json.dumps({
 									'code':self.code,
 									'type':self.type,
-									'message':self.message,
+									'message':re.sub('[a-fA-F0-9]+', 'x', str(self.message)),
 									'module':self.module})
 						).hexdigest()
 	

@@ -6,7 +6,6 @@ encoding//tomato/admin/organization.py=utf-8
 encoding//tomato/admin/site.py=utf-8
 encoding//tomato/admin_common.py=utf-8
 encoding//tomato/ajax.py=utf-8
-encoding//tomato/connection.py=utf-8
 encoding//tomato/crispy_forms/__init__.py=utf-8
 encoding//tomato/crispy_forms/base.py=utf-8
 encoding//tomato/crispy_forms/helper.py=utf-8

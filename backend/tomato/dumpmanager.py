@@ -1,5 +1,6 @@
-import time, json, zlib, threading, thread, base64
+import time, zlib, threading, thread, base64
 from django.db import models
+from .lib import anyjson as json
 
 import host
 from .lib import attributes, db, keyvaluestore  # @UnresolvedImport
@@ -12,17 +13,27 @@ from .lib.error import InternalError, UserError # @UnresolvedImport
 class ErrorGroup(models.Model):
 	group_id = models.CharField(max_length=255, primary_key=True)
 	description = models.CharField(max_length=255)
+	removed_dumps = models.IntegerField(default = 0)
 	#dumps: [ErrorDump]
 
 	def update_description(self, description):
 		self.description = description
 		self.save()
+		
+	def shrink(self):
+		c = self.dumps.count()
+		if c > 10:
+			torem = self.dumps.order_by('timestamp')[5:c-5]
+			self.removed_dumps += torem.count()
+			self.dumps.filter(pk__in=list(torem.values_list("id", flat=True))).delete()
+			self.save()
+			
 
 	def info(self):
 		res = {
 			'group_id': self.group_id,
 			'description': self.description,
-			'count': 0,
+			'count': self.removed_dumps,
 			'last_timestamp': 0,
 		    'data_available':False,
             'dump_contents':{}
@@ -58,6 +69,8 @@ def create_group(group_id, description=None):
 		desc = str(desc)
 	if len(desc) > 100:
 		desc = desc[:100] + " ..."
+	if not desc:
+		desc = group_id
 	gr = ErrorGroup.objects.create(
 		group_id=group_id,
 		description=desc
@@ -96,7 +109,7 @@ class ErrorDump(attributes.Mixin, models.Model):
 	data_available = attributes.attribute("data_available", bool, False)
 	type = attributes.attribute("origin", unicode, "")
 	software_version = attributes.attribute("software_version", dict, "")
-	timestamp = attributes.attribute("timestamp", float, 0)
+	timestamp = models.IntegerField(default=0)
 
 	class Meta:
 		unique_together = (("source", "dump_id"))
@@ -146,7 +159,7 @@ class ErrorDump(attributes.Mixin, models.Model):
 		self.delete()
 
 
-def create_dump(dump, source):
+def create_dump(dump, source, nosave=False):
 	d = ErrorDump.objects.create(
 		source=source.dump_source_name(),
 		dump_id=dump['dump_id'],
@@ -156,7 +169,8 @@ def create_dump(dump, source):
 	d.description = dump['description']
 	d.type = dump['type']
 	d.software_version = dump['software_version']
-	d.save()
+	if not nosave:
+		d.save()
 	return d
 
 
@@ -230,7 +244,9 @@ class DumpSource:
 		this_fetch_time = time.time() - self.dump_clock_offset()
 		try:
 			fetch_results = self.dump_fetch_list(self.dump_get_last_fetch())
-			self.dump_set_last_fetch(this_fetch_time)
+			if len(fetch_results)>0: #if the list is empty, no need to set this. However, if the list is empty for incorrect reasons (i.e., errors), 
+									#we may still be able to get the dumps when the error is resolved.
+				self.dump_set_last_fetch(this_fetch_time)
 			return fetch_results
 		except Exception, exc:
 			InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc, data={"source": repr(self)}).dump()
@@ -270,7 +286,8 @@ def getDumpSources():
 	sources = [backend_dumpsource]
 	hosts = host.getAll()
 	for h in hosts:
-		sources.append(h)
+		if h.enabled:
+			sources.append(h)
 	return sources
 
 #only one thread may write to the dump table at a time.
@@ -284,7 +301,7 @@ def find_source_by_name(source_name):
 	return None
 
 
-def insert_dump(dump, source):
+def insert_dump(dump, source, nosave=False):
 	with lock_db:
 		source_name = source.dump_source_name()
 		must_fetch_data = False
@@ -304,7 +321,7 @@ def insert_dump(dump, source):
 				dump['group_id'], source.dump_source_name()))
 
 		#insert the dump.
-		dump_db = create_dump(dump, source)
+		dump_db = create_dump(dump, source, nosave=nosave)
 
 		#if needed, load data
 		if must_fetch_data:
@@ -312,9 +329,15 @@ def insert_dump(dump, source):
 
 
 def update_source(source):
-	new_entries = source.dump_getUpdates()
-	for e in new_entries:
-		insert_dump(e, source)
+	try:
+		new_entries = source.dump_getUpdates()
+		for e in new_entries:
+			insert_dump(e, source, nosave=True)
+	finally:
+		for group in getAll_group():
+			with lock_db:
+				group.shrink()
+
 
 
 def update_all(async=True):

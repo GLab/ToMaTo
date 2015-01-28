@@ -20,7 +20,8 @@ from django.shortcuts import render, redirect
 from django import forms
 from django.http import HttpResponse
 
-import json, re, time
+import re, time
+from .lib import anyjson as json
 
 from tutorial import loadTutorial
 from lib import wrap_rpc, AuthError, serverInfo
@@ -38,22 +39,18 @@ class ImportTopologyForm(BootstrapForm):
 		)
 @wrap_rpc
 def list(api, request, show_all=False, organization=None):
-	if not api.user:
-		raise AuthError()
-	toplist=api.topology_list(showAll=show_all, organization=organization)
-	orgas=api.organization_list()
-	tut_in_top_list = False
-	for top in toplist:
-		tut_in_top_list_old = tut_in_top_list
-		if top['attrs'].has_key('_tutorial_url'):
-			top['attrs']['tutorial_url'] = top['attrs']['_tutorial_url']
-			tut_in_top_list = True
-		if top['attrs'].has_key('_tutorial_disabled'):
-			top['attrs']['tutorial_disabled'] = top['attrs']['_tutorial_disabled']
-			if top['attrs']['tutorial_disabled']:
-				tut_in_top_list = tut_in_top_list_old
-		top['processed'] = {'timeout_critical': top['timeout'] - time.time() < serverInfo()['topology_timeout']['warning']}
-	return render(request, "topology/list.html", {'top_list': toplist, 'organization': organization, 'orgas': orgas, 'show_all': show_all, 'tut_in_top_list':tut_in_top_list})
+    if not api.user:
+        raise AuthError()
+    toplist=api.topology_list(showAll=show_all, organization=organization)
+    orgas=api.organization_list()
+    for top in toplist:
+        top['attrs']['tutorial_enabled'] = ( 
+                top['attrs'].has_key('_tutorial_url') and not (top['attrs']['_tutorial_disabled'] if top['attrs'].has_key('_tutorial_disabled') else False) #old tutorials
+            ) or (
+                top['attrs']['_tutorial_state']['enabled'] if (top['attrs'].has_key('_tutorial_state') and top['attrs']['_tutorial_state'].has_key('enabled')) else top['attrs'].has_key('_tutorial_state') #new tutorials      
+            )
+        top['processed'] = {'timeout_critical': top['timeout'] - time.time() < serverInfo()['topology_timeout']['warning']}
+    return render(request, "topology/list.html", {'top_list': toplist, 'organization': organization, 'orgas': orgas, 'show_all': show_all})
 
 def _display(api, request, info, tutorial_state):
 	caps = api.capabilities()
@@ -138,7 +135,7 @@ def import_(api, request):
 			api.topology_modify(id_, {'_initialized': True})
 			if errors != []:
 				errors = ["%s %s: failed to set %s=%r, %s" % (type_, cid, key, val, err) for type_, cid, key, val, err in errors]
-				note = "Errors occured during import:\n" + "\n".join(errors);
+				note = "Errors occured during import:\n" + "\n".join(errors)
 				t = api.topology_info(id_)
 				if t['attrs'].has_key('_notes') and t['attrs']['_notes']:
 					note += "\n__________\nOriginal Notes:\n" + t['attrs']['_notes']
@@ -156,6 +153,6 @@ def export(api, request, id):
 		raise AuthError()
 	top = api.topology_export(id)
 	filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3.json"
-	response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
+	response = HttpResponse(json.orig.dumps(top, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response

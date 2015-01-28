@@ -956,20 +956,18 @@ var TemplateWindow = Window.extend({
 	getList: function() {
 		var form = $('<form class="form-horizontal"></form>');
 		var ths = this;
+		var winID = Math.random();
 
 		//build template list entry
 		var div_formgroup = $('<div class="form-group"></div>');
 		for(var i=0; i<this.choices.length; i++) {
 			var t = this.choices[i];
-			
-			
-			
 
 			
 			var div_option = $('<div class="col-md-10" />');
 			var div_radio = $('<div class="radio"></div>');
 			div_option.append(div_radio);
-			var radio = $('<input type="radio" name="template" value="'+t.name+'" />');
+			var radio = $('<input type="radio" name="template" value="'+t.name+'" id="'+winID+t.name+'" />');
 			
 			if (this.disabled) {
 				radio.prop("disabled",true);
@@ -987,7 +985,10 @@ var TemplateWindow = Window.extend({
 				radio.prop("checked","checked");
 			}
 			
-			var radiolabel = $('<label for="'+t.name+'">'+t.label+'</label>')
+			var radiolabel = $('<label for="'+t.name+'">'+t.label+'</label>');
+			radiolabel.click( function(){
+				$(this).children('input').attr('checked', 'checked');
+			});
 			div_radio.append(radiolabel);
 			radiolabel.prepend(radio);
 			var div_info = $('<div class="col-md-2" />');

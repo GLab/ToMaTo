@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, json
+import os
 from django.http import HttpResponse
-from tomato.lib import cached
+from .lib import anyjson as json
 
 def ls_img(request):
 	prefix = os.path.dirname(os.path.realpath(__file__))

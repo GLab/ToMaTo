@@ -18,6 +18,7 @@ NAME=tomato-hostmanager             # Introduce the short server's name here
 SCRIPTNAME=/etc/init.d/$NAME
 LOG=/var/log/tomato/server.log
 CERTS_DIR=/etc/tomato/client_certs
+CERTS_FILE=/etc/tomato/client_certs.pem
 
 # default settings
 USER=root
@@ -47,6 +48,7 @@ do_start()
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
 	c_rehash $CERTS_DIR >/dev/null
+        cat $CERTS_DIR/*.pem > $CERTS_FILE
 	daemon --name=$NAME --user=$USER.$GROUP --running && return 1
 	daemon --name=$NAME --user=$USER.$GROUP --umask=$UMASK --output=$LOG -- \
 		python /usr/share/tomato-hostmanager/server.py && return 0 || return 2
