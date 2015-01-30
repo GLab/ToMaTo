@@ -59,7 +59,7 @@ def create(path, format="qcow2", size=None, backingImage=None):
 	path = params.convert(path, check=lambda p: not os.path.exists(p))
 	size = params.convert(size, convert=str, null=True)
 	backingImage = params.convert(backingImage, check=os.path.exists, null=True)
-	c = ["qemu-img", "create", "-q", "-f", format]
+	c = ["qemu-img", "create", "-f", format]
 	if backingImage:
 		c += ["-o", "backing_file=%s" % backingImage]
 	c.append(path)
