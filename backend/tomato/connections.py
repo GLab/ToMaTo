@@ -157,7 +157,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			if key.startswith("_"):
 				continue
 			UserError.check(key in self.CUSTOM_ATTRS, code=UserError.UNSUPPORTED_ATTRIBUTE,
-				message="Unsuported connection attribute: %s" % key, data={"attribute": key})
+				message="Unsuported connection attribute: %s" % key, data={"attribute": key, "id": self.id})
 			self.CUSTOM_ATTRS[key].check(self, attrs[key])
 		
 	def modify(self, attrs):
@@ -216,10 +216,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			if mcon and action in mcon.getAllowedActions():
 				return
 		UserError.check(action in self.CUSTOM_ACTIONS, code=UserError.UNSUPPORTED_ACTION,
-			message="Unsuported connection action: %s" % action, data={"action": action})
+			message="Unsuported connection action: %s" % action, data={"action": action, "id": self.id})
 		UserError.check(self.state in self.CUSTOM_ACTIONS[action], code=UserError.INVALID_STATE,
 			message="Action %s can not be executed in state %s" % (action, self.state),
-			data={"action": action, "state": self.state})
+			data={"action": action, "state": self.state, "id": self.id})
 	
 	def action(self, action, params):
 		"""
