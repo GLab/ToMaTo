@@ -169,7 +169,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			if key.startswith("_"):
 				continue
 			UserError.check(key in self.CUSTOM_ATTRS, code=UserError.UNSUPPORTED_ATTRIBUTE,
-				message="Unsupported attribute", data={"type": self.type, "attribute": key})
+				message="Unsupported attribute", data={"type": self.type, "attribute": key, "id": self.id})
 			self.CUSTOM_ATTRS[key].check(self, attrs[key])
 		
 	def modify(self, attrs):
@@ -237,10 +237,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			if mel and action in mel.getAllowedActions():
 				return
 		UserError.check(action in self.CUSTOM_ACTIONS, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action",
-			data={"type": self.type, "action": action, "state": self.state})
+			data={"type": self.type, "action": action, "state": self.state, "id": self.id})
 		UserError.check(self.state in self.CUSTOM_ACTIONS[action], code=UserError.INVALID_STATE,
 			message="Action can not be executed in the current state",
-			data={"action": action, "type": self.type, "state": self.state})
+			data={"action": action, "type": self.type, "state": self.state, "id": self.id})
 	
 	def action(self, action, params={}):
 		"""
@@ -291,7 +291,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		UserError.check(recurse or self.children.empty(), code=UserError.NOT_EMPTY, message="Cannot remove element with children")
 		UserError.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION],
 			code=UserError.INVALID_STATE, message="Element can not be removed in its current state",
-			data={"type": self.type, "state": self.state})
+			data={"type": self.type, "state": self.state, "id": self.id})
 		for ch in self.getChildren():
 			ch.checkRemove(recurse=recurse)
 		if self.connection:
