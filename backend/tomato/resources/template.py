@@ -66,7 +66,9 @@ class Template(resources.Resource):
 				data={"attribute": attr})
 		if 'kblang' in attrs:
 			kblang = attrs['kblang']
-			del attrs['kblang'] 
+			del attrs['kblang']
+		else:
+			kblang=None
 		resources.Resource.init(self, *args, **kwargs)
 		if kblang:
 			self.modify({'kblang':kblang})
