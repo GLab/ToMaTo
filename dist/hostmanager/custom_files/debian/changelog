@@ -1,3 +1,12 @@
+tomato-hostmanager (3.5.2) stable; urgency=medium
+
+  * Fixed qemu-img call for very old qemu-img versions
+  * Pushed length of user names (=certificate common name) to 255
+  * Added new version of manage.py
+  * Disabling old kvm versions because of missing options
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 30 Jan 2015 11:01:50 +0100
+
 tomato-hostmanager (3.5.1) stable; urgency=medium
 
   * Detecting problems with missing OpenVZ config files
