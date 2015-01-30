@@ -1,3 +1,9 @@
+tomato-hostmanager (3.5.3) stable; urgency=medium
+
+  * Fixed migration for hosts with too old django
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 30 Jan 2015 11:23:16 +0100
+
 tomato-hostmanager (3.5.2) stable; urgency=medium
 
   * Fixed qemu-img call for very old qemu-img versions
