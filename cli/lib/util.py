@@ -1,1 +1,1 @@
-../../shared/lib/util.py
+__author__ = 'schwerdel'

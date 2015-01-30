@@ -25,7 +25,7 @@ from lib import db, attributes, logging #@UnresolvedImport
 from lib.error import UserError, InternalError
 from accounting import UsageStatistics
 from lib.cache import cached #@UnresolvedImport
-from host import HostConnection, HostElement, getConnectionCapabilities, getAll as getAllHosts
+from host import HostConnection, HostElement, getConnectionCapabilities, select
 
 REMOVE_ACTION = "(remove)"
 
@@ -429,8 +429,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	@classmethod
 	@cached(timeout=3600, maxSize=None)
 	def getCapabilities(cls, type_, host_):
-		if not host_:
-			host_ = getAllHosts()[0]
+		if not host_ and (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
+			host_ = select(connectionTypes=[type_])
 		host_cap = None
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
 			host_cap = host_.getConnectionCapabilities(type_)

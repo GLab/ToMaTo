@@ -418,8 +418,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	@classmethod
 	@cached(timeout=3600, maxSize=None)
 	def getCapabilities(cls, host_):
-		if not host_:
-			host_ = host.getAll()[0]
+		if not host_ and (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
+			host_ = host.select(elementTypes=[cls.HOST_TYPE or cls.TYPE])
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
 			host_cap = host_.getElementCapabilities(cls.HOST_TYPE or cls.TYPE)
 		cap_actions = dict(cls.CUSTOM_ACTIONS)
