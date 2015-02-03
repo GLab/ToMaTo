@@ -1,6 +1,14 @@
 from mongoengine import *
+import bson
 
-class BaseDocument(Document):
+class ExtDocument(object):
+	def getFieldId(self, field):
+		dat = self._data.get(field)
+		if isinstance(dat, bson.DBRef):
+			return dat._DBRef__id
+		return dat.id
+
+class BaseDocument(ExtDocument, Document):
 	meta = {'abstract': True}
 
 	def __setattr__(self, key, value):
@@ -278,7 +286,7 @@ class NetworkInstance(BaseDocument):
 	}
 
 class Topology(BaseDocument):
-	permissions = ListField(EmbeddedDocumentField(Permission), required=True)
+	permissions = ListField(EmbeddedDocumentField(Permission))
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
 	timeout = FloatField(required=True)
 	timeoutStep = IntField(db_field='timeout_step', required=True)
@@ -298,13 +306,12 @@ class Topology(BaseDocument):
 	def connections(self):
 		return Connection.objects(topology=self)
 
-class Element(DynamicDocument):
+class Element(ExtDocument, DynamicDocument):
 	topology = ReferenceField(Topology, required=True)
-	# no type anymore
 	state = StringField(choices=STATE_OPTIONS, required=True)
 	parent = GenericReferenceField()
 	connection = ReferenceField('Connection')
-	permissions = ListField(EmbeddedDocumentField(Permission), required=True)
+	permissions = ListField(EmbeddedDocumentField(Permission))
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
 	hostElements = ListField(ReferenceField('HostElement'), db_field='host_elements')
 	hostConnections = ListField(ReferenceField('HostConnection'), db_field='host_connections')
@@ -382,10 +389,10 @@ class UDPEndpoint(Element):
 	name = StringField()
 	connect = StringField()
 
-class Connection(DynamicDocument):
+class Connection(ExtDocument, DynamicDocument):
 	topology = ReferenceField(Topology, required=True)
 	state = StringField(choices=STATE_OPTIONS, required=True)
-	permissions = ListField(EmbeddedDocumentField(Permission), required=True)
+	permissions = ListField(EmbeddedDocumentField(Permission))
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
 	elementFrom = ReferenceField('Element', db_field='element_from', required=True)
 	elementTo = ReferenceField('Element', db_field='element_to', required=True)
@@ -400,4 +407,3 @@ class Connection(DynamicDocument):
 			'topology', 'state', 'elementFrom', 'elementTo'
 		]
 	}
-

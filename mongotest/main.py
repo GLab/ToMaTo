@@ -24,7 +24,9 @@ def convertData(data):
 		dat = entry['fields']
 		if 'attrs' in dat:
 			attrs = json.loads(dat['attrs'])
-			dat.update(attrs)
+			for key, val in attrs.items():
+				if not key in dat:
+					dat[key] = val
 			del dat['attrs']
 		dat['id'] = pk
 		table[pk] = dat
@@ -90,7 +92,7 @@ def importData(data):
 		usage = usages.get(entry['usage'])
 		if not usage:
 			print "\t\tInvalid reference: UsageRecord[%d] -> Usage[%d]" % (key, entry['usage'])
-			continue
+			usage = Usage()
 		entry = modifyDict(entry, remove=['id', 'usage', 'statistics'])
 		obj = UsageRecord(usage=usage, **entry)
 		usagerecords[key] = obj
@@ -249,11 +251,13 @@ def importData(data):
 	print "\tTemplates..."
 	Template.objects.delete()
 	templates = {}
+	templates_index = {}
 	for key, entry in data['template'].items():
 		entry = modifyDict(entry, remove=['id'])
 		obj = Template(**entry)
 		obj.save()
 		templates[key] = obj
+		templates_index[(obj.tech, obj.name)] = obj
 	print "\tTemplates on hosts..."
 	for key, entry in data['templateonhost'].items():
 		host = hosts.get(entry['host'])
@@ -331,7 +335,6 @@ def importData(data):
 		elems = sorted(entry['elements'])
 		entry = modifyDict(entry, remove=['id', 'host', 'usageStatistics', 'topology_element', 'topology_connection', 'elements'])
 		obj = HostConnection(host=host, usageStatistics=usageStatistics, **entry)
-		hostconnections[key] = obj
 		hel1 = hostelements_index.get((host.name, elems[0]))
 		if not hel1:
 			print "\t\tInvalid reference: HostConnection[%d] -> HostElement[%s, %d]" % (key, host.name, elems[0])
@@ -343,6 +346,7 @@ def importData(data):
 		obj.elementFrom = hel1
 		obj.elementTo = hel2
 		obj.save()
+		hostconnections[key] = obj
 		hel1.connection = obj
 		hel1.save()
 		hel2.connection = obj
@@ -365,42 +369,35 @@ def importData(data):
 		parent = elements.get(entry['parent'])
 		if entry['parent'] and not parent:
 			print "\t\tInvalid reference: Element[%d] -> Element[%d]" % (entry['id'], entry['parent'])
-			return
 		perms = permissions.get(entry['permissions'])
 		if not perms:
 			print "\t\tInvalid reference: Element[%d] -> Permission[%d]" % (entry['id'], entry['permissions'])
-			return
 		totalUsage = usagestatistics.get(entry['totalUsage'])
 		if not totalUsage:
 			print "\t\tInvalid reference: Element[%d] -> UsageStatistics[%d]" % (entry['id'], entry['totalUsage'])
-			return
 		entry.update(topology=topology, parent=parent, permissions=perms, totalUsage=totalUsage)
 		con = entry['connection']
 		elems = elementConnections.get(con, [])
 		elems.append(entry['id'])
 		elementConnections[con] = elems
-		entry = modifyDict(entry, remove=['id', 'type', 'connection'])
+		entry = modifyDict(entry, remove=['type', 'connection'])
 		return entry
-	def adaptVmElement(entry):
+	def adaptVmElement(entry, tech):
 		entry = adaptElement(entry)
 		if not entry:
 			return
 		elem = hostelements.get(entry['element'])
 		if entry['element'] and not elem:
 			print "\t\tInvalid reference: Element[%d] -> HostElement[%d]" % (entry['id'], entry['element'])
-			return
 		site = sites.get(entry['site'])
 		if entry['site'] and not site:
 			print "\t\tInvalid reference: Element[%d] -> Site[%d]" % (entry['id'], entry['site'])
-			return
 		profile = profiles.get(entry['profile'])
 		if entry['profile'] and not profile:
 			print "\t\tInvalid reference: Element[%d] -> Profile[%d]" % (entry['id'], entry['profile'])
-			return
 		template = templates.get(entry['template'])
 		if entry['template'] and not template:
-			print "\t\tInvalid reference: Element[%d] -> Template[%d]" % (entry['id'], entry['template'])
-			return
+			print "\t\tInvalid reference: Element[%d] -> Template[%s]" % (entry['id'], entry['template'])
 		entry.update(element=elem, site=site, profile=profile, template=template)
 		entry = modifyDict(entry, rename={'custom_template': 'customTemplate'})
 		return entry
@@ -443,7 +440,7 @@ def importData(data):
 			elem.save()
 	print "\tKVM QM elements..."
 	for key, entry in data.get('kvmqm', {}).items():
-		entry = adaptVmElement(entry)
+		entry = adaptVmElement(entry, 'kvmqm')
 		entry = modifyDict(entry, rename={'last_sync': 'lastSync', 'next_sync': 'nextSync',
 			'rextfv_last_started': 'rextfvLastStarted'}, remove=['id', 'type'])
 		obj = KVMQM(**entry)
@@ -464,7 +461,7 @@ def importData(data):
 			obj.element.save()
 	print "\tOpenVZ elements..."
 	for key, entry in data.get('openvz', {}).items():
-		entry = adaptVmElement(entry)
+		entry = adaptVmElement(entry, 'openvz')
 		entry = modifyDict(entry, rename={'last_sync': 'lastSync', 'next_sync': 'nextSync',
 			'rextfv_last_started': 'rextfvLastStarted'}, remove=['id', 'type'])
 		obj = OpenVZ(**entry)
@@ -486,7 +483,7 @@ def importData(data):
 			obj.element.save()
 	print "\tRepy elements..."
 	for key, entry in data.get('repy', {}).items():
-		entry = adaptVmElement(entry)
+		entry = adaptVmElement(entry, 'repy')
 		entry = modifyDict(entry, remove=['id', 'type'])
 		obj = Repy(**entry)
 		obj.save()
@@ -567,6 +564,7 @@ def importData(data):
 		elems = sorted(elementConnections[entry['id']])
 		if not len(elems) == 2:
 			print "\t\tInvalid connection: Connection[%d] has %d elements" % (key, len(elems))
+			continue
 		entry = modifyDict(entry, remove=['id', 'topology', 'permissions', 'totalUsage'])
 		obj = Connection(permissions=perms, totalUsage=totalUsage, topology=topology, connectionFrom=hcon1,
 			connectionTo=hcon2, connectionElementFrom=hel1, connectionElementTo=hel2, **entry)
@@ -590,7 +588,6 @@ def importData(data):
 		if hcon2:
 			hcon2.topologyConnection = obj
 			hcon2.save()
-	#TODO: hostElement/connection link to topologyElement/connection
 	print "done."
 
 	
