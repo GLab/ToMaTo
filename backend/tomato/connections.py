@@ -465,7 +465,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			mcon.updateInfo()
 			
 	def info(self):
-		if not currentUser().hasFlag(Flags.Debug):
+		if not currentUser() is True and not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
 		info = {
 			"id": self.id,

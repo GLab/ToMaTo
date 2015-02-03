@@ -248,7 +248,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 				permission.user.sendMail(**kwargs)
 			
 	def info(self, full=False):
-		if not currentUser().hasFlag(Flags.Debug):
+		if not currentUser() is True and not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
 		if full:
 			elements = [el.info() for el in self.getElements()]
