@@ -25,7 +25,7 @@ from lib import db, attributes, logging #@UnresolvedImport
 from lib.error import UserError, InternalError
 from accounting import UsageStatistics
 from lib.cache import cached #@UnresolvedImport
-from host import HostConnection, HostElement, getConnectionCapabilities, getAll as getAllHosts
+from host import HostConnection, HostElement, getConnectionCapabilities, select
 
 REMOVE_ACTION = "(remove)"
 
@@ -157,7 +157,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			if key.startswith("_"):
 				continue
 			UserError.check(key in self.CUSTOM_ATTRS, code=UserError.UNSUPPORTED_ATTRIBUTE,
-				message="Unsuported connection attribute: %s" % key, data={"attribute": key})
+				message="Unsuported connection attribute: %s" % key, data={"attribute": key, "id": self.id})
 			self.CUSTOM_ATTRS[key].check(self, attrs[key])
 		
 	def modify(self, attrs):
@@ -216,10 +216,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			if mcon and action in mcon.getAllowedActions():
 				return
 		UserError.check(action in self.CUSTOM_ACTIONS, code=UserError.UNSUPPORTED_ACTION,
-			message="Unsuported connection action: %s" % action, data={"action": action})
+			message="Unsuported connection action: %s" % action, data={"action": action, "id": self.id})
 		UserError.check(self.state in self.CUSTOM_ACTIONS[action], code=UserError.INVALID_STATE,
 			message="Action %s can not be executed in state %s" % (action, self.state),
-			data={"action": action, "state": self.state})
+			data={"action": action, "state": self.state, "id": self.id})
 	
 	def action(self, action, params):
 		"""
@@ -429,8 +429,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	@classmethod
 	@cached(timeout=3600, maxSize=None)
 	def getCapabilities(cls, type_, host_):
-		if not host_:
-			host_ = getAllHosts()[0]
+		if not host_ and (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
+			host_ = select(connectionTypes=[type_])
 		host_cap = None
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
 			host_cap = host_.getConnectionCapabilities(type_)

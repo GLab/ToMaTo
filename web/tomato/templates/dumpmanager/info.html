@@ -22,11 +22,15 @@ function showDump(source, dump_id, include_data) {
 	var xmlhttp=new XMLHttpRequest();
 	xmlhttp.open("GET",url,false);
 	xmlhttp.send();
-	res = JSON.parse(xmlhttp.responseText);
-	title = source.toLowerCase() + "__" + dump_id
-	filename = title + ".errordump.json";
-	filename.replace('[^\w\-_\. :]',"_");
-	pretty_json_popup(res,title,filename);
+	try {
+	    res = JSON.parse(xmlhttp.responseText);
+	    title = source.toLowerCase() + "__" + dump_id
+	    filename = title + ".errordump.json";
+	    filename.replace('[^\w\-_\. :]',"_");
+	    pretty_json_popup(res,title,filename);
+    } catch(ex) {
+        alert('Failed to retrieve dump');
+    }
 }
 </script>
 {% endblock %}

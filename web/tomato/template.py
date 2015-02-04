@@ -277,7 +277,7 @@ def download_torrent(api, request, res_id):
 	UserError.check(res_inf['type'] == 'template',UserError.INVALID_RESOURCE_TYPE,"This resource is not a template", data={'id':res_inf['id']})
 	UserError.check('torrent_data' in res_inf['attrs'],UserError.NO_DATA_AVAILABLE,"This template does not have a torrent file", data={'id':res_inf['id']})
 	tdata = base64.b64decode(res_inf['attrs']['torrent_data'])
-	filename = re.sub('[^\w\-_\. :]', '_', res_inf['attrs']['name'] ) + ".torrent"
+	filename = re.sub('[^\w\-_\. :]', '_', '%s__%s' % (res_inf['attrs']['name'],res_inf['attrs']['tech']) ) + ".torrent"
 	response = HttpResponse(tdata, content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response
