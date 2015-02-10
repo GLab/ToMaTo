@@ -37,7 +37,7 @@ from django.core.urlresolvers import reverse
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc
-from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list
+from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list, InputTransformerForm
 
 
 geolocation_script = '<script>\n\
@@ -165,7 +165,6 @@ def add(api, request, organization=None):
     return add_function(request,
                         Form=AddSiteForm,
                         create_function=api.site_create,
-                        modify_function=api.site_modify,
                         clean_formkwargs= ({'organization':organization} if organization is not None else {}),
                         formkwargs = {'orga_namelist':append_empty_choice(organization_name_list(api))}
                         )

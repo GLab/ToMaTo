@@ -214,7 +214,7 @@ class RemoveConfirmForm(ConfirmForm):
 
 def add_function(request, 
                  Form,
-                 create_function, modify_function,
+                 create_function,
                  formargs=[], formkwargs={},
                  clean_formargs=[], clean_formkwargs={}):
     if request.method == 'POST':
@@ -226,8 +226,7 @@ def add_function(request,
             for key in form.create_keys:
                 create_values.append(formData[key])
                 del formData[key]
-            create_function(*create_values)
-            modify_function(primary_value,formData)
+            create_function(*create_values,**{'attrs':formData})
             return form.get_redirect_after()
         else:
             return form.create_response(request)
