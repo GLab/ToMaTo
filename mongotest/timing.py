@@ -26,7 +26,7 @@ def topInfo(self, full=False):
 		connections = [con.id for con in self.connections.only('id')]
 	has_prepared=self.elements(state='prepared').count() > 0
 	has_started=self.elements(state='started').count() > 0
-	usage = max(filter(lambda r: r.type == '5minutes', self.totalUsage.records), key=lambda r: r.end)
+	usage = self.totalUsage.by5minutes[-1]
 	attrs = {'name': self.name}
 	attrs['site'] = self.site.name if self.site else None
 	return {
@@ -84,7 +84,6 @@ main.Connection.info = connectionInfo
 
 def usageRecordInfo(self):
 	return {
-		"type": self.type,
 		"begin": self.begin,
 		"end": self.end,
 		"measurements": self.measurements,
@@ -102,11 +101,13 @@ def usageInfo(self):
 main.Usage.info = usageInfo
 
 def usageStatisticsInfo(self):
-	stats = {}
-	for rec in self.records:
-		r = stats.get(rec.type, [])
-		r.append(rec.info())
-		stats[rec.type] = r
+	stats = {
+		"5minutes": [rec.info() for rec in self.by5minutes],
+		"hour": [rec.info() for rec in self.byHour],
+		"day": [rec.info() for rec in self.byDay],
+		"month": [rec.info() for rec in self.byMonth],
+		"year": [rec.info() for rec in self.byYear],
+	}
 	return stats
 main.UsageStatistics.info = usageStatisticsInfo
 

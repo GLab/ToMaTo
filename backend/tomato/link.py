@@ -15,11 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+from .db import *
 from . import host, scheduler
 from lib import util, logging #@UnresolvedImport
-
-from datetime import datetime, timedelta
+from .accounting import _lastPoint, _nextPoint, _prevPoint, _toPoint, _toTime, _avg
 import time, random
 
 TYPES = ["single", "5minutes", "hour", "day", "month", "year"]
@@ -32,73 +31,126 @@ KEEP_RECORDS = {
 	"year": 5,
 }
 
-def _lastRange(type_, now=None):
-	if not now:
-		now = time.time()
-	now = datetime.utcfromtimestamp(now)
-	if type_ == "5minutes":
-		end = now.replace(second=0, microsecond=0)
-		end = end.replace(minute=(end.minute / 5)*5)
-		begin = end - timedelta(minutes=5)
-	elif type_ == "hour":
-		end = now.replace(second=0, microsecond=0, minute=0)
-		begin = end - timedelta(hours=1)
-	elif type_ == "day":
-		end = now.replace(second=0, microsecond=0, minute=0, hour=0)
-		begin = end - timedelta(days=1)
-	elif type_ == "month":
-		end = now.replace(second=0, microsecond=0, minute=0, hour=0, day=1)
-		begin = datetime(end.year if end.month > 1 else end.year -1, end.month -1 if end.month > 1 else 12, 1)
-	elif type_ == "year":
-		end = now.replace(second=0, microsecond=0, minute=0, hour=0, day=1, month=1)
-		begin = datetime(end.year - 1, 1, 1)
-	return (util.utcDatetimeToTimestamp(begin), util.utcDatetimeToTimestamp(end)) 
+def _combine(records):
+	combined = LinkMeasurement()
+	combined.measurements = sum([r.measurements for r in records])
+	if not combined.measurements:
+		return combined
+	combined.loss = _avg([(r.loss, r.measurements) for r in records], combined.measurements)
+	combined.delayAvg = _avg([(r.delayAvg, r.measurements) for r in records], combined.measurements)
+	combined.delayStddev = _avg([(r.delayStddev, r.measurements) for r in records], combined.measurements)
+	return combined
 
-def _avg(data, weightSum):
-	return sum([k * v for (k, v) in data]) / weightSum
-		
-def _sum(data, weightSum):
-	return sum(v for (v, _) in  data)
-
-class LinkMeasurement(models.Model):
-	siteA = models.ForeignKey(host.Site, null=False, related_name="+")
-	siteB = models.ForeignKey(host.Site, null=False, related_name="+")
-	type = models.CharField(max_length=10, choices=[(t, t) for t in TYPES], db_index=True) #@ReservedAssignment
-	begin = models.FloatField()
-	end = models.FloatField(db_index=True)
-	measurements = models.IntegerField()
-	loss = models.FloatField()
-	delayAvg = models.FloatField()
-	delayStddev = models.FloatField()
-	
-	class Meta:
-		unique_together=(("siteA", "siteB", "type", "end"),)
+class LinkMeasurement(EmbeddedDocument):
+	begin = FloatField(required=True)
+	end = FloatField(required=True)
+	measurements = IntField(required=True)
+	loss = FloatField(required=True)
+	delayAvg = FloatField(db_field='delay_avg', required=True)
+	delayStddev = FloatField(db_field='delay_stddev', required=True)
 
 	def info(self):
-		return {"siteA": self.siteA.name, "siteB": self.siteB.name, "type": self.type, "begin": self.begin, "end": self.end, "measurements": self.measurements, "loss": self.loss, "delay_avg": self.delayAvg, "delay_stddev": self.delayStddev}
+		return {
+			"begin": self.begin,
+			"end": self.end,
+			"measurements": self.measurements,
+			"loss": self.loss,
+			"delay_avg": self.delayAvg,
+			"delay_stddev": self.delayStddev
+		}
 
-def _combine():
-	for siteA in host.getAllSites():
-		for siteB in host.getAllSites():
-			if siteA.id > siteB.id:
-				continue
-			link = LinkMeasurement.objects.filter(siteA=siteA, siteB=siteB)
-			lastType = TYPES[0]
-			for type_ in TYPES[1:]:
-				begin, end = _lastRange(type_)
-				if link.filter(type=type_, end=end).exists():
-					break
-				records = link.filter(type=lastType, begin__gte=begin, end__lte=end)
-				if not records.exists():
-					continue
-				measurements = sum([r.measurements for r in records])
-				loss = _avg([(r.loss, r.measurements) for r in records], measurements)
-				lossMeasurements = sum([r.measurements * (1.0-r.loss) for r in records]) or 1.0 
-				delayAvg = _avg([(r.delayAvg, r.measurements * (1.0 - r.loss)) for r in records], lossMeasurements)
-				delayStddev = _avg([(r.delayStddev, r.measurements * (1.0 - r.loss)) for r in records], lossMeasurements)
-				LinkMeasurement.objects.create(siteA=siteA, siteB=siteB, begin=begin, end=end, type=type_, loss=loss, delayAvg=delayAvg, delayStddev=delayStddev, measurements=measurements)
-				lastType = type_
-				
+class LinkStatistics(BaseDocument):
+	"""
+	:type siteA: host.Site
+	:type siteB: host.Site
+	:type single: list of LinkMeasurement
+	:type by5minutes: list of LinkMeasurement
+	:type byHour: list of LinkMeasurement
+	:type byDay: list of LinkMeasurement
+	:type byMonth: list of LinkMeasurement
+	:type byYear: list of LinkMeasurement
+	"""
+	siteA = ReferenceField(host.Site, db_field='site_a', required=True)
+	siteB = ReferenceField(host.Site, db_field='site_b', required=True, unique_with='siteB')
+	single = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='single')
+	by5minutes = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='5minutes')
+	byHour = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='hour')
+	byDay = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='day')
+	byMonth = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='month')
+	byYear = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='year')
+	meta = {
+		'collection': 'link_statistics',
+		'ordering': ['siteA', 'siteB'],
+		'indexes': [
+			('siteA', 'siteB')
+		]
+	}
+
+	def _getList(self, type_):
+		"""
+		:rtype: list of UsageRecord
+		"""
+		if type_ == "single":
+			return self.single
+		elif type_ == "5minutes":
+			return self.by5minutes
+		elif type_ == "hour":
+			return self.byHour
+		elif type_ == "day":
+			return self.byDay
+		elif type_ == "month":
+			return self.byMonth
+		elif type_ == "year":
+			return self.byYear
+
+	def info(self):
+		return {
+			"siteA": self.siteA.name,
+			"siteB": self.siteB.name,
+			"single": [lm.info() for lm in self.single],
+			"5minutes": [lm.info() for lm in self.by5minutes],
+			"hour": [lm.info() for lm in self.byHour],
+			"day": [lm.info() for lm in self.byDay],
+			"month": [lm.info() for lm in self.byMonth],
+			"year": [lm.info() for lm in self.byYear],
+		}
+
+	def add(self, measurement):
+		self.single.append(measurement)
+		self.save()
+
+	def removeOld(self):
+		for type_ in TYPES:
+			list_ = self._getList(type_)
+			list_[:] = list_[-KEEP_RECORDS[type_]:]
+		self.save()
+
+	def update(self):
+		self.combine()
+		self.removeOld()
+
+	def combine(self):
+		lastList = self._getList(TYPES[0])
+		now = time.time()
+		for type_ in TYPES[1:]:
+			list_ = self._getList(type_)
+			if list_:
+				begin = list_[-1].end
+			else:
+				begin = _toTime(_prevPoint(_lastPoint(type_, _toPoint(now)), type_))
+			end = _toTime(_nextPoint(_toPoint(begin), type_))
+			while end <= now:
+				records = filter(lambda rec: rec.begin >= begin and rec.end <= end, lastList)
+				combined = _combine(records)
+				combined.begin = begin
+				combined.end = end
+				list_.append(combined)
+				begin = end
+				end = _toTime(_nextPoint(_toPoint(end), type_))
+			lastList = list_
+		self.save()
+
+
 def _measure():
 	for siteA in host.getAllSites():
 		if not siteA.hosts.exists():
@@ -106,6 +158,10 @@ def _measure():
 		for siteB in host.getAllSites():
 			if siteA.id > siteB.id:
 				continue
+			try:
+				stats = LinkStatistics.objects.get(siteA=siteA, siteB=siteB)
+			except LinkStatistics.DoesNotExist:
+				stats = LinkStatistics(siteA=siteA, siteB=siteB).save()
 			choices = list(siteA.hosts.all())
 			hostA = None
 			while choices and not hostA:
@@ -130,38 +186,18 @@ def _measure():
 			res = hostA.getProxy().host_ping(hostB.address)
 			end = time.time()
 			logging.logMessage("link measurement", category="link", siteA=siteA.name, siteB=siteB.name, hostA=hostA.name, hostB=hostB.name, result=res)
-			LinkMeasurement.objects.create(siteA=siteA, siteB=siteB, begin=begin, end=end, type=TYPES[0], loss=res["loss"], delayAvg=res.get("rtt_avg", 0.0)/2.0, delayStddev=res.get("rtt_mdev", 0.0)/2.0, measurements=res["transmitted"])
+			stats.add(LinkMeasurement(begin=begin, end=end, loss=res['loss'], delayAvg=res.get("rtt_avg", 0.0)/2.0, delayStddev=res.get("rtt_mdev", 0.0)/2.0, measurements=res["transmitted"]))
 	
-def _removeOld():
-	for siteA in host.getAllSites():
-		for siteB in host.getAllSites():
-			if siteA.id > siteB.id:
-				continue
-			link = LinkMeasurement.objects.filter(siteA=siteA, siteB=siteB)
-			for type_ in TYPES:
-				for r in link.filter(type=type_).order_by("-begin")[KEEP_RECORDS[type_]:]:
-					r.delete()
-		
 @util.wrap_task
 def taskRun():
-	_combine()
 	_measure()
-	_removeOld()
-	
-def getStatistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
+	for ls in LinkStatistics.objects:
+		ls.update()
+
+def getStatistics(siteA, siteB): #@ReservedAssignment
 	siteA = host.getSite(siteA)
 	siteB = host.getSite(siteB)
-	all_ = LinkMeasurement.objects.all()
-	if siteA.id > siteB.id:
-		siteA, siteB = siteB, siteA
-	all_ = all_.filter(siteA=siteA, siteB=siteB)
-	if after:
-		all_ = all_.filter(end__gte=after)
-	if before:
-		all_ = all_.filter(begin__lte=before)
-	if type:
-		return [m.info() for m in all_.filter(type=type)]
-	else:
-		return dict([(t, [m.info() for m in all_.filter(type=t)]) for t in TYPES])
-	
+	stats = LinkStatistics.objects.get(siteA=siteA, siteB=siteB)
+	return stats.info()
+
 scheduler.scheduleRepeated(60, taskRun) #every minute

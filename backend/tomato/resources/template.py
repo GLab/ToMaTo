@@ -15,24 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-from .. import resources, config
-from ..lib import attributes #@UnresolvedImport
+from ..db import *
+from ..generic import *
+from .. import config
 from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, os.path, base64, hashlib, shutil
-from tomato import currentUser
+from .. import currentUser
 from ..auth import Flags
 
 
-
-
-kblang_options = {"en-us": "English (US)", 
-					"en-gb": "English (GB)", 
-					"de": "German", 
-					"fr": "French", 
-					"ja": "Japanese"
-					}
+kblang_options = {
+	"en-us": "English (US)",
+	"en-gb": "English (GB)",
+	"de": "German",
+	"fr": "French",
+	"ja": "Japanese"
+}
 
 
 PATTERNS = {
@@ -41,26 +40,57 @@ PATTERNS = {
 	"repy": "%s.repy",
 }
 
-class Template(resources.Resource):
-	tech = models.CharField(max_length=20)
-	name = models.CharField(max_length=50)
-	preference = models.IntegerField(default=0)
-	label = attributes.attribute("label", str)
-	subtype = attributes.attribute("subtype", str)
-	torrent_data = attributes.attribute("torrent_data", str)
-	restricted = attributes.attribute("restricted", bool)
-	kblang = attributes.attribute("kblang",str,null=False,default="en-us")
-	# hosts: [TemplateOnHost]
-	
-	TYPE = "template"
+class Template(BaseDocument, Entity):
+	tech = StringField(required=True)
+	name = StringField(required=True, unique_with='tech')
+	preference = IntField(default=0)
+	label = StringField()
+	restricted = BooleanField(default=False)
+	subtype = StringField()
+	torrentData = BinaryField(db_field='torrent_data')
+	kblang = StringField(default='en-us')
+	meta = {
+		'ordering': ['tech', '+preference', 'name'],
+		'indexes': [
+			('tech', 'preference'), ('tech', 'name')
+		]
+	}
+	@property
+	def hosts(self):
+		return Host.objects(templates__in=self)
 
-	class Meta:
-		db_table = "tomato_template"
-		app_label = 'tomato'
-	
-	def init(self, *args, **kwargs):
-		self.type = self.TYPE
-		attrs = args[0]
+	ACTIONS = {}
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"tech": Attribute(field="tech", schema=schema.String(options=PATTERNS.keys())),
+		"name": Attribute(field="name", schema=schema.Identifier()),
+		"preference": Attribute(field="preference", schema=IntField(min_value=1)),
+		"label": Attribute(field="label", schema=schema.String()),
+		"restricted": Attribute(field="restricted", schema=schema.Bool()),
+		"subtype": Attribute(field="subtype", schema=schema.String()),
+		"torrent_data": Attribute(field="torrentData", set=lambda obj, value: obj.modify_torrent_data(value),
+			schema=schema.String()),
+		"kblang": Attribute(field="kblang", set=lambda obj, value: obj.modify_kblang(value),
+			schema=schema.String(options=kblang_options.keys())),
+		"torrent_data_hash": Attribute(readOnly=True, schema=schema.String(null=True),
+			get=lambda obj: hashlib.md5(obj.torrent_data).hexdigest() if obj.torrent_data else None),
+		"ready": Attribute(readOnly=True, get=lambda obj: {
+				"backend": obj.isReady(),
+				"hosts": {
+					"ready": len(obj.hosts),
+					"total": Host.objects.count()
+				}
+			}, schema=schema.StringMap(items={
+				'backend': schema.Bool(),
+				'hosts': schema.StringMap(items={
+					'ready': schema.Int(),
+					'total': schema.Int()
+				})
+			})
+		)
+	}
+
+	def init(self, attrs):
 		for attr in ["name", "tech", "torrent_data"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Template needs attribute",
 				data={"attribute": attr})
@@ -69,35 +99,21 @@ class Template(resources.Resource):
 			del attrs['kblang']
 		else:
 			kblang=None
-		resources.Resource.init(self, *args, **kwargs)
+		Entity.init(self, attrs)
 		if kblang:
 			self.modify({'kblang':kblang})
 		self.modify_torrent_data(self.torrent_data) #might have been set before name or tech 
 				
-	def upcast(self):
-		return self
-	
 	def getPath(self):
 		return os.path.join(config.TEMPLATE_PATH, PATTERNS[self.tech] % self.name)
 	
 	def getTorrentPath(self):
 		return self.getPath() + ".torrent"
 
-	def modify_name(self, val):
-		self.name = val
-		
 	def modify_kblang(self, val):
 		UserError.check(self.tech == "kvmqm", UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute for %s template: kblang" % (self.tech), data={"tech":self.tech,"attr_name":"kblang","attr_val":val})
-		UserError.check(val in kblang_options, UserError.UNSUPPORTED_TYPE, "Unsupported value for kblang: %s" % val, data={"kblang":val})
 		self.kblang = val
 
-	def modify_tech(self, val):
-		UserError.check(val in PATTERNS.keys(), code=UserError.INVALID_VALUE, message="Unsupported template tech", data={"value": val})
-		self.tech = val
-	
-	def modify_preference(self, val):
-		self.preference = val	
-	
 	def modify_torrent_data(self, val):
 		raw = base64.b64decode(val)
 		try:
@@ -122,7 +138,7 @@ class Template(resources.Resource):
 				shutil.rmtree(self.getPath())
 			else:
 				os.remove(self.getPath())
-		resources.Resource.remove(self)
+		self.delete()
 
 	def isReady(self):
 		try:
@@ -133,38 +149,25 @@ class Template(resources.Resource):
 			return False
 
 	def info(self, include_torrent_data = False):
-		info = resources.Resource.info(self)
-		
+		info = Entity.info(self)
 		if include_torrent_data:
 			if self.restricted:
 				UserError.check(currentUser().hasFlag(Flags.RestrictedTemplates), UserError.DENIED, "You need access to restricted templates in order to access this one.", data={'id':self.id})
 		else:
-			if self.torrent_data:
-				del info["attrs"]["torrent_data"]
-		info["attrs"]["ready"] = {
-			"backend": self.isReady(),
-			"hosts": {
-					"ready": len(self.hosts.filter(ready=True)),
-					"total": len(self.hosts.all())
-			}
-		} 
-		info["attrs"]["name"] = self.name
-		info["attrs"]["tech"] = self.tech
-		info["attrs"]["preference"] = self.preference
-		info["attrs"]["torrent_data_hash"] = hashlib.md5(self.torrent_data).hexdigest() if self.torrent_data else None
-		if self.tech == "kvmqm":
-			info["attrs"]["kblang"] = self.kblang
+			del info["torrent_data"]
 		return info
 
-def get(tech, name):
-	try:
-		return Template.objects.get(tech=tech, name=name)
-	except:
-		return None
-	
-def getPreferred(tech):
-	tmpls = Template.objects.filter(tech=tech).order_by("-preference")
-	InternalError.check(tmpls, code=InternalError.CONFIGURATION_ERROR, message="No template for this type registered", data={"tech": tech})
-	return tmpls[0]
+	@classmethod
+	def get(cls, tech, name):
+		try:
+			return Template.objects.get(tech=tech, name=name)
+		except:
+			return None
 
-resources.TYPES[Template.TYPE] = Template
+	@classmethod
+	def getPreferred(cls, tech):
+		tmpls = Template.objects.filter(tech=tech).order_by("-preference")
+		InternalError.check(tmpls, code=InternalError.CONFIGURATION_ERROR, message="No template for this type registered", data={"tech": tech})
+		return tmpls[0]
+
+from ..host import Host

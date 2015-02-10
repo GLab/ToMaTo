@@ -93,10 +93,22 @@ def importData(data):
 		if not usage:
 			print "\t\tInvalid reference: UsageRecord[%d] -> Usage[%d]" % (key, entry['usage'])
 			usage = Usage()
-		entry = modifyDict(entry, remove=['id', 'usage', 'statistics'])
+		type_ = entry['type']
+		entry = modifyDict(entry, remove=['id', 'usage', 'statistics', 'type'])
 		obj = UsageRecord(usage=usage, **entry)
 		usagerecords[key] = obj
-		stats.records.append(obj)
+		if type_ == "5minutes":
+			stats.by5minutes.append(obj)
+		elif type_ == "hour":
+			stats.byHour.append(obj)
+		elif type_ == "day":
+			stats.byDay.append(obj)
+		elif type_ == "month":
+			stats.byMonth.append(obj)
+		elif type_ =="year":
+			stats.byYear.append(obj)
+		else:
+			print "\t\tInvalid record type: UsageRecord[%d]: %s" % (key, type_)
 	for stats in usagestatistics.values():
 		stats.save()
 	print "\tQuotas..."
@@ -188,7 +200,7 @@ def importData(data):
 			print "\t\tInvalid reference: Error[%s] -> Errorgroup[%s]" % (key, entry['group'])
 			continue
 		entry = modifyDict(entry, rename={'dump_id': 'dumpId', 'data_available': 'dataAvailable',
-			'software_version': 'softwareVersion'}, remove=['group'])
+			'software_version': 'softwareVersion', 'origin': 'type'}, remove=['group'])
 		obj = ErrorDump(**entry)
 		group.dumps.append(obj)
 	for obj in errorgroups.values():

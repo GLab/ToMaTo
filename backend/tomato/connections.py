@@ -18,14 +18,14 @@
 from django.db import models
 import threading
 
-from topology import Topology
-from auth import Flags
-from auth.permissions import Permissions, PermissionMixin, Role
-from lib import db, attributes, logging #@UnresolvedImport
-from lib.error import UserError, InternalError
-from accounting import UsageStatistics
-from lib.cache import cached #@UnresolvedImport
-from host import HostConnection, HostElement, getConnectionCapabilities, select
+from .topology import Topology
+from .auth import Flags
+from .auth.permissions import PermissionMixin, Role
+from .lib import db, attributes, logging #@UnresolvedImport
+from .lib.error import UserError, InternalError
+from .accounting import UsageStatistics
+from .lib.cache import cached #@UnresolvedImport
+from .host import HostConnection, HostElement, getConnectionCapabilities, select
 
 REMOVE_ACTION = "(remove)"
 

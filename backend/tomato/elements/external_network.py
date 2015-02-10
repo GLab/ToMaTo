@@ -15,24 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-from .. import elements, resources, host
-from ..resources import network as r_network
-from ..lib.attributes import Attr #@UnresolvedImport
+from ..db import *
+from .. import elements, host
+from ..resources.network import Network, NetworkInstance
 from generic import ST_CREATED, ST_STARTED
 from .. import currentUser
 from ..auth import Flags
 from ..lib.error import UserError
 
-class External_Network(elements.generic.ConnectingElement, elements.Element):
-	name_attr = Attr("name", desc="Name")
-	name = name_attr.attribute()
-	samenet_attr = Attr("samenet", desc="Single network segment", states=[ST_CREATED], type="bool", default=False)
-	samenet = samenet_attr.attribute()
-	kind_attr = Attr("kind", type="str", states=[ST_CREATED], default="internet")
-	kind = kind_attr.attribute()
-	network = models.ForeignKey(r_network.Network, null=True)
-	
+class ExternalNetwork(elements.Element):
+	name = StringField()
+	samenet = BooleanField(default=False)
+	kind = StringField(default='internet')
+	network = ReferenceField('Network')
+
 	CUSTOM_ACTIONS = {
 		"start": [ST_CREATED],
 		"stop": [ST_STARTED],
@@ -59,7 +55,6 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 		app_label = 'tomato'
 
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
@@ -76,7 +71,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 		self.samenet = val
 
 	def modify_kind(self, val):
-		network = resources.network.get(val)
+		network = Network.get(val)
 		if network.restricted and not self.kind == val:
 			UserError.check(currentUser().hasFlag(Flags.RestrictedNetworks), code=UserError.DENIED, message="Network is restricted")
 		self.kind = val
@@ -90,7 +85,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 
 	def action_start(self):
 		if self.samenet:
-			self.network = r_network.get(self.kind)
+			self.network = Network.get(self.kind)
 		for ch in self.getChildren():
 			if not ch.state == ST_STARTED:
 				ch.action("start", {})
@@ -102,17 +97,15 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	def info(self):
 		info = elements.Element.info(self)
 		info["attrs"]["samenet"] = self.samenet
-		info["attrs"]["restricted"] = resources.network.get(self.kind).restricted
+		info["attrs"]["restricted"] = self.network.restricted
 		return info
 
 
-class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Element):
-	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	name_attr = Attr("name", desc="Name")
-	name = name_attr.attribute()
-	kind_attr = Attr("kind", type="str", states=[ST_CREATED], default="internet")
-	kind = kind_attr.attribute()
-	network = models.ForeignKey(r_network.NetworkInstance, null=True)
+class ExternalNetworkEndpoint(elements.Element, elements.generic.ConnectingElement):
+	element = ReferenceField('HostElement')
+	name = StringField()
+	kind = StringField(default='internet')
+	network = ReferenceField('NetworkInstance')
 
 	TYPE = "external_network_endpoint"
 	HOST_TYPE = "external_network"
@@ -128,7 +121,7 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		"kind": kind_attr,
 	}
 	DIRECT_ATTRS_EXCLUDE = ["network", "timeout"]
-	CAP_PARENT = [None, External_Network.TYPE]
+	CAP_PARENT = [None, ExternalNetwork.TYPE]
 	DEFAULT_ATTRS = {}
 	CAP_CONNECTABLE = True
 
@@ -139,7 +132,6 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		app_label = 'tomato'
 	
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
@@ -177,9 +169,9 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE})
 		if self.parent and self.getParent().samenet:
-			self.network = r_network.getInstance(_host, self.getParent().network.kind)
+			self.network = NetworkInstance.get(_host, self.getParent().network.kind)
 		else:
-			self.network = r_network.getInstance(_host, self.kind)			
+			self.network = NetworkInstance.get(_host, self.kind)
 		attrs = {"network": self.network.network.kind}
 		self.element = _host.createElement("external_network", parent=None, attrs=attrs, ownerElement=self)
 		self.setState(ST_STARTED)
@@ -202,5 +194,5 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		info = elements.Element.info(self)
 		return info
 
-elements.TYPES[External_Network.TYPE] = External_Network	
-elements.TYPES[External_Network_Endpoint.TYPE] = External_Network_Endpoint
+elements.TYPES[ExternalNetwork.TYPE] = ExternalNetwork
+elements.TYPES[ExternalNetworkEndpoint.TYPE] = ExternalNetworkEndpoint

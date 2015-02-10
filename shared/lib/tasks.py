@@ -4,12 +4,16 @@ Created on Jan 24, 2014
 @author: dswd
 '''
 
-import threading, time, thread
+import threading, time
 
 MAX_WAIT = 3600.0
 
 class Task:
-	def __init__(self, fn, args=[], kwargs={}, timeout=0, repeated=False, immediate=False):
+	def __init__(self, fn, args=None, kwargs=None, timeout=0, repeated=False, immediate=False):
+		if not kwargs:
+			kwargs = {}
+		if not args:
+			args = ()
 		self.timeout = timeout
 		self.repeated = repeated
 		self.fn = fn
@@ -70,14 +74,14 @@ class TaskScheduler(threading.Thread):
 				if self.workers < self.maxWorkers:
 					self.workers += 1
 					self.waitFrac = 0.5
-					thread.start_new_thread(self._workerLoop, ())
+					threading.Thread(target=self._workerLoop).start()
 			if wait >= MAX_WAIT or self.waitFrac > 0.9:
 				if self.workers > self.minWorkers and not mainThread:
 					return False
 			if self.workers < self.minWorkers:
 				self.workers += 1
 				self.waitFrac = 0.5
-				thread.start_new_thread(self._workerLoop, ())
+				threading.Thread(target=self._workerLoop).start()
 		return True #continue running
 	def _workerLoop(self, mainThread=False):
 		while not self.stopped:
@@ -116,7 +120,7 @@ class TaskScheduler(threading.Thread):
 			self.workers += 1
 			while self.workers < self.minWorkers:
 				self.workers += 1
-				thread.start_new_thread(self._workerLoop, ())
+				threading.Thread(target=self._workerLoop).start()
 		self._workerLoop(True)
 	def stop(self):
 		self.stopped = True
@@ -132,9 +136,7 @@ class TaskScheduler(threading.Thread):
 	def scheduleOnce(self, timeout, fn, *args, **kwargs):
 		return self._schedule(Task(fn, args, kwargs, timeout=timeout, repeated=False))
 	def scheduleRepeated(self, timeout, fn, *args, **kwargs):
-		immediate = kwargs.get("immediate", False)
-		if "immediate" in kwargs:
-			del kwargs["immediate"]			
+		immediate = kwargs.pop("immediate", False)
 		return self._schedule(Task(fn, args, kwargs, timeout=timeout, repeated=True, immediate=immediate))
 	def cancelTask(self, taskId):
 		with self.tasksLock:
@@ -142,7 +144,7 @@ class TaskScheduler(threading.Thread):
 	def info(self):
 		tasks = []
 		with self.tasksLock:
-			for id_, t in self.tasks.iteritems():
+			for id_, t in self.tasks.items():
 				info = t.info()
 				info["id"] = id_
 				tasks.append(info)

@@ -15,14 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-from . import config, currentUser, starttime, scheduler, accounting
+from .db import *
+from .generic import *
+from . import config, currentUser, starttime, scheduler
 from accounting import UsageStatistics
-from lib import attributes, db, rpc, util, logging, error  # @UnresolvedImport
-from lib.cache import cached  # @UnresolvedImport
+from lib import rpc, util, logging, error
+from lib.cache import cached
 from lib.error import TransportError, InternalError, UserError, Error
 from .lib import anyjson as json
-from auth import Flags
 from dumpmanager import DumpSource
 import time, hashlib, threading, datetime, zlib, base64, sys
 
@@ -43,17 +43,17 @@ class RemoteWrapper:
 					self._proxy = rpc.createProxy(self._url, *self._args, **self._kwargs)
 				try:
 					return getattr(self._proxy, name)(*args, **kwargs)
-				except Error, err:
+				except Error as err:
 					if isinstance(err, TransportError):
 						self._proxy = None
 						if retries >= 0:
-							print "Retrying after error on %s: %s, retries left: %d" % (self._host, err, retries)
+							print("Retrying after error on %s: %s, retries left: %d" % (self._host, err, retries))
 							continue
 						if not err.data:
 							err.data = {}
 						err.data["host"] = self._host
 					raise err, None, sys.exc_info()[2]
-				except Exception, exc:
+				except Exception as exc:
 					print "Warning: received unwrapped error:"
 					import traceback
 					traceback.print_exc()
@@ -73,22 +73,29 @@ def stopCaching():
 	_caching = False
 
 
-class Organization(attributes.Mixin, models.Model):
-	name = models.CharField(max_length=50, unique=True)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
-	attrs = db.JSONField()
-	description = attributes.attribute("description", unicode, "")
-	homepage_url = attributes.attribute("homepage_url", unicode, "")
-	image_url = attributes.attribute("image_url", unicode, "")
-	description_text = attributes.attribute("description_text", unicode, "")
-	# sites: [Site]
-	# users: [User]
-
-	class Meta:
-		pass
+class Organization(BaseDocument):
+	name = StringField(unique=True, required=True)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
+	label = StringField(required=True)
+	homepageUrl = URLField(db_field='homepage_url')
+	imageUrl = URLField(db_field='image_url')
+	description = StringField()
+	meta = {
+		'ordering': ['name'],
+		'indexes': [
+			'name'
+		]
+	}
+	@property
+	def sites(self):
+		return Site.objects(organization=self)
+	@property
+	def users(self):
+		from .auth import User
+		return User.objects(organization=self)
 
 	def init(self, attrs):
-		self.totalUsage = UsageStatistics.objects.create()
+		self.totalUsage = UsageStatistics().save()
 		self.modify(attrs)
 
 	def checkPermissions(self):
@@ -118,14 +125,14 @@ class Organization(attributes.Mixin, models.Model):
 
 	def remove(self):
 		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		UserError.check(not self.sites.all(), code=UserError.NOT_EMPTY, message="Organization still has sites")
-		UserError.check(not self.users.all(), code=UserError.NOT_EMPTY, message="Organization still has users")
+		UserError.check(not self.sites, code=UserError.NOT_EMPTY, message="Organization still has sites")
+		UserError.check(not self.users, code=UserError.NOT_EMPTY, message="Organization still has users")
 		logging.logMessage("remove", category="organization", name=self.name)
 		self.totalUsage.remove()
 		self.delete()
 
 	def updateUsage(self):
-		self.totalUsage.updateFrom([user.totalUsage for user in self.users.all()])
+		self.totalUsage.updateFrom([user.totalUsage for user in self.users])
 
 	def info(self):
 		return {
@@ -151,7 +158,7 @@ def getOrganization(name, **kwargs):
 
 
 def getAllOrganizations(**kwargs):
-	return list(Organization.objects.filter(**kwargs))
+	return list(Organization.objects(**kwargs))
 
 
 def createOrganization(name, description=""):
@@ -163,18 +170,22 @@ def createOrganization(name, description=""):
 	return organization
 
 
-class Site(attributes.Mixin, models.Model):
-	name = models.CharField(max_length=50, unique=True)
-	organization = models.ForeignKey(Organization, null=False, related_name="sites")
-	# hosts: [Host]
-	attrs = db.JSONField()
-	description = attributes.attribute("description", unicode, "")
-	location = attributes.attribute("location", unicode, "")
-	geolocation = attributes.attribute("geolocation", dict, {})
-	description_text = attributes.attribute("description_text", unicode, "")
-
-	class Meta:
-		pass
+class Site(BaseDocument):
+	name = StringField(unique=True, required=True)
+	organization = ReferenceField(Organization, required=True)
+	label = StringField(required=True)
+	location = StringField()
+	geolocation = GeoPointField()
+	description = StringField()
+	meta = {
+		'ordering': ['organization', 'name'],
+		'indexes': [
+			'organization', 'name'
+		]
+	}
+	@property
+	def hosts(self):
+		return Host.objects(site=self)
 
 	def init(self, attrs):
 		self.modify(attrs)
@@ -192,13 +203,13 @@ class Site(attributes.Mixin, models.Model):
 		logging.logMessage("modify", category="site", name=self.name, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key == "description":
-				self.description = value
+				self.label = value
 			elif key == "location":
 				self.location = value
 			elif key == "geolocation":
 				self.geolocation = value
 			elif key == "description_text":
-				self.description_text = value
+				self.description = value
 			elif key == "organization":
 				orga = getOrganization(value)
 				UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
@@ -218,11 +229,11 @@ class Site(attributes.Mixin, models.Model):
 	def info(self):
 		return {
 			"name": self.name,
-			"description": self.description,
+			"description": self.label,
 			"location": self.location,
 			"geolocation": self.geolocation,
 			"organization": self.organization.name,
-			"description_text": self.description_text
+			"description_text": self.description
 		}
 
 	def __str__(self):
@@ -240,14 +251,13 @@ def getSite(name, **kwargs):
 
 
 def getAllSites(**kwargs):
-	return list(Site.objects.filter(**kwargs))
+	return list(Site.objects(**kwargs))
 
 
 def createSite(name, organization, description=""):
 	orga = getOrganization(organization)
 	UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
 		data={"name": organization})
-
 	user = currentUser()
 	UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == orga,
 		code=UserError.DENIED, message="Not enough permissions")
@@ -258,34 +268,73 @@ def createSite(name, organization, description=""):
 	return site
 
 
-class Host(attributes.Mixin, DumpSource, models.Model):
-	name = models.CharField(max_length=255, unique=True)
-	address = models.CharField(max_length=255, unique=False)
-	rpcurl = models.CharField(max_length=255, unique=True)
-	site = models.ForeignKey(Site, null=False, related_name="hosts")
-	totalUsage = models.OneToOneField(accounting.UsageStatistics, null=True, related_name='+',
-									  on_delete=models.SET_NULL)
-	attrs = db.JSONField()
-	elementTypes = attributes.attribute("element_types", dict, {})
-	connectionTypes = attributes.attribute("connection_types", dict, {})
-	hostInfo = attributes.attribute("info", dict, {})
-	hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
-	hostNetworks = attributes.attribute("networks", list, {})
-	accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
-	lastResourcesSync = attributes.attribute("last_resources_sync", float, 0.0)
-	enabled = attributes.attribute("enabled", bool, True)
-	componentErrors = attributes.attribute("componentErrors", int, 0)
-	problemAge = attributes.attribute("problem_age", float, 0)
-	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
-	availability = attributes.attribute("availability", float, 1.0)
-	description_text = attributes.attribute("description_text", unicode, "")
-	dump_last_fetch = attributes.attribute("dump_last_fetch", float, 0)
-	# connections: [HostConnection]
-	# elements: [HostElement]
-	# templates: [TemplateOnHost]
+class Host(DumpSource, BaseDocument, Entity):
+	"""
+	:type totalUsage: UsageStatistics
+	:type site: Site
+	:type templates: list of Template
+	"""
+	from .resources.template import Template
+	name = StringField(required=True, unique=True)
+	address = StringField(required=True)
+	rpcurl = StringField(required=True, unique=True)
+	site = ReferenceField(Site, required=True)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
+	elementTypes = DictField(db_field='element_types', required=True)
+	connectionTypes = DictField(db_field='connection_types', required=True)
+	hostInfo = DictField(db_field='host_info', required=True)
+	hostInfoTimestamp = FloatField(db_field='host_info_timestamp', required=True)
+	accountingTimestamp = FloatField(db_field='accounting_timestamp', required=True)
+	lastResourcesSync = FloatField(db_field='last_resource_sync', required=True)
+	enabled = BooleanField(default=True)
+	componentErrors = IntField(default=0, db_field='component_errors')
+	problemAge = FloatField(db_field='problem_age')
+	problemMailTime = FloatField(db_field='problem_mail_time')
+	availability = FloatField(default=1.0)
+	description = StringField()
+	dumpLastFetch = FloatField(db_field='dump_last_fetch')
+	templates = ListField(ReferenceField(Template))
+	hostNetworks = DictField(db_field='host_networks')
+	meta = {
+		'ordering': ['site', 'name'],
+		'indexes': [
+			'name', 'site'
+		]
+	}
+	@property
+	def elements(self):
+		return HostElement.objects(host=self)
+	@property
+	def connections(self):
+		return HostConnection.objects(host=self)
+	@property
+	def networks(self):
+		return NetworkInstance.objects(host=self)
 
-	class Meta:
-		ordering = ['site', 'name']
+	ACTIONS = {}
+	ATTRIBUTES = {
+		"name": Attribute(field="name", schema=schema.Identifier()),
+		"address": Attribute(field="address", schema=schema.String(regex="\d+\.\d+.\d+.\d+")),
+		"rpcurl": Attribute(field="rpcurl", schema=schema.String(regex="\w+://\w+:\d+")),
+		"site": Attribute(
+			check=lambda obj, val: getSite(val),
+			set=lambda obj, val: setattr(obj, "site", getSite(val)),
+			get=lambda obj: obj.site.name,
+			schema=schema.Identifier()
+		),
+		"enabled": Attribute(field="enabled", schema=schema.Bool()),
+		"description": Attribute(field="description", schema=schema.String()),
+		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization.name, schema=schema.Identifier()),
+		"problems": Attribute(readOnly=True, get=lambda obj: obj.problems(), schema=schema.List(items=schema.String())),
+		"component_errors": Attribute(field="componentErrors", readOnly=True, schema=schema.Int()),
+		"load": Attribute(readOnly=True, get=lambda obj: obj.getLoad(), schema=schema.List(items=schema.Number())),
+		"element_types": Attribute(readOnly=True, get=lambda obj: obj.elementTypes.keys(), schema=schema.List(items=schema.Identifier())),
+		"connection_types": Attribute(readOnly=True, get=lambda obj: obj.connectionTypes.keys(), schema=schema.List(items=schema.Identifier())),
+		"host_info": Attribute(field="hostInfo", readOnly=True, schema=schema.StringMap(additional=True)),
+		"host_info_timestamp": Attribute(field="hostInfoTimestamp", readOnly=True, schema=schema.Number()),
+		"availability": Attribute(field="availability", readOnly=True, schema=schema.Number()),
+		"networks": Attribute(field="hostNetworks", readOnly=True, schema=schema.List())
+	}
 
 	def init(self, attrs=None):
 		self.attrs = {}
@@ -293,9 +342,6 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		if attrs:
 			self.modify(attrs)
 		self.update()
-
-	def _saveAttributes(self):
-		pass  # disable automatic attribute saving
 
 	def getProxy(self):
 		if not _caching:
@@ -360,7 +406,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 			raise
 		hel = HostElement(host=self, num=el["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hel.usageStatistics = UsageStatistics.objects.create()
-		hel.attrs = el
+		hel.objectInfo = el
 		hel.save()
 		logging.logMessage("element_create", category="host", host=self.name, element=el,
 						   ownerElement=(
@@ -386,7 +432,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement,
 							  topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
-		hcon.attrs = con
+		hcon.objectInfo = con
 		hcon.save()
 		logging.logMessage("connection_create", category="host", host=self.name, element=con,
 						   ownerElement=(
@@ -563,27 +609,6 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		self.totalUsage.remove()
 		self.delete()
 
-	def modify(self, attrs):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		logging.logMessage("modify", category="host", name=self.name, attrs=attrs)
-		for key, value in attrs.iteritems():
-			if key == "site":
-				self.site = getSite(value)
-			elif key == "address":
-				self.address = value
-			elif key == "rpcurl":
-				self.rpcurl = value
-			elif key == "name":
-				self.name = value
-			elif key == "enabled":
-				self.enabled = value
-			elif key == "description_text":
-				self.description_text = value
-			else:
-				raise UserError(code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unknown host attribute",
-					data={"attribute": key})
-		self.save()
-
 	def problems(self):
 		problems = []
 		if not self.enabled:
@@ -683,26 +708,6 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		load.append(float(disks["data"]["used"]) / int(disks["data"]["total"]))
 		return min(max(load), 1.0)
 
-	def info(self):
-		return {
-			"name": self.name,
-			"address": self.address,
-			"rpcurl": self.rpcurl,
-			"site": self.site.name,
-			"organization": self.site.organization.name,
-			"enabled": self.enabled,
-			"problems": self.problems(),
-			"component_errors": self.componentErrors,
-			"load": self.getLoad(),
-			"element_types": self.elementTypes.keys(),
-			"connection_types": self.connectionTypes.keys(),
-			"host_info": self.hostInfo.copy() if self.hostInfo else None,
-			"host_info_timestamp": self.hostInfoTimestamp,
-			"availability": self.availability,
-			"description_text": self.description_text,
-			"networks": [n for n in self.hostNetworks] if self.hostNetworks else None
-		}
-
 	def __str__(self):
 		return self.name
 
@@ -736,19 +741,34 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		return self.dump_last_fetch
 
 
-class HostElement(attributes.Mixin, models.Model):
-	host = models.ForeignKey(Host, null=False, related_name="elements")
-	num = models.IntegerField(null=False)  # not id, since this is reserved
-	topology_element = models.ForeignKey("tomato.Element", null=True, related_name="host_elements")
-	topology_connection = models.ForeignKey("tomato.Connection", null=True, related_name="host_elements")
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
-	attrs = db.JSONField()
-	connection = attributes.attribute("connection", int)
-	state = attributes.attribute("state", str)
-	type = attributes.attribute("type", str)  # @ReservedAssignment
+class HostObject(BaseDocument):
+	"""
+	:type host: Host
+	:type topologyElement: element.Element
+	:type topologyConnection: connection.Connection
+	:type usageStatistics: UsageStatistics
+	"""
+	host = ReferenceField(Host, required=True)
+	num = IntField(unique_with='host', required=True)
+	topologyElement = ReferenceField('Element', db_field='topology_element')
+	topologyConnection = ReferenceField('Connection', db_field='topology_connection')
+	usageStatistics = ReferenceField(UsageStatistics, db_field='usage_statistics', required=True)
+	state = StringField(required=True)
+	type = StringField(required=True)
+	objectInfo = DictField(db_field='object_info')
+	meta = {
+		"abstract": True
+	}
 
-	class Meta:
-		unique_together = (("host", "num"),)
+class HostElement(HostObject):
+	connection = ReferenceField('HostConnection')
+	parent = ReferenceField('self')
+	meta = {
+		'collection': 'host_element',
+		'indexes': [
+			('host', 'num')
+		]
+	}
 
 	def createChild(self, type_, attrs=None, ownerConnection=None, ownerElement=None):
 		if not attrs: attrs = {}
@@ -762,7 +782,7 @@ class HostElement(attributes.Mixin, models.Model):
 	def modify(self, attrs):
 		logging.logMessage("element_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
 		try:
-			self.attrs = self.host.getProxy().element_modify(self.num, attrs)
+			self.objectInfo = self.host.getProxy().element_modify(self.num, attrs)
 		except error.UserError, err:
 			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
@@ -773,7 +793,7 @@ class HostElement(attributes.Mixin, models.Model):
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.attrs)
+		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.objectInfo)
 		self.save()
 
 	def action(self, action, params=None):
@@ -814,7 +834,7 @@ class HostElement(attributes.Mixin, models.Model):
 
 	def updateInfo(self):
 		try:
-			self.attrs = self.host.getProxy().element_info(self.num)
+			self.objectInfo = self.host.getProxy().element_info(self.num)
 		except error.UserError, err:
 			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
@@ -823,14 +843,14 @@ class HostElement(attributes.Mixin, models.Model):
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.attrs)
+		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.objectInfo)
 		self.save()
 
 	def info(self):
-		return self.attrs
+		return self.objectInfo
 
 	def getAttrs(self):
-		return self.attrs["attrs"]
+		return self.objectInfo["attrs"]
 
 	def getAllowedActions(self):
 		try:
@@ -856,7 +876,7 @@ class HostElement(attributes.Mixin, models.Model):
 
 	def synchronize(self):
 		try:
-			if not self.topology_element and not self.topology_connection:
+			if not self.topologyElement and not self.topologyConnection:
 				self.remove()
 				return
 			self.modify({"timeout": time.time() + 14 * 24 * 60 * 60})
@@ -867,24 +887,20 @@ class HostElement(attributes.Mixin, models.Model):
 			logging.logException(host=self.host.address)
 
 
-class HostConnection(attributes.Mixin, models.Model):
-	host = models.ForeignKey(Host, null=False, related_name="connections")
-	num = models.IntegerField(null=False)  # not id, since this is reserved
-	topology_element = models.ForeignKey("tomato.Element", null=True, related_name="host_connections")
-	topology_connection = models.ForeignKey("tomato.Connection", null=True, related_name="host_connections")
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
-	attrs = db.JSONField()
-	elements = attributes.attribute("elements", list)
-	state = attributes.attribute("state", str)
-	type = attributes.attribute("type", str)  # @ReservedAssignment
-
-	class Meta:
-		unique_together = (("host", "num"),)
+class HostConnection(HostObject):
+	elementFrom = ReferenceField(HostElement, db_field='element_from', required=True)
+	elementTo = ReferenceField(HostElement, db_field='element_to', required=True)
+	meta = {
+		'collection': 'host_connection',
+		'indexes': [
+			('host', 'num')
+		]
+	}
 
 	def modify(self, attrs):
 		logging.logMessage("connection_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
 		try:
-			self.attrs = self.host.getProxy().connection_modify(self.num, attrs)
+			self.objectInfo = self.host.getProxy().connection_modify(self.num, attrs)
 		except error.UserError, err:
 			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
@@ -895,7 +911,7 @@ class HostConnection(attributes.Mixin, models.Model):
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.attrs)
+		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.objectInfo)
 		self.save()
 
 	def action(self, action, params=None):
@@ -932,12 +948,12 @@ class HostConnection(attributes.Mixin, models.Model):
 		self.delete()
 
 	def getElements(self):
-		return [self.host.getElement(el) for el in self.elements]
+		return [self.elementFrom, self.elementTo]
 
 	def updateInfo(self):
 		try:
-			self.attrs = self.host.getProxy().connection_info(self.num)
-			self.state = self.attrs["state"]
+			self.objectInfo = self.host.getProxy().connection_info(self.num)
+			self.state = self.objectInfo["state"]
 		except error.UserError, err:
 			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
@@ -946,14 +962,14 @@ class HostConnection(attributes.Mixin, models.Model):
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.attrs)
+		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.objectInfo)
 		self.save()
 
 	def info(self):
-		return self.attrs
+		return self.objectInfo
 
 	def getAttrs(self):
-		return self.attrs["attrs"]
+		return self.objectInfo["attrs"]
 
 	def getAllowedActions(self):
 		caps = self.host.getConnectionCapabilities(self.type)["actions"]
@@ -973,7 +989,7 @@ class HostConnection(attributes.Mixin, models.Model):
 
 	def synchronize(self):
 		try:
-			if not self.topology_element and not self.topology_connection:
+			if not self.topologyElement and not self.topologyConnection:
 				self.remove()
 				return
 			self.updateInfo()
@@ -1102,7 +1118,6 @@ checkingHosts = set()
 
 
 @util.wrap_task
-@db.commit_after
 def synchronizeHost(host):
 	with checkingHostsLock:
 		if host in checkingHosts:
@@ -1138,6 +1153,10 @@ def synchronizeComponents():
 		hel.synchronize()
 	for hcon in HostConnection.objects.all():
 		hcon.synchronize()
+
+
+from .resources.network import NetworkInstance
+from .auth import Flags
 
 
 scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize)  # @UndefinedVariable

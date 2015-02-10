@@ -15,9 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-from .. import resources
-from ..lib import attributes #@UnresolvedImport
+from ..generic import *
+from ..db import *
 from ..lib.error import UserError, InternalError
 
 TECHS = ["kvmqm", "openvz", "repy"]
@@ -27,56 +26,44 @@ DEFAULTS = {
 	"repy": {"ram": 50, "cpus": 0.25},
 }
 
-class Profile(resources.Resource):
-	tech = models.CharField(max_length=20)
-	name = models.CharField(max_length=50)
-	preference = models.IntegerField(default=0)
-	label = attributes.attribute("label", str)
-	restricted = attributes.attribute("restricted", bool, False)
-	
-	TYPE = "profile"
+class Profile(BaseDocument, Entity):
+	tech = StringField(required=True)
+	name = StringField(required=True, unique_with='tech')
+	preference = IntField(default=0, required=True)
+	label = StringField()
+	restricted = BooleanField(default=False)
+	meta = {
+		'ordering': ['tech', '+preference', 'name'],
+		'indexes': [
+			('tech', 'preference'), ('tech', 'name')
+		]
+	}
 
-	class Meta:
-		db_table = "tomato_profile"
-		app_label = 'tomato'
-	
-	def init(self, *args, **kwargs):
-		self.type = self.TYPE
-		attrs = args[0]
+	ACTIONS = {}
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"name": Attribute(field="name", schema=schema.Identifier()),
+		"tech": Attribute(field="tech", schema=schema.String(options=TECHS)),
+		"preference": Attribute(field="preference", schema=schema.Int(minValue=0)),
+		"label": Attribute(field="label", schema=schema.String()),
+		"restricted": Attribute(field="restricted", schema=schema.Bool())
+	}
+
+	def init(self, attrs):
 		for attr in ["name", "tech"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Profile needs attribute",
 				data={"attribute": attr})
-		resources.Resource.init(self, *args, **kwargs)
-				
-	def upcast(self):
-		return self
-	
-	def modify_name(self, val):
-		self.name = val
+		Entity.init(self, attrs)
 
-	def modify_tech(self, val):
-		UserError.check(val in TECHS, code=UserError.INVALID_VALUE, message="Unsupported profile tech", data={"value": val})
-		self.tech = val
-		
-	def modify_preference(self, val):
-		self.preference = val
+	@classmethod
+	def get(cls, tech, name):
+		try:
+			return Profile.objects.get(tech=tech, name=name)
+		except:
+			return None
 
-	def info(self):
-		info = resources.Resource.info(self)
-		info["attrs"]["name"] = self.name
-		info["attrs"]["tech"] = self.tech
-		info["attrs"]["preference"] = self.preference
-		return info
-
-def get(tech, name):
-	try:
-		return Profile.objects.get(tech=tech, name=name)
-	except:
-		return None
-	
-def getPreferred(tech):
-	prfls = Profile.objects.filter(tech=tech).order_by("-preference")
-	InternalError.check(prfls, code=InternalError.CONFIGURATION_ERROR, message="No profile for this type registered", data={"tech": tech})
-	return prfls[0]
-
-resources.TYPES[Profile.TYPE] = Profile
+	@classmethod
+	def getPreferred(cls, tech):
+		prfls = Profile.objects.filter(tech=tech).order_by("-preference")
+		InternalError.check(prfls, code=InternalError.CONFIGURATION_ERROR, message="No profile for this type registered", data={"tech": tech})
+		return prfls[0]

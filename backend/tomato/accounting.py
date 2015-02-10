@@ -15,13 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+from .db import *
 
-from lib import db, attributes #@UnresolvedImport
 from lib.decorators import *
 from datetime import datetime, timedelta
 import time
-from . import scheduler, starttime
+from . import scheduler
 
 #TODO: aggregate per user
 #TODO: fetch and save current records of to-be-deleted objects
@@ -41,29 +40,51 @@ def _avg(data, weightSum):
 def _sum(data, weightSum):
 	return sum(v for (v, _) in  data)
 
-def _lastRange(type_, now=None):
-	if not now:
-		now = time.time()
-	now = datetime.utcfromtimestamp(now)
-	if type_ == "5minutes":
-		end = now.replace(second=0, microsecond=0)
-		end = end.replace(minute=(end.minute / 5)*5)
-		begin = end - timedelta(minutes=5)
-	elif type_ == "hour":
-		end = now.replace(second=0, microsecond=0, minute=0)
-		begin = end - timedelta(hours=1)
-	elif type_ == "day":
-		end = now.replace(second=0, microsecond=0, minute=0, hour=0)
-		begin = end - timedelta(days=1)
-	elif type_ == "month":
-		end = now.replace(second=0, microsecond=0, minute=0, hour=0, day=1)
-		begin = datetime(end.year if end.month > 1 else end.year -1, end.month -1 if end.month > 1 else 12, 1)
-	elif type_ == "year":
-		end = now.replace(second=0, microsecond=0, minute=0, hour=0, day=1, month=1)
-		begin = datetime(end.year - 1, 1, 1)
-	return (util.utcDatetimeToTimestamp(begin), util.utcDatetimeToTimestamp(end)) 
+def _toPoint(time_=None):
+	if not time_:
+		time_ = time.time()
+	return datetime.utcfromtimestamp(time_)
 
-def _combine(begin, end, records):
+def _lastPoint(type_, point):
+	if type_ == "5minutes":
+		return point.replace(second=0, microsecond=0, minute=(point.minute / 5)*5)
+	elif type_ == "hour":
+		return point.replace(second=0, microsecond=0, minute=0)
+	elif type_ == "day":
+		return point.replace(second=0, microsecond=0, minute=0, hour=0)
+	elif type_ == "month":
+		return point.replace(second=0, microsecond=0, minute=0, hour=0, day=1)
+	elif type_ == "year":
+		return point.replace(second=0, microsecond=0, minute=0, hour=0, day=1, month=1)
+
+def _nextPoint(point, type_):
+	if type_ == "5minutes":
+		return point + timedelta(minutes=5)
+	elif type_ == "hour":
+		return point + timedelta(hours=1)
+	elif type_ == "day":
+		return point + timedelta(days=1)
+	elif type_ == "month":
+		return datetime(point.year if point.month < 12 else point.year +1, point.month +1 if point.month < 12 else 1, 1)
+	elif type_ == "year":
+		return datetime(point.year +1, 1, 1)
+
+def _prevPoint(point, type_):
+	if type_ == "5minutes":
+		return point - timedelta(minutes=5)
+	elif type_ == "hour":
+		return point - timedelta(hours=1)
+	elif type_ == "day":
+		return point - timedelta(days=1)
+	elif type_ == "month":
+		return datetime(point.year if point.month > 1 else point.year -1, point.month -1 if point.month > 1 else 12, 1)
+	elif type_ == "year":
+		return datetime(point.year -1, 1, 1)
+
+def _toTime(point):
+	return util.utcDatetimeToTimestamp(point)
+
+def _combine(records):
 	#calculate coverage
 	measurements = sum([r.measurements for r in records])
 	#combine attributes
@@ -76,23 +97,17 @@ def _combine(begin, end, records):
 	combined.traffic = _sum([(r.usage.traffic, r.measurements) for r in records], measurements)
 	return (combined, measurements)
 
-class Usage(models.Model):
-	memory = models.FloatField(default=0.0) #unit: bytes
-	diskspace = models.FloatField(default=0.0) #unit: bytes
-	traffic = models.FloatField(default=0.0) #unit: bytes
-	cputime = models.FloatField(default=0.0) #unit: cpu seconds
+class Usage(EmbeddedDocument):
+	memory = FloatField(default=0.0) #unit: bytes
+	diskspace = FloatField(default=0.0) #unit: bytes
+	traffic = FloatField(default=0.0) #unit: bytes
+	cputime = FloatField(default=0.0) #unit: cpu seconds
 
 	def init(self, cputime, diskspace, memory, traffic):
 		self.cputime = cputime
 		self.diskspace = diskspace
 		self.memory = memory
 		self.traffic = traffic
-
-	class Meta:
-		pass
-
-	def remove(self):
-		self.delete()
 
 	def info(self):
 		return {
@@ -102,160 +117,169 @@ class Usage(models.Model):
 			"traffic": self.traffic
 		}
 
+class UsageRecord(EmbeddedDocument):
+	begin = FloatField(required=True)
+	end = FloatField(required=True)
+	measurements = IntField(default=0)
+	usage = EmbeddedDocumentField(Usage, required=True)
+	meta = {
+		'collection': 'usage_record',
+		'ordering': ['type', 'end'],
+		'indexes': [
+			('type', 'end')
+		]
+	}
 
-class UsageStatistics(attributes.Mixin, models.Model):
-	#records: [UsageRecord]
-	attrs = db.JSONField()
-	
-	class Meta:
-		pass
-
-	def init(self):
-		self.attrs = {}
-		self.begin = time.time()
-		self.save()
-		
-	def remove(self):
-		for rec in self.records.all():
-			rec.remove()
-		self.delete()
-	
-	def info(self):
-		return dict([(t, [r.info() for r in self.getRecords(type=t)]) for t in TYPES])
-
-	def getRecords(self, **kwargs):
-		return self.records.filter(**kwargs)
-
-	def importRecords(self, data):
-		for rec in data:
-			if self.getRecords(type=rec["type"], begin=rec["begin"], end=rec["end"]).exists():
-				continue
-			usage = Usage()
-			usage.cputime = rec["usage"]["cputime"]
-			usage.memory = rec["usage"]["memory"]
-			usage.diskspace = rec["usage"]["diskspace"]				
-			usage.traffic = rec["usage"]["traffic"]
-			self.createRecord(type_=rec["type"], begin=rec["begin"], end=rec["end"], measurements=rec["measurements"], usage=usage)
-
-	def createRecord(self, type_, begin, end, measurements, usage):
-		usage.save()
-		record = UsageRecord()
-		record.init(self, type_, begin, end, measurements, usage)
-		record.save()
-		self.records.add(record)
-		return record
-		
-	def removeOld(self):
-		for type_ in TYPES:
-			records = self.getRecords(type=type_).order_by("-end")
-			keep = records[:KEEP_RECORDS[type_]]
-			for rec in records.exclude(pk__in=keep):
-				rec.remove()
-		
-	def update(self):
-		self.combine()
-		self.removeOld()
-		
-	def combine(self):
-		lastType = TYPES[0]
-		for type_ in TYPES[1:]:
-			begin, end = _lastRange(type_, time.time())
-			if self.getRecords(type=type_, begin=begin, end=end).exists():
-				break
-			records = self.getRecords(type=lastType, begin__gte=begin, end__lte=end)
-			if not records:
-				continue
-			usage, coverage = _combine(begin, end, records)
-			self.createRecord(type_, begin, end, coverage, usage)
-			lastType = type_
-				
-	def updateFrom(self, sources):
-		ts = time.time() + 300
-		for _ in xrange(KEEP_RECORDS["5minutes"]):
-			ts -= 300
-			begin, end = _lastRange("5minutes", ts)
-			if self.getRecords(type="5minutes", end=end).exists():
-				break # end loop here, older records exist all
-			data = []
-			for s in sources:
-				data += s.getRecords(type="5minutes", end=end)
-			if len(data) < len(sources):
-				if ts > time.time() - 900:
-					continue # not all sources ready, continue with older time frame
-				elif time.time() - starttime < 900:
-					break # we just started, give it some time to fetch all data
-				elif not data:
-					break # no sources available (any more), break
-				else:
-					pass # some sources missing but old time frame, continue with what we got
-			usage = Usage()
-			measurements = 0
-			records = 0
-			for d in data:
-				usage.cputime += d.usage.cputime
-				usage.traffic += d.usage.traffic
-				usage.memory += d.usage.memory * (d.end - d.begin) / (end-begin)
-				usage.diskspace += d.usage.diskspace * (d.end - d.begin) / (end-begin)
-				measurements += d.measurements
-				records += 1
-			self.createRecord("5minutes", begin, end, measurements, usage)
-		self.combine()
-		self.removeOld()
-
-class UsageRecord(models.Model):
-	statistics = models.ForeignKey(UsageStatistics, related_name="records", on_delete=models.CASCADE)
-	type = models.CharField(max_length=10, choices=[(t, t) for t in TYPES], db_index=True) #@ReservedAssignment
-	begin = models.FloatField()
-	end = models.FloatField(db_index=True)
-	measurements = models.IntegerField()
-	usage = models.ForeignKey(Usage, related_name="+", on_delete=models.PROTECT)
-	
-	class Meta:
-		unique_together=(("statistics", "type", "end"),)
-
-	def init(self, statistics, type, begin, end, measurements, usage): #@ReservedAssignment
-		self.statistics = statistics
-		self.type = type
+	def init(self, begin, end, measurements, usage): #@ReservedAssignment
 		self.begin = begin
 		self.end = end
 		self.measurements = measurements
-		usage.save()
 		self.usage = usage
-		self.save()
-
-	def remove(self):
-		usage = self.usage
-		self.delete()
-		usage.remove()
 
 	def info(self):
 		return {
-			"type": self.type,
 			"begin": self.begin,
 			"end": self.end,
 			"measurements": self.measurements,
 			"usage": self.usage.info()
 		}
 
-class Quota(models.Model):
-	monthly = models.ForeignKey(Usage, related_name="+", on_delete=models.PROTECT)
-	used = models.ForeignKey(Usage, related_name="+", on_delete=models.PROTECT)
-	used_time = models.FloatField()
-	continous_factor = models.FloatField()
-	
+
+class UsageStatistics(BaseDocument):
+	"""
+	:type by5minutes: list of UsageRecord
+	:type byHour: list of UsageRecord
+	:type byDay: list of UsageRecord
+	:type byMonth: list of UsageRecord
+	:type byYear: list of UsageRecord
+	"""
+	by5minutes = ListField(EmbeddedDocumentField(UsageRecord), db_field='5minutes')
+	byHour = ListField(EmbeddedDocumentField(UsageRecord), db_field='hour')
+	byDay = ListField(EmbeddedDocumentField(UsageRecord), db_field='day')
+	byMonth = ListField(EmbeddedDocumentField(UsageRecord), db_field='month')
+	byYear = ListField(EmbeddedDocumentField(UsageRecord), db_field='year')
+	meta = {
+		'collection': 'usage_statistics',
+	}
+
+	def init(self):
+		self.save()
+
+	def remove(self):
+		self.delete()
+
+	def info(self):
+		return {
+			"5minutes": [rec.info() for rec in self.by5minutes],
+			"hour": [rec.info() for rec in self.byHour],
+			"day": [rec.info() for rec in self.byDay],
+			"month": [rec.info() for rec in self.byMonth],
+			"year": [rec.info() for rec in self.byYear],
+		}
+
+	def _getList(self, type_):
+		"""
+		:rtype: list of UsageRecord
+		"""
+		if type_ == "5minutes":
+			return self.by5minutes
+		elif type_ == "hour":
+			return self.byHour
+		elif type_ == "day":
+			return self.byDay
+		elif type_ == "month":
+			return self.byMonth
+		elif type_ == "year":
+			return self.byYear
+
+	def importRecords(self, data):
+		for rec in data:
+			list_ = self._getList(rec["type"])
+			if list_ and list_[-1].end >= rec["end"]:
+				continue
+			usage = Usage(cputime=rec["usage"]["cputime"], memory=rec["usage"]["memory"],
+				diskspace=rec["usage"]["diskspace"], traffic=rec["usage"]["traffic"])
+			record = UsageRecord(begin=rec["begin"], end=rec["end"], measurements=rec["measurements"], usage=usage)
+			list_.append(record)
+		self.save()
+
+	def removeOld(self):
+		for type_ in TYPES:
+			list_ = self._getList(type_)
+			list_[:] = list_[-KEEP_RECORDS[type_]:]
+		self.save()
+
+	def update(self):
+		self.combine()
+		self.removeOld()
+
+	def combine(self):
+		lastList = self._getList(TYPES[0])
+		now = time.time()
+		for type_ in TYPES[1:]:
+			list_ = self._getList(type_)
+			if list_:
+				begin = list_[-1].end
+			else:
+				begin = _toTime(_prevPoint(_lastPoint(type_, _toPoint(now)), type_))
+			end = _toTime(_nextPoint(_toPoint(begin), type_))
+			while end <= now:
+				records = filter(lambda rec: rec.begin >= begin and rec.end <= end, lastList)
+				usage, measurements = _combine(records)
+				list_.append(UsageRecord(begin=begin, end=end, usage=usage, measurements=measurements))
+				begin = end
+				end = _toTime(_nextPoint(_toPoint(end), type_))
+			lastList = list_
+		self.save()
+
+	def updateFrom(self, sources):
+		"""
+		:type sources: list of UsageStatistics
+		"""
+		if not sources:
+			return
+		lists = [source._getList("5minutes") for source in sources]
+		minAll = _toTime(_lastPoint("5minutes", _toPoint(time.time() - 1800)))
+		lastAll = max(minAll, min(lists, key=lambda l: l[-1].end if l else minAll))
+		myList = self._getList("5minutes")
+		begin = myList[-1].begin if myList else minAll
+		end = _toTime(_nextPoint(_toPoint(begin), "5minutes"))
+		while end <= lastAll:
+			usage = Usage()
+			record = UsageRecord(usage=usage)
+			for l in lists:
+				for rec in l:
+					if rec.end == end:
+						record.measurements += rec.measurements
+						record.usage.cputime += rec.usage.cputime
+						record.usage.traffic += rec.usage.traffic
+						record.usage.memory += rec.usage.memory * (rec.end - rec.begin) / (end-begin)
+						record.usage.diskspace += rec.usage.diskspace * (rec.end - rec.begin) / (end-begin)
+						break
+			myList.append(record)
+			begin = end
+			end = _toTime(_nextPoint(_toPoint(end), "5minutes"))
+		self.save()
+		self.update()
+
+	@property
+	def latest(self):
+		if not self.by5minutes:
+			return
+		return self.by5minutes[-1].usage.info()
+
+
+class Quota(EmbeddedDocument):
+	monthly = EmbeddedDocumentField(Usage, required=True)
+	used = EmbeddedDocumentField(Usage, required=True)
+	usedTime = FloatField(db_field='used_time', required=True)
+	continousFactor = FloatField(db_field='continous_factor')
+
 	def init(self, cputime, memory, diskspace, traffic, continous_factor):
-		self.monthly = Usage.objects.create(cputime=cputime, memory=memory, diskspace=diskspace, traffic=traffic)
-		self.used = Usage.objects.create()
+		self.monthly = Usage(cputime=cputime, memory=memory, diskspace=diskspace, traffic=traffic)
+		self.used = Usage()
 		self.used_time = time.time()
 		self.continous_factor = continous_factor
-		self.save()
-	
-	def remove(self):
-		monthly = self.monthly
-		used = self.used
-		self.delete()
-		monthly.remove()
-		used.remove()
 
 	def getFactor(self):
 		return max(self.used.cputime/self.monthly.cputime,
@@ -270,9 +294,7 @@ class Quota(models.Model):
 			self.used.memory = 0.0
 			self.used.diskspace = 0.0
 			self.used.traffic = 0.0
-			self.used.save()
 			self.used_time = start_of_month
-			self.save()
 		recs = usageStats.getRecords(type="5minutes", end__gt=self.used_time)
 		factor = 300.0 / util.secondsInMonth(*util.getYearMonth(time.time())) 
 		end = self.used_time
@@ -288,8 +310,6 @@ class Quota(models.Model):
 			if rec.end > end:
 				end = rec.end
 		self.used_time = end
-		self.used.save()
-		self.save()
 
 	def modify(self, value):
 		if "monthly" in value:
@@ -302,7 +322,6 @@ class Quota(models.Model):
 				self.monthly.diskspace = m["diskspace"]
 			if "traffic" in m:
 				self.monthly.traffic = m["traffic"]
-			self.monthly.save()
 		if "used" in value:
 			u = value["used"]
 			if "cputime" in u:
@@ -313,10 +332,8 @@ class Quota(models.Model):
 				self.used.diskspace = u["diskspace"]
 			if "traffic" in u:
 				self.used.traffic = u["traffic"]
-			self.used.save()
 		if "continous_factor" in value:
 			self.continous_factor = value["continous_factor"]
-			self.save()
 
 	def info(self):
 		return {
@@ -327,7 +344,6 @@ class Quota(models.Model):
 		}
 
 @util.wrap_task
-@db.commit_after
 def aggregate():
 	from . import host, elements, connections, topology, auth
 	for el in elements.getAll():
@@ -345,7 +361,6 @@ def aggregate():
 			h.updateUsage()
 
 @util.wrap_task
-@db.commit_after
 def updateQuota():
 	from . import auth
 	try:

@@ -24,7 +24,6 @@ class Usage(EmbeddedDocument):
 	cputime = FloatField(default=0.0) #unit: cpu seconds
 
 class UsageRecord(EmbeddedDocument):
-	type = StringField(choices=["5minutes", "hour", "day", "month", "year"], required=True)
 	begin = FloatField(required=True)
 	end = FloatField(required=True)
 	measurements = IntField(default=0)
@@ -38,7 +37,11 @@ class UsageRecord(EmbeddedDocument):
 	}
 
 class UsageStatistics(BaseDocument):
-	records = ListField(EmbeddedDocumentField(UsageRecord))
+	by5minutes = ListField(EmbeddedDocumentField(UsageRecord), db_field='5minutes')
+	byHour = ListField(EmbeddedDocumentField(UsageRecord), db_field='hour')
+	byDay = ListField(EmbeddedDocumentField(UsageRecord), db_field='day')
+	byMonth = ListField(EmbeddedDocumentField(UsageRecord), db_field='month')
+	byYear = ListField(EmbeddedDocumentField(UsageRecord), db_field='year')
 	meta = {
 		'collection': 'usage_statistics',
 	}
@@ -119,7 +122,7 @@ class ErrorDump(EmbeddedDocument):
 	description = DictField(required=True)
 	data = StringField()
 	dataAvailable = BooleanField(default=False, db_field='data_available')
-	origin = StringField(required=True)
+	type = StringField(required=True)
 	softwareVersion = DictField(db_field='software_version')
 	timestamp = FloatField(required=True)
 	meta = {

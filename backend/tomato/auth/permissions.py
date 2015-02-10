@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+from ..db import *
 
-from ..auth import User, Flags
 from .. import currentUser
 from ..lib.error import UserError
 
+# noinspection PyClassHasNoInit
 class Role:
 	owner = "owner" # full topology control, permission changes, topology removal 
 	manager = "manager" # full topology control, no topology delete, no permission changes
@@ -45,50 +45,34 @@ def role_descriptions():
 	}
 	
 
-class Permissions(models.Model):
-
-	class Meta:
-		db_table = "tomato_permissions"
-		app_label = 'tomato'
-
-	def set(self, user, role): #@ReservedAssignment
-		try:
-			entry = self.entries.get(user=user)
-			if role and role != 'null':
-				entry.role = role
-				entry.save()
-			else:
-				entry.delete()			
-		except PermissionEntry.DoesNotExist:
-			if not role:
-				return
-			entry = PermissionEntry(set=self, user=user, role=role)
-			entry.save()
-			
+class Permission(ExtDocument, EmbeddedDocument):
+	"""
+	:type user: auth.User
+	:type role: str
+	"""
+	from . import User
+	user = ReferenceField(User, required=True)
+	role = StringField(choices=['owner', 'manager', 'user'], required=True)
 
 
-class PermissionEntry(models.Model):
-	set = models.ForeignKey(Permissions, null=False, related_name="entries") #@ReservedAssignment
-	user = models.ForeignKey(User, null=False)
-	role = models.CharField(max_length=20)
+# noinspection PyClassHasNoInit
+class PermissionMixin(object):
+	"""
+	:type permissions: list of Permission
+	"""
+	permissions = []
+	del permissions
 
-	class Meta:
-		db_table = "tomato_permissionentry"
-		app_label = 'tomato'
-		unique_together = (("user", "set"),)
-	
-	
-	
-class PermissionMixin:
-	#permissions: Permissions
-	
 	def getRole(self, user=None):
+		"""
+		:type user: auth.User or None
+		"""
 		if not user:
 			user = currentUser()
 		if user is True:
 			return Role.owner
 		role = Role.null
-		# Global permissions, thats easy
+		# Global permissions, that's easy
 		if user.hasFlag(Flags.GlobalToplUser):
 			role = Role.user
 		if user.hasFlag(Flags.GlobalToplManager):
@@ -97,13 +81,12 @@ class PermissionMixin:
 			role = Role.owner
 
 		# User specific role
-		try:
-			role2 = self.permissions.entries.get(user=user).role
-			if Role.RANKING.index(role2) > Role.RANKING.index(role):
-				role = role2
-		except PermissionEntry.DoesNotExist:
-			pass
-		
+		for perm in self.permissions:
+			if perm.user != user:
+				continue
+			if Role.RANKING.index(perm.role) > Role.RANKING.index(role):
+				role = perm.role
+
 		# Organization role
 		orgaRole = Role.null
 		if user.hasFlag(Flags.OrgaToplUser):
@@ -113,14 +96,24 @@ class PermissionMixin:
 		if user.hasFlag(Flags.OrgaToplOwner):
 			orgaRole = Role.owner
 		if Role.RANKING.index(orgaRole) > Role.RANKING.index(role):
-			if self.permissions.entries.filter(role=Role.owner, user__organization=user.organization).exists():
-				role = orgaRole
-				
+			for perm in self.permissions:
+				if perm.role == Role.owner and perm.user.organization == user.organization:
+					role = orgaRole
+					break
+
 		return role
 	
-	def hasRole(self, role=Role.user, *args, **kwargs):
-		r = self.getRole(*args, **kwargs)
+	def hasRole(self, role=Role.user, user=None):
+		r = self.getRole(user)
 		return Role.RANKING.index(r) >= Role.RANKING.index(role)		
 	
-	def checkRole(self, *args, **kwargs):
-		UserError.check(self.hasRole(*args, **kwargs), code=UserError.DENIED, message="Not enough permissions")
+	def checkRole(self, user=None):
+		UserError.check(self.hasRole(user), code=UserError.DENIED, message="Not enough permissions")
+
+	def setRole(self, user=None, role=Role.user):
+		if not user:
+			user = currentUser()
+		self.permissions = 	filter(lambda perm: perm.user != user, self.permissions)
+		self.permissions.append(Permission(user=user, role=role))
+
+from . import Flags
