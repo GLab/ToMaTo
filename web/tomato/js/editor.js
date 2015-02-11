@@ -4188,8 +4188,6 @@ var RexTFV_status_updater = Class.extend({
         elExists = true;
         mustRemove = false;
 
-        console.log(entry.element);
-
         if (entry.element in editor.topology.elements) { //element exists
             editor.topology.elements[entry.element].update(undefined, undefined, true) //hide errors.
         } else {
@@ -4209,7 +4207,6 @@ var RexTFV_status_updater = Class.extend({
 	},
 	updateSome: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
 		                      //update only the first five elements of the array. This boundary is to avoid server overload.
-		toRemove = [];
 		var count = 5;
         if (t.elements.length < count) count = t.elements.length; //do not update elements twice.
 		while (count-- > 0) t.updateFirst(t);
