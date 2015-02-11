@@ -15,90 +15,73 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from ..generic import *
 from ..db import *
-from .. import elements, host
+from ..elements import Element
+from .. import host, elements
 from ..resources.network import Network, NetworkInstance
 from generic import ST_CREATED, ST_STARTED
 from .. import currentUser
 from ..auth import Flags
 from ..lib.error import UserError
 
-class ExternalNetwork(elements.Element):
+class ExternalNetwork(Element):
 	name = StringField()
 	samenet = BooleanField(default=False)
 	kind = StringField(default='internet')
 	network = ReferenceField('Network')
 
-	CUSTOM_ACTIONS = {
-		"start": [ST_CREATED],
-		"stop": [ST_STARTED],
-		elements.REMOVE_ACTION: [ST_CREATED],
-	}
-	CUSTOM_ATTRS = {
-		"name": name_attr,
-		"samenet": samenet_attr,
-		"kind": kind_attr,
-	}
-
 	DIRECT_ATTRS = False
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_PARENT = [None]
-	DEFAULT_ATTRS = {}
+	DEFAULT_ATTRS = {"state": ST_CREATED}
 
 	TYPE = "external_network"
 	DIRECT_ACTIONS = False
 	DIRECT_ACTION_EXCLUDE = []
 	CAP_CHILDREN = {"external_network_endpoint": [ST_CREATED]}
 	
-	class Meta:
-		db_table = "tomato_external_network"
-		app_label = 'tomato'
-
 	def init(self, *args, **kwargs):
-		self.state = ST_CREATED
-		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		Element.init(self, *args, **kwargs)
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
-	
-	def mainElement(self):
-		return None
-	
-	def modify_name(self, val):
-		self.name = val
 
-	def modify_samenet(self, val):
-		self.samenet = val
-
-	def modify_kind(self, val):
+	def check_kind(self, val):
 		network = Network.get(val)
 		if network.restricted and not self.kind == val:
 			UserError.check(currentUser().hasFlag(Flags.RestrictedNetworks), code=UserError.DENIED, message="Network is restricted")
+
+	def modify_kind(self, val):
 		self.kind = val
-		for ch in self.getChildren():
+		for ch in self.children:
 			ch.modify({"kind": val})
 
 	def action_stop(self):
-		for ch in self.getChildren():
+		for ch in self.children:
 			ch.action("stop", {})
 		self.setState(ST_CREATED)
 
 	def action_start(self):
 		if self.samenet:
 			self.network = Network.get(self.kind)
-		for ch in self.getChildren():
+		for ch in self.children:
 			if not ch.state == ST_STARTED:
 				ch.action("start", {})
 		self.setState(ST_STARTED)
 
-	def upcast(self):
-		return self
+	ATTRIBUTES = {
+		"name": Attribute(field="name", schema=schema.String()),
+		"samenet": StatefulAttribute(field="samenet", writableStates=[ST_CREATED], schema=schema.Bool())
+		"kind": StatefulAttribute(field="kind", set=modify_kind, check=check_kind, writableStates=[ST_CREATED],
+			schema=schema.Identifier())
+	}
 
-	def info(self):
-		info = elements.Element.info(self)
-		info["attrs"]["samenet"] = self.samenet
-		info["attrs"]["restricted"] = self.network.restricted
-		return info
+	ACTIONS = {
+		"start": StatefulAction(action_start, allowedStates=[ST_CREATED], stateChange=ST_STARTED),
+		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_CREATED),
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, allowedStates=[ST_CREATED])
+	}
 
 
 class ExternalNetworkEndpoint(elements.Element, elements.generic.ConnectingElement):
@@ -137,7 +120,8 @@ class ExternalNetworkEndpoint(elements.Element, elements.generic.ConnectingEleme
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
-	
+
+	@property
 	def mainElement(self):
 		return self.element
 	

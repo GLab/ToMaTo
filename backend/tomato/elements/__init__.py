@@ -342,25 +342,28 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		except cls.DoesNotExist:
 			return None
 
-def create(top, type_, parent=None, attrs=None):
-	if not attrs:
-		attrs = {}
-	if parent:
-		UserError.check(parent.topology == top, code=UserError.INVALID_CONFIGURATION,
-			message="Parent must be from same topology")
-	top.checkRole(Role.manager)	
-	UserError.check(type_ in TYPES, code=UserError.UNSUPPORTED_TYPE, message="Unsupported type", data={"type": type_})
-	el = TYPES[type_]()
-	try:
-		el.init(top, parent, attrs)
-		el.save()
-	except:
-		el.remove()
-		raise
-	if parent:
-		parent.onChildAdded(el)
-	logging.logMessage("create", category="element", id=el.id)	
-	logging.logMessage("info", category="element", id=el.id, info=el.info())		
-	return el
+	@classmethod
+	def create(cls, top, type_=None, parent=None, attrs=None):
+		if not attrs:
+			attrs = {}
+		if not type_:
+			type_ = cls.TYPE
+		if parent:
+			UserError.check(parent.topology == top, code=UserError.INVALID_CONFIGURATION,
+				message="Parent must be from same topology")
+		top.checkRole(Role.manager)
+		UserError.check(type_ in TYPES, code=UserError.UNSUPPORTED_TYPE, message="Unsupported type", data={"type": type_})
+		el = TYPES[type_]()
+		try:
+			el.init(top, parent, attrs)
+			el.save()
+		except:
+			el.remove()
+			raise
+		if parent:
+			parent.onChildAdded(el)
+		logging.logMessage("create", category="element", id=el.id)
+		logging.logMessage("info", category="element", id=el.id, info=el.info())
+		return el
 
 from .. import currentUser, host
