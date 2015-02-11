@@ -287,10 +287,11 @@ var ChoiceElement = FormElement.extend({
 		}
 		
 		if (this.showInfo) {
-			this.element = $('<div class="col-sm-9" />');
-			this.element.append(this.select);
+			var choiceElement = $('<div class="col-sm-9" />');
+			choiceElement.append(this.select);
 			this.info = $('<div class="col-sm-3"></div>');
-			this.element.after(this.info);
+			this.element = $('<div />');
+			this.element.append(choiceElement,this.info);
 			
 			var t = this;
 			this.select.change(function(){
@@ -345,14 +346,14 @@ var TemplateElement = FormElement.extend({
 		this.disabled = options.disabled;
 		this.call_element = options.call_element;
 		
-		this.element = $('<div style="display:none;"></div>');
+		this.element = $('<div />');
 		this.labelarea = $('<div class="col-sm-6"/>');
 		this.changebuttonarea = $('<div class="col-sm-3"/>');
 		this.infoarea = $('<div class="col-sm-3"/>');
 		
-		this.element.after(this.labelarea);
-		this.element.after(this.changebuttonarea);
-		this.element.after(this.infoarea);
+		this.element.append(this.labelarea);
+		this.element.append(this.changebuttonarea);
+		this.element.append(this.infoarea);
 		
 		template = editor.templates.get(options.type,options.value);
 		if (options.custom_template) {
@@ -417,7 +418,7 @@ var TemplateElement = FormElement.extend({
 var Window = Class.extend({
 	init: function(options) {
 		this.options = options;
-		this.options.position = options.position || { my: "center-"+options.width/4+" center-100", at: "center center", of: "#workspace" };
+		this.options.position = options.position || { my: "center-"+options.width/4+" center", at: "center top", of: "#workspace" };
 		this.div = $('<div style="overflow:visible;"/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
@@ -874,11 +875,10 @@ var InputWindow = Window.extend({
 		}
 
 		var label = $('<label for="newname" class="col-sm-4 control-label" />');
-
 		label.append(options.inputlabel);
-		label.after($('<div class="col-sm-8"/>').append(this.element.getElement()));
-		
 		div.append(label);
+		div.append($('<div class="col-sm-8"/>').append(this.element.getElement()));
+		
 		this.add(form);
 		this.setTitle(options.title);
 	}
@@ -1128,7 +1128,7 @@ var PermissionsWindow = Window.extend({
 				td_buttons: td_buttons,
 				tr: tr
 		};
-		this.userTable.after(tr);
+		this.userTable.append(tr);
 		
 		this.drawView(username);
 	},
@@ -1204,7 +1204,7 @@ var PermissionsWindow = Window.extend({
 			if (perm != "null")
 				sel.append($('<option value="'+perm+'" title="'+this.permissions[perm].description+'">'+this.permissions[perm].title+'</option>'));
 		}
-		sel.change(function(){ sel[0].title = t.permissions[sel[0].value].description });
+		sel.change(function(){ sel[0].title = this.permissions[sel[0].value].description });
 		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
@@ -2434,10 +2434,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			});
 			this.elements.push(el);
 			var link_emulation = $('<div class="tab-pane active" id="Link_Emulation" />');
-			var link_emulation_elements = $('<div class="form-group" />')
+			link_emulation.append($('<div class="form-group" />')
 						.append($('<label class="col-sm-4 control-label">Enabled</label>'))
 						.append($('<div class="col-sm-8" style="padding: 0px" />')
-						.append(el.getElement()));
+						.append(el.getElement())));
 			
 			//direction arrows
 			var size = 30;
@@ -2463,7 +2463,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			}
 			var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
 			var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
-			link_emulation_elements.after($('<div class="form-group" />')
+			link_emulation.append($('<div class="form-group" />')
 				.append($('<label class="col-sm-4 control-label">Direction</label>'))
 				.append($('<div class="col-sm-4" />').append(fromDir).append(dir1))
 				.append($('<div class="col-sm-4" />').append(toDir).append(dir2))
@@ -2478,7 +2478,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				var el_to = this.autoElement(con.caps.attrs[name+"_to"], con.data.attrs[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
-				link_emulation_elements.after($('<div class="form-group" />')
+				link_emulation.append($('<div class="form-group" />')
 					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attrs[name+"_to"].desc))
 					.append($('<div class="col-sm-3" style="padding: 0;"/>').append(el_from.getElement()))
 					.append($('<div class="col-sm-3" style="padding: 0;" />').append(el_to.getElement()))
@@ -2487,9 +2487,6 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			}
 			this.updateEmulationStatus(con.data.attrs.emulation);
 			
-			
-
-			link_emulation.append(link_emulation_elements);
 			tab_content.append(link_emulation);
 			this.table.append(tab_content);
 		}
@@ -2497,7 +2494,6 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var t = this;
 			var packet_capturing = $('<div class="tab-pane" id="Packet_capturing" />');
 			
-			packet_capturing.append(packet_capturing_elements);
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
 				name: "capturing",
@@ -2507,10 +2503,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				}
 			});
 			this.elements.push(el);
-			var packet_capturing_elements = $('<div class="form-group" />')
-			.append($('<label class="col-sm-6 control-label">Enabled</label>'))
-			.append($('<div class="col-sm-6" />')
-			.append(el.getElement()));
+			packet_capturing.append($('<div class="form-group" />')
+					.append($('<label class="col-sm-6 control-label">Enabled</label>'))
+					.append($('<div class="col-sm-6" />')
+					.append(el.getElement())));
 		
 			
 			var order = ["capture_mode", "capture_filter"];
@@ -2519,7 +2515,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				var el = this.autoElement(con.caps.attrs[name], con.data.attrs[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
-				packet_capturing_elements.after($('<div class="form-group" />')
+				packet_capturing.append($('<div class="form-group" />')
 					.append($('<label class="col-sm-6 control-label">').append(con.caps.attrs[name].desc))
 					.append($('<div class="col-sm-6" />').append(el.getElement()))
 				);
@@ -2527,7 +2523,6 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			this.updateCapturingStatus(con.data.attrs.capturing);
 			
 
-			packet_capturing.append(packet_capturing_elements);
 			tab_content.append(packet_capturing);
 			this.table.append(tab_content);
 		}
