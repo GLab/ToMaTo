@@ -127,10 +127,10 @@ Menu.button = function(options) {
 };
 
 Menu.checkbox = function(options) {
-	var html = $('<input type="checkbox" id="'+options.name+'"/><label for="'+options.name+'">'+options.label+'</label>');
+	var html = $('<input type="checkbox" id="'+options.name+'" /><label for="'+options.name+'">'+options.label+'</label>');
 	if (options.tooltip) html.attr("title", options.tooltip);
 	if (options.func) html.click(function(){
-		options.func(html.attr("checked"), html);
+		options.func(html.prop("checked"));
 	});
 	html.setChecked = function(value){
 		this.attr("checked", value);
@@ -250,20 +250,20 @@ var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 
-		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
+		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'" checked="true"/>');
 		this.element = $('<div class="col-sm-12">').append(this.checkbox);
 		if (options.disabled) this.checkbox.attr({disabled: true});
 		var t = this;
 		this.checkbox.change(function() {
-			t.onChanged(this.checked);
+			t.onChanged(t.prop("checked"));
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.checkbox[0].checked;
+		return this.checkbox.attr("checked");
 	},
 	setValue: function(value) {
-		this.checkbox[0].checked = value;
+		this.checkbox.attr("checked",value);
 	}
 });
 
@@ -371,7 +371,7 @@ var TemplateElement = FormElement.extend({
 		this.template = template;
 		var t = this;
 		
-		var changebutton = $('&nbsp;<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
+		var changebutton = $('<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
 			t.call_element.showTemplateWindow(
 				
@@ -417,7 +417,7 @@ var TemplateElement = FormElement.extend({
 var Window = Class.extend({
 	init: function(options) {
 		this.options = options;
-		this.options.position = options.position || ['center',200];
+		this.options.position = options.position || { my: "center-"+options.width/4+" center-100", at: "center center", of: "#workspace" };
 		this.div = $('<div style="overflow:visible;"/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
@@ -441,7 +441,7 @@ var Window = Class.extend({
 		if (options.closeOnEscape != undefined)
 			this.div.closeOnEscape = options.closeOnEscape;
 		this.setPosition(options.position);
-		if (options.content) this.div.append(options.content);
+		if (options.content) this.div.append($('<div style="min-height: auto;" />').append(options.content));
 		if (options.autoShow) this.show();
 		
 
@@ -521,7 +521,6 @@ var errorWindow = Window.extend({
 				show_error_appendix: false,
 				error_message_appendix: editor.options.error_message_appendix,
 			};
-		
 		//Copy error to new variable and remove it from the options dict
 		var error = options.error;
 		delete options.error;
@@ -532,43 +531,46 @@ var errorWindow = Window.extend({
 		this._super(this.windowOptions);
 		
 		//Create the content of the error window
-		this.errorContent = $('<div>');
+		this.errorContent = $('<div />');
 
-		console.log(error);
+		
+		this.errorResponse = $('<div />');
 		
 		if(error.parsedResponse) {
-			this.errorContent.after(this.addError(error.parsedResponse.error));
+			this.errorResponse.append(this.addError(error.parsedResponse.error));
 		} else {
-			this.errorContent.after(this.addText(error.originalResponse));
+			this.errorResponse.append(this.addText(error.originalResponse));
 		}
 		
 		if(!(editor.options.isDebugUser || editor.options.debug_mode) && !options.show_error_appendix) {
-			this.errorContent.after('<p style="color: #a0a0a0">'+this.options.error_message_appendix+'</p>');
+			this.errorResponse.append('<p style="color: #a0a0a0">'+this.options.error_message_appendix+'</p>');
 		}
-		this.errorContent.after($('</div>'));
+		this.errorContent.append(this.errorResponse);
 		this.div.append(this.errorContent);
+
 	},
 
 	addError: function(error) {
 		//Show additional information for debug users like the errorcode, the errormessage and errordata for debugusers
-		var content = $('');
-		
 		this.setTitle("Error: "+error.typemsg);
 		
-		var errorMessage = $('<p>'+error.errormsg+'</p>');
-		content.after(errorMessage);
+		this.content = $('<div />');
+		this.errorMessage = $('<p>'+error.errormsg+'</p>');
+
+		this.content.append(this.errorMessage);
 		
 		if(editor.options.isDebugUser && editor.options.debug_mode) {
 			
-			content.after($('<b>Error details:</b>'))
+			this.content.append($('<b>Error details:</b>'))
 			var errorDebugInfos = $('<table />');
 			
 			for(var line=0;line<error.debuginfos.length;line++) {
 				errorDebugInfos.append($('<tr><th>'+error.debuginfos[line].th+'</th><td>'+error.debuginfos[line].td+'</td></tr>'));
 			}
-			content.after(errorDebugInfos);
+			this.content.append(errorDebugInfos);
 		}
-		return content;
+		console.log(this.content);
+		return this.content;
 	},
 	
 	addText: function(text) {
@@ -1522,7 +1524,9 @@ var Topology = Class.extend({
 
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
-			width: "600",
+			width: 600,
+			height: 600,
+			maxHeight:800,
 			buttons: {
 				Save: function() {
 					t.configWindow.hide();
@@ -1832,8 +1836,7 @@ var Topology = Class.extend({
 		 	successFn: function(result) {
 		 		var win = new Window({
 		 			title: "Debug info",
-		 			position: "center top",
-		 			width: 800,
+		 			width: 500,
 		 			buttons: {
 		 				Close: function() {
 		 					win.hide();
@@ -1937,6 +1940,7 @@ var Topology = Class.extend({
 		dialog = new AttributeWindow({
 			title: "Topology Timeout",
 			width: 500,
+			height: 400,
 			buttons: [
 						{ 
 							text: "Save",
@@ -1977,6 +1981,7 @@ var Topology = Class.extend({
 		dialog = new AttributeWindow({
 			title: "New Topology",
 			width: 500,
+			height: 500,
 			closable: false,
 			buttons: [
 						{ 
@@ -2229,8 +2234,7 @@ var Component = Class.extend({
 		 	successFn: function(result) {
 		 		var win = new Window({
 		 			title: "Debug info",
-		 			position: "center top",
-		 			width: 800,
+		 			width: 500,
 		 			buttons: {
 		 				Close: function() {
 		 					win.hide();
@@ -2281,7 +2285,7 @@ var Component = Class.extend({
 		
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
-			width: "600",
+			width: 600,
 			helpTarget:helpTarget,
 			buttons: {
 				Save: function() {
@@ -4335,10 +4339,12 @@ var Editor = Class.extend({
 	optionMenuItem: function(options) {
 		var t = this;
 		return Menu.checkbox({
-			name: options.name, label: options.label, tooltip: options.tooltip,
+			name: options.name, 
+			label: options.label, 
+			tooltip: options.tooltip,
 			func: function(value){
-				t.options[options.name]=value != null;
-			  t.onOptionChanged(options.name);
+				t.setOption(options.name,value);
+				t.onOptionChanged(options.name);
 			},
 			checked: this.options[options.name]
 		});

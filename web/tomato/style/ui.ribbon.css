@@ -29,7 +29,7 @@
 }
 
 
-/* (CONTEXTUAL) TABSETS */
+/* (CONTEXTUAL) TABSETS */ui.ribbon.cs
 .ui-ribbon .ui-ribbon-tabset-contextual {
 	position: absolute;
 	left: -1000px;
@@ -130,7 +130,7 @@
 /* PANELS */
 .ui-ribbon .ui-ribbon-panel {
 	padding: 1px !important;
-	border-width: 1px !important; /* restore ui-widget-content border */
+	border: 1px solid lightGrey; /* restore ui-widget-content border */
 }
 .ui-ribbon .ui-ribbon-panel ul {
 	margin: 0;
@@ -154,28 +154,21 @@
 	margin: 2px;
 	margin-right: 0px;
     position: relative;
-	background-position: left -200px;
+	border: 1px solid lightGrey;
 }
 .ui-ribbon .ui-ribbon-group:hover, 
 .ui-ribbon .ui-ribbon-group.ui-state-hover {
-	background-position: left -200px;
 }
 
 
 /*      group content */
 .ui-ribbon .ui-ribbon-group .ui-ribbon-group-content {
 	display: block;
-    
 	height: 5.6em;
 	overflow: hidden;
-	
-	padding: 0.1em 0.1em 0 0.1em;
-	
-	border-width: 0;
 }
 .ui-ribbon .ui-ribbon-group:hover .ui-ribbon-group-content,
 .ui-ribbon .ui-ribbon-group.ui-state-hover .ui-ribbon-group-content {
-	border-width: 0;
 }
 
 /*      group label */
@@ -183,14 +176,12 @@
 	height: 14px;
     margin: 0 auto;
 	padding: 0 10px 0 10px;
-	
 	text-align: center;
-	
-	border-width: 1px 0 0 0;
+	border-top: 1px solid lightGrey;
 }
 .ui-ribbon .ui-ribbon-group:hover .ui-ribbon-group-label,
 .ui-ribbon .ui-ribbon-group.ui-state-hover .ui-ribbon-group-label {
-	border-width: 1px 0 0 0;
+	
 }
 .ui-ribbon .ui-ribbon-group .ui-ribbon-group-label span {
 	font-size: 11px;
@@ -239,10 +230,9 @@
 
 /* SIMPLE button */
 .ui-ribbon .ui-ribbon-group .ui-button { 
-	padding: 0 0.1em 0 0.1em;
+	padding: 1px;
 	font-size: 10pt; 
-	height: 1.5em;
-	line-height: 1.5em;
+	line-height: 0;
 	overflow: hidden;
 }
 .ui-ribbon .ui-ribbon-group .ui-button .ui-icon {
@@ -257,6 +247,7 @@
 .ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button { 
 	font-size: 1em; 
 	height: 5.5em;
+	margin: 1px;
 }
 .ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-icon {
 	display: block;
@@ -264,6 +255,9 @@
     float: none;
     clear: both;
     margin: 0 auto;
+}
+.ui-ribbon .ui-ribbon-element .ui-button-checked {
+	background: white;	
 }
 .ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-icon .ui-icon,
 .ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-icon img {
