@@ -17,7 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import sys
+import sys, threading
+import django.db
 
 from . import config, login, api, handleError as handleCurrentError
 from . import currentUser
@@ -28,6 +29,16 @@ from .lib.error import Error, InternalError
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name)
 
+class Wrapper:
+	def __init__(self):
+		self.semaphore = threading.Semaphore(config.MAX_REQUESTS)
+	def __enter__(self):
+		self.semaphore.acquire()
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		self.semaphore.release()
+		if django.db.transaction.is_dirty():
+			django.db.transaction.commit()
+		django.db.connection.close()
 
 @db.commit_after
 def handleError(error, function, args, kwargs):
@@ -61,8 +72,8 @@ def start():
 							  certificate=settings["SSL_OPTS"]["cert_file"],
 							  client_certs=settings["SSL_OPTS"]["client_certs"])
 		server = rpc.runServer(type=settings.get("TYPE", "https+xmlrpc"), address=server_address, sslOpts=sslOpts,
-							   certCheck=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError,
-							   api=api)
+							   certCheck=login, wrapper=Wrapper(), beforeExecute=logCall, afterExecute=afterCall,
+								onError=handleError, api=api)
 		print >> sys.stderr, " - %s %s:%d" % (
 		settings.get("TYPE", "https+xmlrpc"), server_address[0], server_address[1])
 		servers.append(server)
