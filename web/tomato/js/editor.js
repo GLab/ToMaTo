@@ -987,7 +987,7 @@ var TemplateWindow = Window.extend({
 				radio.prop("checked","checked");
 			}
 			
-			var radiolabel = $('<label for="'+t.name+'">'+t.label+'</label>');
+			var radiolabel = $('<label for="'+winID+t.name+'">'+t.label+'</label>');
 			radiolabel.click( function(){
 				$(this).children('input').attr('checked', 'checked');
 			});
@@ -1204,7 +1204,7 @@ var PermissionsWindow = Window.extend({
 			if (perm != "null")
 				sel.append($('<option value="'+perm+'" title="'+this.permissions[perm].description+'">'+this.permissions[perm].title+'</option>'));
 		}
-		sel.change(function(){ sel[0].title = this.permissions[sel[0].value].description });
+		sel.change(function() { sel[0].title = t.permissions[sel[0].value].description });
 		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
