@@ -9,7 +9,8 @@
     "url":   "basic/tutorial.json",
     "name": "Beginner Tutorial",
     "desc": "Teaches the basics about how to use ToMaTo's editor.",
-    "icon": "basic/icon.png"
+    "icon": "basic/icon.png",
+    "screencast_url": "http://tomato-lab.org/screencasts/basic/"
   },
   {
     "url":   "device_data_access/tutorial.json",
