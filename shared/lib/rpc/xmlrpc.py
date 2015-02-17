@@ -148,26 +148,27 @@ class SecureServer():
 
 class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler):
 	def do_POST(self):
-		credentials = self.getCredentials()
-		sslCert = self.getSSLCertificate()
-		if not self.server.checkAuth(credentials, sslCert):
-			self.send_error(403)
-			return self.finish()
-		(method, args, kwargs) = self.getRpcRequest()
-		func = self.server.findMethod(method)
-		if not func:
-			self.send(xmlrpclib.Fault(26, "No such method!"))
-			return
-		try:
-			ret = self.server.execute(func, args, kwargs)
-			self.send((ret,))
-		except ErrorUnauthorized:
-			self.send_error(403 if (credentials or sslCert) else 401)
-			return self.finish()
-		except Exception, err:
-			if not isinstance(err, xmlrpclib.Fault):
-				err = xmlrpclib.Fault(-1, str(err))
-			self.send(err)
+		with self.server.wrapper:
+			credentials = self.getCredentials()
+			sslCert = self.getSSLCertificate()
+			if not self.server.checkAuth(credentials, sslCert):
+				self.send_error(403)
+				return self.finish()
+			(method, args, kwargs) = self.getRpcRequest()
+			func = self.server.findMethod(method)
+			if not func:
+				self.send(xmlrpclib.Fault(26, "No such method!"))
+				return
+			try:
+				ret = self.server.execute(func, args, kwargs)
+				self.send((ret,))
+			except ErrorUnauthorized:
+				self.send_error(403 if (credentials or sslCert) else 401)
+				return self.finish()
+			except Exception, err:
+				if not isinstance(err, xmlrpclib.Fault):
+					err = xmlrpclib.Fault(-1, str(err))
+				self.send(err)
 
 	def log_message(self, format, *args):  #@ReservedAssignment
 		pass
@@ -208,14 +209,20 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		username, password = auth.split(':', 1)
 		return (username, password)
 
+class DummyWrapper:
+	def __enter__(self):
+		pass
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		pass
 
 class XMLRPCServer(SecureServer, SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
-	def __init__(self, address, loginFunc=lambda u, p: True, sslOpts=False, beforeExecute=None, afterExecute=None,
+	def __init__(self, address, loginFunc=lambda u, p: True, sslOpts=False, wrapper=DummyWrapper(), beforeExecute=None, afterExecute=None,
 				 onError=None):
 		BaseHTTPServer.HTTPServer.__init__(self, address, XMLRPCHandler, bind_and_activate=not bool(sslOpts))
 		SecureServer.__init__(self, sslOpts)
 		self.functions = {}
 		self.loginFunc = loginFunc
+		self.wrapper = wrapper
 		self.beforeExecute = beforeExecute
 		self.afterExecute = afterExecute
 		self.onError = onError
