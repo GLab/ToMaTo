@@ -450,7 +450,7 @@ Note that you can not type any text into the consoles of these agents as the Rep
 		help_page: 'LinkEmulation'
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we will add a delay of 2 seconds to a link and check if we can see the difference. Open the attributes ofthe link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a delay of 2000 ms on one of the directions.</p>\
+		text: '<p class="tutorialExplanation">Now we will add a delay of 2 seconds to a link and check if we can see the difference. Open the attributes of the link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a delay of 2000 ms on one of the directions.</p>\
 <p class="tutorialCommand">Add 2 seconds delay to one link</p>',
 		trigger: function(event) {
 			var data = getTutorialData();
