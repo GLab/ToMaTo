@@ -212,9 +212,9 @@ class VMElement(Element):
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"site": StatefulAttribute(field=site, set=modify_site, writableStates=[ST_CREATED]),
-		"profile": StatefulAttribute(field=profile, set=modify_profile, writableStates=[ST_CREATED, ST_PREPARED]),
-		"template": StatefulAttribute(field=template, set=modify_template, writableStates=[ST_CREATED]),
+		"site": StatefulAttribute(get=lambda self: self.site.name if self.site else None, set=modify_site, writableStates=[ST_CREATED]),
+		"profile": StatefulAttribute(get=lambda self: self.profile.name if self.profile else None, set=modify_profile, writableStates=[ST_CREATED, ST_PREPARED]),
+		"template": StatefulAttribute(get=lambda self: self.template.name if self.template else None, set=modify_template, writableStates=[ST_CREATED]),
 		"name": Attribute(field=name),
 		"info_last_sync": Attribute(field=lastSync, readOnly=True)
 	})

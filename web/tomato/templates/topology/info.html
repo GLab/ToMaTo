@@ -73,7 +73,7 @@
   	sites: {{sites_json|safe}},
   	resources: {{res_json|safe}},
   	capabilities: {{caps_json|safe}}, 
-  	topology: {{top.id}},
+  	topology: "{{top.id}}",
   	user: {{request.session.user.data|jsonify}},
   	isGlobalOwner: "{{user.flags.global_owner}}",
   	isDebugUser: {{request.session.user.hasDebugFlag|jsonify}},

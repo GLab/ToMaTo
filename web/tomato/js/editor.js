@@ -9,7 +9,7 @@ var settings = {
 	                		name: "vpn-switch",
 	                		icon: "img/switch32.png",
 	                		type: "tinc_vpn",
-	                		attrs: {mode: "switch"}  
+	                		mode: "switch"
 	                      }
 	],
 	supported_configwindow_help_pages: ['kvmqm','openvz','connection'],
@@ -906,7 +906,7 @@ var TemplateWindow = Window.extend({
 		
 		this._super(options);
 		this.element = options.element;
-		var windowTitle = "Change Template for "+this.element.data.attrs.name;
+		var windowTitle = "Change Template for "+this.element.data.name;
 		if (editor.options.show_ids) windowTitle = windowTitle + ' (#'+this.element.data.id+')'
 		this.setTitle(windowTitle);
 		if (options.disabled == undefined || options.disabled == null) {
@@ -932,7 +932,7 @@ var TemplateWindow = Window.extend({
 		
 		
 		
-		this.value = this.element.data.attrs.template;
+		this.value = this.element.data.template;
 		this.choices = editor.templates.getAll(this.element.data.type);
 		
 		var table = this.getList();
@@ -981,7 +981,7 @@ var TemplateWindow = Window.extend({
 				radio.prop("disabled",true);
 			}
 			
-			if (t.name == this.element.data.attrs.template) {
+			if (t.name == this.element.data.template) {
 				radio.prop("checked","checked");
 			}
 			
@@ -1409,7 +1409,7 @@ var Workspace = Class.extend({
 	
 	updateTopologyTitle: function() {
 		var t = editor.topology;
-		var new_name="Topology '"+t.data.attrs.name+"'"+(editor.options.show_ids ? " [#"+t.id+"]" : "");
+		var new_name="Topology '"+t.data.name+"'"+(editor.options.show_ids ? " [#"+t.id+"]" : "");
 		$('#topology_name').text(new_name);
 		document.title = new_name+" - G-Lab ToMaTo";
 	}
@@ -1460,6 +1460,7 @@ var Topology = Class.extend({
 				elObj = new UnknownElement(this, el, this._getCanvas());
 				break;
 		}
+		log(elObj);
 		if (el.id) this.elements[el.id] = elObj;
 		if (el.parent) {
 			//parent id is less and thus objects exists
@@ -1491,7 +1492,7 @@ var Topology = Class.extend({
 		this.id = data.id;
 		this.elements = {};
 		//sort elements by id so parents get loaded before children
-		data.elements.sort(function(a, b){return a.id - b.id;});
+		data.elements.sort(function(a, b){return a.id > b.id ? 1 : (a.id < b.id ? -1 : 0);});
 		for (var i=0; i<data.elements.length; i++) this.loadElement(data.elements[i]);
 		this.connections = {};
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
@@ -1499,7 +1500,7 @@ var Topology = Class.extend({
 		this.settingOptions = true;
 		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode", "show_ids", "show_sites_on_elements"];
 		for (var i = 0; i < opts.length; i++) {
-			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
+			if (this.data["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data["_"+opts[i]]);
 		}
 		this.settingOptions = false;		
 
@@ -1528,9 +1529,9 @@ var Topology = Class.extend({
 					t.configWindow.hide();
 					var values = t.configWindow.getValues();
 					for (var name in values) {
-						if (values[name] === t.data.attrs[name]) delete values[name];
+						if (values[name] === t.data[name]) delete values[name];
 						// Tread "" like null
-						if (values[name] === "" && t.data.attrs[name] === null) delete values[name];
+						if (values[name] === "" && t.data[name] === null) delete values[name];
 					}
 					t.modify(values);
 					t.configWindow.remove();
@@ -1549,7 +1550,7 @@ var Topology = Class.extend({
         this.configWindow.add(new TextElement({
 				label: "Name",
 				name: "name",
-				value: this.data.attrs.name,
+				value: this.data.name,
 				disabled: false
 		}));
 		this.configWindow.add(new ChoiceElement({
@@ -1558,7 +1559,7 @@ var Topology = Class.extend({
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
-			value: this.data.attrs.site,
+			value: this.data.site,
 			disabled: false
 		}));
 		this.configWindow.show();
@@ -1579,7 +1580,7 @@ var Topology = Class.extend({
 		 	}
 		});
 		for (var name in attrs) {
-		    this.data.attrs[name] = attrs[name];
+		    this.data[name] = attrs[name];
     		if (name == "name") editor.workspace.updateTopologyTitle();
 		}
 	},
@@ -1593,8 +1594,7 @@ var Topology = Class.extend({
 		 	data: {action: action, params: params},
 		 	successFn: function(result) {
 		 		var data = result[1];
-		 		t.data.timeout = data.timeout;
-		 		t.data.attrs = data.attrs;
+		 		t.data = data;
 				t.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "end", action: action, params: params});
 		 	},
 		 	errorFn: function(error) {
@@ -1626,24 +1626,24 @@ var Topology = Class.extend({
 	},
 	nextElementName: function(data) {
 		var names = [];
-		for (var id in this.elements) names.push(this.elements[id].data.attrs.name);
+		for (var id in this.elements) names.push(this.elements[id].data.name);
 		var base;
 		switch (data.type) {
 			case "external_network":
-				base = data.attrs.kind || "internet";
+				base = data.kind || "internet";
 				break;
 			case "external_network_endpoint":
-				base = (data.attrs.kind || "internet") + "_endpoint";
+				base = (data.kind || "internet") + "_endpoint";
 				break;		
 			case "tinc_vpn":
-				base = data.attrs.mode || "switch";
+				base = data.mode || "switch";
 				break;
 			case "tinc_endpoint":
 				base = "tinc";
 				break;		
 			default:
-				if (data.attrs && data.attrs.template) {
-					base = editor.templates.get(data.type, data.attrs.template).label;
+				if (data && data.template) {
+					base = editor.templates.get(data.type, data.template).label;
 				} else {
 					base = data.type;
 				}
@@ -1654,8 +1654,7 @@ var Topology = Class.extend({
 		return base+num;
 	},
 	createElement: function(data, callback) {
-		data.attrs = data.attrs || {};
-		if (!data.parent) data.attrs.name = data.attrs.name || this.nextElementName(data);
+		if (!data.parent) data.name = data.name || this.nextElementName(data);
 		var obj = this.loadElement(data);
 		this.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "begin", attrs: data});
 		obj.setBusy(true);
@@ -1715,7 +1714,6 @@ var Topology = Class.extend({
 		el1 = el1.getConnectTarget(callback);
 		el2 = el2.getConnectTarget(callback);
 		data = data || {};
-		data.attrs = data.attrs || {};
 		obj = this.loadConnection(copy(data, true), [el1, el2]);
 		return obj;
 	},
@@ -1860,11 +1858,11 @@ var Topology = Class.extend({
 	notesDialog: function() {
 		var dialog = $("<div/>");
 		var ta = $('<textarea cols=60 rows=20 class="notes"></textarea>');
-		ta.text(this.data.attrs._notes || "");
+		ta.text(this.data._notes || "");
 		dialog.append(ta);
 		var openWithEditor_html = $('<input type="checkbox" name="openWithEditor">Open Window with Editor</input>');
 		var openWithEditor = openWithEditor_html[0];
-		if (this.data.attrs._notes_autodisplay) {
+		if (this.data._notes_autodisplay) {
 			openWithEditor.checked = true;
 		}
 		dialog.append($('<br/>'))
@@ -1899,7 +1897,7 @@ var Topology = Class.extend({
 			width: 550,
 			inputname: "newname",
 			inputlabel: "New Name:",
-			inputvalue: t.data.attrs.name,
+			inputvalue: t.data.name,
 			onChangeFct: function () {
 				if(this.value == '') { 
 					$('#rename_topology_window_save').button('disable');
@@ -2027,12 +2025,12 @@ var Topology = Class.extend({
 			name: "description",
 			label: "Description",
 			help_text: "Description of the experiment. (Optional)",
-			value: t.data.attrs._notes
+			value: t.data._notes
 		}));
 		dialog.show();
 	},
 	name: function() {
-		return this.data.attrs.name;
+		return this.data.name;
 	},
 	onUpdate: function() {
 		this.checkNetworkLoops();
@@ -2201,10 +2199,10 @@ var Component = Class.extend({
 		this.busy = busy;
 	},
 	actionEnabled: function(action) {
-		return (action in this.caps.actions) && (this.caps.actions[action].indexOf(this.data.state) >= 0); 
+		return (action in this.caps.actions) && (! this.caps.actions[action].allowed_states || (this.caps.actions[action].allowed_states.indexOf(this.data.state) >= 0));
 	},
 	attrEnabled: function(attr) {
-		return (attr[0] == "_") || (attr in this.caps.attrs) && (! this.caps.attrs[attr].states || this.caps.attrs[attr].states.indexOf(this.data.state) >= 0);
+		return (attr[0] == "_") || (attr in this.caps.attributes) && (! this.caps.attributes[attr].states || this.caps.attributes[attr].writable_states.indexOf(this.data.state) >= 0);
 	},
 	setData: function(data) {
 		this.data = data;
@@ -2288,9 +2286,9 @@ var Component = Class.extend({
 					t.configWindow.hide();
 					var values = t.configWindow.getValues();
 					for (var name in values) {
-						if (values[name] === t.data.attrs[name]) delete values[name];
+						if (values[name] === t.data[name]) delete values[name];
 						// Tread "" like null
-						if (values[name] === "" && t.data.attrs[name] === null) delete values[name];
+						if (values[name] === "" && t.data[name] === null) delete values[name];
 					}
 					t.modify(values);	
 					t.configWindow.remove();
@@ -2311,15 +2309,15 @@ var Component = Class.extend({
 			var name = settings.order[i];
 			if(showTemplate || !(name == 'template')) {
 				if (settings.special[name]) this.configWindow.add(settings.special[name]);
-				else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
+				else if (this.caps.attributes[name]) this.configWindow.autoAdd(this.caps.attributes[name], this.data.attributes[name], this.attrEnabled(name));
 			}
 		}
 		if (settings.unknown) {
-			for (var name in this.caps.attrs) {
+			for (var name in this.caps.attributes) {
 				if (settings.order.indexOf(name) >= 0) continue; //do not repeat ordered fields
 				if (settings.ignore.indexOf(name) >= 0) continue;
 				if (settings.special[name]) this.configWindow.add(settings.special[name]);
-				else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
+				else if (this.caps.attributes[name]) this.configWindow.autoAdd(this.caps.attributes[name], this.data.attributes[name], this.attrEnabled(name));
 			}
 		}
 		this.configWindow.show();
@@ -2347,7 +2345,7 @@ var Component = Class.extend({
 	modify: function(attrs) {
 		this.setBusy(true);
 		for (var name in attrs) {
-			if (this.attrEnabled(name)) this.data.attrs[name] = attrs[name];
+			if (this.attrEnabled(name)) this.data[name] = attrs[name];
 			else delete attrs[name];
 		}
 		this.triggerEvent({operation: "modify", phase: "begin", attrs: attrs});
@@ -2423,7 +2421,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var t = this;
 			var el = new CheckboxElement({
 				name: "emulation",
-				value: con.data.attrs.emulation,
+				value: con.data.emulation,
 				callback: function(el, value) {
 					t.updateEmulationStatus(value);
 				}
@@ -2468,20 +2466,20 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el_from = this.autoElement(con.caps.attrs[name+"_from"], con.data.attrs[name+"_from"], true)
+				var el_from = this.autoElement(con.caps.attributes[name+"_from"], con.data.attributes[name+"_from"], true)
 				this.elements.push(el_from);
 				this.emulation_elements.push(el_from);
-				var el_to = this.autoElement(con.caps.attrs[name+"_to"], con.data.attrs[name+"_to"], true)
+				var el_to = this.autoElement(con.caps.attributes[name+"_to"], con.data.attributes[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
 				link_emulation_elements.after($('<div class="form-group" />')
-					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attrs[name+"_to"].desc))
+					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].desc))
 					.append($('<div class="col-sm-3" style="padding: 0;"/>').append(el_from.getElement()))
 					.append($('<div class="col-sm-3" style="padding: 0;" />').append(el_to.getElement()))
-					.append($('<div class="col-sm-2" style="padding: 0;" />').append(con.caps.attrs[name+"_to"].unit))
+					.append($('<div class="col-sm-2" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].unit))
 				);
 			}
-			this.updateEmulationStatus(con.data.attrs.emulation);
+			this.updateEmulationStatus(con.data.emulation);
 			
 			
 
@@ -2497,7 +2495,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
 				name: "capturing",
-				value: con.data.attrs.capturing,
+				value: con.data.capturing,
 				callback: function(el, value) {
 					t.updateCapturingStatus(value);
 				}
@@ -2512,15 +2510,15 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["capture_mode", "capture_filter"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el = this.autoElement(con.caps.attrs[name], con.data.attrs[name], con.attrEnabled(name));
+				var el = this.autoElement(con.caps.attributes[name], con.data.attributes[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
 				packet_capturing_elements.after($('<div class="form-group" />')
-					.append($('<label class="col-sm-6 control-label">').append(con.caps.attrs[name].desc))
+					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].desc))
 					.append($('<div class="col-sm-6" />').append(el.getElement()))
 				);
 			}
-			this.updateCapturingStatus(con.data.attrs.capturing);
+			this.updateCapturingStatus(con.data.capturing);
 			
 
 			packet_capturing.append(packet_capturing_elements);
@@ -2615,7 +2613,7 @@ var Connection = Component.extend({
 	paintUpdate: function(){
 		var colors = ["#2A4BD7", "#AD2323", "#1D6914", "#814A19", "#8126C0", "#FFEE33", "#FF9233", "#29D0D0", "#9DAFFF", "#81C57A", "#FFCDF3"];
 		var color = colors[this.segment % colors.length] || "#505050";
-		var attrs = this.data.attrs;
+		var attrs = this.data;
 		var le = attrs && attrs.emulation && (attrs.delay_to || attrs.jitter_to || attrs.lossratio_to || attrs.duplicate_to || attrs.corrupt_to
 				         || attrs.delay_from || attrs.jitter_from || attrs.lossratio_from || attrs.duplicate_from || attrs.corrupt_from);
 		var bw = 10000000;
@@ -2652,27 +2650,27 @@ var Connection = Component.extend({
 		this.action("destroy");
 	},
 	captureDownloadable: function() {
-		return this.actionEnabled("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "file";
+		return this.actionEnabled("download_grant") && this.data.capturing && this.data.capture_mode == "file";
 	},
 	downloadCapture: function() {
 		this.action("download_grant", {callback: function(con, res) {
-			var name = con.topology.data.attrs.name + "_capture_" + con.id + ".pcap";
-			var url = "http://" + con.data.attrs.host_info.address + ":" + con.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var name = con.topology.data.name + "_capture_" + con.id + ".pcap";
+			var url = "http://" + con.data.host_info.address + ":" + con.data.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name);
 			window.location.href = url;
 		}})
 	},
 	viewCapture: function() {
 		this.action("download_grant", {params: {limitSize: 1024*1024}, callback: function(con, res) {
-			var url = "http://" + con.data.attrs.host_info.address + ":" + con.data.attrs.host_info.fileserver_port + "/" + res + "/download"; 
+			var url = "http://" + con.data.host_info.address + ":" + con.data.host_info.fileserver_port + "/" + res + "/download";
 			window.open("http://www.cloudshark.org/view?url="+url, "_newtab");
 		}})
 	},
 	liveCaptureEnabled: function() {
-		return this.actionEnabled("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "net";
+		return this.actionEnabled("download_grant") && this.data.capturing && this.data.capture_mode == "net";
 	},
 	liveCaptureInfo: function() {
-		var host = this.data.attrs.host_info.address;
-		var port = this.data.attrs.capture_port;
+		var host = this.data.host_info.address;
+		var port = this.data.capture_port;
 		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
 		new Window({
 			title: "Live capture Information", 
@@ -2692,7 +2690,7 @@ var Connection = Component.extend({
 				Save: function() {
 					t.configWindow.hide();
 					var values = t.configWindow.getValues();
-					for (var name in values) if (values[name] === t.data.attrs[name]) delete values[name];
+					for (var name in values) if (values[name] === t.data[name]) delete values[name];
 					t.modify(values);		
 					t.configWindow.remove();
 					t.configWindow = null;
@@ -2821,7 +2819,7 @@ var Element = Component.extend({
 		this.connection = null;
 	},
 	rextfvStatusSupport: function() {
-		return this.data.attrs.rextfv_supported;
+		return this.data.rextfv_supported;
 	},
 	openRexTFVStatusWindow: function() {
 		window.open('../element/'+this.id+'/rextfv_status', '_blank', "innerWidth=350,innerheight=420,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
@@ -2852,9 +2850,9 @@ var Element = Component.extend({
 		return true;
 	},
 	getUsedAddress: function() {
-		if (this.data.attrs.use_dhcp) return "dhcp";
-		if (! this.data.attrs.ip4address) return null;
-		res = /10.0.([0-9]+).([0-9]+)\/[0-9]+/.exec(this.data.attrs.ip4address);
+		if (this.data.use_dhcp) return "dhcp";
+		if (! this.data.ip4address) return null;
+		res = /10.0.([0-9]+).([0-9]+)\/[0-9]+/.exec(this.data.ip4address);
 		if (! res) return res;
 		return [parseInt(res[1]), parseInt(res[2])];
 	},
@@ -2963,15 +2961,15 @@ var Element = Component.extend({
 		return this;
 	},
 	getPos: function() {
-		if (! this.data.attrs._pos) {
-			this.data.attrs._pos = {x: Math.random(), y: Math.random()};
-			this.modify_value("_pos", this.data.attrs._pos);
+		if (! this.data._pos) {
+			this.data._pos = {x: Math.random(), y: Math.random()};
+			this.modify_value("_pos", this.data._pos);
 		}
-		return this.data.attrs._pos;
+		return this.data._pos;
 	},
 	setPos: function(pos) {
 		if (this.editor.options.fixed_pos) return;
-		this.data.attrs._pos = {x: Math.min(1, Math.max(0, pos.x)), y: Math.min(1, Math.max(0, pos.y))};
+		this.data._pos = {x: Math.min(1, Math.max(0, pos.x)), y: Math.min(1, Math.max(0, pos.y))};
 		this.onPosChanged(true);
 	},
 	onPosChanged: function(con) {
@@ -2999,18 +2997,18 @@ var Element = Component.extend({
 		this.triggerEvent({operation: "console-dialog"});
 	},
 	openVNCurl: function() {
-		var host = this.data.attrs.host_info.address;
-		var port = this.data.attrs.vncport;
-		var passwd = this.data.attrs.vncpassword;
+		var host = this.data.host_info.address;
+		var port = this.data.vncport;
+		var passwd = this.data.vncpassword;
 		var link = "vnc://:" + passwd + "@" + host + ":" + port;
 	    window.open(link, '_self');
 		this.triggerEvent({operation: "console-dialog"});
 	},
 	showVNCinfo: function() {
-		var host = this.data.attrs.host_info.address;
-		var port = this.data.attrs.vncport;
-		var wport = this.data.attrs.websocket_port;
-		var passwd = this.data.attrs.vncpassword;
+		var host = this.data.host_info.address;
+		var port = this.data.vncport;
+		var wport = this.data.websocket_port;
+		var passwd = this.data.vncpassword;
 		var link = "vnc://:" + passwd + "@" + host + ":" + port;
  		var win = new Window({
  			title: "VNC info",
@@ -3021,11 +3019,11 @@ var Element = Component.extend({
 		this.triggerEvent({operation: "console-dialog"});
 	},
 	consoleAvailable: function() {
-		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host && this.data.state == "started";
+		return this.data.vncpassword && this.data.vncport && this.data.host && this.data.state == "started";
 	},
 	downloadImage: function() {
 		this.action("download_grant", {callback: function(el, res) {
-			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name;
+			var name = el.topology.data.name + "_" + el.data.name;
 			switch (el.data.type) {
 				case "kvmqm":
 				case "kvm":
@@ -3038,14 +3036,14 @@ var Element = Component.extend({
 					name += ".repy";
 					break;
 			}
-			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var url = "http://" + el.data.host_info.address + ":" + el.data.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name);
 			window.location.href = url;
 		}})
 	},
 	downloadRexTFV: function() {
 		this.action("rextfv_download_grant", {callback: function(el, res) {
-			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name + '_rextfv.tar.gz';
-			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var name = el.topology.data.name + "_" + el.data.name + '_rextfv.tar.gz';
+			var url = "http://" + el.data.host_info.address + ":" + el.data.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name);
 			window.location.href = url;
 		}})
 	},
@@ -3064,7 +3062,7 @@ var Element = Component.extend({
 			return;
 		}
 		this.action(grant_action, {callback: function(el, res) {
-			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
+			var url = "http://" + el.data.host_info.address + ":" + el.data.host_info.fileserver_port + "/" + res + "/upload";
 			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
 			// iframe.load will be triggered a moment after iframe is added to body
 			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
@@ -3189,7 +3187,7 @@ var Element = Component.extend({
 		waiter(this);
 	},
 	name: function() {
-		var name = this.data.attrs.name;
+		var name = this.data.name;
 		if (this.parent) name = this.parent.name() + "." + name;
 		return name;
 	}
@@ -3201,11 +3199,11 @@ var createElementMenu = function(obj) {
 		(editor.options.show_ids ? 
 				" #"+obj.id : 
 				"")+
-		(editor.options.show_sites_on_elements && obj.component_type=="element" && obj.data.attrs && "site" in obj.data.attrs ? "<br />"+
-				(obj.data.attrs.host_info && obj.data.attrs.host_info.site ? 
-						"at "+editor.sites_dict[obj.data.attrs.host_info.site].description : 
-						(obj.data.attrs.site ? 
-								"will be at " + editor.sites_dict[obj.data.attrs.site].description : 
+		(editor.options.show_sites_on_elements && obj.component_type=="element" && obj.data && "site" in obj.data ? "<br />"+
+				(obj.data.host_info && obj.data.host_info.site ?
+						"at "+editor.sites_dict[obj.data.host_info.site].description :
+						(obj.data.site ?
+								"will be at " + editor.sites_dict[obj.data.site].description :
 								"no site selected")  ) : 
 				"")+
 		'</small></span>', 
@@ -3269,7 +3267,7 @@ var createElementMenu = function(obj) {
 					name:"Console",
 					icon:"console",
 					items: {
-						"console_novnc": obj.data.attrs.websocket_pid ? {
+						"console_novnc": obj.data.websocket_pid ? {
 							name:"NoVNC (HTML5+JS)",
 							icon:"novnc",
 							callback: function(){
@@ -3299,7 +3297,7 @@ var createElementMenu = function(obj) {
 						},
 					}
 				} : null,
-				"used_addresses": obj.data.attrs.used_addresses ? {
+				"used_addresses": obj.data.used_addresses ? {
 					name:"Used addresses",
 					icon:"info",
 					callback: function(){
@@ -3428,7 +3426,7 @@ var UnknownElement = Element.extend({
 		var pos = this.getAbsPos();
 		this.circle = this.canvas.circle(pos.x, pos.y, 15).attr({fill: "#CCCCCC"});
 		this.innerText = this.canvas.text(pos.x, pos.y, "?").attr({"font-size": 25});
-		this.text = this.canvas.text(pos.x, pos.y+22, this.data.type + ": " + this.data.attrs.name);
+		this.text = this.canvas.text(pos.x, pos.y+22, this.data.type + ": " + this.data.name);
 		this.enableDragging(this.circle);
 		this.enableDragging(this.innerText);
 		this.enableClick(this.circle);
@@ -3470,7 +3468,7 @@ var IconElement = Element.extend({
 	updateStateIcon: function() {
 		
 		//set 'host has problems' icon if host has problems
-		if (this.data.attrs.host_info && this.data.attrs.host_info.problems && this.data.attrs.host_info.problems.length != 0) {
+		if (this.data.host_info && this.data.host_info.problems && this.data.host_info.problems.length != 0) {
 			this.errIcon.attr({'title':'The Host for this device has problems. Contact an Administrator.'});
 			this.errIcon.attr({'src':'/img/error.png'});
 		} else {
@@ -3505,7 +3503,7 @@ var IconElement = Element.extend({
 		
 		//set RexTFV icon
 		if (this.rextfvStatusSupport() && this.data.state=="started") {
-			rextfv_stat = this.data.attrs.rextfv_run_status;
+			rextfv_stat = this.data.rextfv_run_status;
 			if (rextfv_stat.readable) {
 				if (rextfv_stat.isAlive) {
 					this.rextfvIcon.attr({src: "img/loading.gif", opacity: 1.0});
@@ -3535,7 +3533,7 @@ var IconElement = Element.extend({
 	paint: function() {
 		var pos = this.canvas.absPos(this.getPos());
 		this.icon = this.canvas.image(this.iconUrl(), pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
-		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.attrs.name);
+		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.name);
 		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
 		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2, pos.y-this.iconSize.y/2-10, 16, 16);
 		this.rextfvIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2, pos.y-this.iconSize.y/2+8, 16, 16);
@@ -3566,7 +3564,7 @@ var IconElement = Element.extend({
 		this.errIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2-10});
 		this.rextfvIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2+8});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
-		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.attrs.name});
+		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.name});
 		this.updateStateIcon();
 		$(this.rect.node).attr("class", "tomato element selectable");
 		this.rect.conditionalClass("connectable", this.isConnectable());
@@ -3580,7 +3578,7 @@ var VPNElement = IconElement.extend({
 		this.iconSize = {x: 32, y:16};
 	},
 	iconUrl: function() {
-		return dynimg(32,"vpn",this.data.attrs.mode,null);
+		return dynimg(32,"vpn",this.data.mode,null);
 	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -3603,7 +3601,7 @@ var ExternalNetworkElement = IconElement.extend({
 
 	},
 	iconUrl: function() {
-		return editor.networks.getNetworkIcon(this.data.attrs.kind);
+		return editor.networks.getNetworkIcon(this.data.kind);
 	},
 	configWindowSettings: function() {
 		var config = this._super();
@@ -3638,7 +3636,7 @@ var ExternalNetworkElement = IconElement.extend({
 			name: "kind",
 			info: networkInfo,
 			choices: createMap(this.editor.networks.getAll(), "kind", "label"),
-			value: this.data.attrs.kind || this.caps.attrs.kind["default"],
+			value: this.data.kind || this.caps.attributes.kind["default"],
 			disabled: !this.attrEnabled("kind")
 		});
 		return config;
@@ -3681,10 +3679,10 @@ var VMElement = IconElement.extend({
 			var tmpl = this.getTemplate();
 			if (tmpl && tmpl.subtype == "device") default_ = true;
 		}
-		return (this.data.attrs && this.data.attrs._endpoint != null) ? this.data.attrs._endpoint : default_;
+		return (this.data && this.data._endpoint != null) ? this.data._endpoint : default_;
 	},
 	getTemplate: function() {
-		return this.editor.templates.get(this.data.type, this.data.attrs.template);
+		return this.editor.templates.get(this.data.type, this.data.template);
 	},
 	showTemplateWindow: function(callback_before_finish,callback_after_finish) {
 		var window = new TemplateWindow({
@@ -3758,7 +3756,7 @@ var VMElement = IconElement.extend({
 			
 			info.append('<img src="/img/info.png" />');
 			
-			if (this.data.attrs.host_info.site && (this.data.attrs.site == null)) {
+			if (this.data.host_info.site && (this.data.site == null)) {
 				info.append('<img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
 				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
 			}
@@ -3787,8 +3785,8 @@ var VMElement = IconElement.extend({
 		config.special.template = new TemplateElement({
 			label: "Template",
 			name: "template",
-			value: this.data.attrs.template || this.caps.attrs.template["default"],
-			custom_template: this.data.attrs.custom_template,
+			value: this.data.template || this.caps.attributes.template["default"],
+			custom_template: this.data.custom_template,
 			disabled: (this.data.state == "started"),
 			type: this.data.type,
 			call_element: this
@@ -3800,7 +3798,7 @@ var VMElement = IconElement.extend({
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
-			value: this.data.attrs.host_info.site || this.data.attrs.site || this.caps.attrs.site["default"],
+			value: this.data.host_info.site || this.data.site || this.caps.attributes.site["default"],
 			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({
@@ -3808,7 +3806,7 @@ var VMElement = IconElement.extend({
 			name: "profile",
 			info: profileInfo,
 			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
-			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
+			value: this.data.profile || this.caps.attributes.profile["default"],
 			disabled: !this.attrEnabled("profile"),
 			help_text: profile_helptext
 		});
@@ -3871,7 +3869,7 @@ var VMInterfaceElement = ChildElement.extend({
 		this.update(true, function() {
 	 		var win = new Window({
 	 			title: "Used addresses on " + t.name(),
-	 			content: '<p>'+t.data.attrs.used_addresses.join('<br/>')+'</p>',
+	 			content: '<p>'+t.data.used_addresses.join('<br/>')+'</p>',
 	 			autoShow: true
 	 		});			
 		});
@@ -4023,16 +4021,15 @@ var TemplateStore = Class.extend({
 	init: function(data,editor) {
 		this.editor = editor;
 		data.sort(function(t1, t2){
-			var t = t2.attrs.preference - t1.attrs.preference;
+			var t = t2.preference - t1.preference;
 			if (t) return t;
-			if (t1.attrs.name < t2.attrs.name) return -1;
-			if (t2.attrs.name < t1.attrs.name) return 1;
+			if (t1.name < t2.name) return -1;
+			if (t2.name < t1.name) return 1;
 			return 0;
 		});
 		this.types = {};
 		for (var i=0; i<data.length; i++)
-		 if (data[i].type == "template")
-		  this.add(new Template(data[i].attrs));
+		  this.add(new Template(data[i]));
 	},
 	add: function(tmpl) {
 		if (! this.types[tmpl.type]) this.types[tmpl.type] = {};
@@ -4088,16 +4085,15 @@ var ProfileStore = Class.extend({
 	init: function(data,editor) {
 		this.editor = editor;
 		data.sort(function(t1, t2){
-			var t = t2.attrs.preference - t1.attrs.preference;
+			var t = t2.preference - t1.preference;
 			if (t) return t;
-			if (t1.attrs.name < t2.attrs.name) return -1;
-			if (t2.attrs.name < t1.attrs.name) return 1;
+			if (t1.name < t2.name) return -1;
+			if (t2.name < t1.name) return 1;
 			return 0;
 		});
 		this.types = {};
 		for (var i=0; i<data.length; i++)
-		 if (data[i].type == "profile")
-		  this.add(new Profile(data[i].attrs));
+		  this.add(new Profile(data[i]));
 	},
 	add: function(tmpl) {
 		if (! this.types[tmpl.type]) this.types[tmpl.type] = {};
@@ -4129,19 +4125,18 @@ var ProfileStore = Class.extend({
 
 var NetworkStore = Class.extend({
 	init: function(data,editor) {
-
 		this.editor = editor;
 		data.sort(function(t1, t2){
-			var t = t2.attrs.preference - t1.attrs.preference;
+			var t = t2.preference - t1.preference;
 			if (t) return t;
-			if (t1.attrs.kind < t2.attrs.kind) return -1;
-			if (t2.attrs.kind < t1.attrs.kind) return 1;
+			if (t1.kind < t2.kind) return -1;
+			if (t2.kind < t1.kind) return 1;
 			return 0;
 		});
 		this.nets = [];
 		for (var i=0; i<data.length; i++) {
 		 if (data[i].type == "network") {
-			 net = data[i].attrs;
+			 net = data[i];
 			 if (!net.icon) {
 				 net.icon = this.getNetworkIcon(net.kind);
 			 }
@@ -4197,7 +4192,7 @@ var RexTFV_status_updater = Class.extend({
 			}
 			if (success && 
 				editor.topology.elements[entry.element].rextfvStatusSupport() &&
-				editor.topology.elements[entry.element].data.attrs.rextfv_run_status.running) {
+				editor.topology.elements[entry.element].data.rextfv_run_status.running) {
 					entry.tries = 1;
 			} else {
 				entry.tries--;
@@ -4278,9 +4273,9 @@ var Editor = Class.extend({
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.sites = this.options.sites;
-		this.profiles = new ProfileStore(this.options.resources,this);
-		this.templates = new TemplateStore(this.options.resources,this);
-		this.networks = new NetworkStore(this.options.resources,this);
+		this.profiles = new ProfileStore(this.options.resources.profiles,this);
+		this.templates = new TemplateStore(this.options.resources.templates,this);
+		this.networks = new NetworkStore(this.options.resources.networks,this);
 		this.buildMenu(this);
 		this.setMode(Mode.select);
 		
@@ -4296,11 +4291,11 @@ var Editor = Class.extend({
 			successFn: function(data){
 				t.topology.load(data);
 				t.workspace.setBusy(false);
-				if (t.topology.data.attrs._initialized) {
+				if (t.topology.data._initialized) {
 					if (t.topology.data.timeout - new Date().getTime()/1000.0 < t.topology.editor.options.timeout_settings.warning) t.topology.renewDialog();
-					if (t.topology.data.attrs._notes_autodisplay) t.topology.notesDialog();
+					if (t.topology.data._notes_autodisplay) t.topology.notesDialog();
 				} else 
-					if (t.topology.data.attrs._tutorial_url) {
+					if (t.topology.data._tutorial_url) {
 						t.topology.modify({
 							"_initialized": true
 						});
@@ -4308,7 +4303,7 @@ var Editor = Class.extend({
 							"timeout": t.options.timeout_settings["default"]
 						}});
 					} else
-						if (t.topology.data.attrs._initialized!=undefined)
+						if (t.topology.data._initialized!=undefined)
 							t.topology.initialDialog();
 				t.workspace.updateTopologyTitle();
 				t.options.onready();
@@ -4405,7 +4400,7 @@ var Editor = Class.extend({
 		var t = this;
 		return function(pos) {
 			var data = copy(el, true);
-			data.attrs._pos = pos;
+			data._pos = pos;
 			t.topology.createElement(data);
 			t.selectBtn.click();
 		}
@@ -4413,7 +4408,7 @@ var Editor = Class.extend({
 	createUploadFunc: function(type) {
 		var t = this;
 		return function(pos) {
-			var data = {type: type, attrs: {_pos: pos}};
+			var data = {type: type, _pos: pos};
 			t.topology.createElement(data, function(el1) {
 					el1.showConfigWindow(false, function (el2) { 
 							el2.action("prepare", { callback: function(el3) {el3.uploadImage();} });	
@@ -4425,7 +4420,7 @@ var Editor = Class.extend({
 		};
 	},
 	createTemplateFunc: function(tmpl) {
-		return this.createElementFunc({type: tmpl.type, attrs: {template: tmpl.name}});
+		return this.createElementFunc({type: tmpl.type, template: tmpl.name});
 	},
 	buildMenu: function(editor) {
 		var t = this;
@@ -4525,10 +4520,7 @@ var Editor = Class.extend({
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: false,
-				func: this.createPositionElementFunc(this.createElementFunc({
-					type: cel.type,
-					attrs: cel.attrs
-				}))
+				func: this.createPositionElementFunc(this.createElementFunc(cel))
 			}));			
 		}
 		var common = t.networks.getCommon();
@@ -4542,7 +4534,7 @@ var Editor = Class.extend({
 				small: false,
 				func: this.createPositionElementFunc(this.createElementFunc({
 					type: "external_network",
-					attrs: {kind: net.kind}					
+					kind: net.kind
 				}))
 			}));
 		}
@@ -4640,7 +4632,7 @@ var Editor = Class.extend({
 			small: false,
 			func: this.createPositionElementFunc(this.createElementFunc({
 				type: "tinc_vpn",
-				attrs: {mode: "switch"}
+				mode: "switch"
 			}))
 		}));
 		group.addElement(Menu.button({
@@ -4652,7 +4644,7 @@ var Editor = Class.extend({
 			small: false,
 			func: this.createPositionElementFunc(this.createElementFunc({
 				type: "tinc_vpn",
-				attrs: {mode: "hub"}
+				mode: "hub"
 			}))
 		}));
 
@@ -4691,7 +4683,7 @@ var Editor = Class.extend({
 				small: !net.big_icon,
 				func: this.createPositionElementFunc(this.createElementFunc({
 					type: "external_network",
-					attrs: {kind: net.kind}					
+					kind: net.kind
 				}))
 			});
 			if (net.big_icon) {

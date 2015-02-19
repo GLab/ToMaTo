@@ -366,6 +366,12 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			# noinspection PyUnboundLocalVariable
 			for action, params in host_cap["actions"].iteritems():
 				if not action in cls.DIRECT_ACTIONS_EXCLUDE:
+					if action == '__remove__':
+						action = Entity.REMOVE_ACTION
+					if action in caps["actions"]:
+						continue
+					if isinstance(params, list):
+						params = {'state_change': None, 'param_schema': None, 'description': None, 'allowed_states': params}
 					caps["actions"][action] = params
 		if cls.DIRECT_ATTRS:
 			for attr, params in host_cap["attrs"].iteritems():
@@ -395,7 +401,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if mcon:
 			info.update(mcon.objectInfo)
 		for key, val in self.clientData.items():
-			info["_"+key] = val
+			info["_"+key] = makeApiSafe(val)
 		return info
 
 	@property
@@ -417,12 +423,11 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		Entity.REMOVE_ACTION: StatefulAction(_remove, check=_checkRemove)
 	}
 	ATTRIBUTES = {
-		"id": Attribute(field=id, readOnly=True, schema=schema.Identifier()),
+		"id": IdAttribute(),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
-		"topology": Attribute(get=lambda obj: obj.topology.id, readOnly=True, schema=schema.Identifier()),
+		"topology": Attribute(get=lambda obj: obj.getFieldId('topology', True), readOnly=True, schema=schema.Identifier()),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"elements": Attribute(get=lambda obj: [el.id for el in obj.elements], readOnly=True, schema=schema.List(items=schema.Identifier())),
-		"connection": Attribute(get=lambda obj: obj._getFieldId("connection"), readOnly=True, schema=schema.Identifier(null=True)),
+		"elements": Attribute(get=lambda obj: [obj.getFieldId('elementFrom', True), obj.getFieldId('elementTo', True)], readOnly=True, schema=schema.List(items=schema.Identifier())),
 		"debug": Attribute(get=lambda obj: {
 			"host_elements": [(o.host.name, o.num) for o in obj.hostElements],
 			"host_connections": [(o.host.name, o.num) for o in obj.hostConnections],
@@ -471,3 +476,4 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 
 from . import currentUser
 from .host import getConnectionCapabilities, select
+from .lib.util import makeApiSafe

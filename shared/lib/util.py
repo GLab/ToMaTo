@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import thread, time, datetime, string
+import thread, time, datetime, string, types
 from decorators import xmlRpcSafe
 from django.db import transaction, DatabaseError
 
@@ -123,6 +123,30 @@ def calculate_subnet6(ip_with_prefix):
 		ip.insert(0, hex(int(ip_num % (1<<16)))[2:])
 		ip_num = ip_num // (1<<16)
 	return ":".join(ip)+"/"+prefix
+
+def checkApiSafe(value, path=''):
+	if value is None or isinstance(value, (bool, int, long, float)+types.StringTypes):
+		return
+	if type(value) == dict:
+		for key, value in value.items():
+			if not isinstance(key, types.StringTypes):
+				raise TypeError("Invalid key: %s (%s)" % (key, path))
+			checkApiSafe(value, path+'.'+key)
+		return
+	if type(value) in (list, tuple):
+		for num in range(0, len(value)):
+			checkApiSafe(value[num], path+'[%d]' % num)
+		return
+	raise TypeError("Unsupported type: %s (%s)" % (type(value), path))
+
+def makeApiSafe(value):
+	if value is None or isinstance(value, (bool, int, long, float)+types.StringTypes):
+		return value
+	if isinstance(value, types.DictionaryType):
+		return {str(k): makeApiSafe(v) for k, v in value.items()}
+	if isinstance(value, (types.ListType, types.TupleType)):
+		return [makeApiSafe(v) for v in value]
+	raise TypeError("Unsupported type: %s" % type(value))
 
 @xmlRpcSafe
 def xml_rpc_sanitize(s):

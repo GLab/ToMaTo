@@ -65,10 +65,11 @@ class ServerProxy(object):
             import time
             before = time.time()
             try:
-                print "%s(%s, %s)" % (name, args, kwargs)
+                #print "%s(%s, %s)" % (name, args, kwargs)
                 res = call_proxy(args, kwargs)
                 after = time.time()
-                print "%f, %s(%s, %s) -> %s" % (after-before, name, args, kwargs, res)
+                #print "%f, %s(%s, %s) -> %s" % (after-before, name, args, kwargs, res)
+                print "%f, %s(%s, %s)" % (after-before, name, args, kwargs)
                 return res
             except xmlrpclib.Fault, e:
                 if e.faultCode == 999:

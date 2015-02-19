@@ -20,61 +20,51 @@ from lib import wrap_json
 
 @wrap_json
 def topology_info(api, id): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	info = api.topology_info(id, True)
 	return info
 
 @wrap_json
 def topology_modify(api, id, attrs={}): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	info = api.topology_modify(id, attrs)
 	return info
 
 @wrap_json
 def topology_action(api, id, action, params={}): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	res = api.topology_action(id, action, params)
 	info = api.topology_info(id)
 	return (res, info)
 
 @wrap_json
 def topology_remove(api, id): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	return api.topology_remove(id)
 
 @wrap_json
 def topology_permission(api, id, user, permission): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	return api.topology_permission(id, user, permission)
 
 @wrap_json
 def element_create(api, topid, type, parent=None, attrs={}): #@ReservedAssignment
-	topid = int(topid) #@ReservedAssignment
 	info = api.element_create(topid, type, parent, attrs)
 	return info
 
 @wrap_json
 def element_info(api, id, fetch=False): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	info = api.element_info(id, fetch)
 	return info
 
 @wrap_json
 def element_modify(api, id, attrs={}): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	info = api.element_modify(id, attrs)
 	return info
 
 @wrap_json
 def element_action(api, id, action, params={}): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	res = api.element_action(id, action, params)
 	info = api.element_info(id)
 	return (res, info)
 
 @wrap_json
 def element_remove(api, id): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	res = api.element_remove(id)
 	return res
 
@@ -85,26 +75,22 @@ def connection_create(api, elements, attrs={}):
 
 @wrap_json
 def connection_info(api, id, fetch=False): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	info = api.connection_info(id, fetch)
 	return info
 
 @wrap_json
 def connection_modify(api, id, attrs={}): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	info = api.connection_modify(id, attrs)
 	return info
 
 @wrap_json
 def connection_action(api, id, action, params={}): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	res = api.connection_action(id, action, params)
 	info = api.connection_info(id)
 	return (res, info)
 
 @wrap_json
 def connection_remove(api, id): #@ReservedAssignment
-	id = int(id) #@ReservedAssignment
 	res = api.connection_remove(id)
 	return res
 

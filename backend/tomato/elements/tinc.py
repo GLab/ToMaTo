@@ -313,7 +313,7 @@ class TincEndpoint(ConnectingElement, Element):
 	ATTRIBUTES.update({
 		"name": Attribute(field=name),
 		"mode": StatefulAttribute(field=mode, set=modify_mode, writableStates=[ST_CREATED, ST_PREPARED], schema=schema.String(options=['hub', 'switch'])),
-		"peers": StatefulAttribute(field=peers, set=modify_peers, writableStates=[ST_CREATED, ST_PREPARED])
+		"peers": StatefulAttribute(get=lambda self: makeApiSafe(self.peers), set=modify_peers, writableStates=[ST_CREATED, ST_PREPARED])
 	})
 
 	ACTIONS = Element.ACTIONS.copy()
@@ -330,3 +330,4 @@ elements.TYPES[TincVPN.TYPE] = TincVPN
 elements.TYPES[TincEndpoint.TYPE] = TincEndpoint
 
 from .. import currentUser, setCurrentUser
+from ..lib.util import makeApiSafe

@@ -274,7 +274,7 @@ class StatefulEntity(Entity):
 
 	def info(self):
 		info = {}
-		for key, attr in self.ATTRIBUTES:
+		for key, attr in self.ATTRIBUTES.items():
 			if isinstance(attr, StatefulAttribute) and not attr.readableStates is None and not self.state in attr.readableStates:
 				continue
 			info[key] = attr.get(self)

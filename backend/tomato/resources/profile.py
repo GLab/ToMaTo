@@ -67,3 +67,10 @@ class Profile(BaseDocument, Entity):
 		prfls = Profile.objects.filter(tech=tech).order_by("-preference")
 		InternalError.check(prfls, code=InternalError.CONFIGURATION_ERROR, message="No profile for this type registered", data={"tech": tech})
 		return prfls[0]
+
+	@classmethod
+	def create(cls, attrs):
+		obj = cls()
+		obj.init(attrs)
+		obj.save()
+		return obj

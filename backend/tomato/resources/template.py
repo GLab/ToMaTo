@@ -58,7 +58,7 @@ class Template(BaseDocument, Entity):
 	@property
 	def hosts(self):
 		from ..host import Host
-		return Host.objects(templates__in=self)
+		return Host.objects(templates=self)
 
 	def getReadyInfo(self):
 		from ..host import Host
@@ -84,7 +84,7 @@ class Template(BaseDocument, Entity):
 		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
 			schema=schema.String(options=kblang_options.keys())),
 		"torrent_data_hash": Attribute(readOnly=True, schema=schema.String(null=True),
-			get=lambda obj: hashlib.md5(obj.torrent_data).hexdigest() if obj.torrent_data else None),
+			get=lambda obj: hashlib.md5(obj.torrentData).hexdigest() if obj.torrentData else None),
 		"ready": Attribute(readOnly=True, get=getReadyInfo, schema=schema.StringMap(items={
 				'backend': schema.Bool(),
 				'hosts': schema.StringMap(items={
@@ -107,7 +107,7 @@ class Template(BaseDocument, Entity):
 		Entity.init(self, attrs)
 		if kblang:
 			self.modify({'kblang':kblang})
-		self.modify_torrent_data(self.torrent_data) #might have been set before name or tech 
+		self.modify_torrent_data(self.torrentData) #might have been set before name or tech
 				
 	def getPath(self):
 		return os.path.join(config.TEMPLATE_PATH, PATTERNS[self.tech] % self.name)
@@ -127,7 +127,7 @@ class Template(BaseDocument, Entity):
 			raise UserError(code=UserError.INVALID_VALUE, message="Invalid torrent file")
 		UserError.check(not "files" in info or len(info["files"]) == 1, code=UserError.INVALID_VALUE,
 			message="Torrent must contain exactly one file")
-		self.torrent_data = val
+		self.torrentData = val
 		if self.name and self.tech:
 			shouldName = PATTERNS[self.tech] % self.name
 			UserError.check(info["name"] == shouldName, code=UserError.INVALID_VALUE,
@@ -149,7 +149,7 @@ class Template(BaseDocument, Entity):
 		try:
 			path = self.getPath()
 			size = os.path.getsize(path)
-			return size == bittorrent.fileSize(base64.b64decode(self.torrent_data))
+			return size == bittorrent.fileSize(base64.b64decode(self.torrentData))
 		except:
 			return False
 
@@ -174,3 +174,10 @@ class Template(BaseDocument, Entity):
 		tmpls = Template.objects.filter(tech=tech).order_by("-preference")
 		InternalError.check(tmpls, code=InternalError.CONFIGURATION_ERROR, message="No template for this type registered", data={"tech": tech})
 		return tmpls[0]
+
+	@classmethod
+	def create(cls, attrs):
+		obj = cls()
+		obj.init(attrs)
+		obj.save()
+		return obj

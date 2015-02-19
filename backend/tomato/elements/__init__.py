@@ -32,7 +32,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	"""
 	:type topology: Topology
 	:type parent: Element
-	:type connection: Connection
+	:type connection: connections.Connection
 	:type clientData: dict
 	:type directData: dict
 	:type hostElements: list of host.HostElement
@@ -286,6 +286,12 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			# noinspection PyUnboundLocalVariable
 			for action, params in host_cap["actions"].iteritems():
 				if not action in cls.DIRECT_ACTIONS_EXCLUDE:
+					if action == '__remove__':
+						action = Entity.REMOVE_ACTION
+					if action in caps["actions"]:
+						continue
+					if isinstance(params, list):
+						params = {'state_change': None, 'param_schema': None, 'description': None, 'allowed_states': params}
 					caps["actions"][action] = params
 		if cls.DIRECT_ATTRS:
 			for attr, params in host_cap["attrs"].iteritems():
@@ -302,7 +308,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if mel:
 			info.update(mel.objectInfo)
 		for key, val in self.clientData.items():
-			info["_"+key] = val
+			info["_"+key] = makeApiSafe(val)
 		return info
 
 	def fetchInfo(self):
@@ -370,13 +376,13 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		Entity.REMOVE_ACTION: StatefulAction(_remove, check=_checkRemove)
 	}
 	ATTRIBUTES = {
-		"id": Attribute(field=id, readOnly=True, schema=schema.Identifier()),
+		"id": IdAttribute(),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
-		"topology": Attribute(get=lambda obj: obj.topology.id, readOnly=True, schema=schema.Identifier()),
-		"parent": Attribute(get=lambda obj: obj._getFieldId("parent"), readOnly=True, schema=schema.Identifier(null=True)),
+		"topology": Attribute(get=lambda obj: obj.getFieldId('topology', True), readOnly=True, schema=schema.Identifier()),
+		"parent": Attribute(get=lambda obj: obj.getFieldId("parent", True), readOnly=True, schema=schema.Identifier(null=True)),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"children": Attribute(get=lambda obj: [ch.id for ch in obj.children], readOnly=True, schema=schema.List(items=schema.Identifier())),
-		"connection": Attribute(get=lambda obj: obj._getFieldId("connection"), readOnly=True, schema=schema.Identifier(null=True)),
+		"children": Attribute(get=lambda obj: [str(ch.id) for ch in obj.children.only('id')], readOnly=True, schema=schema.List(items=schema.Identifier())),
+		"connection": Attribute(get=lambda obj: obj.getFieldId("connection", True), readOnly=True, schema=schema.Identifier(null=True)),
 		"debug": Attribute(get=lambda obj: {
 			"host_elements": [(o.host.name, o.num) for o in obj.hostElements],
 			"host_connections": [(o.host.name, o.num) for o in obj.hostConnections],
@@ -391,3 +397,4 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 
 
 from .. import currentUser, host
+from ..lib.util import makeApiSafe

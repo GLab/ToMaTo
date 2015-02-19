@@ -17,7 +17,7 @@
 
 from .. import currentUser
 from ..lib.error import UserError  #@UnresolvedImport
-import types
+from ..lib.util import checkApiSafe, makeApiSafe
 
 def checkauth(fn):
 	def call(*args, **kwargs):
@@ -28,15 +28,6 @@ def checkauth(fn):
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)
 	return call
-
-def makeApiSafe(value):
-	if value is None or isinstance(value, (bool, int, long, float)+types.StringTypes):
-		return value
-	if isinstance(value, types.DictionaryType):
-		return {str(k): makeApiSafe(v) for k, v in value.items()}
-	if isinstance(value, (types.ListType, types.TupleType)):
-		return [makeApiSafe(v) for v in value]
-	raise TypeError("Unsupported type: %s" % type(value))
 
 def apiSafe(fn):
 	def call(*args, **kwargs):

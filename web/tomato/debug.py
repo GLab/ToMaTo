@@ -26,7 +26,7 @@ def host_users(api, request, name):
 
 @wrap_rpc
 def topology(api, request, id):
-	data = api.topology_info(id)
+	data = api.topology_info(id, True)
 	return render(request, "debug/json.html", {'title': "Information on topology #%s" % id, 'data': data})
 
 @wrap_rpc

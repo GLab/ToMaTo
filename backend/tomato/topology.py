@@ -198,7 +198,7 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 			connections = [str(con.id) for con in self.connections.only('id')]
 		info.update(elements=elements, connections=connections)
 		for key, val in self.clientData.items():
-			info["_"+key] = val
+			info["_"+key] = makeApiSafe(val)
 		return info
 
 	def updateUsage(self):
@@ -278,3 +278,4 @@ from .auth import Flags
 from .auth.permissions import Permission
 from . import currentUser, config, setCurrentUser
 from .host.site import Site
+from .lib.util import makeApiSafe

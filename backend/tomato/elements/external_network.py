@@ -71,12 +71,13 @@ class ExternalNetwork(Element):
 				ch.action("start", {})
 		self.setState(ST_STARTED)
 
-	ATTRIBUTES = {
+	ATTRIBUTES = Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"name": Attribute(field=name, schema=schema.String()),
 		"samenet": StatefulAttribute(field=samenet, writableStates=[ST_CREATED], schema=schema.Bool()),
 		"kind": StatefulAttribute(field=kind, set=modify_kind, check=check_kind, writableStates=[ST_CREATED],
 			schema=schema.Identifier())
-	}
+	})
 
 	ACTIONS = {
 		"start": StatefulAction(action_start, allowedStates=[ST_CREATED], stateChange=ST_STARTED),

@@ -37,9 +37,9 @@ class Network(BaseDocument, Entity):
 	ACTIONS = {}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
-		"kind": Attribute(field="kind", schema=schema.String()),
-		"preference": Attribute(field="preference", schema=schema.Int(minValue=0)),
-		"restricted": Attribute(field="restricted", schema=schema.Bool()),
+		"kind": Attribute(field=kind, schema=schema.String()),
+		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
+		"restricted": Attribute(field=restricted, schema=schema.Bool()),
 	}
 
 	def init(self, *args, **kwargs):
@@ -53,6 +53,12 @@ class Network(BaseDocument, Entity):
 			if net.kind == kind or net.kind.startswith(kind+"/"):
 				return net
 
+	@classmethod
+	def create(cls, attrs):
+		obj = cls()
+		obj.init(attrs)
+		obj.save()
+		return obj
 
 class NetworkInstance(BaseDocument, Entity):
 	"""
@@ -84,10 +90,10 @@ class NetworkInstance(BaseDocument, Entity):
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Network_Instance needs attribute",
 				data={"attribute": attr})
 		Entity.init(self, attrs)
-				
+
 	def getBridge(self):
 		return self.bridge
-	
+
 	def getKind(self):
 		return self.network.kind
 
@@ -108,3 +114,10 @@ class NetworkInstance(BaseDocument, Entity):
 			if k == kind or k.startswith(kind+"/"):
 				return net
 		raise UserError(code=UserError.NO_RESOURCES, message="No network instances found", data={"network": kind, "host": host})
+
+	@classmethod
+	def create(cls, attrs):
+		obj = cls()
+		obj.init(attrs)
+		obj.save()
+		return obj

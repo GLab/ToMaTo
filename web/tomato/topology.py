@@ -68,7 +68,7 @@ def list(api, request, show_all=False, organization=None):
 
 def _display(api, request, info, tutorial_state):
 	caps = api.capabilities()
-	res = api.resource_list()
+	resources = api.resources_map()
 	sites = api.site_list()
 	permission_list = api.topology_permissions()
 	orgas = dict([(o["name"], o) for o in api.organization_list()])
@@ -85,16 +85,16 @@ def _display(api, request, info, tutorial_state):
 		pass
 
 	res = render(request, "topology/info.html", {
-	'top': info,
-	'timeout_settings': serverInfo()["topology_timeout"],
-	'res_json': json.dumps(res),
-	'sites_json': json.dumps(sites),
-	'caps_json': json.dumps(caps),
-	'tutorial_info': {'state': tutorial_state,
-	'steps': tut_steps,
-	'data': tut_data,
-	'initscript': initscript},
-	'permission_list': permission_list,
+		'top': info,
+		'timeout_settings': serverInfo()["topology_timeout"],
+		'res_json': json.dumps(resources),
+		'sites_json': json.dumps(sites),
+		'caps_json': json.dumps(caps),
+		'tutorial_info': {'state': tutorial_state,
+		'steps': tut_steps,
+		'data': tut_data,
+		'initscript': initscript},
+		'permission_list': permission_list,
 	})
 	return res
 

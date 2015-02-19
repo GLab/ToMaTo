@@ -24,13 +24,17 @@ class ExtDocument(object):
 	save = None
 	del objects, DoesNotExist, MultipleObjectsReturned, id, save
 
-	def getFieldId(self, field):
+	def getFieldId(self, field, asString=False):
 		# noinspection PyUnresolvedReferences
 		dat = self._data.get(field)
+		if isinstance(dat, dict) and '_ref' in dat:
+			dat = dat['_ref']
+		if dat is None:
+			return None
 		if isinstance(dat, bson.DBRef):
 			# noinspection PyProtectedMember
-			return dat._DBRef__id
-		return dat.id
+			return str(dat._DBRef__id) if asString else dat._DBRef__id
+		return str(dat.id) if asString else dat.id
 
 class BaseDocument(ExtDocument, Document):
 	meta = {'abstract': True}

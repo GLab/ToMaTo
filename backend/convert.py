@@ -301,6 +301,12 @@ def importData(data):
 		if entry.get('site') and not site:
 			print "\t\tInvalid reference: Topology[%d] -> Site[%d]" % (key, entry['site'])
 		entry = modifyDict(entry, rename={'timeout_step': 'timeoutStep'}, remove=['id', 'site', 'permissions', 'totalUsage'])
+		clientData = {}
+		for k, value in entry.items():
+			if k.startswith('_'):
+				clientData[k[1:]] = value
+				del entry[k]
+		entry['clientData'] = clientData
 		obj = Topology(permissions=perms, totalUsage=totalUsage, site=site, **entry)
 		obj.save()
 		topologies[key] = obj
@@ -403,6 +409,12 @@ def importData(data):
 			print "\t\tElement information not found for element %d" % entry['id']
 			return
 		entry.update(elemAttrs)
+		clientData = {}
+		for key, value in entry.items():
+			if key.startswith('_'):
+				clientData[key[1:]] = value
+				del entry[key]
+		entry['clientData'] = clientData
 		topology = topologies.get(entry['topology'])
 		if not topology:
 			print "\t\tInvalid reference: Element[%d] -> Topology[%d]" % (entry['id'], entry['topology'])
@@ -607,6 +619,12 @@ def importData(data):
 			print "\t\tInvalid connection: Connection[%d] has %d elements" % (key, len(elems))
 			continue
 		entry = modifyDict(entry, remove=['id', 'topology', 'permissions', 'totalUsage'])
+		clientData = {}
+		for k, value in entry.items():
+			if k.startswith('_'):
+				clientData[k[1:]] = value
+				del entry[k]
+		entry['clientData'] = clientData
 		obj = Connection(permissions=perms, totalUsage=totalUsage, topology=topology, connectionFrom=hcon1,
 			connectionTo=hcon2, connectionElementFrom=hel1, connectionElementTo=hel2, **entry)
 		obj.elementFrom = elements[elems[0]]

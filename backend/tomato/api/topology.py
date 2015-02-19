@@ -177,6 +177,8 @@ def topology_info(id, full=False): #@ReservedAssignment
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(id)
+	import api_helpers
+	api_helpers.checkApiSafe(top.info(full))
 	return top.info(full)
 
 def topology_list(full=False, showAll=False, organization=None): #@ReservedAssignment
