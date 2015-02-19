@@ -16,34 +16,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import elements, scheduler
-import generic, time
+from .generic import VMElement, VMInterface, ST_CREATED, ST_PREPARED
+import time
 from ..lib import util #@UnresolvedImport
-from . import getLock
 
-class KVMQM(generic.VMElement):
+class KVMQM(VMElement):
 	TYPE = "kvmqm"
 	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
-		"kvmqm_interface": [generic.ST_CREATED, generic.ST_PREPARED],
+		"kvmqm_interface": [ST_CREATED, ST_PREPARED],
 	}
 	PROFILE_ATTRS = ["ram", "cpus"]
-	
-	class Meta:
-		db_table = "tomato_kvmqm"
-		app_label = 'tomato'
-	
-class KVMQM_Interface(generic.VMInterface):
+
+class KVMQM_Interface(VMInterface):
 	TYPE = "kvmqm_interface"
 	CAP_PARENT = [KVMQM.TYPE]
-	
-	class Meta:
-		db_table = "tomato_kvmqm_interface"
-		app_label = 'tomato'
+
 
 @util.wrap_task
 def syncRexTFV():
 	for e in KVMQM.objects.filter(next_sync__gt=0.0, next_sync__lte=time.time()):
-		with getLock(e):
+		with e:
 			e.reload().updateInfo()
 		
 scheduler.scheduleRepeated(1, syncRexTFV)

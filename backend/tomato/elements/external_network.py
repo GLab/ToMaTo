@@ -18,9 +18,10 @@
 from ..generic import *
 from ..db import *
 from ..elements import Element
+from ..host.element import HostElement
 from .. import host, elements
 from ..resources.network import Network, NetworkInstance
-from generic import ST_CREATED, ST_STARTED
+from .generic import ST_CREATED, ST_STARTED, ConnectingElement
 from .. import currentUser
 from ..auth import Flags
 from ..lib.error import UserError
@@ -29,7 +30,7 @@ class ExternalNetwork(Element):
 	name = StringField()
 	samenet = BooleanField(default=False)
 	kind = StringField(default='internet')
-	network = ReferenceField('Network')
+	network = ReferenceField(Network)
 
 	DIRECT_ATTRS = False
 	DIRECT_ATTRS_EXCLUDE = []
@@ -71,38 +72,34 @@ class ExternalNetwork(Element):
 		self.setState(ST_STARTED)
 
 	ATTRIBUTES = {
-		"name": Attribute(field="name", schema=schema.String()),
-		"samenet": StatefulAttribute(field="samenet", writableStates=[ST_CREATED], schema=schema.Bool())
-		"kind": StatefulAttribute(field="kind", set=modify_kind, check=check_kind, writableStates=[ST_CREATED],
+		"name": Attribute(field=name, schema=schema.String()),
+		"samenet": StatefulAttribute(field=samenet, writableStates=[ST_CREATED], schema=schema.Bool()),
+		"kind": StatefulAttribute(field=kind, set=modify_kind, check=check_kind, writableStates=[ST_CREATED],
 			schema=schema.Identifier())
 	}
 
 	ACTIONS = {
 		"start": StatefulAction(action_start, allowedStates=[ST_CREATED], stateChange=ST_STARTED),
 		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_CREATED),
-		Entity.REMOVE_ACTION: StatefulAction(Element._remove, allowedStates=[ST_CREATED])
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element._checkRemove, allowedStates=[ST_CREATED])
 	}
 
 
-class ExternalNetworkEndpoint(elements.Element, elements.generic.ConnectingElement):
-	element = ReferenceField('HostElement')
+class ExternalNetworkEndpoint(Element, ConnectingElement):
+	"""
+	:type parent: ExternalNetwork or None
+	:type network: NetworkInstance
+	"""
+	parent = Element.parent
+	element = ReferenceField(HostElement)
 	name = StringField()
 	kind = StringField(default='internet')
-	network = ReferenceField('NetworkInstance')
+	network = ReferenceField(NetworkInstance)
 
 	TYPE = "external_network_endpoint"
 	HOST_TYPE = "external_network"
 	CAP_CHILDREN = {}
 	
-	CUSTOM_ACTIONS = {
-		"start": [ST_CREATED, "default"],
-		"stop": [ST_STARTED, "default"],
-		elements.REMOVE_ACTION: [ST_CREATED],
-	}
-	CUSTOM_ATTRS = {
-		"name": name_attr,
-		"kind": kind_attr,
-	}
 	DIRECT_ATTRS_EXCLUDE = ["network", "timeout"]
 	CAP_PARENT = [None, ExternalNetwork.TYPE]
 	DEFAULT_ATTRS = {}
@@ -125,12 +122,6 @@ class ExternalNetworkEndpoint(elements.Element, elements.generic.ConnectingEleme
 	def mainElement(self):
 		return self.element
 	
-	def modify_name(self, val):
-		self.name = val
-
-	def modify_kind(self, val):
-		self.kind = val
-
 	def onError(self, exc):
 		if self.element:
 			try:
@@ -141,19 +132,19 @@ class ExternalNetworkEndpoint(elements.Element, elements.generic.ConnectingEleme
 			if self.state == ST_CREATED:
 				if self.element:
 					self.element.remove()
-				for iface in self.getChildren():
+				for iface in self.children:
 					iface._remove()
 				self.element = None
 			self.save()
 
 	def action_start(self):
 		hPref, sPref = self.getLocationPrefs()
-		kind = self.getParent().network.kind if self.parent and self.getParent().samenet else self.kind
+		kind = self.parent.network.kind if self.parent and self.parent.samenet else self.kind
 		_host = host.select(elementTypes=["external_network"], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE})
-		if self.parent and self.getParent().samenet:
-			self.network = NetworkInstance.get(_host, self.getParent().network.kind)
+		if self.parent and self.parent.samenet:
+			self.network = NetworkInstance.get(_host, self.parent.network.kind)
 		else:
 			self.network = NetworkInstance.get(_host, self.kind)
 		attrs = {"network": self.network.network.kind}
@@ -168,15 +159,22 @@ class ExternalNetworkEndpoint(elements.Element, elements.generic.ConnectingEleme
 			self.element = None
 		self.setState(ST_CREATED, True)
 
+	@property
 	def readyToConnect(self):
 		return bool(self.element)
 
-	def upcast(self):
-		return self
+	ATTRIBUTES = Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"name": Attribute(field=name),
+		"kind": StatefulAttribute(writableStates=[ST_CREATED])
+	})
 
-	def info(self):
-		info = elements.Element.info(self)
-		return info
+	ACTIONS = Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element._checkRemove, allowedStates=[ST_CREATED]),
+		"start": StatefulAction(action_start, allowedStates=[ST_CREATED, "default"], stateChange=ST_STARTED),
+		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED, "default"], stateChange=ST_CREATED)
+	})
 
 elements.TYPES[ExternalNetwork.TYPE] = ExternalNetwork
 elements.TYPES[ExternalNetworkEndpoint.TYPE] = ExternalNetworkEndpoint

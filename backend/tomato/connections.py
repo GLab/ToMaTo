@@ -15,17 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-import threading
+import time
 
+from .db import *
+from .generic import *
 from .topology import Topology
 from .auth import Flags
-from .auth.permissions import PermissionMixin, Role
-from .lib import db, attributes, logging #@UnresolvedImport
+from .auth.permissions import Permission, PermissionMixin, Role
+from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
 from .accounting import UsageStatistics
 from .lib.cache import cached #@UnresolvedImport
-from .host import HostConnection, HostElement, getConnectionCapabilities, select
 
 REMOVE_ACTION = "(remove)"
 
@@ -51,20 +51,38 @@ starting_list_lock = threading.RLock()
 stopping_list = set()
 stopping_list_lock = threading.RLock()
 
-class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
-	topology = models.ForeignKey(Topology, null=False, related_name="connections")
-	state = models.CharField(max_length=20, validators=[db.nameValidator])
-	permissions = models.ForeignKey(Permissions, null=False)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
-	attrs = db.JSONField()
-	#elements: [elements.Element]
-	connection1 = models.ForeignKey(HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
-	connection2 = models.ForeignKey(HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
-	connectionElement1 = models.ForeignKey(HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
-	connectionElement2 = models.ForeignKey(HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
-	#host_elements: [host.HostElement]
-	#host_connections: [host.HostConnections]
-	
+class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
+	"""
+	:type topology: Topology
+	:type clientData: dict
+	:type directData: dict
+	:type elementFrom: elements.Element
+	:type elementTo: elements.Element
+	:type connectionFrom: host.HostConnection
+	:type connectionTo: host.HostConnection
+	:type connectionElementFrom: host.HostElement
+	:type connectionElementTo: host.HostElement
+	"""
+	topology = ReferenceField(Topology, required=True)
+	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
+	permissions = ListField(EmbeddedDocumentField(Permission))
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
+	elementFrom = ReferenceField('Element', db_field='element_from', required=True)
+	elementTo = ReferenceField('Element', db_field='element_to', required=True)
+	from .host.connection import HostConnection, HostElement
+	connectionFrom = ReferenceField(HostConnection, db_field='connection_from')
+	connectionTo = ReferenceField(HostConnection, db_field='connection_to')
+	connectionElementFrom = ReferenceField(HostElement, db_field='connection_element_from')
+	connectionElementTo = ReferenceField(HostElement, db_field='connection_element_to')
+	clientData = DictField(db_field='client_data')
+	directData = DictField(db_field='direct_data')
+	meta = {
+		'allow_inheritance': True,
+		'indexes': [
+			'topology', 'state', 'elementFrom', 'elementTo'
+		]
+	}
+
 	DIRECT_ACTIONS = True
 	DIRECT_ACTIONS_EXCLUDE = ["start", "stop", "prepare", "destroy", REMOVE_ACTION]
 	CUSTOM_ACTIONS = {REMOVE_ACTION: [ST_CREATED]}
@@ -76,10 +94,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	DEFAULT_ATTRS = {"emulation": True, "bandwidth_to": 10000, "bandwidth_from": 10000}
 	
 	DOC=""
-	
-	class Meta:
-		pass
 
+	# noinspection PyMethodOverriding
 	def init(self, topology, el1, el2, attrs=None):
 		if not attrs: attrs = {}
 		self.topology = topology
@@ -87,27 +103,25 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.state = ST_CREATED
 		self.totalUsage = UsageStatistics.objects.create()
-		self.save()
-		self.elements.add(el1)
-		self.elements.add(el2)
-		self.save()	
-		self.modify(attrs)
-		
-	def _saveAttributes(self):
-		pass #disable automatic attribute saving		
+		self.elementFrom = el1
+		self.elementTo = el2
+		Entity.init(self, attrs)
 		
 	@classmethod
 	def canConnect(cls, el1, el2):
 		return el1.CAP_CONNECTABLE and el2.CAP_CONNECTABLE
 		
-	def upcast(self):
-		return self.reload()
-	
+	@property
 	def mainConnection(self):
-		return self.connection1
+		return self.connectionFrom
 
+	@property
+	def elements(self):
+		return [self.elementFrom, self.elementTo]
+
+	@property
 	def remoteType(self):
-		return self.mainConnection().type if self.mainConnection() else "bridge"
+		return self.mainConnection.type if self.mainConnection else "bridge"
 
 	def _adaptAttrs(self, attrs):
 		tmp = {}
@@ -121,181 +135,99 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			tmp[key] = value
 		return tmp
 
+	@property
 	def _remoteAttrs(self):
-		caps = getConnectionCapabilities(self.remoteType())
+		caps = getConnectionCapabilities(self.remoteType)
 		allowed = caps["attrs"].keys() if caps else []
 		attrs = {}
-		reversed = not self._correctDirection() #@ReservedAssignment
 		for key, value in self.attrs.iteritems():
 			if key in allowed:
 				attrs[key] = value
 		attrs = self._adaptAttrs(attrs)
 		return attrs
 
-	def checkModify(self, attrs):
-		"""
-		Checks whether the attribute change can succeed before changing the
-		attributes.
-		If checks whether the attributes are listen in CAP_ATTRS and if the
-		current object state is listed in CAP_ATTRS[NAME].
-		
-		@param attrs: Attributes to change
-		@type attrs: dict
-		"""
+	def checkUnknownAttribute(self, key, value):
 		self.checkRole(Role.manager)
-		mcon = self.mainConnection()
-		direct = []
-		if self.DIRECT_ATTRS:
-			if mcon:
-				direct = mcon.getAllowedAttributes().keys()
-			else:
-				caps = getConnectionCapabilities(self.remoteType())
-				direct = caps["attrs"].keys() if caps else []
-		for key in attrs.keys():
-			if key in direct and not key in self.DIRECT_ATTRS_EXCLUDE:
-				continue
+		if key.startswith("_"):
+			return True
+		UserError.check(self.DIRECT_ATTRS and not key in self.DIRECT_ATTRS_EXCLUDE,
+			code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
+		if self.mainConnection:
+			allowed = self.mainConnection.getAllowedAttributes().keys()
+		else:
+			caps = getConnectionCapabilities(self.remoteType())
+			allowed = caps["attrs"].keys() if caps else []
+		UserError.check(key in allowed, code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
+
+	def setUnknownAttributes(self, attrs):
+		remoteAttrs = {}
+		for key, value in attrs.items():
 			if key.startswith("_"):
-				continue
-			UserError.check(key in self.CUSTOM_ATTRS, code=UserError.UNSUPPORTED_ATTRIBUTE,
-				message="Unsuported connection attribute: %s" % key, data={"attribute": key, "id": self.id})
-			self.CUSTOM_ATTRS[key].check(self, attrs[key])
-		
-	def modify(self, attrs):
-		"""
-		Sets the given attributes to their given values. This method first
-		checks if the change can be made using checkModify() and then executes
-		the attribute changes by calling modify_KEY(VALUE) for each key/value
-		pair in attrs. After calling all these modify_KEY methods, it will save
-		the object.
-		
-		Classes inheriting from this class should only implement the modify_KEY
-		methods and not touch this method.  
-		
-		@param attrs: Attributes to change
-		@type attrs: dict
-		"""		
-		with getLock(self):
-			return self._modify(attrs)
-			
-	def _modify(self, attrs):
-		self.checkModify(attrs)
-		logging.logMessage("modify", category="connection", id=self.id, attrs=attrs)		
-		try:
-			directAttrs = {}
-			for key, value in attrs.iteritems():
-				if key in self.CUSTOM_ATTRS:
-					getattr(self, "modify_%s" % key)(value)
-				else:
-					if key.startswith("_"):
-						self.setAttribute(key, value)
-					else:
-						directAttrs[key] = value
-			if directAttrs:
-				self.setAttributes(directAttrs)					
-				mcon = self.mainConnection()
-				if mcon:
-					mcon.modify(self._remoteAttrs())
-		except Exception, exc:
-			self.onError(exc)
-			raise
-		self.save()
-		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
-	
-	def checkAction(self, action):
-		"""
-		Checks if the action can be executed. This method checks if the action
-		is listed in CAP_ACTIONS and if the current state is listed in 
-		CAP_ACTIONS[action].
-		
-		@param action: Action to check
-		@type action: str
-		"""
-		self.checkRole(Role.manager)
-		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
-			mcon = self.mainConnection()
-			if mcon and action in mcon.getAllowedActions():
-				return
-		UserError.check(action in self.CUSTOM_ACTIONS, code=UserError.UNSUPPORTED_ACTION,
-			message="Unsuported connection action: %s" % action, data={"action": action, "id": self.id})
-		UserError.check(self.state in self.CUSTOM_ACTIONS[action], code=UserError.INVALID_STATE,
-			message="Action %s can not be executed in state %s" % (action, self.state),
-			data={"action": action, "state": self.state, "id": self.id})
-	
-	def action(self, action, params):
-		"""
-		Executes the action with the given parameters. This method first
-		checks if the action is possible using checkAction() and then executes
-		the action by calling action_ACTION(**params). After calling the action
-		method, it will save the object.
-		
-		Classes inheriting from this class should only implement the 
-		action_ACTION method and not touch this method. 
-		
-		@param action: Name of the action
-		@type action: str
-		@param params: Parameters for the action
-		@type params: dict
-		"""
-		with getLock(self):
-			return self._action(action, params)
-			
-	def _action(self, action, params):
-		self.checkAction(action)
-		logging.logMessage("action start", category="connection", id=self.id, action=action, params=params)
-		try:
-			if action in self.CUSTOM_ACTIONS:
-				res = getattr(self, "action_%s" % action)(**params)
+				self.clientData[key[1:]] = value
 			else:
-				mcon = self.mainConnection()
-				assert mcon
-				res = mcon.action(action, params)
-				self.setState(mcon.state, True)
+				remoteAttrs[key] = value
+		self.directData.update(remoteAttrs)
+		if self.mainConnection:
+			self.mainConnection.modify(remoteAttrs)
+
+	def checkUnknownAction(self, action, params=None):
+		self.checkRole(Role.manager)
+		if action in ["prepare", "start", "upload_grant"]:
+			UserError.check(not currentUser().hasFlag(Flags.OverQuota), code=UserError.DENIED, message="Over quota")
+			UserError.check(self.topology.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
+		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
+			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
+		UserError.check(self.mainConnection, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
+		if not action in self.mainConnection.getAllowedActions():
+			self.mainConnection.updateInfo()
+			self.state = self.mainConnection.state
+			self.save()
+		UserError.check(action in self.mainConnection.getAllowedActions(),
+			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
+
+	def executeUnknownAction(self, action, params=None):
+		try:
+			if hasattr(self, "before_%s" % action):
+				getattr(self, "before_%s" % action)(**params)
+			res = self.mainConnection.action(action, params)
+			self.setState(self.mainConnection.state)
+			if hasattr(self, "after_%s" % action):
+				getattr(self, "after_%s" % action)(**params)
 		except Exception, exc:
 			self.onError(exc)
 			raise
-		self.save()
-		logging.logMessage("action end", category="connection", id=self.id, action=action, params=params, res=res)
-		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
 		return res
 
-	def setState(self, state, dummy=None):
-		self.state = state
-		self.save()
-
-	def checkRemove(self):
+	def _checkRemove(self):
 		self.checkRole(Role.manager)
 
-	def remove(self):
-		with getLock(self):
-			self._removeLocked()
-		removeLock(self)
-			
-	def _removeLocked(self):
+	def _remove(self):
 		try:
 			self.reload()
 		except Connection.DoesNotExist:
 			return
-		self.checkRemove()
+		self._checkRemove()
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
-		logging.logMessage("remove", category="topology", id=self.id)		
+		logging.logMessage("remove", category="topology", id=self.id)
 		self.triggerStop()
-		for el in self.getElements():
+		for el in self.elements:
 			el.connection = None
 			el.save()
-		self.elements.clear() #Important, otherwise elements will be deleted
 		self.totalUsage.remove()
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
-			
-	def getElements(self):
-		# sort elements so el1->el2 is from and el2->el1 is to
-		return sorted([el.upcast() for el in self.elements.all()], key=lambda el: el.id)
-			
-	def getHostElements(self):
-		return filter(bool, [self.connectionElement1, self.connectionElement2])
-			
-	def getHostConnections(self):
-		return filter(bool, [self.connection1, self.connection2])
+
+	def setState(self, state):
+		self.state = state
+		self.save()
+
+	@property
+	def hostElements(self):
+		return filter(bool, [self.connectionElementFrom, self.connectionElementTo])
+
+	@property
+	def hostConnections(self):
+		return filter(bool, [self.connectionFrom, self.connectionTo])
 
 	def onError(self, exc):
 		pass
@@ -304,55 +236,51 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		"""
 		Find out whether the directions are correct
 		"""
-		el1 = self.getElements()[0].mainElement()
+		el1 = self.elementFrom.mainElement()
 		InternalError.check(el1, code=InternalError.INVALID_STATE,
-			message="Can not check directions on unprepared element", data={"element": self.getElements()[0].id})
+			message="Can not check directions on unprepared element", data={"element": self.elementFrom.id})
 		id1 = el1.num
-		if self.connectionElement1:
-			id2 = self.connectionElement1.num
+		if self.connectionElementFrom:
+			id2 = self.connectionElementFrom.num
 		else:
-			el2 = self.getElements()[1].mainElement()
+			el2 = self.elementTo.mainElement()
 			InternalError.check(el2, code=InternalError.INVALID_STATE,
-				message="Can not check directions on unprepared element", data={"element": self.getElements()[1].id})
+				message="Can not check directions on unprepared element", data={"element": self.elementTo.id})
 			id2 = el2.num
 		return id1 < id2
 		
 	def _start(self):
 		if self.state == ST_STARTED:
 			return
-		els = self.getElements()
-		InternalError.check(len(els) == 2, code=InternalError.UNKNOWN,
-			message="Connection has to many elements", data={"connection": self.id, "element_count": len(els)})
-		el1, el2 = els
-		el1, el2 = el1.mainElement(), el2.mainElement()
+		el1, el2 = self.elementFrom.mainElement, self.elementTo.mainElement
 		InternalError.check(el1 and el2, code=InternalError.INVALID_STATE, message="Can not connect unprepared element")
 		# First create connection, then set attributes
 		if el1.host == el2.host:
 			# simple case: both elements are on same host
-			self.connection1 = el1.connectWith(el2, attrs={}, ownerConnection=self)
-			if self.connection1.state == ST_CREATED:
-				self.connection1.action("start")
+			self.connectionFrom = el1.connectWith(el2, attrs={}, ownerConnection=self)
+			if self.connectionFrom.state == ST_CREATED:
+				self.connectionFrom.action("start")
 		else:
 			# complex case: helper elements needed to connect elements on different hosts
-			self.connectionElement1 = el1.host.createElement("udp_tunnel", ownerConnection=self)
-			self.connectionElement2 = el2.host.createElement("udp_tunnel", attrs={
-				"connect": "%s:%d" % (el1.host.address, self.connectionElement1.attrs["attrs"]["port"])
+			self.connectionElementFrom = el1.host.createElement("udp_tunnel", ownerConnection=self)
+			self.connectionElementTo = el2.host.createElement("udp_tunnel", attrs={
+				"connect": "%s:%d" % (el1.host.address, self.connectionElementFrom.attrs["attrs"]["port"])
 			}, ownerConnection=self)
-			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, ownerConnection=self)
-			self.connection2 = el2.connectWith(self.connectionElement2, attrs={}, ownerConnection=self)
-			if "emulation" in self.connection2.getAllowedAttributes():
-				self.connection2.modify({"emulation": False})
+			self.connectionFrom = el1.connectWith(self.connectionElementFrom, attrs={}, ownerConnection=self)
+			self.connectionTo = el2.connectWith(self.connectionElementTo, attrs={}, ownerConnection=self)
+			if "emulation" in self.connectionTo.getAllowedAttributes():
+				self.connectionTo.modify({"emulation": False})
 			self.save()
-			self.connectionElement1.action("start")
-			self.connectionElement2.action("start")
-			if self.connection1.state == ST_CREATED:
-				self.connection1.action("start")
-			if self.connection2.state == ST_CREATED:
-				self.connection2.action("start")
+			self.connectionElementFrom.action("start")
+			self.connectionElementTo.action("start")
+			if self.connectionFrom.state == ST_CREATED:
+				self.connectionFrom.action("start")
+			if self.connectionTo.state == ST_CREATED:
+				self.connectionTo.action("start")
 		# Find out and set allowed attributes
-		allowed = self.connection1.getAllowedAttributes()
-		attrs = dict(filter(lambda (k, v): k in allowed, self._remoteAttrs().items()))
-		self.connection1.modify(attrs)
+		allowed = self.connectionFrom.getAllowedAttributes()
+		attrs = dict(filter(lambda (k, v): k in allowed, self._remoteAttrs.items()))
+		self.connectionFrom.modify(attrs)
 		# Unset all disallowed attributes
 		for key in self.attrs.keys():
 			if not key in allowed:
@@ -360,35 +288,35 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.setState(ST_STARTED)
 			
 	def _stop(self):
-		if self.connection1:
-			if self.connection1.state == ST_STARTED:
-				self.connection1.action("stop")
-			self.connection1.remove()
-			self.connection1 = None
+		if self.connectionFrom:
+			if self.connectionFrom.state == ST_STARTED:
+				self.connectionFrom.action("stop")
+			self.connectionFrom.remove()
+			self.connectionFrom = None
 			self.save()
-		if self.connection2:
-			if self.connection2.state == ST_STARTED:
-				self.connection2.action("stop")
-			self.connection2.remove()
-			self.connection2 = None
+		if self.connectionTo:
+			if self.connectionTo.state == ST_STARTED:
+				self.connectionTo.action("stop")
+			self.connectionTo.remove()
+			self.connectionTo = None
 			self.save()
-		if self.connectionElement1:
-			if self.connectionElement1.state == ST_STARTED:
-				self.connectionElement1.action("stop")
-			self.connectionElement1.remove()
-			self.connectionElement1 = None
+		if self.connectionElementFrom:
+			if self.connectionElementFrom.state == ST_STARTED:
+				self.connectionElementFrom.action("stop")
+			self.connectionElementFrom.remove()
+			self.connectionElementFrom = None
 			self.save()
-		if self.connectionElement2:
-			if self.connectionElement2.state == ST_STARTED:
-				self.connectionElement2.action("stop")
-			self.connectionElement2.remove()
-			self.connectionElement2 = None
+		if self.connectionElementTo:
+			if self.connectionElementTo.state == ST_STARTED:
+				self.connectionElementTo.action("stop")
+			self.connectionElementTo.remove()
+			self.connectionElementTo = None
 			self.save()
 		self.setState(ST_CREATED)
 
 	def triggerStart(self):
-		for el in self.getElements():
-			if not el.readyToConnect():
+		for el in self.elements:
+			if not el.readyToConnect:
 				return
 		# This is very important
 		# To avoid race conditions where two elements are started at the same time and then trigger
@@ -425,112 +353,121 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		finally:
 			with stopping_list_lock:
 				stopping_list.remove(self)
-		
+
 	@classmethod
 	@cached(timeout=3600, maxSize=None)
 	def getCapabilities(cls, type_, host_):
+		caps = cls.capabilities()
 		if not host_ and (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
 			host_ = select(connectionTypes=[type_])
-		host_cap = None
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
 			host_cap = host_.getConnectionCapabilities(type_)
-		cap_actions = dict(cls.CUSTOM_ACTIONS)
 		if cls.DIRECT_ACTIONS:
+			# noinspection PyUnboundLocalVariable
 			for action, params in host_cap["actions"].iteritems():
 				if not action in cls.DIRECT_ACTIONS_EXCLUDE:
-					cap_actions[action] = params
-		cap_attrs = {}
-		for attr, params in cls.CUSTOM_ATTRS.iteritems():
-			cap_attrs[attr] = params.info()
+					caps["actions"][action] = params
 		if cls.DIRECT_ATTRS:
 			for attr, params in host_cap["attrs"].iteritems():
 				if not attr in cls.DIRECT_ATTRS_EXCLUDE:
-					cap_attrs[attr] = params
-		return {
-			"attrs": cap_attrs,
-			"actions": cap_actions,
-		}
-		
-	def _getType(self):
-		if self.mainConnection():
-			return self.mainConnection().type
-		for el in self.getElements():
+					caps["attributes"][attr] = params
+		return caps
+
+	@property
+	def type(self):
+		if self.mainConnection:
+			return self.mainConnection.type
+		for el in self.elements:
 			if el.type == "external_network_endpoint":
 				return "fixed_bridge"
 		return "bridge"
 			
 	def fetchInfo(self):
-		mcon = self.mainConnection()
+		mcon = self.mainConnection
 		if mcon:
 			mcon.updateInfo()
 			
 	def info(self):
-		if not currentUser() is True and not currentUser().hasFlag(Flags.Debug):
+		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
 			self.checkRole(Role.user)
-		info = {
-			"id": self.id,
-			"type": self._getType(),
-			"state": self.state,
-			"attrs": self.attrs.copy(),
-			"elements": sorted([el.id for el in self.elements.all()]), #sort elements so that first is from and second is to
-			"debug": {
-					"host_elements": [(o.host.name, o.num) for o in self.getHostElements()],
-					"host_connections": [(o.host.name, o.num) for o in self.getHostConnections()],
-			}
-		}
-		h = self.connection1.host if self.connection1 else None
-		info["attrs"]["host"] = h.name if h else None
-		info["attrs"]["host_info"] = {
-			'address': h.address if h else None,
-			'problems': h.problems() if h else None,
-			'site': h.site.name if h else None,
-			'fileserver_port': h.hostInfo.get('fileserver_port', None) if h else None
-		}
-		try:
-			mcon = self.mainConnection()
-			if mcon:
-				info["attrs"].update(self._adaptAttrs(mcon.attrs["attrs"]))
-		except:
-			import traceback
-			traceback.print_exc()
+		info = LockedStatefulEntity.info(self)
+		mcon = self.mainConnection
+		if mcon:
+			info.update(mcon.objectInfo)
+		for key, val in self.clientData.items():
+			info["_"+key] = val
 		return info
 
+	@property
+	def host(self):
+		return self.mainConnection.host if self.mainConnection else None
+
+	@property
+	def host_info(self):
+		host = self.host
+		if not host: return None
+		return {
+			'address': host.address,
+			'problems':	host.problems(),
+			'site':	host.site.name,
+			'fileserver_port': host.hostInfo.get('fileserver_port', None)
+		}
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: StatefulAction(_remove, check=_checkRemove)
+	}
+	ATTRIBUTES = {
+		"id": Attribute(field=id, readOnly=True, schema=schema.Identifier()),
+		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"topology": Attribute(get=lambda obj: obj.topology.id, readOnly=True, schema=schema.Identifier()),
+		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
+		"elements": Attribute(get=lambda obj: [el.id for el in obj.elements], readOnly=True, schema=schema.List(items=schema.Identifier())),
+		"connection": Attribute(get=lambda obj: obj._getFieldId("connection"), readOnly=True, schema=schema.Identifier(null=True)),
+		"debug": Attribute(get=lambda obj: {
+			"host_elements": [(o.host.name, o.num) for o in obj.hostElements],
+			"host_connections": [(o.host.name, o.num) for o in obj.hostConnections],
+		}, readOnly=True, schema=schema.StringMap(items={
+			'host_elements': schema.List(items=schema.List(minLength=2, maxLength=2)),
+			'host_connections': schema.List(items=schema.List(minLength=2, maxLength=2))
+		}, required=['host_elements', 'host_connections'])),
+		"host": Attribute(get=lambda self: self.host.name if self.host else None, readOnly=True),
+		"host_info": Attribute(field=host_info, readOnly=True)
+	}
 		
 	def updateUsage(self):
-		self.totalUsage.updateFrom([el.usageStatistics for el in self.getHostElements()]
-								 + [con.usageStatistics for con in self.getHostConnections()])
+		self.totalUsage.updateFrom([el.usageStatistics for el in self.hostElements]
+								 + [con.usageStatistics for con in self.hostConnections])
 		
-		
-def get(id_, **kwargs):
-	try:
-		con = Connection.objects.get(id=id_, **kwargs)
-		return con.upcast()
-	except Connection.DoesNotExist:
-		return None
 
-def getAll(**kwargs):
-	return (con.upcast() for con in Connection.objects.filter(**kwargs))
+	@classmethod
+	def get(cls, id_, **kwargs):
+		try:
+			return cls.objects.get(id=id_, **kwargs)
+		except Connection.DoesNotExist:
+			return None
 
-def create(el1, el2, attrs=None):
-	if not attrs: attrs = {}
-	UserError.check(el1 != el2, code=UserError.INVALID_CONFIGURATION, message="Cannot connect element with itself")
-	UserError.check(not el1.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
-		data={"element": el1.id})
-	UserError.check(not el2.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
-		data={"element": el2.id})
-	UserError.check(el1.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
-		data={"element": el1.id})
-	UserError.check(el2.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
-		data={"element": el2.id})
-	UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
-		message="Can only connect elements from same topology")
-	el1.topology.checkRole(Role.manager)	
-	con = Connection()
-	con.init(el1.topology, el1, el2, attrs)
-	con.save()
-	con.triggerStart()
-	logging.logMessage("create", category="connection", id=con.id)	
-	logging.logMessage("info", category="connection", id=con.id, info=con.info())
-	return con
+	@classmethod
+	def create(cls, el1, el2, attrs=None):
+		if not attrs: attrs = {}
+		UserError.check(el1 != el2, code=UserError.INVALID_CONFIGURATION, message="Cannot connect element with itself")
+		UserError.check(not el1.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
+			data={"element": el1.id})
+		UserError.check(not el2.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
+			data={"element": el2.id})
+		UserError.check(el1.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
+			data={"element": el1.id})
+		UserError.check(el2.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
+			data={"element": el2.id})
+		UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
+			message="Can only connect elements from same topology")
+		el1.topology.checkRole(Role.manager)
+		con = cls()
+		con.init(el1.topology, el1, el2, attrs)
+		con.save()
+		con.triggerStart()
+		logging.logMessage("create", category="connection", id=con.id)
+		logging.logMessage("info", category="connection", id=con.id, info=con.info())
+		return con
 
 from . import currentUser
+from .host import getConnectionCapabilities, select

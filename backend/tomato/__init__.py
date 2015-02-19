@@ -17,8 +17,6 @@
 
 import os, sys, signal, time, thread
 
-# tell django to read config from module tomato.config
-os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
 os.environ['TOMATO_MODULE'] = "backend"
 
 
@@ -28,16 +26,13 @@ def db_migrate():
 	Migrates the database forward to the current structure using migrations
 	from the package tomato.migrations.
 	"""
-	from django.core.management import call_command
-	call_command('syncdb', verbosity=0)
-	from south.management.commands import migrate
-	cmd = migrate.Command()
-	cmd.handle(app="tomato", verbosity=1)
+	pass
 
 
 import config
+from mongoengine import connect
+connect(config.DATABASE)
 
-	
 import threading
 _currentUser = threading.local()
 
@@ -61,7 +56,7 @@ scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=25)
 
 starttime = time.time()
 
-from . import resources, host, auth, rpcserver #@UnresolvedImport
+from . import host, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import util, cache #@UnresolvedImport
 
@@ -71,12 +66,12 @@ stopped = threading.Event()
 
 import dump
 import dumpmanager
+import models
 
 def start():
 	logging.openDefault(config.LOG_FILE)
 	db_migrate()
 	auth.init()
-	resources.init()
 	global starttime
 	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
 	bittorrent.startClient(config.TEMPLATE_PATH)

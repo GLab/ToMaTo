@@ -63,15 +63,7 @@ SERVER.append({
 	"SSL": False
 })
 
-DATABASES = {}
-
-DATABASES['default'] = {
-	'ENGINE': 'django.db.backends.postgresql_psycopg2',
-	'NAME': 'tomato',
-	'OPTIONS': {
-			'autocommit': True
-	}
-}
+DATABASE = 'test'
 
 RPC_TIMEOUT = 60
 HOST_UPDATE_INTERVAL = 60

@@ -62,12 +62,13 @@ class ServerProxy(object):
     def __getattr__(self, name):
         call_proxy = getattr(self._xmlrpc_server_proxy, name)
         def _call(*args, **kwargs):
-            #import time
-            #before = time.time()
+            import time
+            before = time.time()
             try:
+                print "%s(%s, %s)" % (name, args, kwargs)
                 res = call_proxy(args, kwargs)
-                #after = time.time()
-                #print "%f, %f, %s(%s, %s)" % (after, after-before, name, args, kwargs)
+                after = time.time()
+                print "%f, %s(%s, %s) -> %s" % (after-before, name, args, kwargs, res)
                 return res
             except xmlrpclib.Fault, e:
                 if e.faultCode == 999:
@@ -91,6 +92,8 @@ def getapi(request=None):
             api = ServerProxy('%s://%s:%s' % (settings.server_protocol, settings.server_host, settings.server_port), allow_none=True )
             api.user = None
     except:
+        import traceback
+        traceback.print_exc()
         api = ServerProxy('%s://%s:%s' % (settings.server_protocol, settings.server_host, settings.server_port), allow_none=True )
         api.user = None
     if request:

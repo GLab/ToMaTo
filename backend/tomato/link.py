@@ -41,7 +41,7 @@ def _combine(records):
 	combined.delayStddev = _avg([(r.delayStddev, r.measurements) for r in records], combined.measurements)
 	return combined
 
-class LinkMeasurement(EmbeddedDocument):
+class LinkMeasurement(ExtDocument, EmbeddedDocument):
 	begin = FloatField(required=True)
 	end = FloatField(required=True)
 	measurements = IntField(required=True)
@@ -71,7 +71,7 @@ class LinkStatistics(BaseDocument):
 	:type byYear: list of LinkMeasurement
 	"""
 	siteA = ReferenceField(host.Site, db_field='site_a', required=True)
-	siteB = ReferenceField(host.Site, db_field='site_b', required=True, unique_with='siteB')
+	siteB = ReferenceField(host.Site, db_field='site_b', required=True, unique_with='siteA')
 	single = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='single')
 	by5minutes = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='5minutes')
 	byHour = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='hour')

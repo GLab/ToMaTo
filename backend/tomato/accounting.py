@@ -278,8 +278,8 @@ class Quota(EmbeddedDocument):
 	def init(self, cputime, memory, diskspace, traffic, continous_factor):
 		self.monthly = Usage(cputime=cputime, memory=memory, diskspace=diskspace, traffic=traffic)
 		self.used = Usage()
-		self.used_time = time.time()
-		self.continous_factor = continous_factor
+		self.usedTime = time.time()
+		self.continousFactor = continous_factor
 
 	def getFactor(self):
 		return max(self.used.cputime/self.monthly.cputime,
@@ -289,27 +289,27 @@ class Quota(EmbeddedDocument):
 
 	def update(self, usageStats):
 		start_of_month = util.startOfMonth(*util.getYearMonth(time.time()))
-		if self.used_time < start_of_month:
+		if self.usedTime < start_of_month:
 			self.used.cputime = 0.0
 			self.used.memory = 0.0
 			self.used.diskspace = 0.0
 			self.used.traffic = 0.0
-			self.used_time = start_of_month
-		recs = usageStats.getRecords(type="5minutes", end__gt=self.used_time)
+			self.usedTime = start_of_month
+		recs = usageStats.getRecords(type="5minutes", end__gt=self.usedTime)
 		factor = 300.0 / util.secondsInMonth(*util.getYearMonth(time.time())) 
-		end = self.used_time
+		end = self.usedTime
 		for rec in recs:
-			if rec.usage.cputime > self.monthly.cputime * factor * self.continous_factor:
-				self.used.cputime += rec.usage.cputime - self.monthly.cputime * factor * self.continous_factor
-			if rec.usage.memory > self.monthly.memory * self.continous_factor:
-				self.used.memory += rec.usage.memory * factor - self.monthly.memory * self.continous_factor
-			if rec.usage.diskspace > self.monthly.diskspace * self.continous_factor:
-				self.used.diskspace += rec.usage.diskspace * factor - self.monthly.diskspace * self.continous_factor
-			if rec.usage.traffic > self.monthly.traffic * factor * self.continous_factor:
-				self.used.traffic += rec.usage.traffic - self.monthly.traffic * factor * self.continous_factor
+			if rec.usage.cputime > self.monthly.cputime * factor * self.continousFactor:
+				self.used.cputime += rec.usage.cputime - self.monthly.cputime * factor * self.continousFactor
+			if rec.usage.memory > self.monthly.memory * self.continousFactor:
+				self.used.memory += rec.usage.memory * factor - self.monthly.memory * self.continousFactor
+			if rec.usage.diskspace > self.monthly.diskspace * self.continousFactor:
+				self.used.diskspace += rec.usage.diskspace * factor - self.monthly.diskspace * self.continousFactor
+			if rec.usage.traffic > self.monthly.traffic * factor * self.continousFactor:
+				self.used.traffic += rec.usage.traffic - self.monthly.traffic * factor * self.continousFactor
 			if rec.end > end:
 				end = rec.end
-		self.used_time = end
+		self.usedTime = end
 
 	def modify(self, value):
 		if "monthly" in value:
@@ -333,14 +333,14 @@ class Quota(EmbeddedDocument):
 			if "traffic" in u:
 				self.used.traffic = u["traffic"]
 		if "continous_factor" in value:
-			self.continous_factor = value["continous_factor"]
+			self.continousFactor = value["continous_factor"]
 
 	def info(self):
 		return {
 			"used": self.used.info(),
 			"monthly": self.monthly.info(),
-			"used_time": self.used_time,
-			"continous_factor": self.continous_factor
+			"used_time": self.usedTime,
+			"continous_factor": self.continousFactor
 		}
 
 @util.wrap_task

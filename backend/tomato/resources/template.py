@@ -57,30 +57,35 @@ class Template(BaseDocument, Entity):
 	}
 	@property
 	def hosts(self):
+		from ..host import Host
 		return Host.objects(templates__in=self)
+
+	def getReadyInfo(self):
+		from ..host import Host
+		return {
+			"backend": self.isReady(),
+			"hosts": {
+				"ready": len(self.hosts),
+				"total": Host.objects.count()
+			}
+		}
 
 	ACTIONS = {}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
-		"tech": Attribute(field="tech", schema=schema.String(options=PATTERNS.keys())),
-		"name": Attribute(field="name", schema=schema.Identifier()),
-		"preference": Attribute(field="preference", schema=IntField(min_value=1)),
-		"label": Attribute(field="label", schema=schema.String()),
-		"restricted": Attribute(field="restricted", schema=schema.Bool()),
-		"subtype": Attribute(field="subtype", schema=schema.String()),
-		"torrent_data": Attribute(field="torrentData", set=lambda obj, value: obj.modify_torrent_data(value),
+		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
+		"name": Attribute(field=name, schema=schema.Identifier()),
+		"preference": Attribute(field=preference, schema=IntField(min_value=1)),
+		"label": Attribute(field=label, schema=schema.String()),
+		"restricted": Attribute(field=restricted, schema=schema.Bool()),
+		"subtype": Attribute(field=subtype, schema=schema.String()),
+		"torrent_data": Attribute(field=torrentData, set=lambda obj, value: obj.modify_torrent_data(value),
 			schema=schema.String()),
-		"kblang": Attribute(field="kblang", set=lambda obj, value: obj.modify_kblang(value),
+		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
 			schema=schema.String(options=kblang_options.keys())),
 		"torrent_data_hash": Attribute(readOnly=True, schema=schema.String(null=True),
 			get=lambda obj: hashlib.md5(obj.torrent_data).hexdigest() if obj.torrent_data else None),
-		"ready": Attribute(readOnly=True, get=lambda obj: {
-				"backend": obj.isReady(),
-				"hosts": {
-					"ready": len(obj.hosts),
-					"total": Host.objects.count()
-				}
-			}, schema=schema.StringMap(items={
+		"ready": Attribute(readOnly=True, get=getReadyInfo, schema=schema.StringMap(items={
 				'backend': schema.Bool(),
 				'hosts': schema.StringMap(items={
 					'ready': schema.Int(),
@@ -169,5 +174,3 @@ class Template(BaseDocument, Entity):
 		tmpls = Template.objects.filter(tech=tech).order_by("-preference")
 		InternalError.check(tmpls, code=InternalError.CONFIGURATION_ERROR, message="No template for this type registered", data={"tech": tech})
 		return tmpls[0]
-
-from ..host import Host

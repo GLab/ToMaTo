@@ -15,29 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+from ..generic import *
+from ..db import *
+from ..host.element import HostElement
+from . import Element
 from .. import elements, host
-from ..lib.attributes import Attr #@UnresolvedImport
-from generic import ST_CREATED, ST_PREPARED, ST_STARTED
+from .generic import ST_CREATED, ST_PREPARED, ST_STARTED
 from ..lib.error import UserError
 
-class UDP_Endpoint(elements.Element):
-	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	name_attr = Attr("name", desc="Name", type="str")
-	name = name_attr.attribute()
-	connect_attr = Attr("connect", desc="Connect to", type="str", default="", states=[ST_CREATED, ST_PREPARED])
-	connect = connect_attr.attribute()
-	
-	CUSTOM_ACTIONS = {
-		"stop": [ST_STARTED],
-		"prepare": [ST_CREATED],
-		"destroy": [ST_PREPARED],
-		elements.REMOVE_ACTION: [ST_CREATED],
-	}
-	CUSTOM_ATTRS = {
-		"name": name_attr,
-		"connect": connect_attr,
-	}
+class UDPEndpoint(Element):
+	element = ReferenceField(HostElement)
+	name = StringField()
+	connect = StringField()
+
 	DIRECT_ATTRS_EXCLUDE = ["timeout"]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
@@ -46,28 +36,18 @@ class UDP_Endpoint(elements.Element):
 	HOST_TYPE = "udp_tunnel"
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
-	
-	class Meta:
-		db_table = "tomato_udp_endpoint"
-		app_label = 'tomato'
-			
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
 	
-	def remoteType(self):
-		return "udp_tunnel"
-	
+	@property
 	def mainElement(self):
 		return self.element
 	
-	def modify_name(self, val):
-		self.name = val
-
 	def modify_connect(self, val):
 		self.connect = val
 		if self.element:
@@ -84,13 +64,13 @@ class UDP_Endpoint(elements.Element):
 			if self.state == ST_CREATED:
 				if self.element:
 					self.element.remove()
-				for iface in self.getChildren():
+				for iface in self.children:
 					iface._remove()
 				self.element = None
 			self.save()
 
 	def action_prepare(self):
-		_host = host.select(elementTypes=[self.remoteType()])
+		_host = host.select(elementTypes=[self.HOST_TYPE])
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
 		attrs = self._remoteAttrs()
 		attrs.update({
@@ -110,22 +90,28 @@ class UDP_Endpoint(elements.Element):
 		if self.element:
 			self.element.action("stop")
 		self.setState(ST_PREPARED, True)
-
-	def upcast(self):
-		return self
+		self.triggerConnectionStop()
 
 	def after_start(self):
 		self.triggerConnectionStart()
-		
-	def after_stop(self):
-		self.triggerConnectionStop()
 
+	@property
 	def readyToConnect(self):
 		return self.state == ST_STARTED
 
-	def info(self):
-		info = elements.Element.info(self)
-		info["attrs"]["connect"] = self.connect
-		return info
-	
-elements.TYPES[UDP_Endpoint.TYPE] = UDP_Endpoint
+	ATTRIBUTES = Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"name": Attribute(field=name),
+		"connect": StatefulAttribute(field=connect, set=modify_connect, writableStates=[ST_CREATED, ST_PREPARED])
+	})
+
+	ACTIONS = Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element._checkRemove, allowedStates=[ST_CREATED]),
+		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
+		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		"destroy": StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+	})
+
+
+elements.TYPES[UDPEndpoint.TYPE] = UDPEndpoint

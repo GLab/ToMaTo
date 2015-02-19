@@ -42,11 +42,11 @@ class Profile(BaseDocument, Entity):
 	ACTIONS = {}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
-		"name": Attribute(field="name", schema=schema.Identifier()),
-		"tech": Attribute(field="tech", schema=schema.String(options=TECHS)),
-		"preference": Attribute(field="preference", schema=schema.Int(minValue=0)),
-		"label": Attribute(field="label", schema=schema.String()),
-		"restricted": Attribute(field="restricted", schema=schema.Bool())
+		"name": Attribute(field=name, schema=schema.Identifier()),
+		"tech": Attribute(field=tech, schema=schema.String(options=TECHS)),
+		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
+		"label": Attribute(field=label, schema=schema.String()),
+		"restricted": Attribute(field=restricted, schema=schema.Bool())
 	}
 
 	def init(self, attrs):

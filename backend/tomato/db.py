@@ -21,7 +21,8 @@ class ExtDocument(object):
 	DoesNotExist = _DummyDoesNotExist
 	MultipleObjectsReturned = _DummyMultipleObjectsReturned
 	id = 1
-	del objects, DoesNotExist, MultipleObjectsReturned, id
+	save = None
+	del objects, DoesNotExist, MultipleObjectsReturned, id, save
 
 	def getFieldId(self, field):
 		# noinspection PyUnresolvedReferences

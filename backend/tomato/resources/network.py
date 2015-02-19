@@ -17,7 +17,7 @@
 
 from ..db import *
 from ..generic import *
-from .. import host
+from ..host import Host
 from ..lib.error import UserError
 
 class Network(BaseDocument, Entity):
@@ -59,7 +59,7 @@ class NetworkInstance(BaseDocument, Entity):
 	:type network: Network
 	:type host: Host
 	"""
-	from host import Host
+	from ..host import Host
 	network = ReferenceField(Network, required=True)
 	host = ReferenceField(Host, required=True)
 	bridge = StringField(required=True)
@@ -76,7 +76,7 @@ class NetworkInstance(BaseDocument, Entity):
 		"id": IdAttribute(),
 		"network": Attribute(set=lambda obj, val: obj.modify_network(val), get=lambda obj: obj.network.kind),
 		"host": Attribute(set=lambda obj, val: obj.modify_host(val), get=lambda obj: obj.host.name),
-		"bridge": Attribute(field="bridge", schema=schema.Identifier(strict=True))
+		"bridge": Attribute(field=bridge, schema=schema.Identifier(strict=True))
 	}
 
 	def init(self, attrs):
@@ -97,7 +97,7 @@ class NetworkInstance(BaseDocument, Entity):
 		self.network = net
 
 	def modify_host(self, val):
-		h = host.get(name=val)
+		h = Host.get(name=val)
 		UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host does not exist", data={"host": val})
 		self.host = h
 

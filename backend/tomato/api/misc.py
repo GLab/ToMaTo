@@ -59,7 +59,7 @@ def statistics():
 	resources['diskspace'] = 0
 	resources['load'] = 0
 	resources['availability'] = 0
-	for h in host.getAll():
+	for h in Host.getAll():
 		resources['hosts'] += 1
 		try:
 			r = h.hostInfo['resources']
@@ -106,6 +106,6 @@ def task_execute(id):
 	UserError.check(currentUser().hasFlag(auth.Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
 	return scheduler.executeTask(id, force=True)
 
-from django.db import models
-from .. import misc, config, link, currentUser, host, topology, auth, elements, connections, scheduler
+from .. import misc, config, link, currentUser, topology, auth, elements, connections, scheduler
+from ..host import Host
 from ..lib.error import UserError

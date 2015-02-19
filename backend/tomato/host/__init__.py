@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# ToMaTo (Topology management software) 
+# ToMaTo (Topology management software)
 # Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,15 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .db import *
-from .generic import *
-from . import config, currentUser, starttime, scheduler
-from accounting import UsageStatistics
-from lib import rpc, util, logging, error
-from lib.cache import cached
-from lib.error import TransportError, InternalError, UserError, Error
-from .lib import anyjson as json
-from dumpmanager import DumpSource
+from ..db import *
+from ..generic import *
+from .. import config, currentUser, starttime, scheduler
+from ..accounting import UsageStatistics
+from ..lib import rpc, util, logging, error
+from ..lib.cache import cached
+from ..lib.error import TransportError, InternalError, UserError, Error
+from ..lib import anyjson as json
+from ..dumpmanager import DumpSource
 import time, hashlib, threading, datetime, zlib, base64, sys
 
 class RemoteWrapper:
@@ -72,212 +72,17 @@ def stopCaching():
 	global _caching
 	_caching = False
 
-
-class Organization(BaseDocument):
-	name = StringField(unique=True, required=True)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
-	label = StringField(required=True)
-	homepageUrl = URLField(db_field='homepage_url')
-	imageUrl = URLField(db_field='image_url')
-	description = StringField()
-	meta = {
-		'ordering': ['name'],
-		'indexes': [
-			'name'
-		]
-	}
-	@property
-	def sites(self):
-		return Site.objects(organization=self)
-	@property
-	def users(self):
-		from .auth import User
-		return User.objects(organization=self)
-
-	def init(self, attrs):
-		self.totalUsage = UsageStatistics().save()
-		self.modify(attrs)
-
-	def checkPermissions(self):
-		user = currentUser()
-		if user.hasFlag(Flags.GlobalAdmin):
-			return True
-		if user.hasFlag(Flags.OrgaAdmin) and user.organization == self:
-			return True
-		return False
-
-	def modify(self, attrs):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		logging.logMessage("modify", category="organization", name=self.name, attrs=attrs)
-		for key, value in attrs.iteritems():
-			if key == "description":
-				self.description = value
-			elif key == "homepage_url":
-				self.homepage_url = value
-			elif key == "image_url":
-				self.image_url = value
-			elif key == "description_text":
-				self.description_text = value
-			else:
-				raise UserError(code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unknown organization attribute",
-					data={"attribute": key})
-		self.save()
-
-	def remove(self):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		UserError.check(not self.sites, code=UserError.NOT_EMPTY, message="Organization still has sites")
-		UserError.check(not self.users, code=UserError.NOT_EMPTY, message="Organization still has users")
-		logging.logMessage("remove", category="organization", name=self.name)
-		self.totalUsage.remove()
-		self.delete()
-
-	def updateUsage(self):
-		self.totalUsage.updateFrom([user.totalUsage for user in self.users])
-
-	def info(self):
-		return {
-			"name": self.name,
-			"description": self.description,
-			"homepage_url": self.homepage_url,
-			"image_url": self.image_url,
-			"description_text": self.description_text
-		}
-
-	def __str__(self):
-		return self.name
-
-	def __repr__(self):
-		return "Organization(%s)" % self.name
-
-
-def getOrganization(name, **kwargs):
-	try:
-		return Organization.objects.get(name=name, **kwargs)
-	except Organization.DoesNotExist:
-		return None
-
-
-def getAllOrganizations(**kwargs):
-	return list(Organization.objects(**kwargs))
-
-
-def createOrganization(name, description=""):
-	UserError.check(currentUser().hasFlag(Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
-	logging.logMessage("create", category="site", name=name, description=description)
-	organization = Organization(name=name)
-	organization.save()
-	organization.init({"description": description})
-	return organization
-
-
-class Site(BaseDocument):
-	name = StringField(unique=True, required=True)
-	organization = ReferenceField(Organization, required=True)
-	label = StringField(required=True)
-	location = StringField()
-	geolocation = GeoPointField()
-	description = StringField()
-	meta = {
-		'ordering': ['organization', 'name'],
-		'indexes': [
-			'organization', 'name'
-		]
-	}
-	@property
-	def hosts(self):
-		return Host.objects(site=self)
-
-	def init(self, attrs):
-		self.modify(attrs)
-
-	def checkPermissions(self):
-		user = currentUser()
-		if user.hasFlag(Flags.GlobalHostManager):
-			return True
-		if user.hasFlag(Flags.OrgaHostManager) and user.organization == self.organization:
-			return True
-		return False
-
-	def modify(self, attrs):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		logging.logMessage("modify", category="site", name=self.name, attrs=attrs)
-		for key, value in attrs.iteritems():
-			if key == "description":
-				self.label = value
-			elif key == "location":
-				self.location = value
-			elif key == "geolocation":
-				self.geolocation = value
-			elif key == "description_text":
-				self.description = value
-			elif key == "organization":
-				orga = getOrganization(value)
-				UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
-					data={"name": value})
-				self.organization = orga
-			else:
-				raise UserError(code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unknown site attribute",
-					data={"attribute": key})
-		self.save()
-
-	def remove(self):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		UserError.check(not self.hosts.all(), code=UserError.NOT_EMPTY, message="Site still has hosts")
-		logging.logMessage("remove", category="site", name=self.name)
-		self.delete()
-
-	def info(self):
-		return {
-			"name": self.name,
-			"description": self.label,
-			"location": self.location,
-			"geolocation": self.geolocation,
-			"organization": self.organization.name,
-			"description_text": self.description
-		}
-
-	def __str__(self):
-		return self.name
-
-	def __repr__(self):
-		return "Site(%s)" % self.name
-
-
-def getSite(name, **kwargs):
-	try:
-		return Site.objects.get(name=name, **kwargs)
-	except Site.DoesNotExist:
-		return None
-
-
-def getAllSites(**kwargs):
-	return list(Site.objects(**kwargs))
-
-
-def createSite(name, organization, description=""):
-	orga = getOrganization(organization)
-	UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
-		data={"name": organization})
-	user = currentUser()
-	UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == orga,
-		code=UserError.DENIED, message="Not enough permissions")
-	logging.logMessage("create", category="site", name=name, description=description)
-	site = Site(name=name, organization=orga)
-	site.save()
-	site.init({"description": description})
-	return site
-
-
 class Host(DumpSource, BaseDocument, Entity):
 	"""
 	:type totalUsage: UsageStatistics
-	:type site: Site
+	:type site: host.site.Site
 	:type templates: list of Template
 	"""
-	from .resources.template import Template
+	from ..resources.template import Template
 	name = StringField(required=True, unique=True)
 	address = StringField(required=True)
 	rpcurl = StringField(required=True, unique=True)
+	from .site import Site
 	site = ReferenceField(Site, required=True)
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
 	elementTypes = DictField(db_field='element_types', required=True)
@@ -301,14 +106,20 @@ class Host(DumpSource, BaseDocument, Entity):
 			'name', 'site'
 		]
 	}
+
 	@property
 	def elements(self):
+		from .element import HostElement
 		return HostElement.objects(host=self)
+
 	@property
 	def connections(self):
+		from .connection import HostConnection
 		return HostConnection.objects(host=self)
+
 	@property
 	def networks(self):
+		from ..resources.network import NetworkInstance
 		return NetworkInstance.objects(host=self)
 
 	ACTIONS = {}
@@ -317,8 +128,8 @@ class Host(DumpSource, BaseDocument, Entity):
 		"address": Attribute(field="address", schema=schema.String(regex="\d+\.\d+.\d+.\d+")),
 		"rpcurl": Attribute(field="rpcurl", schema=schema.String(regex="\w+://\w+:\d+")),
 		"site": Attribute(
-			check=lambda obj, val: getSite(val),
-			set=lambda obj, val: setattr(obj, "site", getSite(val)),
+			check=lambda obj, val: Site.get(val),
+			set=lambda obj, val: setattr(obj, "site", Site.get(val)),
 			get=lambda obj: obj.site.name,
 			schema=schema.Identifier()
 		),
@@ -404,6 +215,7 @@ class Host(DumpSource, BaseDocument, Entity):
 		except error.Error:
 			self.incrementErrors()
 			raise
+		from .element import HostElement
 		hel = HostElement(host=self, num=el["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hel.usageStatistics = UsageStatistics.objects.create()
 		hel.objectInfo = el
@@ -429,6 +241,7 @@ class Host(DumpSource, BaseDocument, Entity):
 		except error.Error:
 			self.incrementErrors()
 			raise
+		from .connection import HostConnection
 		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement,
 							  topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
@@ -453,11 +266,10 @@ class Host(DumpSource, BaseDocument, Entity):
 			return
 		if not self.enabled:
 			return
-		from models import TemplateOnHost
 
 		logging.logMessage("resource_sync begin", category="host", name=self.name)
 		# TODO: implement for other resources
-		from . import resources
+		from .. import resources
 
 		hostNets = {}
 		for net in self.getProxy().resource_list("network"):
@@ -740,6 +552,29 @@ class Host(DumpSource, BaseDocument, Entity):
 	def dump_get_last_fetch(self):
 		return self.dump_last_fetch
 
+	@classmethod
+	def get(cls, **kwargs):
+		try:
+			return Host.objects.get(**kwargs)
+		except Host.DoesNotExist:
+			return None
+
+	@classmethod
+	def getAll(cls, **kwargs):
+		return list(Host.objects.filter(**kwargs))
+
+	@classmethod
+	def create(cls, name, site, attrs=None):
+		if not attrs: attrs = {}
+		user = currentUser()
+		UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
+			code=UserError.DENIED, message="Not enough permissions")
+		host = Host(name=name, site=site)
+		host.init(attrs)
+		host.save()
+		logging.logMessage("create", category="host", info=host.info())
+		return host
+
 
 class HostObject(BaseDocument):
 	"""
@@ -760,266 +595,6 @@ class HostObject(BaseDocument):
 		"abstract": True
 	}
 
-class HostElement(HostObject):
-	connection = ReferenceField('HostConnection')
-	parent = ReferenceField('self')
-	meta = {
-		'collection': 'host_element',
-		'indexes': [
-			('host', 'num')
-		]
-	}
-
-	def createChild(self, type_, attrs=None, ownerConnection=None, ownerElement=None):
-		if not attrs: attrs = {}
-		return self.host.createElement(type_, self, attrs, ownerConnection=ownerConnection, ownerElement=ownerElement)
-
-	def connectWith(self, hel, type_=None, attrs=None, ownerConnection=None, ownerElement=None):
-		if not attrs: attrs = {}
-		return self.host.createConnection(self, hel, type_, attrs, ownerConnection=ownerConnection,
-										  ownerElement=ownerElement)
-
-	def modify(self, attrs):
-		logging.logMessage("element_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
-		try:
-			self.objectInfo = self.host.getProxy().element_modify(self.num, attrs)
-		except error.UserError, err:
-			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
-				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
-				self.remove()
-			if err.code == error.UserError.INVALID_STATE:
-				self.updateInfo()
-			raise
-		except:
-			self.host.incrementErrors()
-			raise
-		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.objectInfo)
-		self.save()
-
-	def action(self, action, params=None):
-		if not params: params = {}
-		logging.logMessage("element_action begin", category="host", host=self.host.name, id=self.num, action=action,
-						   params=params)
-		try:
-			res = self.host.getProxy().element_action(self.num, action, params)
-		except error.UserError, err:
-			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
-				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
-				self.remove()
-			if err.code == error.UserError.INVALID_STATE:
-				self.updateInfo()
-			raise
-		except:
-			self.host.incrementErrors()
-			raise
-		logging.logMessage("element_action end", category="host", host=self.host.name, id=self.num, action=action,
-						   params=params, result=res)
-		self.updateInfo()
-		return res
-
-	def remove(self):
-		try:
-			logging.logMessage("element_remove", category="host", host=self.host.name, id=self.num)
-			self.host.getProxy().element_remove(self.num)
-		except error.UserError, err:
-			if err.code != error.UserError.ENTITY_DOES_NOT_EXIST:
-				self.host.incrementErrors()
-		except:
-			self.host.incrementErrors()
-		self.usageStatistics.delete()
-		self.delete()
-
-	def getConnection(self):
-		return self.host.getConnection(self.connection) if self.connection else None
-
-	def updateInfo(self):
-		try:
-			self.objectInfo = self.host.getProxy().element_info(self.num)
-		except error.UserError, err:
-			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
-				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
-				self.remove()
-			raise
-		except:
-			self.host.incrementErrors()
-			raise
-		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.objectInfo)
-		self.save()
-
-	def info(self):
-		return self.objectInfo
-
-	def getAttrs(self):
-		return self.objectInfo["attrs"]
-
-	def getAllowedActions(self):
-		try:
-			caps = self.host.getElementCapabilities(self.type)["actions"]
-			res = []
-			for key, states in caps.iteritems():
-				if self.state in states:
-					res.append(key)
-			return res
-		except:
-			self.host.incrementErrors()
-			logging.logException(host=self.host.name)
-			return []
-
-	def getAllowedAttributes(self):
-		caps = self.host.getElementCapabilities(self.type)["attrs"]
-		ret = dict(filter(lambda attr: not "states" in attr[1] or self.state in attr[1]["states"], caps.iteritems()))
-		return ret
-
-	def updateAccountingData(self, data):
-		self.usageStatistics.importRecords(data)
-		self.usageStatistics.removeOld()
-
-	def synchronize(self):
-		try:
-			if not self.topologyElement and not self.topologyConnection:
-				self.remove()
-				return
-			self.modify({"timeout": time.time() + 14 * 24 * 60 * 60})
-		except error.UserError, err:
-			if err.code != error.UserError.UNSUPPORTED_ATTRIBUTE:
-				raise
-		except:
-			logging.logException(host=self.host.address)
-
-
-class HostConnection(HostObject):
-	elementFrom = ReferenceField(HostElement, db_field='element_from', required=True)
-	elementTo = ReferenceField(HostElement, db_field='element_to', required=True)
-	meta = {
-		'collection': 'host_connection',
-		'indexes': [
-			('host', 'num')
-		]
-	}
-
-	def modify(self, attrs):
-		logging.logMessage("connection_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
-		try:
-			self.objectInfo = self.host.getProxy().connection_modify(self.num, attrs)
-		except error.UserError, err:
-			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
-				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
-				self.remove()
-			if err.code == error.UserError.INVALID_STATE:
-				self.updateInfo()
-			raise
-		except:
-			self.host.incrementErrors()
-			raise
-		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.objectInfo)
-		self.save()
-
-	def action(self, action, params=None):
-		if not params: params = {}
-		logging.logMessage("connection_action begin", category="host", host=self.host.name, id=self.num, action=action,
-						   params=params)
-		try:
-			res = self.host.getProxy().connection_action(self.num, action, params)
-		except error.UserError, err:
-			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
-				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
-				self.remove()
-			if err.code == error.UserError.INVALID_STATE:
-				self.updateInfo()
-			raise
-		except:
-			self.host.incrementErrors()
-			raise
-		logging.logMessage("connection_action begin", category="host", host=self.host.name, id=self.num, action=action,
-						   params=params, result=res)
-		self.updateInfo()
-		return res
-
-	def remove(self):
-		try:
-			logging.logMessage("connection_remove", category="host", host=self.host.name, id=self.num)
-			self.host.getProxy().connection_remove(self.num)
-		except error.UserError, err:
-			if err.code != error.UserError.ENTITY_DOES_NOT_EXIST:
-				self.host.incrementErrors()
-		except:
-			self.host.incrementErrors()
-		self.usageStatistics.delete()
-		self.delete()
-
-	def getElements(self):
-		return [self.elementFrom, self.elementTo]
-
-	def updateInfo(self):
-		try:
-			self.objectInfo = self.host.getProxy().connection_info(self.num)
-			self.state = self.objectInfo["state"]
-		except error.UserError, err:
-			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
-				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
-				self.remove()
-			raise
-		except:
-			self.host.incrementErrors()
-			raise
-		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.objectInfo)
-		self.save()
-
-	def info(self):
-		return self.objectInfo
-
-	def getAttrs(self):
-		return self.objectInfo["attrs"]
-
-	def getAllowedActions(self):
-		caps = self.host.getConnectionCapabilities(self.type)["actions"]
-		res = []
-		for key, states in caps.iteritems():
-			if self.state in states:
-				res.append(key)
-		return res
-
-	def getAllowedAttributes(self):
-		caps = self.host.getConnectionCapabilities(self.type)["attrs"]
-		return dict(filter(lambda attr: not "states" in attr[1] or self.state in attr[1]["states"], caps.iteritems()))
-
-	def updateAccountingData(self, data):
-		self.usageStatistics.importRecords(data)
-		self.usageStatistics.removeOld()
-
-	def synchronize(self):
-		try:
-			if not self.topologyElement and not self.topologyConnection:
-				self.remove()
-				return
-			self.updateInfo()
-		except:
-			logging.logException(host=self.host.name)
-
-
-def get(**kwargs):
-	try:
-		return Host.objects.get(**kwargs)
-	except Host.DoesNotExist:
-		return None
-
-
-def getAll(**kwargs):
-	return list(Host.objects.filter(**kwargs))
-
-
-def create(name, site, attrs=None):
-	if not attrs: attrs = {}
-	user = currentUser()
-	UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
-		code=UserError.DENIED, message="Not enough permissions")
-	host = Host(name=name, site=site)
-	host.init(attrs)
-	host.save()
-	logging.logMessage("create", category="host", info=host.info())
-	return host
-
-
 def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None):
 	# STEP 1: limit host choices to what is possible
 	if not sitePrefs: sitePrefs = {}
@@ -1027,7 +602,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 	if not networkKinds: networkKinds = []
 	if not connectionTypes: connectionTypes = []
 	if not elementTypes: elementTypes = []
-	all_ = getAll(site=site) if site else getAll()
+	all_ = Host.getAll(site=site) if site else Host.getAll()
 	hosts = []
 	for host in all_:
 		if host.problems():
@@ -1078,7 +653,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 @cached(timeout=3600, autoupdate=True)
 def getElementTypes():
 	types = set()
-	for h in getAll():
+	for h in Host.getAll():
 		types += set(h.elementTypes.keys())
 	return types
 
@@ -1087,7 +662,7 @@ def getElementTypes():
 def getElementCapabilities(type_):
 	# FIXME: merge capabilities
 	caps = {}
-	for h in getAll():
+	for h in Host.getAll():
 		hcaps = h.getElementCapabilities(type_)
 		if len(repr(hcaps)) > len(repr(caps)):
 			caps = hcaps
@@ -1097,7 +672,7 @@ def getElementCapabilities(type_):
 @cached(timeout=3600, autoupdate=True)
 def getConnectionTypes():
 	types = set()
-	for h in getAll():
+	for h in Host.getAll():
 		types += set(h.connectionTypes.keys())
 	return types
 
@@ -1106,7 +681,7 @@ def getConnectionTypes():
 def getConnectionCapabilities(type_):
 	# FIXME: merge capabilities
 	caps = {}
-	for h in getAll():
+	for h in Host.getAll():
 		hcaps = h.getConnectionCapabilities(type_)
 		if len(repr(hcaps)) > len(repr(caps)):
 			caps = hcaps
@@ -1142,22 +717,23 @@ def synchronizeHost(host):
 
 @util.wrap_task
 def synchronize():
-	for host in getAll():
+	for host in Host.getAll():
 		if host.enabled:
 			scheduler.scheduleOnce(0, synchronizeHost, host)  # @UndefinedVariable
 
 
 @util.wrap_task
 def synchronizeComponents():
+	from .element import HostElement
 	for hel in HostElement.objects.all():
 		hel.synchronize()
+	from .connection import HostConnection
 	for hcon in HostConnection.objects.all():
 		hcon.synchronize()
 
 
-from .resources.network import NetworkInstance
-from .auth import Flags
-
+from ..auth import Flags
+from .site import Site
 
 scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize)  # @UndefinedVariable
 scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable

@@ -16,18 +16,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.cache import cached #@UnresolvedImport
+from .api_helpers import apiSafe
 
+@apiSafe
 def capabilities_element(type, host=None): #@ReservedAssignment
 	typeClass = elements.TYPES.get(type)
 	UserError.check(typeClass, code=UserError.UNSUPPORTED_TYPE, message="No such element type", data={"type": type})
 	if host:
-		host = modhost.get(name=host)
+		host = Host.get(name=host)
 		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
 	return typeClass.getCapabilities(host)
-	
+
+@apiSafe
 def capabilities_connection(type, host=None): #@ReservedAssignment
 	if host:
-		host = modhost.get(name=host)
+		host = Host.get(name=host)
 		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
 	return connections.Connection.getCapabilities(type, host)
 
@@ -39,5 +42,5 @@ def capabilities():
 	}
 
 from .. import elements, connections
-from .. import host as modhost
+from ..host import Host
 from ..lib.error import UserError

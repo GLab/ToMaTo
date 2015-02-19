@@ -1,4 +1,4 @@
-import threading
+import threading, types
 from .lib.error import UserError as Error
 from .lib import schema
 
@@ -51,12 +51,12 @@ class Attribute:
 		if self.setFn:
 			self.setFn(obj, value)
 		elif self.field:
-			setattr(obj, self.field, value)
+			self.field.__set__(value, obj, obj.__class__)
 	def get(self, obj):
 		if self.getFn:
 			return self.getFn(obj)
 		elif self.field:
-			return getattr(obj, self.field)
+			return self.field.__get__(obj, obj.__class__)
 	def info(self):
 		return {
 			"read_only": self.readOnly,
@@ -145,13 +145,13 @@ class Entity(object):
 		self.action(self.REMOVE_ACTION, params)
 
 	def info(self):
-		return {key: attr.get(self) for key, attr in self.ATTRIBUTES}
+		return {key: attr.get(self) for key, attr in self.ATTRIBUTES.items()}
 
 	@classmethod
 	def capabilities(cls):
 		return {
-			"actions": {key: action.info() for key, action in cls.ACTIONS},
-			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES},
+			"actions": {key: action.info() for key, action in cls.ACTIONS.items()},
+			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items()},
 		}
 
 class StatefulAction(Action):
@@ -266,8 +266,8 @@ class StatefulEntity(Entity):
 	@classmethod
 	def capabilities(cls):
 		return {
-			"actions": {key: action.info() for key, action in cls.ACTIONS},
-			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES},
+			"actions": {key: action.info() for key, action in cls.ACTIONS.items()},
+			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items()},
 			"states": cls.STATES,
 			"default_state": cls.DEFAULT_STATE
 		}

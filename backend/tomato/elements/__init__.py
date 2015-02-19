@@ -17,7 +17,6 @@
 
 from ..generic import *
 from ..db import *
-from ..connections import Connection
 from ..auth import Flags
 from ..auth.permissions import Permission, PermissionMixin, Role
 from ..topology import Topology
@@ -42,13 +41,14 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	topology = ReferenceField(Topology, required=True)
 	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
 	parent = GenericReferenceField()
+	from ..connections import Connection
 	connection = ReferenceField(Connection)
 	permissions = ListField(EmbeddedDocumentField(Permission))
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
 	hostElements = ListField(ReferenceField('HostElement'), db_field='host_elements')
 	hostConnections = ListField(ReferenceField('HostConnection'), db_field='host_connections')
 	clientData = DictField(db_field='client_data')
-	directData = DictField(db_field='client_data')
+	directData = DictField(db_field='direct_data')
 	meta = {
 		'allow_inheritance': True,
 		'indexes': [
@@ -74,26 +74,6 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	CAP_CONNECTABLE = False
 
 	TYPE = None
-
-	ACTIONS = {
-		Entity.REMOVE_ACTION: StatefulAction(lambda obj: obj._remove(), check=lambda obj: obj._checkRemove())
-	}
-	ATTRIBUTES = {
-		"id": Attribute(field="id", readOnly=True, schema=schema.Identifier()),
-		"type": Attribute(field="type", readOnly=True, schema=schema.Identifier()),
-		"topology": Attribute(get=lambda obj: obj.topology.id, readOnly=True, schema=schema.Identifier()),
-		"parent": Attribute(get=lambda obj: obj._getFieldId("parent"), readOnly=True, schema=schema.Identifier(null=True)),
-		"state": Attribute(field="state", readOnly=True, schema=schema.Identifier()),
-		"children": Attribute(get=lambda obj: [ch.id for ch in obj.children], readOnly=True, schema=schema.List(items=schema.Identifier())),
-		"connection": Attribute(get=lambda obj: obj._getFieldId("connection"), readOnly=True, schema=schema.Identifier(null=True)),
-		"debug": Attribute(get=lambda obj: {
-			"host_elements": [(o.host.name, o.num) for o in obj.hostElements],
-			"host_connections": [(o.host.name, o.num) for o in obj.hostConnections],
-		}, readOnly=True, schema=schema.StringMap(items={
-			'host_elements': schema.List(items=schema.List(minLength=2, maxLength=2)),
-			'host_connections': schema.List(items=schema.List(minLength=2, maxLength=2))
-		}, required=['host_elements', 'host_connections']))
-	}
 
 	@property
 	def type(self):
@@ -203,7 +183,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		for ch in self.children:
 			ch.checkRemove(recurse=recurse)
 		if self.connection:
-			self.connection.checkRemove()
+			self.connection._checkRemove()
 
 	def setState(self, state, recursive=False):
 		if recursive:
@@ -229,14 +209,16 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	
 	def onChildRemoved(self, child):
 		pass
-			
-	def getConnectableElement(self):
+
+	@property
+	def connectableElement(self):
 		return None
-		
-	def getConnectedElement(self):
+
+	@property
+	def connectedElement(self):
 		if not self.connection:
 			return None
-		els = self.connection.getElements()
+		els = self.connection.elements
 		assert len(els) == 2, "Connection %s has %d elements" % (self, len(els))
 		if self.id == els[0].id:
 			return els[1]
@@ -267,7 +249,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		hostPrefs = {}
 		sitePrefs = {}
 		if self.connection:
-			for el, sha, ssa in self.getConnectedElement().getLocationData():
+			for el, sha, ssa in self.connectedElement.getLocationData():
 				if not el.host:
 					return #can this even happen?
 				hostPrefs[el.host] = hostPrefs.get(el.host, 0.0) + sha + self.SAME_HOST_AFFINITY
@@ -316,11 +298,11 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
 			self.checkRole(Role.user)
 		info = LockedStatefulEntity.info(self)
-		info = {
-		}
 		mel = self.mainElement
 		if mel:
-			info["attrs"].update(mel.attrs["attrs"])
+			info.update(mel.objectInfo)
+		for key, val in self.clientData.items():
+			info["_"+key] = val
 		return info
 
 	def fetchInfo(self):
@@ -334,6 +316,9 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	def __str__(self):
 		return "%s_%d" % (self.type, self.id)
 		
+	@property
+	def readyToConnect(self):
+		return False
 
 	@classmethod
 	def get(cls, id_, **kwargs):
@@ -365,5 +350,44 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		logging.logMessage("create", category="element", id=el.id)
 		logging.logMessage("info", category="element", id=el.id, info=el.info())
 		return el
+
+	@property
+	def host(self):
+		return self.mainElement.host if self.mainElement else None
+
+	@property
+	def host_info(self):
+		host = self.host
+		if not host: return None
+		return {
+			'address': host.address,
+			'problems':	host.problems(),
+			'site':	host.site.name,
+			'fileserver_port': host.hostInfo.get('fileserver_port', None)
+		}
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: StatefulAction(_remove, check=_checkRemove)
+	}
+	ATTRIBUTES = {
+		"id": Attribute(field=id, readOnly=True, schema=schema.Identifier()),
+		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"topology": Attribute(get=lambda obj: obj.topology.id, readOnly=True, schema=schema.Identifier()),
+		"parent": Attribute(get=lambda obj: obj._getFieldId("parent"), readOnly=True, schema=schema.Identifier(null=True)),
+		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
+		"children": Attribute(get=lambda obj: [ch.id for ch in obj.children], readOnly=True, schema=schema.List(items=schema.Identifier())),
+		"connection": Attribute(get=lambda obj: obj._getFieldId("connection"), readOnly=True, schema=schema.Identifier(null=True)),
+		"debug": Attribute(get=lambda obj: {
+			"host_elements": [(o.host.name, o.num) for o in obj.hostElements],
+			"host_connections": [(o.host.name, o.num) for o in obj.hostConnections],
+		}, readOnly=True, schema=schema.StringMap(items={
+			'host_elements': schema.List(items=schema.List(minLength=2, maxLength=2)),
+			'host_connections': schema.List(items=schema.List(minLength=2, maxLength=2))
+		}, required=['host_elements', 'host_connections'])),
+		"host": Attribute(get=lambda self: self.host.name if self.host else None, readOnly=True),
+		"host_info": Attribute(field=host_info, readOnly=True)
+	}
+
+
 
 from .. import currentUser, host

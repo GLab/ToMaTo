@@ -164,7 +164,7 @@ def create_dump(dump, source):
 #First part: fetching dumps from all the sources.
 
 #this class should not be instantiated. There are two subclasses available: one that can connect to a host, and one that connects to this backend.
-class DumpSource:
+class DumpSource(object):
 	#dump_last_fetch = None
 
 	#to be implemented in subclass
@@ -307,7 +307,7 @@ def update_source(source):
 def update_all(async=True):
 	for s in getDumpSources():
 		if async:
-			scheduler.scheduleOnce(update_source, s)
+			scheduler.scheduleOnce(0, update_source, s)
 		else:
 			update_source(s)
 	return len(getDumpSources())

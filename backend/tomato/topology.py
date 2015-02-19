@@ -36,13 +36,14 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 	:type permissions: list of Permission
 	:type totalUsage: UsageStatistics
 	:type site: Site
+	:type clientData: dict
 	"""
 	from .auth.permissions import Permission
 	from .host import Site
 	permissions = ListField(EmbeddedDocumentField(Permission))
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
 	timeout = FloatField(required=True)
-	timeoutStep = IntField(db_field='timeout_step', required=True)
+	timeoutStep = IntField(db_field='timeout_step', required=True, default=TimeoutStep.INITIAL)
 	site = ReferenceField(Site)
 	name = StringField()
 	clientData = DictField(db_field='client_data')
@@ -52,9 +53,12 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 			'name', ('timeout', 'timeoutStep')
 		]
 	}
+	type = 'Topology'
+
 	@property
 	def elements(self):
 		return Element.objects(topology=self)
+
 	@property
 	def connections(self):
 		return Connection.objects(topology=self)
@@ -63,13 +67,12 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 
 	def init(self, owner, attrs=None):
 		if not attrs: attrs = {}
-		self.attrs = {}
 		self.setRole(owner, Role.owner)
 		self.totalUsage = UsageStatistics.objects.create()
 		self.timeout = time.time() + config.TOPOLOGY_TIMEOUT_INITIAL
-		self.timeout_step = TimeoutStep.WARNED #not sending a warning for initial timeout
+		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
 		self.save()
-		self.name = "Topology #%d" % self.id
+		self.name = "Topology #%s" % self.id
 		self.modify(attrs)
 
 	def isBusy(self):
@@ -77,7 +80,16 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 	
 	def setBusy(self, busy):
 		self._busy = busy
-		
+
+	def checkUnknownAttribute(self, key, value):
+		self.checkRole(Role.manager)
+		UserError.check(key.startswith("_"), code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
+
+	def setUnknownAttributes(self, attrs):
+		for key, value in attrs.items():
+			if key.startswith("_"):
+				self.clientData[key[1:]] = value
+
 	def checkModify(self, attr):
 		self.checkRole(Role.manager)
 		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
@@ -116,17 +128,17 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 		UserError.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX or currentUser().hasFlag(Flags.GlobalAdmin),
 			code=UserError.INVALID_VALUE, message="Timeout is greater than the maximum")
 		self.timeout = time.time() + timeout
-		self.timeout_step = TimeoutStep.INITIAL if timeout > config.TOPOLOGY_TIMEOUT_WARNING else TimeoutStep.WARNED
+		self.timeoutStep = TimeoutStep.INITIAL if timeout > config.TOPOLOGY_TIMEOUT_WARNING else TimeoutStep.WARNED
 		
 	def _compoundAction(self, action, stateFilter, typeOrder, typesExclude):
 		# execute action in order
 		for type_ in typeOrder:
-			for el in self.getElements():
+			for el in self.elements:
 				if el.type != type_ or not stateFilter(el.state) or el.type in typesExclude:
 					continue
 				el.action(action)
 		# execute action on rest
-		for el in self.getElements():
+		for el in self.elements:
 			if not stateFilter(el.state) or el.type in typesExclude or el.type in typeOrder:
 				continue
 			el.action(action)
@@ -138,9 +150,9 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 			message="Cannot remove topology with elements")
 		UserError.check(recurse or self.connections.exists(), code=UserError.NOT_EMPTY,
 			message="Cannot remove topology with connections")
-		for el in self.getElements():
+		for el in self.elements:
 			el.checkRemove(recurse=recurse)
-		for con in self.getConnections():
+		for con in self.connections:
 			con.checkRemove()
 
 	def remove(self, recurse=True):
@@ -150,17 +162,8 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 		self.totalUsage.remove()
 		self.delete()
 
-	def getElements(self):
-		return [el.upcast() for el in self.elements.all()]
-
-	def getConnections(self):
-		return [con.upcast() for con in self.connections.all()]
-
-	def modify_name(self, val):
-		self.name = val
-
 	def modify_site(self, val):
-		self.site = host.getSite(val)
+		self.site = Site.get(val)
 
 	def modifyRole(self, user, role):
 		UserError.check(role in Role.RANKING or not role, code=UserError.INVALID_VALUE, message="Invalid role",
@@ -188,20 +191,22 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 			self.checkRole(Role.user)
 		info = Entity.info(self)
 		if full:
-			elements = [el.info() for el in self.getElements()]
-			connections = [con.info() for con in self.getConnections()]
+			elements = [el.info() for el in self.elements]
+			connections = [con.info() for con in self.connections]
 		else:
-			elements = [el.id for el in self.elements.only('id')]
-			connections = [con.id for con in self.connections.only('id')]
+			elements = [str(el.id) for el in self.elements.only('id')]
+			connections = [str(con.id) for con in self.connections.only('id')]
 		info.update(elements=elements, connections=connections)
+		for key, val in self.clientData.items():
+			info["_"+key] = val
 		return info
 
 	def updateUsage(self):
-		self.totalUsage.updateFrom([el.totalUsage for el in self.getElements()]
-								 + [con.totalUsage for con in self.getConnections()])
+		self.totalUsage.updateFrom([el.totalUsage for el in self.elements]
+								 + [con.totalUsage for con in self.connections])
 
 	def __str__(self):
-		return "%s [#%d]" % (self.name, self.id)
+		return "%s [#%s]" % (self.name, self.id)
 
 	ACTIONS = {
 		"start": Action(action_start, check=lambda self: self.checkAction('start'), paramSchema=schema.Constant({})),
@@ -217,11 +222,12 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 			schema=schema.StringMap(additional=True)),
 		"usage": Attribute(readOnly=True, get=lambda self: self.totalUsage.latest, schema=schema.StringMap(additional=True, null=True)),
 		"site": Attribute(get=lambda self: self.site.name if self.site else None,
-			set=lambda self, val: setattr(self, 'site', host.getSite(val)), schema=schema.Identifier()),
+			set=modify_site, schema=schema.Identifier()),
 		"elements": Attribute(readOnly=True, schema=schema.List()),
 		"connections": Attribute(readOnly=True, schema=schema.List()),
-		"timeout": Attribute(field="timeout", readOnly=True, schema=schema.Number()),
-		"state_max": Attribute(field="maxState", readOnly=True, schema=schema.String())
+		"timeout": Attribute(field=timeout, readOnly=True, schema=schema.Number()),
+		"state_max": Attribute(field=maxState, readOnly=True, schema=schema.String()),
+		"name": Attribute(field=name, schema=schema.String())
 	}
 
 
@@ -240,8 +246,8 @@ def create(attrs=None):
 		message="User can not create new topologies")
 	top = Topology()
 	top.init(owner=currentUser(), attrs=attrs)
-	logging.logMessage("create", category="topology", id=top.id)	
-	logging.logMessage("info", category="topology", id=top.id, info=top.info())	
+	logging.logMessage("create", category="topology", id=str(top.id))
+	logging.logMessage("info", category="topology", id=str(top.id), info=top.info())
 	return top
 	
 	
@@ -271,4 +277,4 @@ from .connections import Connection
 from .auth import Flags
 from .auth.permissions import Permission
 from . import currentUser, config, setCurrentUser
-from . import host
+from .host.site import Site

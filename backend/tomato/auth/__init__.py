@@ -129,7 +129,7 @@ class User(BaseDocument):
 	:type flags: list
 	:type clientData: dict
 	"""
-	from ..host import Organization
+	from ..host.organization import Organization
 	from ..accounting import Quota, UsageStatistics
 	name = StringField(required=True, unique_with='origin')
 	origin = StringField(required=True)
@@ -151,16 +151,17 @@ class User(BaseDocument):
 	}
 	@property
 	def topologies(self):
+		from ..topology import Topology
 		return Topology.objects(permissions__user=self)
 
 	@classmethod	
 	def create(cls, name, organization, **kwargs):
-		from ..host import getOrganization
-		orga = getOrganization(organization)
+		from ..host.organization import Organization
+		orga = Organization.get(organization)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": organization})
 		user = User(name=name, organization=orga)
 		user.attrs = kwargs
-		user.last_login = time.time()
+		user.lastLogin = time.time()
 		return user
 
 	def checkPassword(self, password):
@@ -188,7 +189,7 @@ class User(BaseDocument):
 	
 	def loggedIn(self):
 		logging.logMessage("successful login", category="auth", user=self.name, origin=self.origin)
-		self.last_login = time.time()
+		self.lastLogin = time.time()
 		self.save()
 	
 	def hasFlag(self, flag):
@@ -217,8 +218,8 @@ class User(BaseDocument):
 			self.storePassword(password)
 
 	def modify_organization(self, value):
-		from ..host import getOrganization
-		orga = getOrganization(value)
+		from ..host.organization import Organization
+		orga = Organization.get(value)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": value})
 		self.organization=orga
 		
@@ -274,7 +275,7 @@ class User(BaseDocument):
 			"id": "%s@%s" % (self.name, self.origin),
 			"realname": self.realname,
 			"email": self.email,
-			"flags": self.flags,
+			"flags": list(self.flags),
 		}
 		info.update({"_"+k: v for k, v in self.clientData.items()})
 		if not includeInfos:
@@ -470,5 +471,3 @@ def init():
 		print >>sys.stderr, " - %s (%s)" % (conf["name"], conf["provider"])
 	if not providers:
 		print >>sys.stderr, "Warning: No authentication modules configured."
-
-from ..topology import Topology

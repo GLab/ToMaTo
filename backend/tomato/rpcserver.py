@@ -21,13 +21,12 @@ import sys
 
 import config
 from . import currentUser, api, login, dump
-from .lib import db, util, rpc, logging #@UnresolvedImport
+from .lib import util, rpc, logging #@UnresolvedImport
 from .lib.error import Error, UserError, InternalError
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name if currentUser() else None)
 
-@db.commit_after
 def handleError(error, function, args, kwargs):
 	if not isinstance(error, Error):
 		if isinstance(error, TypeError) and function.__name__ in str(error):
@@ -39,7 +38,6 @@ def handleError(error, function, args, kwargs):
 		dump.dumpException()
 	return error
 
-@db.commit_after
 def afterCall(*args, **kwargs):
 	pass
 
@@ -56,6 +54,9 @@ def wrapError(error, func, args, kwargs):
 	if isinstance(error, rpc.Fault):
 		return error
 	assert isinstance(error, Error)
+	import traceback
+	error.data['trace'] = traceback.format_exc()
+	print error
 	if error.code == UserError.NOT_LOGGED_IN:
 		return rpc.xmlrpc.ErrorUnauthorized()
 	return rpc.Fault(999, error.rawstr)

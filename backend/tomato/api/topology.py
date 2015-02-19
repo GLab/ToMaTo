@@ -18,7 +18,6 @@
 from ..auth import permissions
 
 def _getTopology(id_):
-	id_ = int(id_)
 	top = topology.get(id_)
 	UserError.check(top, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"id": id_})
 	return top
@@ -195,11 +194,11 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	if organization:
 		organization = _getOrganization(organization)
-		tops = topology.getAll(permissions__entries__user__organization=organization, permissions__entries__role="owner")		
+		tops = topology.getAll(permissions__user__organization=organization, permissions__role="owner")
 	elif showAll:
 		tops = topology.getAll()
 	else:
-		tops = topology.getAll(permissions__entries__user=currentUser())
+		tops = topology.getAll(permissions__user=currentUser())
 	return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
 
 def topology_permission(id, user, role): #@ReservedAssignment

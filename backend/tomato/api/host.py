@@ -19,17 +19,17 @@ from api_helpers import checkauth
 from ..lib.cache import cached #@UnresolvedImport
 
 def _getOrganization(name):
-	o = host.getOrganization(name)
+	o = Organization.get(name)
 	UserError.check(o, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": name})
 	return o
 
 def _getSite(name):
-	s = host.getSite(name)
+	s = Site.get(name)
 	UserError.check(s, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist", data={"name": name})
 	return s
 
 def _getHost(name):
-	h = host.get(name=name)
+	h = Host.get(name=name)
 	UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"name": name})
 	return h
 
@@ -38,14 +38,14 @@ def organization_list():
 	"""
 	undocumented
 	"""
-	return [o.info() for o in host.getAllOrganizations()]
+	return [o.info() for o in Organization.objects.all()]
 
 @checkauth
 def organization_create(name, description=""):
 	"""
 	undocumented
 	"""
-	o = host.createOrganization(name, description)
+	o = Organization.create(name, description)
 	organization_list.invalidate()
 	return o.info()
 
@@ -87,9 +87,9 @@ def site_list(organization=None):
 	"""
 	if organization:
 		organization = _getOrganization(organization)
-		sites = host.getAllSites(organization=organization)
+		sites = Site.objects(organization=organization)
 	else:
-		sites = host.getAllSites()
+		sites = Site.objects
 	return [s.info() for s in sites]
 
 @checkauth
@@ -97,7 +97,7 @@ def site_create(name, organization, description=""):
 	"""
 	undocumented
 	"""
-	s = host.createSite(name, organization, description)
+	s = Site.create(name, organization, description)
 	site_list.invalidate()
 	return s.info()
 
@@ -133,11 +133,11 @@ def host_list(site=None, organization=None):
 	undocumented
 	"""
 	if site:
-		hosts = host.getAll(site__name=site)
+		hosts = Host.objects(site__name=site)
 	elif organization:
-		hosts = host.getAll(site__organization__name=organization)
+		hosts = Host.objects(site__organization__name=organization)
 	else:
-		hosts = host.getAll()
+		hosts = Host.objects
 	return [h.info() for h in hosts]
 
 @checkauth
@@ -147,7 +147,7 @@ def host_create(name, site, attrs=None):
 	"""
 	if not attrs: attrs = {}
 	site = _getSite(site)
-	h = host.create(name, site, attrs)
+	h = Host.create(name, site, attrs)
 	host_list.invalidate()
 	return h.info()
 
@@ -191,5 +191,6 @@ def host_usage(name): #@ReservedAssignment
 	h = _getHost(name)
 	return h.totalUsage.info()	
 
-from .. import host
+from ..host import Host, Site
+from ..host.organization import Organization
 from ..lib.error import UserError
