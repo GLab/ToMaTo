@@ -275,7 +275,7 @@ class BackendDumpSource(DumpSource):
     def dump_fetch_with_data(self, dump_id, keep_compressed=True):
         import dump
 
-        d = dump.get(dump_id, include_data=True, compress_data=True)
+        d = dump.get(dump_id, include_data=True, compress_data=True, dump_on_error=False)
         if not keep_compressed:
             d['data'] = json.loads(zlib.decompress(base64.b64decode(d['data'])))
         return d
