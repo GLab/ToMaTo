@@ -63,17 +63,20 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	:type connectionElementFrom: host.HostElement
 	:type connectionElementTo: host.HostElement
 	"""
-	topology = ReferenceField(Topology, required=True)
+	topology = ReferenceField(Topology, required=True, reverse_delete_rule=DENY)
+	topologyId = ReferenceFieldId(topology)
 	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
 	permissions = ListField(EmbeddedDocumentField(Permission))
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
-	elementFrom = ReferenceField('Element', db_field='element_from', required=True)
-	elementTo = ReferenceField('Element', db_field='element_to', required=True)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
+	elementFrom = ReferenceField('Element', db_field='element_from', required=True) #reverse_delete_rule=DENY defined at bottom of element/__init__.py
+	elementFromId = ReferenceFieldId(elementFrom)
+	elementTo = ReferenceField('Element', db_field='element_to', required=True) #reverse_delete_rule=DENY defined at bottom of element/__init__.py
+	elementToId = ReferenceFieldId(elementTo)
 	from .host.connection import HostConnection, HostElement
-	connectionFrom = ReferenceField(HostConnection, db_field='connection_from')
-	connectionTo = ReferenceField(HostConnection, db_field='connection_to')
-	connectionElementFrom = ReferenceField(HostElement, db_field='connection_element_from')
-	connectionElementTo = ReferenceField(HostElement, db_field='connection_element_to')
+	connectionFrom = ReferenceField(HostConnection, db_field='connection_from', reverse_delete_rule=NULLIFY)
+	connectionTo = ReferenceField(HostConnection, db_field='connection_to', reverse_delete_rule=NULLIFY)
+	connectionElementFrom = ReferenceField(HostElement, db_field='connection_element_from', reverse_delete_rule=NULLIFY)
+	connectionElementTo = ReferenceField(HostElement, db_field='connection_element_to', reverse_delete_rule=NULLIFY)
 	clientData = DictField(db_field='client_data')
 	directData = DictField(db_field='direct_data')
 	meta = {
@@ -100,7 +103,6 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if not attrs: attrs = {}
 		self.topology = topology
 		self.permissions = topology.permissions
-		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.state = ST_CREATED
 		self.totalUsage = UsageStatistics.objects.create()
 		self.elementFrom = el1
@@ -158,6 +160,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			caps = getConnectionCapabilities(self.remoteType())
 			allowed = caps["attrs"].keys() if caps else []
 		UserError.check(key in allowed, code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
+		return True
 
 	def setUnknownAttributes(self, attrs):
 		remoteAttrs = {}
@@ -184,6 +187,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			self.save()
 		UserError.check(action in self.mainConnection.getAllowedActions(),
 			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
+		return True
 
 	def executeUnknownAction(self, action, params=None):
 		try:
@@ -200,6 +204,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 
 	def _checkRemove(self):
 		self.checkRole(Role.manager)
+		return True
 
 	def _remove(self):
 		try:
@@ -207,15 +212,14 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		except Connection.DoesNotExist:
 			return
 		self._checkRemove()
-		logging.logMessage("info", category="topology", id=self.id, info=self.info())
-		logging.logMessage("remove", category="topology", id=self.id)
+		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
+		logging.logMessage("remove", category="topology", id=self.idStr)
 		self.triggerStop()
 		for el in self.elements:
 			el.connection = None
 			el.save()
-		self.totalUsage.remove()
-		#not deleting permissions, the object belongs to the topology
 		self.delete()
+		self.totalUsage.remove()
 
 	def setState(self, state):
 		self.state = state
@@ -401,7 +405,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if mcon:
 			info.update(mcon.objectInfo)
 		for key, val in self.clientData.items():
-			info["_"+key] = makeApiSafe(val)
+			info["_"+key] = val
 		return info
 
 	@property
@@ -425,9 +429,9 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
-		"topology": Attribute(get=lambda obj: obj.getFieldId('topology', True), readOnly=True, schema=schema.Identifier()),
+		"topology": Attribute(field=topologyId, readOnly=True, schema=schema.Identifier()),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"elements": Attribute(get=lambda obj: [obj.getFieldId('elementFrom', True), obj.getFieldId('elementTo', True)], readOnly=True, schema=schema.List(items=schema.Identifier())),
+		"elements": Attribute(get=lambda obj: [obj.elementFromId, obj.elementToId], readOnly=True, schema=schema.List(items=schema.Identifier())),
 		"debug": Attribute(get=lambda obj: {
 			"host_elements": [(o.host.name, o.num) for o in obj.hostElements],
 			"host_connections": [(o.host.name, o.num) for o in obj.hostConnections],
@@ -470,10 +474,9 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		con.init(el1.topology, el1, el2, attrs)
 		con.save()
 		con.triggerStart()
-		logging.logMessage("create", category="connection", id=con.id)
-		logging.logMessage("info", category="connection", id=con.id, info=con.info())
+		logging.logMessage("create", category="connection", id=con.idStr)
+		logging.logMessage("info", category="connection", id=con.idStr, info=con.info())
 		return con
 
 from . import currentUser
 from .host import getConnectionCapabilities, select
-from .lib.util import makeApiSafe

@@ -45,10 +45,15 @@ class Template(BaseDocument, Entity):
 	name = StringField(required=True, unique_with='tech')
 	preference = IntField(default=0)
 	label = StringField()
+	description = StringField()
 	restricted = BooleanField(default=False)
 	subtype = StringField()
 	torrentData = BinaryField(db_field='torrent_data')
 	kblang = StringField(default='en-us')
+	nlXTPInstalled = BooleanField(db_field='nlxtp_installed')
+	showAsCommon = BooleanField(db_field='show_as_common')
+	creationDate = FloatField(db_field='creation_date', required=False)
+	icon = StringField()
 	meta = {
 		'ordering': ['tech', '+preference', 'name'],
 		'indexes': [
@@ -75,8 +80,9 @@ class Template(BaseDocument, Entity):
 		"id": IdAttribute(),
 		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
 		"name": Attribute(field=name, schema=schema.Identifier()),
-		"preference": Attribute(field=preference, schema=IntField(min_value=1)),
+		"preference": Attribute(field=preference, schema=schema.Number(minValue=1)),
 		"label": Attribute(field=label, schema=schema.String()),
+		"description": Attribute(field=description, schema=schema.String()),
 		"restricted": Attribute(field=restricted, schema=schema.Bool()),
 		"subtype": Attribute(field=subtype, schema=schema.String()),
 		"torrent_data": Attribute(field=torrentData, set=lambda obj, value: obj.modify_torrent_data(value),
@@ -85,6 +91,10 @@ class Template(BaseDocument, Entity):
 			schema=schema.String(options=kblang_options.keys())),
 		"torrent_data_hash": Attribute(readOnly=True, schema=schema.String(null=True),
 			get=lambda obj: hashlib.md5(obj.torrentData).hexdigest() if obj.torrentData else None),
+		"nlXTP_installed": Attribute(field=nlXTPInstalled),
+		"show_as_common": Attribute(field=showAsCommon),
+		"creation_date": Attribute(field=creationDate, schema=schema.Number(null=True)),
+		"icon": Attribute(field=icon),
 		"ready": Attribute(readOnly=True, get=getReadyInfo, schema=schema.StringMap(items={
 				'backend': schema.Bool(),
 				'hosts': schema.StringMap(items={

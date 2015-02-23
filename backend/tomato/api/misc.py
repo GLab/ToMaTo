@@ -37,8 +37,8 @@ def server_info():
 		}
 	}
 
-def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
-	return link.getStatistics(siteA, siteB, type, after, before)
+def link_statistics(siteA, siteB):
+	return link.getStatistics(siteA, siteB)
 
 def mailAdmins(subject, text, global_contact = True, issue="admin"):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")

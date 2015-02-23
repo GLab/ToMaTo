@@ -30,7 +30,7 @@ class ExternalNetwork(Element):
 	name = StringField()
 	samenet = BooleanField(default=False)
 	kind = StringField(default='internet')
-	network = ReferenceField(Network)
+	network = ReferenceField(Network, reverse_delete_rule=DENY)
 
 	DIRECT_ATTRS = False
 	DIRECT_ATTRS_EXCLUDE = []
@@ -92,10 +92,10 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	:type network: NetworkInstance
 	"""
 	parent = Element.parent
-	element = ReferenceField(HostElement)
+	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
 	name = StringField()
 	kind = StringField(default='internet')
-	network = ReferenceField(NetworkInstance)
+	network = ReferenceField(NetworkInstance, reverse_delete_rule=DENY)
 
 	TYPE = "external_network_endpoint"
 	HOST_TYPE = "external_network"

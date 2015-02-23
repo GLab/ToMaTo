@@ -48,14 +48,18 @@ kblang_options = [("en-us", "English (US)"),
 					("ja", "Japanese")
 					]
 
+def dateToTimestamp(date):
+	td = date - datetime.date(1970, 1, 1)
+	return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+
 class TemplateForm(BootstrapForm):
-	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
+	label = forms.CharField(max_length=255, help_text="The displayed label for this template")
 	subtype = forms.CharField(max_length=255, required=False)
 	description = forms.CharField(widget = forms.Textarea, required=False)
 	preference = forms.IntegerField(label="Preference", help_text="Sort templates in the editor (higher preference first). The template with highest preference will be the default. Must be an integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
-	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
+	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}))
 	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
 	icon = forms.URLField(label="Icon", help_text="URL of a 32x32 icon to use for elements of this template, leave empty to use the default icon", required=False)
 	kblang = forms.CharField(max_length=50,label="Keyboard Layout",widget = forms.widgets.Select(choices=kblang_options), help_text="Only for KVM templates", required=False)
@@ -148,10 +152,8 @@ class ChangeTemplateTorrentForm(BootstrapForm):
 
 @wrap_rpc
 def list(api, request, tech):
-	templ_list = api.resource_list('template')
-	def _cmp(ta, tb):
-		a = ta["attrs"]
-		b = tb["attrs"]
+	templ_list = api.template_list()
+	def _cmp(a, b):
 		c = cmp(a["tech"], b["tech"])
 		if c:
 			return c
@@ -161,12 +163,12 @@ def list(api, request, tech):
 		return cmp(a["name"], b["name"])
 	templ_list.sort(_cmp)
 	if tech:
-		templ_list = filter(lambda t: t["attrs"]["tech"] == tech, templ_list)
+		templ_list = filter(lambda t: t["tech"] == tech, templ_list)
 	return render(request, "templates/list.html", {'templ_list': templ_list, "tech": tech, "techs_dict": techs_dict})
 
 @wrap_rpc
 def info(api, request, res_id):
-	template = api.resource_info(res_id)
+	template = api.template_info(res_id)
 	return render(request, "templates/info.html", {"template": template, "techs_dict": techs_dict})
 
 @wrap_rpc
@@ -176,7 +178,7 @@ def add(api, request, tech=None):
 		form = AddTemplateForm(request.POST, request.FILES)
 		if form.is_valid():
 			formData = form.cleaned_data
-			creation_date = str(formData['creation_date'])
+			creation_date = formData['creation_date']
 			f = request.FILES['torrentfile']
 			torrent_data = base64.b64encode(f.read())
 			attrs = {'name':formData['name'],
@@ -188,12 +190,12 @@ def add(api, request, tech=None):
 						'torrent_data':torrent_data,
 						'description':formData['description'],
 						'nlXTP_installed':formData['nlXTP_installed'],
-						'creation_date':creation_date,
+						'creation_date':dateToTimestamp(creation_date) if creation_date else None,
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common']}
 			if formData['tech'] == "kvmqm":
 				attrs['kblang'] = formData['kblang']
-			res = api.resource_create('template',attrs)
+			res = api.template_create(attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
@@ -208,10 +210,10 @@ def remove(api, request, res_id=None):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			api.resource_remove(res_id)
+			api.template_remove(res_id)
 			return HttpResponseRedirect(reverse("template_list"))
 	form = RemoveConfirmForm.build(reverse("tomato.template.remove", kwargs={"res_id": res_id}))
-	res = api.resource_info(res_id)
+	res = api.template_info(res_id)
 	return render(request, "form.html", {"heading": "Remove Template", "message_before": "Are you sure you want to remove the template '"+res["attrs"]["name"]+"'?", 'form': form})	
 
 @wrap_rpc
@@ -222,9 +224,8 @@ def edit_torrent(api, request, res_id=None):
 			formData = form.cleaned_data
 			f = request.FILES['torrentfile']
 			torrent_data = base64.b64encode(f.read())
-			res_info = api.resource_info(formData['res_id'])
+			res_info = api.template_info(formData['res_id'])
 			creation_date = str(formData['creation_date'])
-			UserError.check(res_info['type'] == 'template',UserError.INVALID_RESOURCE_TYPE,"This resource is not a template", data={'id':formData['res_id']})
 			api.resource_modify(formData["res_id"],{'torrent_data':torrent_data,
 													'creation_date':creation_date})
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
@@ -233,48 +234,44 @@ def edit_torrent(api, request, res_id=None):
 		return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+label+"' ("+request.POST["tech"]+")"})
 	else:
 		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
-		res_info = api.resource_info(res_id)
+		res_info = api.template_info(res_id)
 		form = ChangeTemplateTorrentForm(res_id, {'res_id': res_id})
 		return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		
 
 @wrap_rpc
 def edit(api, request, res_id=None):
+	res_inf = api.template_info(res_id)
 	if request.method=='POST':
-		form = EditTemplateForm(res_id, (api.resource_info(res_id)['attrs']['tech']=="kvmqm"), request.POST)
+		form = EditTemplateForm(res_id, res_inf['tech']=="kvmqm", request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			creation_date = str(formData['creation_date'])
-			res_inf = api.resource_info(res_id)
-			UserError.check(res_inf['type'] == 'template',UserError.INVALID_RESOURCE_TYPE,"This resource is not a template", data={'id':formData['res_id']})
+			creation_date = formData['creation_date']
 			attrs = {'label':formData['label'],
 						'restricted': formData['restricted'],
 						'subtype':formData['subtype'],
 						'preference':formData['preference'],
 						'description':formData['description'],
-						'creation_date':creation_date,
+						'creation_date':dateToTimestamp(creation_date) if creation_date else None,
 						'nlXTP_installed':formData['nlXTP_installed'],
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common']}
-			if res_inf['attrs']['tech'] == "kvmqm":
+			if res_inf['tech'] == "kvmqm":
 				attrs['kblang'] = formData['kblang']
-			api.resource_modify(res_id,attrs)
+			api.template_modify(res_id,attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 		label = request.POST["label"]
 		UserError.check(label, UserError.INVALID_DATA, "Form transmission failed.")
 		return render(request, "form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+request.POST['tech']+")"})
 	else:
 		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
-		res_info = api.resource_info(res_id)
-		origData = res_info['attrs']
-		origData['res_id'] = res_id
-		form = EditTemplateForm(res_id, (origData['tech']=="kvmqm"), origData)
-		return render(request, "form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
+		res_inf['res_id'] = res_id
+		form = EditTemplateForm(res_id, (res_inf['tech']=="kvmqm"), res_inf)
+		return render(request, "form.html", {'label': res_inf['label'], 'form': form, "heading":"Edit Template Data for '"+str(res_inf['label'])+"' ("+res_inf['tech']+")"})
 		
 @wrap_rpc
 def download_torrent(api, request, res_id):
-	res_inf = api.resource_info(res_id, include_torrent_data=True)
-	UserError.check(res_inf['type'] == 'template',UserError.INVALID_RESOURCE_TYPE,"This resource is not a template", data={'id':res_inf['id']})
+	res_inf = api.template_info(res_id, include_torrent_data=True)
 	UserError.check('torrent_data' in res_inf['attrs'],UserError.NO_DATA_AVAILABLE,"This template does not have a torrent file", data={'id':res_inf['id']})
 	tdata = base64.b64decode(res_inf['attrs']['torrent_data'])
 	filename = re.sub('[^\w\-_\. :]', '_', '%s__%s' % (res_inf['attrs']['name'],res_inf['attrs']['tech']) ) + ".torrent"

@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .. import connections, currentUser #@UnusedImport
+from .. import currentUser
+from ..connections import Connection
 from elements import _getElement
 
 def _getConnection(id_):
-	id_ = int(id_)
-	con = connections.get(id_)
+	con = Connection.get(id_)
 	UserError.check(con, code=UserError.ENTITY_DOES_NOT_EXIST, message="Connection with that id does not exist", data={"id": id_})
 	return con
 
@@ -66,7 +66,7 @@ def connection_create(el1, el2, attrs=None): #@ReservedAssignment
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el1 = _getElement(el1)
 	el2 = _getElement(el2)
-	con = connections.create(el1, el2, attrs)
+	con = Connection.create(el1, el2, attrs)
 	return con.info()
 
 def connection_modify(id, attrs): #@ReservedAssignment

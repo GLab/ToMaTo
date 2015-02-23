@@ -54,7 +54,7 @@ function dynimg(size,objtype,arg1,arg2) {
 				return "/img/"+filename;
 			}
 			//if this also didn't work, return a file for the tech
-			return "/img/"+subtype+size+".png";			
+			return "/img/"+objtype+size+".png";
 		}
 		
 		//repy-network templates

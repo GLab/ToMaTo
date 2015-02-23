@@ -17,7 +17,6 @@
 
 from .. import currentUser
 from ..lib.error import UserError  #@UnresolvedImport
-from ..lib.util import checkApiSafe, makeApiSafe
 
 def checkauth(fn):
 	def call(*args, **kwargs):
@@ -27,12 +26,4 @@ def checkauth(fn):
 	call.__name__ = fn.__name__
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)
-	return call
-
-def apiSafe(fn):
-	def call(*args, **kwargs):
-		return makeApiSafe(fn(*args, **kwargs))
-	call.__name__ = fn.__name__
-	call.__module__ = fn.__module__
-	call.__doc__ = fn.__doc__
 	return call

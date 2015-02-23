@@ -1,5 +1,6 @@
 from __future__ import print_function
 from mongoengine import *
+from mongoengine.base.fields import BaseField
 import bson
 
 # noinspection PyUnresolvedReferences
@@ -15,6 +16,20 @@ class _DummyQuerySetManager(QuerySetManager):
 	def get(self, *args, **kwargs):
 		return self.Type()
 
+class ReferenceFieldId(object):
+	def __init__(self, referenceField, asString=True):
+		assert isinstance(referenceField, (ReferenceField, GenericReferenceField))
+		self.field = referenceField
+		self.asString = asString
+	def __get__(self, instance, owner):
+		# noinspection PyCallByClass
+		data = BaseField.__get__(self.field, instance, owner)
+		if isinstance(self.field, GenericReferenceField) and isinstance(data, dict) and '_ref' in data:
+			data = data['_ref']
+		if data is None: return None
+		oid = data.id if isinstance(data, bson.DBRef) else data.pk
+		return str(oid) if self.asString else oid
+
 class ExtDocument(object):
 	# Fix PyCharm inspection
 	objects = _DummyQuerySetManager()
@@ -23,6 +38,10 @@ class ExtDocument(object):
 	id = 1
 	save = None
 	del objects, DoesNotExist, MultipleObjectsReturned, id, save
+
+	@property
+	def idStr(self):
+		return str(self.id) if self.id else None
 
 	def getFieldId(self, field, asString=False):
 		# noinspection PyUnresolvedReferences

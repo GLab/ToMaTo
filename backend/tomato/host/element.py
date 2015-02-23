@@ -4,8 +4,8 @@ import time
 from . import HostObject
 
 class HostElement(HostObject):
-	connection = ReferenceField('HostConnection')
-	parent = ReferenceField('self')
+	connection = ReferenceField('HostConnection') #reverse_delete_rule=NULLIFY defined at bottom of connection.py
+	parent = ReferenceField('self', reverse_delete_rule=DENY)
 	meta = {
 		'collection': 'host_element',
 		'indexes': [
@@ -69,8 +69,8 @@ class HostElement(HostObject):
 				self.host.incrementErrors()
 		except:
 			self.host.incrementErrors()
-		self.usageStatistics.delete()
 		self.delete()
+		self.usageStatistics.delete()
 
 	def getConnection(self):
 		return self.host.getConnection(self.connection) if self.connection else None

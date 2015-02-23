@@ -25,8 +25,7 @@ from lib import wrap_rpc
 
 def get_site_location(site_name,api):
 	geoloc = api.site_info(site_name)['geolocation']
-	return {'longitude':geoloc.get('longitude',0),
-			'latitude':geoloc.get('latitude',0)}
+	return {'longitude':geoloc[1], 'latitude':geoloc[0]}
 
 def site_list(api):
 	r = []
@@ -77,11 +76,10 @@ class Site_site_stats:
 		for p in self.cache_site_site_pairs:
 			src = p[0]
 			dst = p[1]
-			stats = api.link_statistics(src,dst,"5minutes")
-			
+			stats = api.link_statistics(src,dst)
 			#find last entry
 			last = {'end':0}
-			for entry in stats:
+			for entry in stats['5minutes']:
 				if entry['end']>last['end']:
 					last = entry
 					

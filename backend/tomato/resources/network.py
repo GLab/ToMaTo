@@ -66,8 +66,8 @@ class NetworkInstance(BaseDocument, Entity):
 	:type host: Host
 	"""
 	from ..host import Host
-	network = ReferenceField(Network, required=True)
-	host = ReferenceField(Host, required=True)
+	network = ReferenceField(Network, required=True, reverse_delete_rule=CASCADE)
+	host = ReferenceField(Host, required=True, reverse_delete_rule=CASCADE)
 	bridge = StringField(required=True)
 	meta = {
 		'collection': 'network_instance',

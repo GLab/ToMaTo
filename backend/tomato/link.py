@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .db import *
-from . import host, scheduler
+from . import scheduler
+from .host.site import Site
 from lib import util, logging #@UnresolvedImport
 from .accounting import _lastPoint, _nextPoint, _prevPoint, _toPoint, _toTime, _avg
 import time, random
@@ -61,8 +62,8 @@ class LinkMeasurement(ExtDocument, EmbeddedDocument):
 
 class LinkStatistics(BaseDocument):
 	"""
-	:type siteA: host.Site
-	:type siteB: host.Site
+	:type siteA: host.site.Site
+	:type siteB: host.site.Site
 	:type single: list of LinkMeasurement
 	:type by5minutes: list of LinkMeasurement
 	:type byHour: list of LinkMeasurement
@@ -70,8 +71,8 @@ class LinkStatistics(BaseDocument):
 	:type byMonth: list of LinkMeasurement
 	:type byYear: list of LinkMeasurement
 	"""
-	siteA = ReferenceField(host.Site, db_field='site_a', required=True)
-	siteB = ReferenceField(host.Site, db_field='site_b', required=True, unique_with='siteA')
+	siteA = ReferenceField(Site, db_field='site_a', required=True, reverse_delete_rule=CASCADE)
+	siteB = ReferenceField(Site, db_field='site_b', required=True, unique_with='siteA', reverse_delete_rule=CASCADE)
 	single = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='single')
 	by5minutes = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='5minutes')
 	byHour = ListField(EmbeddedDocumentField(LinkMeasurement), db_field='hour')
@@ -152,10 +153,10 @@ class LinkStatistics(BaseDocument):
 
 
 def _measure():
-	for siteA in host.getAllSites():
+	for siteA in Site.objects.all():
 		if not siteA.hosts.exists():
 			continue
-		for siteB in host.getAllSites():
+		for siteB in Site.objects.all():
 			if siteA.id > siteB.id:
 				continue
 			try:
@@ -195,8 +196,10 @@ def taskRun():
 		ls.update()
 
 def getStatistics(siteA, siteB): #@ReservedAssignment
-	siteA = host.getSite(siteA)
-	siteB = host.getSite(siteB)
+	siteA = Site.get(siteA)
+	siteB = Site.get(siteB)
+	if siteA.id > siteB.id:
+		siteA, siteB = siteB, siteA
 	stats = LinkStatistics.objects.get(siteA=siteA, siteB=siteB)
 	return stats.info()
 

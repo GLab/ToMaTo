@@ -33,7 +33,7 @@ class Repy(VMElement):
 		hPref, sPref = self.getLocationPrefs()
 		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
-		attrs = self._remoteAttrs()
+		attrs = self._remoteAttrs
 		attrs.update({
 			"template": self.template.name,
 		})

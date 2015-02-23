@@ -19,6 +19,8 @@ import os, sys, signal, time, thread
 
 os.environ['TOMATO_MODULE'] = "backend"
 
+import monkey
+monkey.patch_all()
 
 def db_migrate():
 	"""

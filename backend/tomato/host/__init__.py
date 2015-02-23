@@ -83,8 +83,8 @@ class Host(DumpSource, BaseDocument, Entity):
 	address = StringField(required=True)
 	rpcurl = StringField(required=True, unique=True)
 	from .site import Site
-	site = ReferenceField(Site, required=True)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
+	site = ReferenceField(Site, required=True, reverse_delete_rule=DENY)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	elementTypes = DictField(db_field='element_types', required=True)
 	connectionTypes = DictField(db_field='connection_types', required=True)
 	hostInfo = DictField(db_field='host_info', required=True)
@@ -98,7 +98,7 @@ class Host(DumpSource, BaseDocument, Entity):
 	availability = FloatField(default=1.0)
 	description = StringField()
 	dumpLastFetch = FloatField(db_field='dump_last_fetch')
-	templates = ListField(ReferenceField(Template))
+	templates = ListField(ReferenceField(Template, reverse_delete_rule=PULL))
 	hostNetworks = DictField(db_field='host_networks')
 	meta = {
 		'ordering': ['site', 'name'],
@@ -124,27 +124,27 @@ class Host(DumpSource, BaseDocument, Entity):
 
 	ACTIONS = {}
 	ATTRIBUTES = {
-		"name": Attribute(field="name", schema=schema.Identifier()),
-		"address": Attribute(field="address", schema=schema.String(regex="\d+\.\d+.\d+.\d+")),
-		"rpcurl": Attribute(field="rpcurl", schema=schema.String(regex="\w+://\w+:\d+")),
+		"name": Attribute(field=name, schema=schema.Identifier()),
+		"address": Attribute(field=address, schema=schema.String(regex="\d+\.\d+.\d+.\d+")),
+		"rpcurl": Attribute(field=rpcurl, schema=schema.String(regex="\w+://\w+:\d+")),
 		"site": Attribute(
 			check=lambda obj, val: Site.get(val),
 			set=lambda obj, val: setattr(obj, "site", Site.get(val)),
 			get=lambda obj: obj.site.name,
 			schema=schema.Identifier()
 		),
-		"enabled": Attribute(field="enabled", schema=schema.Bool()),
-		"description": Attribute(field="description", schema=schema.String()),
+		"enabled": Attribute(field=enabled, schema=schema.Bool()),
+		"description": Attribute(field=description, schema=schema.String()),
 		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization.name, schema=schema.Identifier()),
 		"problems": Attribute(readOnly=True, get=lambda obj: obj.problems(), schema=schema.List(items=schema.String())),
-		"component_errors": Attribute(field="componentErrors", readOnly=True, schema=schema.Int()),
+		"component_errors": Attribute(field=componentErrors, readOnly=True, schema=schema.Int()),
 		"load": Attribute(readOnly=True, get=lambda obj: obj.getLoad(), schema=schema.List(items=schema.Number())),
 		"element_types": Attribute(readOnly=True, get=lambda obj: obj.elementTypes.keys(), schema=schema.List(items=schema.Identifier())),
 		"connection_types": Attribute(readOnly=True, get=lambda obj: obj.connectionTypes.keys(), schema=schema.List(items=schema.Identifier())),
-		"host_info": Attribute(field="hostInfo", readOnly=True, schema=schema.StringMap(additional=True)),
-		"host_info_timestamp": Attribute(field="hostInfoTimestamp", readOnly=True, schema=schema.Number()),
-		"availability": Attribute(field="availability", readOnly=True, schema=schema.Number()),
-		"networks": Attribute(field="hostNetworks", readOnly=True, schema=schema.List())
+		"host_info": Attribute(field=hostInfo, readOnly=True, schema=schema.StringMap(additional=True)),
+		"host_info_timestamp": Attribute(field=hostInfoTimestamp, readOnly=True, schema=schema.Number()),
+		"availability": Attribute(field=availability, readOnly=True, schema=schema.Number()),
+		"networks": Attribute(field=hostNetworks, readOnly=True, schema=schema.List())
 	}
 
 	def init(self, attrs=None):
@@ -216,10 +216,16 @@ class Host(DumpSource, BaseDocument, Entity):
 			self.incrementErrors()
 			raise
 		from .element import HostElement
-		hel = HostElement(host=self, num=el["id"], topology_element=ownerElement, topology_connection=ownerConnection)
+		hel = HostElement(type=el["type"], state=el["state"], host=self, num=el["id"], topologyElement=ownerElement, topologyConnection=ownerConnection)
 		hel.usageStatistics = UsageStatistics.objects.create()
 		hel.objectInfo = el
 		hel.save()
+		if ownerElement:
+			ownerElement.hostElements.append(hel)
+			ownerElement.save()
+		if ownerConnection:
+			ownerConnection.hostElements.append(hel)
+			ownerConnection.save()
 		logging.logMessage("element_create", category="host", host=self.name, element=el,
 						   ownerElement=(
 							   ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
@@ -242,11 +248,17 @@ class Host(DumpSource, BaseDocument, Entity):
 			self.incrementErrors()
 			raise
 		from .connection import HostConnection
-		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement,
-							  topology_connection=ownerConnection)
+		hcon = HostConnection(host=self, num=con["id"], topologyElement=ownerElement,
+							  topologyConnection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
 		hcon.objectInfo = con
 		hcon.save()
+		if ownerElement:
+			ownerElement.hostConnections.append(hcon)
+			ownerElement.save()
+		if ownerConnection:
+			ownerConnection.hostConnections.append(hcon)
+			ownerConnection.save()
 		logging.logMessage("connection_create", category="host", host=self.name, element=con,
 						   ownerElement=(
 							   ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,

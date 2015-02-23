@@ -18,25 +18,24 @@
 from api_helpers import checkauth
 from ..lib.cache import cached
 
-def _getTemplate(tech, name):
-	res = Template.get(tech, name)
-	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Template does not exist", data={"tech": tech, "name": name})
+def _getTemplate(id_):
+	res = Template.objects.get(id=id_)
+	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Template does not exist", data={"id": id_})
 	return res
 
-def _getNetwork(kind):
-	res = Network.get(kind)
-	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network does not exist", data={"kind": kind})
+def _getNetwork(id_):
+	res = Network.objects.get(id=id_)
+	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network does not exist", data={"id": id_})
 	return res
 
-def _getNetworkInstance(kind, host):
-	host = _getHost(host)
-	res = NetworkInstance.get(kind, host)
-	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network instance does not exist", data={"kind": kind, "host": host.name})
+def _getNetworkInstance(id_):
+	res = NetworkInstance.objects.get(id=id_)
+	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network instance does not exist", data={"id": id_})
 	return res
 
-def _getProfile(tech, name):
-	res = Profile.get(tech, name)
-	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Profile does not exist", data={"tech": tech, "name": name})
+def _getProfile(id_):
+	res = Profile.objects.get(id=id_)
+	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Profile does not exist", data={"id": id_})
 	return res
 
 
@@ -93,7 +92,7 @@ def template_create(tech, name, attrs=None):
 	return res.info()
 
 @checkauth
-def template_modify(tech, name, attrs):
+def template_modify(id, attrs):
 	"""
 	Modifies a template, configuring it with the given attributes.
 
@@ -117,13 +116,13 @@ def template_modify(tech, name, attrs):
 	  If the given template does not exist an exception *template does not
 	  exist* is raised.
 	"""
-	res = _getTemplate(tech, name)
+	res = _getTemplate(id)
 	res.modify(attrs)
 	template_list.invalidate()
 	return res.info()
 
 @checkauth
-def template_remove(tech, name):
+def template_remove(id):
 	"""
 	Removes a template.
 
@@ -141,13 +140,13 @@ def template_remove(tech, name):
 	  If the given template does not exist an exception *template does not
 	  exist* is raised.
 	"""
-	res = _getTemplate(tech, name)
+	res = _getTemplate(id)
 	res.remove()
 	template_list.invalidate()
 	return {}
 
 @checkauth
-def template_info(tech, name, include_torrent_data=False): #@ReservedAssignment
+def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	"""
 	Retrieves information about a template.
 
@@ -171,7 +170,7 @@ def template_info(tech, name, include_torrent_data=False): #@ReservedAssignment
 	  If the given template does not exist an exception *template does not
 	  exist* is raised.
 	"""
-	res = _getTemplate(tech, name)
+	res = _getTemplate(id)
 	return res.info(include_torrent_data=include_torrent_data)
 
 @cached(timeout=6*3600)
@@ -219,7 +218,7 @@ def profile_create(tech, name, attrs=None):
 	return res.info()
 
 @checkauth
-def profile_modify(tech, name, attrs):
+def profile_modify(id, attrs):
 	"""
 	Modifies a profile, configuring it with the given attributes.
 
@@ -243,13 +242,13 @@ def profile_modify(tech, name, attrs):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	res = _getProfile(tech, name)
+	res = _getProfile(id)
 	res.modify(attrs)
 	profile_list.invalidate()
 	return res.info()
 
 @checkauth
-def profile_remove(tech, name):
+def profile_remove(id):
 	"""
 	Removes a profile.
 
@@ -267,13 +266,13 @@ def profile_remove(tech, name):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	res = _getProfile(tech, name)
+	res = _getProfile(id)
 	res.remove()
 	profile_list.invalidate()
 	return {}
 
 @checkauth
-def profile_info(tech, name):
+def profile_info(id):
 	"""
 	Retrieves information about a profile.
 
@@ -292,7 +291,7 @@ def profile_info(tech, name):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	res = _getProfile(tech, name)
+	res = _getProfile(id)
 	return res.info()
 
 @cached(timeout=6*3600)
@@ -333,7 +332,7 @@ def network_create(kind, attrs=None):
 	return res.info()
 
 @checkauth
-def network_modify(kind, attrs):
+def network_modify(id, attrs):
 	"""
 	Modifies a network, configuring it with the given attributes.
 
@@ -353,13 +352,13 @@ def network_modify(kind, attrs):
 	  If the given network does not exist an exception *network does not
 	  exist* is raised.
 	"""
-	res = _getNetwork(kind)
+	res = _getNetwork(id)
 	res.modify(attrs)
 	network_list.invalidate()
 	return res.info()
 
 @checkauth
-def network_remove(kind):
+def network_remove(id):
 	"""
 	Removes a network.
 
@@ -373,13 +372,13 @@ def network_remove(kind):
 	  If the given network does not exist an exception *network does not
 	  exist* is raised.
 	"""
-	res = _getNetwork(kind)
+	res = _getNetwork(id)
 	res.remove()
 	network_list.invalidate()
 	return {}
 
 @checkauth
-def network_info(kind): #@ReservedAssignment
+def network_info(id): #@ReservedAssignment
 	"""
 	Retrieves information about a network.
 
@@ -394,7 +393,7 @@ def network_info(kind): #@ReservedAssignment
 	  If the given network does not exist an exception *network does not
 	  exist* is raised.
 	"""
-	res = _getNetwork(kind)
+	res = _getNetwork(id)
 	return res.info()
 
 @cached(timeout=6*3600)
@@ -446,7 +445,7 @@ def network_instance_create(network, host, attrs=None):
 	return res.info()
 
 @checkauth
-def network_instance_modify(network, host, attrs):
+def network_instance_modify(id, attrs):
 	"""
 	Modifies a network_instance, configuring it with the given attributes.
 
@@ -470,13 +469,13 @@ def network_instance_modify(network, host, attrs):
 	  If the given network_instance does not exist an exception *network_instance does not
 	  exist* is raised.
 	"""
-	res = _getNetworkInstance(network, host)
+	res = _getNetworkInstance(id)
 	res.modify(attrs)
 	network_instance_list.invalidate()
 	return res.info()
 
 @checkauth
-def network_instance_remove(network, host):
+def network_instance_remove(id):
 	"""
 	Removes a network_instance.
 
@@ -494,13 +493,13 @@ def network_instance_remove(network, host):
 	  If the given network_instance does not exist an exception *network_instance does not
 	  exist* is raised.
 	"""
-	res = _getNetworkInstance(network, host)
+	res = _getNetworkInstance(id)
 	res.remove()
 	network_instance_list.invalidate()
 	return {}
 
 @checkauth
-def network_instance_info(network, host): #@ReservedAssignment
+def network_instance_info(id):
 	"""
 	Retrieves information about a network_instance.
 
@@ -519,7 +518,7 @@ def network_instance_info(network, host): #@ReservedAssignment
 	  If the given network_instance does not exist an exception *network_instance does not
 	  exist* is raised.
 	"""
-	res = _getNetworkInstance(network, host)
+	res = _getNetworkInstance(id)
 	return res.info()
 
 

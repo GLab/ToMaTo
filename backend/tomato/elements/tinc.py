@@ -44,7 +44,7 @@ class TincVPN(ConnectingElement, Element):
 		self.state = ST_CREATED
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
-			self.name = self.TYPE + str(self.id)
+			self.name = self.TYPE + self.idStr
 		self.save()
 	
 	def onChildAdded(self, iface):
@@ -223,7 +223,7 @@ class TincVPN(ConnectingElement, Element):
 
 
 class TincEndpoint(ConnectingElement, Element):
-	element = ReferenceField(HostElement)
+	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
 	name = StringField()
 	mode = StringField(choices=['switch', 'hub'])
 	peers = ListField(DictField())
@@ -281,12 +281,12 @@ class TincEndpoint(ConnectingElement, Element):
 		hPref, sPref = self.getLocationPrefs()
 		_host = host.select(elementTypes=[self.HOST_TYPE], hostPrefs=hPref, sitePrefs=sPref)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
-		attrs = self._remoteAttrs()
+		attrs = self._remoteAttrs
 		attrs.update({
 			"mode": self.mode,
 			"peers": self.peers,
 		})
-		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs, ownerElement=self)
+		self.element = _host.createElement(self.remoteType, parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		self.setState(ST_PREPARED, True)
 		
@@ -313,7 +313,7 @@ class TincEndpoint(ConnectingElement, Element):
 	ATTRIBUTES.update({
 		"name": Attribute(field=name),
 		"mode": StatefulAttribute(field=mode, set=modify_mode, writableStates=[ST_CREATED, ST_PREPARED], schema=schema.String(options=['hub', 'switch'])),
-		"peers": StatefulAttribute(get=lambda self: makeApiSafe(self.peers), set=modify_peers, writableStates=[ST_CREATED, ST_PREPARED])
+		"peers": StatefulAttribute(field=peers, set=modify_peers, writableStates=[ST_CREATED, ST_PREPARED])
 	})
 
 	ACTIONS = Element.ACTIONS.copy()
@@ -330,4 +330,3 @@ elements.TYPES[TincVPN.TYPE] = TincVPN
 elements.TYPES[TincEndpoint.TYPE] = TincEndpoint
 
 from .. import currentUser, setCurrentUser
-from ..lib.util import makeApiSafe

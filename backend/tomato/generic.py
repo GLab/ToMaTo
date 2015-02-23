@@ -13,8 +13,8 @@ class Action:
 			try:
 				self.paramSchema.check(params)
 			except Error as err:
-				err.data.update(data=params, schema=self.paramSchema, data_failed=err.data['data'],
-					schema_failed=err['schema'])
+				err.data.update(data=params, schema=self.paramSchema, data_failed=err.data.get('data'),
+					schema_failed=err.data['schema'])
 				raise
 		if self.checkFn:
 			Error.check(self.checkFn(obj, **params), code=Error.INVALID_STATE, message="Check for action failed")
@@ -41,8 +41,8 @@ class Attribute:
 			try:
 				self.schema.check(value)
 			except Error as err:
-				err.data.update(data=value, schema=self.schema, data_failed=err.data['data'],
-					schema_failed=err['schema'])
+				err.data.update(data=value, schema=self.schema, data_failed=err.data.get('data'),
+					schema_failed=err.data.get('schema'))
 				raise
 		if self.checkFn:
 			Error.check(self.checkFn(obj, value), code=Error.INVALID_STATE, message="Check for attribute failed")
@@ -51,7 +51,7 @@ class Attribute:
 		if self.setFn:
 			self.setFn(obj, value)
 		elif self.field:
-			self.field.__set__(value, obj, obj.__class__)
+			self.field.__set__(obj, value)
 	def get(self, obj):
 		if self.getFn:
 			return self.getFn(obj)
@@ -78,13 +78,19 @@ class Entity(object):
 	DEFAULT_ATTRIBUTES = {}
 	REMOVE_ACTION = "(remove)"
 
-	type = save = id = delete = None
-	del type, save, id, delete
+	save = id = delete = None
+	del save, id, delete
+
+	@property
+	def type(self):
+		return self.__class__.__name__.lower()
 
 	def init(self, attrs):
-		if not attrs: attrs = {}
-		self.attrs = dict(self.DEFAULT_ATTRIBUTES)
-		self.modify(attrs)
+		toSet = {}
+		toSet.update(self.DEFAULT_ATTRIBUTES)
+		if attrs:
+			toSet.update(attrs)
+		self.modify(toSet)
 
 	def checkUnknownAttribute(self, key, value):
 		raise Error(code=Error.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
@@ -217,7 +223,7 @@ class LockedEntity(Entity):
 	@classmethod
 	def locked(cls, func):
 		def call(self, *args, **kwargs):
-			with self:
+			with self.lock:
 				return func(self, *args, **kwargs)
 		call.__name__ = func.__name__
 		call.__doc__ = func.__doc__
@@ -225,28 +231,28 @@ class LockedEntity(Entity):
 
 	def action(self, action, params=None):
 		if self.LOCKED_ACTIONS:
-			with self:
+			with self.lock:
 				return super(LockedEntity, self).action(action, params)
 		else:
 			return super(LockedEntity, self).action(action, params)
 
 	def modify(self, attrs):
 		if self.LOCKED_MODIFY:
-			with self:
+			with self.lock:
 				return super(LockedEntity, self).modify(attrs)
 		else:
 			return super(LockedEntity, self).modify(attrs)
 
 	def info(self):
 		if self.LOCKED_INFO:
-			with self:
+			with self.lock:
 				return super(LockedEntity, self).info()
 		else:
 			return super(LockedEntity, self).info()
 
 	def remove(self, params=None):
 		if self.LOCKED_REMOVE:
-			with self:
+			with self.lock:
 				return super(LockedEntity, self).remove(params)
 		else:
 			return super(LockedEntity, self).remove(params)

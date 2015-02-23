@@ -56,19 +56,19 @@ class VMElement(Element):
 		except:
 			pass
 		
-		self.last_sync = time.time()
+		self.lastSync = time.time()
 		
 		#calculate next update time:
-		time_passed = int(time.time()) - self.rextfv_last_started
+		time_passed = int(time.time()) - self.rextfvLastStarted
 		if time_passed < 60*60*24: #less than one day
-			self.next_sync = int(time.time()) + (time_passed / 24)
+			self.nextSync = int(time.time()) + (time_passed / 24)
 		else: # more than one day:
-			self.next_sync = 0 #the process which syncs everything every hour is still active. do nothing more.
+			self.nextSync = 0 #the process which syncs everything every hour is still active. do nothing more.
 		self.save()
 		
 	def set_rextfv_last_started(self):
-		self.rextfv_last_started = int(time.time())
-		self.next_sync = int(time.time()) + 1 #make sure sync process will be triggered.
+		self.rextfvLastStarted = int(time.time())
+		self.nextSync = int(time.time()) + 1 #make sure sync process will be triggered.
 		self.save()
 	
 	def init(self, topology, *args, **kwargs):
@@ -85,8 +85,8 @@ class VMElement(Element):
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
-		self.rextfv_last_started = 0
-		self.next_sync = 0
+		self.rextfvLastStarted = 0
+		self.nextSync = 0
 		#template: None, default template
 
 	@property
@@ -137,9 +137,10 @@ class VMElement(Element):
 	def _profileAttrs(self):
 		attrs = {}
 		profile = self.profile
+		profAttrs = profile.info()
 		for attr in self.PROFILE_ATTRS:
-			if profile.getAttribute(attr):
-				attrs[attr] = profile.getAttribute(attr)
+			if attr in profAttrs:
+				attrs[attr] = profAttrs[attr]
 		return attrs
 
 	def onError(self, exc):
@@ -166,7 +167,7 @@ class VMElement(Element):
 		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE})
-		attrs = self._remoteAttrs()
+		attrs = self._remoteAttrs
 		attrs.update({
 			"template": self.template.name,
 		})
@@ -185,7 +186,7 @@ class VMElement(Element):
 				iface._remove()
 			self.element.remove()
 			self.element = None
-			self.custom_template = False
+			self.customTemplate = False
 		self.setState(ST_CREATED, True)
 		
 	def action_stop(self):
@@ -207,7 +208,7 @@ class VMElement(Element):
 			ch.triggerConnectionStart()
 
 	def after_upload_use(self):
-		self.custom_template = True
+		self.customTemplate = True
 		self.save()
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
@@ -256,7 +257,7 @@ class VMInterface(Element):
 	def _create(self):
 		parEl = self.parent.element
 		assert parEl
-		attrs = self._remoteAttrs()
+		attrs = self._remoteAttrs
 		self.element = parEl.createChild(self.TYPE, attrs=attrs, ownerElement=self)
 		self.save()
 		

@@ -43,7 +43,7 @@ def topology_permission(api, id, user, permission): #@ReservedAssignment
 	return api.topology_permission(id, user, permission)
 
 @wrap_json
-def element_create(api, topid, type, parent=None, attrs={}): #@ReservedAssignment
+def element_create(api, topid, type, parent=None, **attrs): #@ReservedAssignment
 	info = api.element_create(topid, type, parent, attrs)
 	return info
 
@@ -53,7 +53,7 @@ def element_info(api, id, fetch=False): #@ReservedAssignment
 	return info
 
 @wrap_json
-def element_modify(api, id, attrs={}): #@ReservedAssignment
+def element_modify(api, id, **attrs): #@ReservedAssignment
 	info = api.element_modify(id, attrs)
 	return info
 

@@ -6,7 +6,7 @@ from ..lib.error import UserError
 class Site(BaseDocument):
 	name = StringField(unique=True, required=True)
 	from .organization import Organization
-	organization = ReferenceField(Organization, required=True)
+	organization = ReferenceField(Organization, required=True, reverse_delete_rule=DENY)
 	label = StringField(required=True)
 	location = StringField()
 	geolocation = GeoPointField()

@@ -5,8 +5,8 @@ from . import HostObject
 from .element import HostElement
 
 class HostConnection(HostObject):
-	elementFrom = ReferenceField(HostElement, db_field='element_from', required=True)
-	elementTo = ReferenceField(HostElement, db_field='element_to', required=True)
+	elementFrom = ReferenceField(HostElement, db_field='element_from', required=True, reverse_delete_rule=DENY)
+	elementTo = ReferenceField(HostElement, db_field='element_to', required=True, reverse_delete_rule=DENY)
 	meta = {
 		'collection': 'host_connection',
 		'indexes': [
@@ -61,8 +61,8 @@ class HostConnection(HostObject):
 				self.host.incrementErrors()
 		except:
 			self.host.incrementErrors()
-		self.usageStatistics.delete()
 		self.delete()
+		self.usageStatistics.delete()
 
 	def getElements(self):
 		return [self.elementFrom, self.elementTo]
@@ -112,3 +112,5 @@ class HostConnection(HostObject):
 			self.updateInfo()
 		except:
 			logging.logException(host=self.host.name)
+
+HostConnection.register_delete_rule(HostElement, "connection", NULLIFY)

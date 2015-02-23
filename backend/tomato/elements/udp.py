@@ -24,7 +24,7 @@ from .generic import ST_CREATED, ST_PREPARED, ST_STARTED
 from ..lib.error import UserError
 
 class UDPEndpoint(Element):
-	element = ReferenceField(HostElement)
+	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
 	name = StringField()
 	connect = StringField()
 
@@ -72,11 +72,11 @@ class UDPEndpoint(Element):
 	def action_prepare(self):
 		_host = host.select(elementTypes=[self.HOST_TYPE])
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
-		attrs = self._remoteAttrs()
+		attrs = self._remoteAttrs
 		attrs.update({
 			"connect": self.connect,
 		})
-		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs, ownerElement=self)
+		self.element = _host.createElement(self.remoteType, parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		self.setState(ST_PREPARED, True)
 		

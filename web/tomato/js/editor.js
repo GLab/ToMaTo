@@ -1940,7 +1940,7 @@ var Topology = Class.extend({
 							text: "Save",
 							click: function() {
 								t.action("renew", {params:{
-									"timeout": timeout.getValue()
+									"timeout": parseFloat(timeout.getValue())
 								}});
 								dialog.remove();
 							}
@@ -1990,7 +1990,7 @@ var Topology = Class.extend({
 									});
 									editor.workspace.updateTopologyTitle();
 									t.action("renew", {params:{
-										"timeout": timeout.getValue()
+										"timeout": parseFloat(timeout.getValue())
 									}});
 									dialog.remove();
 									dialog = null;
@@ -2352,7 +2352,7 @@ var Component = Class.extend({
 		var t = this;
 		ajax({
 			url: this.component_type+'/'+this.id+'/modify',
-		 	data: {attrs: attrs},
+		 	data: attrs,
 		 	successFn: function(result) {
 		 		t.updateData(result);
 		 		t.setBusy(false);

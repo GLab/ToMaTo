@@ -59,77 +59,77 @@
 	  </tr>
 	{% for templ in templ_list %}
 	  <tr>
-	  	<td enhancetable_customkey="{{templ.attrs.tech}}" align="right" class="icononly">
-	  		<img src="/img/{{templ.attrs.tech}}16.png" title="{{techs_dict|get:templ.attrs.tech}}" />
+	  	<td enhancetable_customkey="{{templ.tech}}" align="right" class="icononly">
+	  		<img src="/img/{{templ.tech}}16.png" title="{{techs_dict|get:templ.tech}}" />
 		</td>
-	    <td><a href="{%url "template.info" templ.id%}">{{templ.attrs.name}}</a></td>
-	    <td>{{templ.attrs.label}}</td>
-	    <td>{{templ.attrs.subtype}}</td>
-	    <td>{{templ.attrs.preference}}</td>
-	    <td>{{templ.attrs.creation_date}}</td>
+	    <td><a href="{%url "template.info" templ.id%}">{{templ.name}}</a></td>
+	    <td>{{templ.label}}</td>
+	    <td>{{templ.subtype}}</td>
+	    <td>{{templ.preference}}</td>
+	    <td>{{templ.creation_date}}</td>
 	    <td>
-		    {% if templ.attrs.ready.backend %}
+		    {% if templ.ready.backend %}
 		    	<img src="/img/tick.png" title="on backend" />
 		    {% else %}
 		    	<img src="/img/error.png" title="not on backend" />
 		    {% endif %}
 		    /
-		    {% if templ.attrs.ready.hosts.ready == templ.attrs.ready.hosts.total %}
+		    {% if templ.ready.hosts.ready == templ.ready.hosts.total %}
 		    	<img src="/img/tick.png" title="on all hosts" />
 		    {% else %}
 		    	<img src="/img/error.png" title="not on all hosts" />
-	    		{{templ.attrs.ready.hosts.ready}}/{{templ.attrs.ready.hosts.total}}
+	    		{{templ.ready.hosts.ready}}/{{templ.ready.hosts.total}}
 		    {% endif %}
 	    </td>
 	    <td class="icononly">
 	    <div class="hoverdescription">
-	    	{% if templ.attrs.description %}		    	
+	    	{% if templ.description %}
 		    	<img src="/img/info.png" alt="i" />
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
 		    
-		    {% if templ.attrs.show_as_common %}
+		    {% if templ.show_as_common %}
 		    	<img src="/img/tick.png"/>
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
 		    
-	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
+	    	{% if not templ.nlXTP_installed and not templ.tech == 'repy' %}
 		    	<img src="/img/warning16.png" alt="!"/>
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
 		    
-		    {% if templ.attrs.restricted %}
+		    {% if templ.restricted %}
 		    	<img src="/img/lock.png" />
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 			{% endif %}
 			
     		<div class="hiddenbox"><table>
-    		{% if templ.attrs.description %}
+    		{% if templ.description %}
     			<tr>
     				<td><img src="/img/info.png" /></td>
-	    			<td>{{ templ.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+	    			<td>{{ templ.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 	    		</tr>
 	    	{%endif%}
 	    	
-	    	{% if templ.attrs.show_as_common %}
+	    	{% if templ.show_as_common %}
 	    		<tr>
 	    			<td><img src="/img/tick.png"/></td>
 	    			<td>This template appears as a common element in the editor.</td>
 	    		</tr>
 	    	{% endif %}
 	    	
-    		{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
+    		{% if not templ.nlXTP_installed and not templ.tech == 'repy' %}
 	    		<tr>
 		    		<td><img src="/img/warning16.png" /></td>
 		    		<td>nlXTP Guest Modules not installed</td>
 	    		</tr>
     		{%endif%}
 	    	
-		    {% if templ.attrs.restricted %}
+		    {% if templ.restricted %}
 				<tr>
 					<td><img src="/img/lock.png" /></td>
 					<td>This template is restricted.</td>

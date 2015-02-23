@@ -9,20 +9,22 @@ var chart;
 var setRange;
 $(function () {
     var data = {{usage|safe}};
+    var ranges = ['5minutes', 'hour', 'day', 'month', 'year'];
     $(document).ready(function() {
     	var offset = new Date().getTimezoneOffset()*60000;
         var loss = {};
         var delay_avg = {};
         var delay_stddev = {};
-        for (var range in data) {
+        for (var i=0; i<ranges.length; i++) {
+            var range = ranges[i];
             loss[range] = [];
             delay_avg[range] = [];
             delay_stddev[range] = [];
 		    data[range].sort(function(a, b) {
     			return a.end - b.end;
     		});
-            for (var i=0; i<data[range].length; i++) {
-                var rec = data[range][i];
+            for (var j=0; j<data[range].length; j++) {
+                var rec = data[range][j];
                 loss[range].push([rec.end * 1000 - offset, rec.loss]);
                 delay_avg[range].push([rec.end * 1000 - offset, rec.delay_avg]);
                 delay_stddev[range].push([rec.end * 1000 - offset, rec.delay_stddev])

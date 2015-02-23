@@ -41,10 +41,10 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 	from .auth.permissions import Permission
 	from .host import Site
 	permissions = ListField(EmbeddedDocumentField(Permission))
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	timeout = FloatField(required=True)
 	timeoutStep = IntField(db_field='timeout_step', required=True, default=TimeoutStep.INITIAL)
-	site = ReferenceField(Site)
+	site = ReferenceField(Site, reverse_delete_rule=NULLIFY)
 	name = StringField()
 	clientData = DictField(db_field='client_data')
 	meta = {
@@ -84,6 +84,7 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 	def checkUnknownAttribute(self, key, value):
 		self.checkRole(Role.manager)
 		UserError.check(key.startswith("_"), code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
+		return True
 
 	def setUnknownAttributes(self, attrs):
 		for key, value in attrs.items():
@@ -99,6 +100,7 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 		if action in ["start", "prepare"]:
 			UserError.check(self.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
 		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
+		return True
 
 	def action_prepare(self):
 		self._compoundAction(action="prepare", stateFilter=lambda state: state=="created", 
@@ -159,10 +161,10 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 		self.checkRemove(recurse)
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)
-		self.totalUsage.remove()
 		self.delete()
+		self.totalUsage.remove()
 
-	def modify_site(self, val):
+	def modify_site(self, val, cls):
 		self.site = Site.get(val)
 
 	def modifyRole(self, user, role):
@@ -198,7 +200,7 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 			connections = [str(con.id) for con in self.connections.only('id')]
 		info.update(elements=elements, connections=connections)
 		for key, val in self.clientData.items():
-			info["_"+key] = makeApiSafe(val)
+			info["_"+key] = val
 		return info
 
 	def updateUsage(self):
@@ -213,7 +215,7 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 		"stop": Action(action_stop, check=lambda self: self.checkAction('stop'), paramSchema=schema.Constant({})),
 		"prepare": Action(action_prepare, check=lambda self: self.checkAction('prepare'), paramSchema=schema.Constant({})),
 		"destroy": Action(action_destroy, check=lambda self: self.checkAction('destroy'), paramSchema=schema.Constant({})),
-		"renew": Action(action_renew, check=lambda self: self.checkAction('renew'),
+		"renew": Action(action_renew, check=lambda self, timeout: self.checkAction('renew'),
 			paramSchema=schema.StringMap(items={'timeout': schema.Number(minValue=0.0)}, required=['timeout'])),
 	}
 	ATTRIBUTES = {
@@ -278,4 +280,3 @@ from .auth import Flags
 from .auth.permissions import Permission
 from . import currentUser, config, setCurrentUser
 from .host.site import Site
-from .lib.util import makeApiSafe

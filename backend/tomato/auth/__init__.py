@@ -133,11 +133,11 @@ class User(BaseDocument):
 	from ..accounting import Quota, UsageStatistics
 	name = StringField(required=True, unique_with='origin')
 	origin = StringField(required=True)
-	organization = ReferenceField(Organization, required=True)
+	organization = ReferenceField(Organization, required=True, reverse_delete_rule=DENY)
 	password = StringField(required=True)
 	passwordTime = FloatField(db_field='password_time', required=True)
 	lastLogin = FloatField(db_field='last_login', required=True)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	quota = EmbeddedDocumentField(Quota, required=True)
 	realname = StringField()
 	email = EmailField()
@@ -443,8 +443,8 @@ def login(username, password):
 	return stored
 
 def remove(user):
-	user.totalUsage.remove()
 	user.delete()
+	user.totalUsage.remove()
 
 def register(username, password, organization, attrs=None, provider=""):
 	if not attrs: attrs = {}

@@ -139,15 +139,6 @@ def checkApiSafe(value, path=''):
 		return
 	raise TypeError("Unsupported type: %s (%s)" % (type(value), path))
 
-def makeApiSafe(value):
-	if value is None or isinstance(value, (bool, int, long, float)+types.StringTypes):
-		return value
-	if isinstance(value, types.DictionaryType):
-		return {str(k): makeApiSafe(v) for k, v in value.items()}
-	if isinstance(value, (types.ListType, types.TupleType)):
-		return [makeApiSafe(v) for v in value]
-	raise TypeError("Unsupported type: %s" % type(value))
-
 @xmlRpcSafe
 def xml_rpc_sanitize(s):
 	if s == None:

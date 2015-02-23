@@ -6,7 +6,7 @@ from ..lib.error import UserError
 
 class Organization(BaseDocument):
 	name = StringField(unique=True, required=True)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	label = StringField(required=True)
 	homepageUrl = URLField(db_field='homepage_url')
 	imageUrl = URLField(db_field='image_url')
