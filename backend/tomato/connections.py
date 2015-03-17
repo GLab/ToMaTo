@@ -387,7 +387,11 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	def type(self):
 		if self.mainConnection:
 			return self.mainConnection.type
-		for el in self.elements:
+		# Speed optimization: use existing information to avoid database accesses
+		els = getattr(self, "_elementsHint", -1)
+		if els == -1:
+			els = self.elements
+		for el in els:
 			if el.type == "external_network_endpoint":
 				return "fixed_bridge"
 		return "bridge"
@@ -397,7 +401,10 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if mcon:
 			mcon.updateInfo()
 			
-	def info(self):
+	def info(self, elementsHint=None):
+		# Speed optimization: use existing information to avoid database accesses
+		if not elementsHint is None:
+			self._elementsHint = elementsHint
 		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
 			self.checkRole(Role.user)
 		info = LockedStatefulEntity.info(self)

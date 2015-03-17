@@ -55,7 +55,9 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	meta = {
 		'allow_inheritance': True,
 		'indexes': [
-			'topology', 'state', 'parent'
+			'topology', 'state', 'parent',
+			{'fields': ['topology'], 'cls': False},
+			{'fields': ['parent'], 'cls': False},
 		]
 	}
 	@property
@@ -306,7 +308,10 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		caps.update(children=cls.CAP_CHILDREN, parent=cls.CAP_PARENT, connectable=cls.CAP_CONNECTABLE)
 		return caps
 			
-	def info(self):
+	def info(self, childrenIdsHint=None):
+		# Speed optimization: use existing information to avoid database accesses
+		if not childrenIdsHint is None:
+			self._childrenIds = childrenIdsHint
 		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
 			self.checkRole(Role.user)
 		mel = self.mainElement
@@ -380,6 +385,14 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			'fileserver_port': host.hostInfo.get('fileserver_port', None)
 		}
 
+	@property
+	def childrenIds(self):
+		# Speed optimization: use existing information to avoid database accesses
+		chs = getattr(self, "_childrenIds", -1)
+		if chs == -1:
+			chs = [ch.id for ch in self.children.only('id')]
+		return map(str, chs)
+
 	ACTIONS = {
 		Entity.REMOVE_ACTION: StatefulAction(_remove, check=_checkRemove)
 	}
@@ -389,7 +402,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		"topology": Attribute(field=topologyId, readOnly=True, schema=schema.Identifier()),
 		"parent": Attribute(field=parentId, readOnly=True, schema=schema.Identifier(null=True)),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"children": Attribute(get=lambda obj: [str(ch.id) for ch in obj.children.only('id')], readOnly=True, schema=schema.List(items=schema.Identifier())),
+		"children": Attribute(field=childrenIds, readOnly=True, schema=schema.List(items=schema.Identifier())),
 		"connection": Attribute(field=connectionId, readOnly=True, schema=schema.Identifier(null=True)),
 		"debug": Attribute(get=lambda obj: {
 			"host_elements": [(o.host.name, o.num) for o in obj.hostElements],
@@ -402,7 +415,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		"host_info": Attribute(field=host_info, readOnly=True)
 	}
 
-Connection.register_delete_rule(Element, "elementFrom", DENY)
-Connection.register_delete_rule(Element, "elementTo", DENY)
+Element.register_delete_rule(Connection, "elementFrom", DENY)
+Element.register_delete_rule(Connection, "elementTo", DENY)
 
 from .. import currentUser, host

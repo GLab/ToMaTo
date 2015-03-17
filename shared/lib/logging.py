@@ -30,7 +30,7 @@ class JSONLogger:
   def log(self, category=None, timestamp=None, caller=None, **kwargs):
     if not timestamp:
       timestamp = time.time()
-    timestr = datetime.strftime(datetime.fromtimestamp(timestamp), "%Y-%m-%dT%H:%M:%S.%f%z")
+    timestr = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%dT%H:%M:%S.%f%z")
     data = {"category": category, "timestamp": timestr}
     if not caller is False:
         data["caller"] = self._caller()

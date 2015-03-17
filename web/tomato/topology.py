@@ -48,7 +48,6 @@ def list(api, request, show_all=False, organization=None):
 	toplist = api.topology_list(showAll=show_all, organization=organization)
 	orgas = api.organization_list()
 	for top in toplist:
-		print top
 		"""top['attrs']['tutorial_enabled'] = (
 											   top['attrs'].has_key('_tutorial_url') and not (
 											   top['attrs']['_tutorial_disabled'] if top['attrs'].has_key(

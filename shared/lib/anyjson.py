@@ -9,10 +9,6 @@ try:
 	import simplejson as _json
 except ImportError:
 	pass
-#try:
-#	import cjson as _json
-#except ImportError:
-#	pass
 try:
 	import ujson as _json
 except ImportError:

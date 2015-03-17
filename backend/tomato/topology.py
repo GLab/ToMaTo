@@ -193,8 +193,26 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 			self.checkRole(Role.user)
 		info = Entity.info(self)
 		if full:
-			elements = [el.info() for el in self.elements]
-			connections = [con.info() for con in self.connections]
+			# Speed optimization: use existing information to avoid database accesses
+			els = self.elements
+			childs = {}
+			for el in els:
+				if not el.parentId:
+					continue
+				if not el.parentId in childs:
+					childs[el.parentId] = []
+				chs = childs[el.parentId]
+				chs.append(el.id)
+			connections = {}
+			for el in els:
+				if not el.connectionId:
+					continue
+				if not el.connectionId in connections:
+					connections[el.connectionId] = []
+				cons = connections[el.connectionId]
+				cons.append(el)
+			elements = [el.info(childs.get(el.id,[])) for el in els]
+			connections = [con.info(connections.get(con.id, [])) for con in self.connections]
 		else:
 			elements = [str(el.id) for el in self.elements.only('id')]
 			connections = [str(con.id) for con in self.connections.only('id')]

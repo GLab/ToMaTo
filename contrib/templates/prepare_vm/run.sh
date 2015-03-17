@@ -16,6 +16,9 @@ VMTYPE=""
 if [ -d /proc/vz ]; then
   VMTYPE="openvz"
 fi
+if fgrep -q docker /proc/1/cgroup; then
+  VMTYPE="openvz"
+fi
 if dmesg | fgrep -q QEMU; then
   VMTYPE="kvm"
 fi
@@ -60,6 +63,9 @@ case "$ISSUE" in
   Ubuntu*13.10*)
     DISTRO="ubuntu_1310"
     ;;
+  Ubuntu*14.04*)
+    DISTRO="ubuntu_1404"
+    ;;
   *)
     fail "Unknown distribution: $ISSUE"
 esac
@@ -82,7 +88,7 @@ esac
 echo "Installing packages..."
 case $DISTRO in
   debian*|ubuntu*)
-    apt-get install -y ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less
+    apt-get install --no-install-recommends -y ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less
     ;;
   *)
     fail "$DISTRO unsupported"
@@ -142,7 +148,7 @@ ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 echo "Auto-login on consoles..."
 case $DISTRO in
   ubuntu*|debian*)
-    apt-get install -y mingetty
+    apt-get install --no-install-recommends -y mingetty
     for file in /etc/inittab /etc/init/tty1.conf; do
       if [ -f "$file" ]; then
         sed -i -e 's/\/sbin\/getty\( -8\)\? 38400/\/sbin\/mingetty --autologin root --noclear/g' "$file"
@@ -277,8 +283,10 @@ case $DISTRO in
     echo "Ubuntu: Disabling network wait"
     sed -i -e 's/sleep/#sleep/g' /etc/init/failsafe.conf
     echo "Ubuntu: Disabling boot splash"
-    sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="noplymouth"/g' /etc/default/grub
-    update-grub
+    if [ -f /etc/default/grub ]; then
+      sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="noplymouth"/g' /etc/default/grub
+      update-grub
+    fi
     ;;
 esac
 
@@ -387,7 +395,7 @@ fi
 echo "Cleanup..."
 case $DISTRO in
   debian*|ubuntu*)
-    apt-get --purge clean
+    apt-get clean
     ;;
   *)
     fail "$DISTRO unsupported"

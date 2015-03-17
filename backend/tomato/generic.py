@@ -1,4 +1,4 @@
-import threading, types
+import threading
 from .lib.error import UserError as Error
 from .lib import schema
 
