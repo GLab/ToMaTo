@@ -29,13 +29,13 @@ def dump_list(after=None,list_only=False,include_data=False,compress_data=True):
 	
 	Parameter *after*: 
       If set, only include dumps which have a timestamp after this time.
-    
+
     Parameter *list_only*:
       If True, only include dump IDs.
-      
+
     Parameter *include_data*:
       If True, include detailed data. This may be about 1M per dump.
-      
+
     Parameter *compress_data*:
       If True and include_data, compress the detailed data before returning. It may still be around 20M per dump after compressing.
     """
@@ -44,13 +44,13 @@ def dump_list(after=None,list_only=False,include_data=False,compress_data=True):
 def dump_info(dump_id, include_data=False, compress_data=True, dump_on_error=False):
 	"""
 	returns info of a single dump
-	
+
 	Parameter *dump_id*:
 	  The internal id of the dump
-	  
+
 	Parameter *include_data*:
       If True, include detailed data. This may be about 1M.
-      
+
     Parameter *compress_data*:
       If True and include_data, compress the detailed data before returning. It may still be around 20M after compressing.
 

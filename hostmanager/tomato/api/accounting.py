@@ -21,7 +21,7 @@ accounting.
 """
 
 def accounting_statistics(type=None, after=None, before=None): #@ReservedAssignment
-    """
+	"""
     Returns usage statistics for all elements and all connections.
     
     Parameter *type*:
@@ -54,12 +54,12 @@ def accounting_statistics(type=None, after=None, before=None): #@ReservedAssignm
         are the connection ids (as strings) and the values are the usage 
         statistics.
     """
-    elSt = dict([(str(el.id), el.getUsageStatistics().info(type, after, before)) for el in elements.getAll(owner=currentUser())])
-    conSt = dict([(str(con.id), con.getUsageStatistics().info(type, after, before)) for con in connections.getAll(owner=currentUser())])
-    return {"elements": elSt, "connections": conSt}
+	elSt = dict([(str(el.id), el.getUsageStatistics().info(type, after, before)) for el in elements.getAll(owner=currentUser())])
+	conSt = dict([(str(con.id), con.getUsageStatistics().info(type, after, before)) for con in connections.getAll(owner=currentUser())])
+	return {"elements": elSt, "connections": conSt}
 
 def accounting_element_statistics(id, type=None, after=None, before=None): #@ReservedAssignment
-    """
+	"""
     Returns accounting statistics for one element.
     
     Parameter *id*:
@@ -86,10 +86,10 @@ def accounting_element_statistics(id, type=None, after=None, before=None): #@Res
     Return value:
       This method returns usage statistics for the given element.
     """
-    return _getElement(id).getUsageStatistics().info(type, after, before)
-    
+	return _getElement(id).getUsageStatistics().info(type, after, before)
+
 def accounting_connection_statistics(id, type=None, after=None, before=None): #@ReservedAssignment
-    """
+	"""
     Returns accounting statistics for one connection.
     
     Parameter *id*:
@@ -116,7 +116,7 @@ def accounting_connection_statistics(id, type=None, after=None, before=None): #@
     Return value:
       This method returns usage statistics for the given connection.
     """
-    return _getConnection(id).getUsageStatistics().info(type, after, before)
+	return _getConnection(id).getUsageStatistics().info(type, after, before)
 
 from elements import _getElement
 from connections import _getConnection

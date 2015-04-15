@@ -54,12 +54,12 @@ class LoginForm(forms.Form):
 		self.helper.label_class = 'col-lg-2 col-md-2 col-sm-2'
 		self.helper.field_class = 'col-lg-4 col-md-5 col-sm-6'
 		self.helper.layout = Layout(
-		    'username',
-		    'password',
-		    'long_session',
-		    FormActions(
-		    	StrictButton('Log in', css_class='col-sm-offset-2 btn-primary', type="submit")
-		    )
+			'username',
+			'password',
+			'long_session',
+			FormActions(
+				StrictButton('Log in', css_class='col-sm-offset-2 btn-primary', type="submit")
+			)
 		)
 
 def login(request):

@@ -25,5 +25,3 @@ def ls_img(request):
 	dir_tols = os.path.join(prefix, 'img')
 	ls_res = os.listdir(dir_tols)
 	return HttpResponse(json.dumps(ls_res))
-		
-	

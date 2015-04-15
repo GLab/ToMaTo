@@ -31,68 +31,68 @@ from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
 
 available_issues = [
-                    ('admin', "User Priviliges or General Assistance"),
-                    ('host', "Testbed Misbehavior")
-                    ]
+					('admin', "User Priviliges or General Assistance"),
+					('host', "Testbed Misbehavior")
+					]
 
 available_admin_classes = [
-                         ('organization', 'Administrators of my organization (use this if you are unsure)'),
-                         ('global', 'Global administrators')
-                         ]
+						 ('organization', 'Administrators of my organization (use this if you are unsure)'),
+						 ('global', 'Global administrators')
+						 ]
 
 def help(request, page=""):
-    try:
-        if page=="":
-            return render(request, "help/index.html")
-        else:
-            return render(request, "help/pages/"+page+".html")
-    except TemplateDoesNotExist:
-        return TemplateResponse(request,"help/page_not_exist.html", status=404)
+	try:
+		if page=="":
+			return render(request, "help/index.html")
+		else:
+			return render(request, "help/pages/"+page+".html")
+	except TemplateDoesNotExist:
+		return TemplateResponse(request,"help/page_not_exist.html", status=404)
 
 class HelpForm(BootstrapForm):
-    admin_class = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=append_empty_choice(available_admin_classes)), label="Who to Contact")
-    issue = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=append_empty_choice(available_issues)))
-    subject = forms.CharField(max_length=255, required=True)
-    message = forms.CharField(widget = forms.Textarea, label="Description", required=True)
-    def __init__(self, *args, **kwargs):
-        super(HelpForm, self).__init__(*args, **kwargs)
-        self.helper.form_action = reverse(contact_form)
-        self.helper.layout = Layout(
-            'admin_class',
-            'issue',
-            'subject',
-            'message',
-            FormActions(
-                StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-default backbutton'),
-                StrictButton('<span class="glyphicon glyphicon-send"></span> Send e-mail', css_class='btn-primary', type="submit")
-            )
-        )
+	admin_class = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=append_empty_choice(available_admin_classes)), label="Who to Contact")
+	issue = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=append_empty_choice(available_issues)))
+	subject = forms.CharField(max_length=255, required=True)
+	message = forms.CharField(widget = forms.Textarea, label="Description", required=True)
+	def __init__(self, *args, **kwargs):
+		super(HelpForm, self).__init__(*args, **kwargs)
+		self.helper.form_action = reverse(contact_form)
+		self.helper.layout = Layout(
+			'admin_class',
+			'issue',
+			'subject',
+			'message',
+			FormActions(
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-default backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-send"></span> Send e-mail', css_class='btn-primary', type="submit")
+			)
+		)
 
 @wrap_rpc
 def contact_form(api, request, subject=None, message=None, global_contact=False, issue=None):
-    if request.method == 'POST':
-        form = HelpForm( request.POST)
-        if form.is_valid():
-            formData = form.cleaned_data
-            if formData['admin_class'] == 'global':
-                formData['global_contact'] = True
-            else:
-                formData['global_contact'] = False
-            api.mailAdmins(formData["subject"],
-                           formData['message'],
-                           global_contact = formData['global_contact'],
-                           issue=formData['issue'])
-            return render(request, "help/contact_form_success.html")
-        else:
-            return render(request, "form.html", {'form': form,"heading":"Contact Administrators"})
-    else:
-        form = HelpForm()
-        if subject:
-            form.fields['subject'].initial=subject
-        if message:
-            form.fields['message'].initial=message
-        if global_contact:
-            form.fields['admin_class'].initial = "global"
-        if issue:
-            form.fields['issue'].initial = issue
-        return render(request, "form.html", {'form': form,"heading":"Contact Administrators"})
+	if request.method == 'POST':
+		form = HelpForm( request.POST)
+		if form.is_valid():
+			formData = form.cleaned_data
+			if formData['admin_class'] == 'global':
+				formData['global_contact'] = True
+			else:
+				formData['global_contact'] = False
+			api.mailAdmins(formData["subject"],
+						   formData['message'],
+						   global_contact = formData['global_contact'],
+						   issue=formData['issue'])
+			return render(request, "help/contact_form_success.html")
+		else:
+			return render(request, "form.html", {'form': form,"heading":"Contact Administrators"})
+	else:
+		form = HelpForm()
+		if subject:
+			form.fields['subject'].initial=subject
+		if message:
+			form.fields['message'].initial=message
+		if global_contact:
+			form.fields['admin_class'].initial = "global"
+		if issue:
+			form.fields['issue'].initial = issue
+		return render(request, "form.html", {'form': form,"heading":"Contact Administrators"})
