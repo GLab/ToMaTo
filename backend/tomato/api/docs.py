@@ -20,17 +20,17 @@ from ..lib.cache import cached #@UnresolvedImport
 
 @cached(timeout=3600)
 def docs():
-    """
-    undocumented
-    """
-    return {
-        "elements": dict([(name, cls.DOC) for name, cls in elements.TYPES.iteritems()]),
-        "connections": {"default": connections.Connection.DOC},
-    }
+	"""
+	undocumented
+	"""
+	return {
+		"elements": dict([(name, cls.DOC) for name, cls in elements.TYPES.iteritems()]),
+		"connections": {"default": connections.Connection.DOC},
+	}
 
 @cached(timeout=3600)
 def role_list():
-    return {
+	return {
 		"owner": {"title": "Owner", "description": "full topology control, permission changes, topology removal"},
 		"manager": {"title": "Manager", "description": "full topology control, no topology delete, no permission changes"},
 		"user": {"title": "User", "description": "no destroy/prepare, no topology changes, no permission changes"},
@@ -39,10 +39,10 @@ def role_list():
 
 
 def _docFn(docstr):
-    def wrapper(fn):
-        def call():
-            return docstr
-        call.__doc__ = docstr
-        call.__name__ = fn.__name__
-        return call
-    return wrapper
+	def wrapper(fn):
+		def call():
+			return docstr
+		call.__doc__ = docstr
+		call.__name__ = fn.__name__
+		return call
+	return wrapper

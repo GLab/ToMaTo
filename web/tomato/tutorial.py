@@ -61,8 +61,8 @@ def start(api, request):
 	_, _, top_dict, data, _ = loadTutorial(url)
 	top_dict['topology']['attrs']['_tutorial_state'] = {'enabled': True,
 														'url': url,
-													    'step': 0,
-													    'data': data}
+														'step': 0,
+														'data': data}
 	top_id, _, _, _ = api.topology_import(top_dict)
 	return redirect("tomato.topology.info", id=top_id)
 

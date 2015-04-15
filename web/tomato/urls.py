@@ -18,9 +18,9 @@
 
 from django import VERSION as DJANGO_VERSION
 if DJANGO_VERSION < (1,6):
-    from django.conf.urls.defaults import *
+	from django.conf.urls.defaults import *
 else:
-    from django.conf.urls import patterns, url, include
+	from django.conf.urls import patterns, url, include
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -39,8 +39,8 @@ urlpatterns = patterns('',
 	(r'^login$', 'tomato.main.login'),
 	(r'^logout$', 'tomato.main.logout'),
 	(r'^account/register$', 'tomato.account.register'),
-    (r'^img_ls$', 'tomato.dynimg.ls_img'),
-    (r'^key.pem$', 'tomato.main.backend_key'),
+	(r'^img_ls$', 'tomato.dynimg.ls_img'),
+	(r'^key.pem$', 'tomato.main.backend_key'),
 	url(r'^account/list$', 'tomato.account.list', {"organization": True}, name="account_list"),
 	url(r'^account/list/all$', 'tomato.account.list', {"organization": False}, name="account_list_all"),	
 	url(r'^account/registrations$', 'tomato.account.list', {"organization": True, "with_flag": "new_account"}, name="account_list_registrations"),	
@@ -89,17 +89,17 @@ urlpatterns = patterns('',
 	(r'^organization/(?P<name>\w+)/remove$', 'tomato.admin.organization.remove'),
 	(r'^organization/(?P<name>\w+)/usage$', 'tomato.usage.organization'),
 	(r'^organization/(?P<organization>\w+)/add_site$', 'tomato.admin.site.add'),
-    (r'^site/$', 'tomato.admin.site.list'),
-    (r'^site/add$', 'tomato.admin.site.add'),
-    (r'^site/(?P<name>\w+)/edit$', 'tomato.admin.site.edit'),
-    (r'^site/(?P<name>\w+)/info$', 'tomato.admin.site.info'),
+	(r'^site/$', 'tomato.admin.site.list'),
+	(r'^site/add$', 'tomato.admin.site.add'),
+	(r'^site/(?P<name>\w+)/edit$', 'tomato.admin.site.edit'),
+	(r'^site/(?P<name>\w+)/info$', 'tomato.admin.site.info'),
 	(r'^site/(?P<name>\w+)/remove$', 'tomato.admin.site.remove'),
 	url(r'^template/$', 'tomato.template.list', {"tech": None}, name="template_list"),
 	url(r'^template/bytech/(?P<tech>\w+)$', 'tomato.template.list', name="template_list_bytech"),
 	(r'^template/add$', 'tomato.template.add'),
 	(r'^template/add/(?P<tech>\w+)$', 'tomato.template.add'),
-    (r'^template/(?P<res_id>\d+)$', 'tomato.template.info'),
-    (r'^template/(?P<res_id>\d+)/torrent$', 'tomato.template.download_torrent'),
+	(r'^template/(?P<res_id>\d+)$', 'tomato.template.info'),
+	(r'^template/(?P<res_id>\d+)/torrent$', 'tomato.template.download_torrent'),
 	(r'^template/(?P<res_id>\d+)/edit$', 'tomato.template.edit'),
 	(r'^template/(?P<res_id>\d+)/edit/torrent$', 'tomato.template.edit_torrent'),
 	(r'^template/(?P<res_id>\d+)/remove$', 'tomato.template.remove'),
@@ -148,13 +148,13 @@ urlpatterns = patterns('',
 	(r'^debug/topology/(?P<id>\d+)$', 'tomato.debug.topology'),
 	(r'^debug/element/(?P<id>\d+)$', 'tomato.debug.element'),
 	(r'^debug/connection/(?P<id>\d+)$', 'tomato.debug.connection'),
-    url(r'^dumpmanager/$',  'tomato.dumpmanager.group_list',name='errorgroup_list'),
-    (r'^dumpmanager/refresh$', 'tomato.dumpmanager.refresh'),
-    (r'^dumpmanager/group/(?P<group_id>\w+)$', 'tomato.dumpmanager.group_info'),
-    (r'^dumpmanager/group/(?P<group_id>\w+)/edit$', 'tomato.dumpmanager.group_edit'),
-    (r'^dumpmanager/group/(?P<group_id>\w+)/clear$', 'tomato.dumpmanager.group_clear'),
-    (r'^dumpmanager/group/(?P<group_id>\w+)/remove$', 'tomato.dumpmanager.group_remove'),
-    (r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/remove$', 'tomato.dumpmanager.dump_remove'),
-    (r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/export$', 'tomato.dumpmanager.dump_export'),
-    (r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/export_data$', 'tomato.dumpmanager.dump_export_with_data')
+	url(r'^dumpmanager/$',  'tomato.dumpmanager.group_list',name='errorgroup_list'),
+	(r'^dumpmanager/refresh$', 'tomato.dumpmanager.refresh'),
+	(r'^dumpmanager/group/(?P<group_id>\w+)$', 'tomato.dumpmanager.group_info'),
+	(r'^dumpmanager/group/(?P<group_id>\w+)/edit$', 'tomato.dumpmanager.group_edit'),
+	(r'^dumpmanager/group/(?P<group_id>\w+)/clear$', 'tomato.dumpmanager.group_clear'),
+	(r'^dumpmanager/group/(?P<group_id>\w+)/remove$', 'tomato.dumpmanager.group_remove'),
+	(r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/remove$', 'tomato.dumpmanager.dump_remove'),
+	(r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/export$', 'tomato.dumpmanager.dump_export'),
+	(r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/export_data$', 'tomato.dumpmanager.dump_export_with_data')
 )

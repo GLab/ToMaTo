@@ -72,21 +72,21 @@ class AddTemplateForm(TemplateForm):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)
 		self.helper.layout = Layout(
-            'name',
-            'label',
-            'subtype',
-            'description',
-            'tech',
-            'preference',
-            'show_as_common',
-            'restricted',
-            'nlXTP_installed',
-            'kblang',
-            'icon',
-            'creation_date',
-            'torrentfile',
-            Buttons.cancel_add
-        )
+			'name',
+			'label',
+			'subtype',
+			'description',
+			'tech',
+			'preference',
+			'show_as_common',
+			'restricted',
+			'nlXTP_installed',
+			'kblang',
+			'icon',
+			'creation_date',
+			'torrentfile',
+			Buttons.cancel_add
+		)
 	def is_valid(self):
 		valid = super(AddTemplateForm, self).is_valid()
 		if not valid:
@@ -102,34 +102,34 @@ class EditTemplateForm(TemplateForm):
 		self.helper.form_action = reverse(edit, kwargs={"res_id": res_id})
 		if showKblang:
 			self.helper.layout = Layout(
-	            'res_id',
-	            'label',
-	            'subtype',
-	            'description',
-	            'preference',
-	            'show_as_common',
-	            'restricted',
-	            'nlXTP_installed',
+				'res_id',
+				'label',
+				'subtype',
+				'description',
+				'preference',
+				'show_as_common',
+				'restricted',
+				'nlXTP_installed',
 				'icon',
-	            'creation_date',
-	            'kblang',
-	            Buttons.cancel_save
-	        )
+				'creation_date',
+				'kblang',
+				Buttons.cancel_save
+			)
 		else:
 			del self.fields['kblang']
 			self.helper.layout = Layout(
-	            'res_id',
-	            'label',
-	            'subtype',
-	            'description',
-	            'preference',
-	            'show_as_common',
-	            'restricted',
-	            'nlXTP_installed',
+				'res_id',
+				'label',
+				'subtype',
+				'description',
+				'preference',
+				'show_as_common',
+				'restricted',
+				'nlXTP_installed',
 				'icon',
-	            'creation_date',
-	            Buttons.cancel_save
-	        )
+				'creation_date',
+				Buttons.cancel_save
+			)
 	
 class ChangeTemplateTorrentForm(BootstrapForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -140,11 +140,11 @@ class ChangeTemplateTorrentForm(BootstrapForm):
 		self.fields['creation_date'].initial=datetime.date.today()
 		self.helper.form_action = reverse(edit_torrent, kwargs={"res_id": res_id})
 		self.helper.layout = Layout(
-            'res_id',
-            'creation_date',
-            'torrentfile',
-            Buttons.cancel_save
-        )
+			'res_id',
+			'creation_date',
+			'torrentfile',
+			Buttons.cancel_save
+		)
 
 @wrap_rpc
 def list(api, request, tech):
