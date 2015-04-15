@@ -41,11 +41,11 @@ def organization_list():
 	return [o.info() for o in host.getAllOrganizations()]
 
 @checkauth
-def organization_create(name, description=""):
+def organization_create(name, description="", attrs={}):
 	"""
 	undocumented
 	"""
-	o = host.createOrganization(name, description)
+	o = host.createOrganization(name, description, attrs)
 	organization_list.invalidate()
 	return o.info()
 
@@ -93,11 +93,11 @@ def site_list(organization=None):
 	return [s.info() for s in sites]
 
 @checkauth
-def site_create(name, organization, description=""):
+def site_create(name, organization, description="", attrs={}):
 	"""
 	undocumented
 	"""
-	s = host.createSite(name, organization, description)
+	s = host.createSite(name, organization, description, attrs)
 	site_list.invalidate()
 	return s.info()
 
