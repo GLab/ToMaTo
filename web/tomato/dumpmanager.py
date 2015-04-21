@@ -132,7 +132,7 @@ def group_edit(api, request, group_id):
 		UserError.check(group_id, UserError.INVALID_DATA, "No error group specified.")
 		errorgroupinfo=api.errorgroup_info(group_id,False)
 		form = EditErrorGroupForm(api, group_id, errorgroupinfo)
-		return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
+		return render(request, "form.html", {"heading": "Renaming errorgroup '"+errorgroupinfo['description']+"'", 'form': form})
 
 
 @wrap_rpc
