@@ -333,8 +333,18 @@ This chat agent is passive, it will just display all messages it receives.</p>\
 		},
 		help_page: 'DeviceTypes'
 	},
+	{
+		text: '<p class="tutorialCommand">Change the name of this repy device to "Chat Monitor"</p>',
+		trigger: function(event) {
+			return compareToMask(event, {
+				operation: "modify",
+				component: "element",
+				phase: "end",
+			});
+		}
+	},
 	{ 
-		text: '<p class="tutorialCommand">Upload the script <i>chat_monitor.repy</i></p>',
+		text: '<p class="tutorialCommand">Upload the script <a href="'+tutorial_base_url+'chat_monitor.repy" class="download" download="chat_monitor.repy"><i>chat_monitor.repy</i></a></p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "action",
@@ -343,16 +353,6 @@ This chat agent is passive, it will just display all messages it receives.</p>\
 				phase: "end",
 			});
 		}
-	},
-	{
-		text: '<p class="tutorialCommand">Change the name of this repy device to "Chat Monitor" using the configure window of the right-click menu.</p>',
-		trigger: function(event) {
-			return compareToMask(event, {
-				operation: "modify",
-				component: "element",
-				phase: "end",
-			});
-		}	
 	},
 	{
 		text: '<p class="tutorialExplanation">As a second chat agent we will add the <i>Chat Tutorial Sender</i> to the topology.<br/>\
@@ -372,8 +372,18 @@ This chat agent will send a message every 3 seconds.</p>\
 			});
 		}
 	},
+	{
+		text: '<p class="tutorialCommand">Change the name of this repy device to "Chat Sender"</p>',
+		trigger: function(event) {
+			return compareToMask(event, {
+				operation: "modify",
+				component: "element",
+				phase: "end",
+			});
+		}
+	},
 	{ 
-		text: '<p class="tutorialCommand">Upload the script <i>chat_sender.repy</i></p>',
+		text: '<p class="tutorialCommand">Upload the script <a href="'+tutorial_base_url+'chat_sender.repy" class="download" download="chat_sender.repy"><i>chat_sender.repy</i></a></p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "action",
@@ -382,16 +392,6 @@ This chat agent will send a message every 3 seconds.</p>\
 				phase: "end",
 			});
 		}
-	},
-	{
-		text: '<p class="tutorialCommand">Change the name of this repy device to "Chat Sender" using the configure window of the right-click menu.</p>',
-		trigger: function(event) {
-			return compareToMask(event, {
-				operation: "modify",
-				component: "element",
-				phase: "end",
-			});
-		}	
 	},
 	{
 		text: '<p class="tutorialExplanation">Do not forget to connect these agents to the switch.</p>\
@@ -438,7 +438,7 @@ This chat agent will send a message every 3 seconds.</p>\
 		help_page: 'devices'
 	},
 	{
-		text: '<p class="tutorialExplanation">Start the chat clients again and after a few seconds you should see the periodic messages from the sender agent. If you open the VNC console of the monitor agent you should see all chat messages.<br/>\
+		text: '<p class="tutorialExplanation">When you open the device\'s consoles and start their chat clients again, you should see the periodic messages from the sender agent after a few seconds. If you open the VNC console of the monitor agent you should see all chat messages that have been sent since it has been started.<br/>\
 Note that you can not type any text into the consoles of these agents as the Repy technology is not interactive.</p>\
 <p class="tutorialCommand">Click on continue when you are done</p>',
 		skip_button: 'Continue'
@@ -450,7 +450,7 @@ Note that you can not type any text into the consoles of these agents as the Rep
 		help_page: 'LinkEmulation'
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we will add a delay of 2 seconds to a link and check if we can see the difference. Open the attributes ofthe link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a delay of 2000 ms on one of the directions.</p>\
+		text: '<p class="tutorialExplanation">Now we will add a delay of 2 seconds to a link and check if we can see the difference. Open the attributes of the link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a delay of 2000 ms on one of the directions.</p>\
 <p class="tutorialCommand">Add 2 seconds delay to one link</p>',
 		trigger: function(event) {
 			var data = getTutorialData();

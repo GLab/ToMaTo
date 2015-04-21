@@ -4180,6 +4180,34 @@ var RexTFV_status_updater = Class.extend({
 		this.options = options;
 		this.elements = [];
 	},
+	updateFirst: function(t) { //Takes RexTFV_status_updater as argument.
+	    entry = t.elements.shift();
+        elExists = true;
+        mustRemove = false;
+
+        if (entry.element in editor.topology.elements) { //element exists
+            editor.topology.elements[entry.element].update(undefined, undefined, true) //hide errors.
+        } else {
+            elExists = false;
+        }
+
+        if (elExists &&
+            editor.topology.elements[entry.element].rextfvStatusSupport() &&
+			editor.topology.elements[entry.element].data.attrs.rextfv_run_status.running) {
+			    entry.tries = 1;
+		} else {
+    		entry.tries--;
+    		mustRemove = (entry.tries < 0)
+		}
+
+		if (!mustRemove) t.elements.push(entry)
+	},
+	updateSome: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
+		                      //update only the first five elements of the array. This boundary is to avoid server overload.
+		var count = 5;
+        if (t.elements.length < count) count = t.elements.length; //do not update elements twice.
+		while (count-- > 0) t.updateFirst(t);
+	},
 	updateAll: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
 		toRemove = [];
 		//iterate through all entries, update them, and then update their retry-count according to the refreshed data.
@@ -4312,7 +4340,7 @@ var Editor = Class.extend({
 			}
 		});
 
-		setInterval(function(){t.rextfv_status_updater.updateAll(t.rextfv_status_updater)}, 1200);
+		setInterval(function(){t.rextfv_status_updater.updateSome(t.rextfv_status_updater)}, 1200);
 	},
 	triggerEvent: function(event) {
 		log(event);

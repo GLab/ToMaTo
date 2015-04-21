@@ -133,6 +133,8 @@ Interval in which the dump manager will collect error dumps from hosts and backe
 
 ERROR_NOTIFY = []
 
+MAX_REQUESTS = 50
+
 import socket
 _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 _socket.connect(("8.8.8.8",80))

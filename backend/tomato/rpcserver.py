@@ -17,7 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import sys
+import sys, threading
+import django.db
 
 import config
 from . import currentUser, api, login, dump
@@ -26,6 +27,17 @@ from .lib.error import Error, UserError, InternalError
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name if currentUser() else None)
+
+class Wrapper:
+	def __init__(self):
+		self.semaphore = threading.Semaphore(config.MAX_REQUESTS)
+	def __enter__(self):
+		self.semaphore.acquire()
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		self.semaphore.release()
+		if django.db.transaction.is_dirty():
+			django.db.transaction.commit()
+		django.db.connection.close()
 
 @db.commit_after
 def handleError(error, function, args, kwargs):
@@ -69,12 +81,12 @@ def start():
 		sslOpts = None
 		if settings["SSL"]:
 			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
-		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=wrapError)
+		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, wrapper=Wrapper(), beforeExecute=logCall, afterExecute=afterCall, onError=wrapError)
 		server.register(api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
 		util.start_thread(server.serve_forever)
 		servers.append(server)
-		
+
 def stop():
 	for server in servers:
 		server.shutdown()

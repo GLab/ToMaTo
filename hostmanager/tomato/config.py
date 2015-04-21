@@ -182,6 +182,8 @@ systems that also need those resources, these entries might need to be adapted.
 
 WEBSOCKIFY_PORT_BLACKLIST = [6000, 6666]
 
+MAX_REQUESTS = 50
+
 import socket
 _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 _socket.connect(("8.8.8.8",80))

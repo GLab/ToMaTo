@@ -14,16 +14,47 @@
 <script src="/js/jquery.js"></script>
 
 
-<table class="sortable" style="vertical-align:middle;">
+<ul>
+    {% for tut in tutorials %}
+        <li style="margin-top:1cm; list-style: none;">
+            <table>
+                <tr>
+                    <td rowspan="3" style="vertical-align: text-top; width:45px;">
+                        <img src="{{tut.icon}}"/>
+                    </td>
+                    <td colspan="2">
+                        <strong>{{tut.name}}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:0.5cm;"/>
+                    <td style="padding-top:0.1cm;">
+                        {{tut.desc}}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:0.5cm;"/>
+                    <td style="padding-top:0.1cm;">
 
-{% for tut in tutorials %}
-  <tr>
-    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url "tutorial.start" %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}" onclick="loadbusy(event,'Loading Topology Editor')"><img src="{{tut.icon}}" /></a></td>
-    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url "tutorial.start" %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}" onclick="loadbusy(event,'Loading Topology Editor')">{{tut.name}}</a></td>
-    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm;">{{tut.desc}}</td>
-  </tr>
-{% endfor %}
-</table>
+                            {% if tut.url %}
+                                <button type="buton" onclick=" loadbusy(event,'Loading Topology Editor'); window.location = '{%url "tutorial.start" %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}';" class="btn btn-success"><span class="glyphicon glyphicon-user"></span>Load in Editor</button>
+                            {% endif %}
+                            {% if tut.url and tut.screencast_url %}
+                                &nbsp;
+                            {% endif %}
+                            {% if tut.screencast_url %}
+                                <button type="button" onclick="window.location = '{{tut.screencast_url}}';" class="btn btn-info"><span class="glyphicon glyphicon-play"></span> Watch Screencast</button>
+                            {% endif %}
+
+                    </td>
+                </tr>
+            </table>
+        </li>
+    {% endfor %}
+</ul>
+
+
+
 
 <link href="/style/jquery-ui.css" rel="stylesheet">
 <script src="/js/jquery.js"></script>
@@ -56,5 +87,9 @@
 		});
 	}
 </script>
-<button type="button" onclick="customTutorial()" class="btn btn-primary">Load tutorial from URL</button>
+
+<form style="margin-top: 1.3cm;">
+  <button type="button" onclick="customTutorial()" class="btn btn-primary">Load Own Editor Tutorial from URL</button>
+</form>
+
 {% endblock %}

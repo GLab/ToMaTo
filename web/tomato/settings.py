@@ -94,6 +94,7 @@ server_protocol = "http"
 server_host = "localhost"
 server_port = "8000"
 server_httprealm="G-Lab ToMaTo"
+
 tutorial_list_url="http://packages.tomato-lab.org/tutorials/index.json"
 
 CRISPY_TEMPLATE_PACK = "bootstrap3"

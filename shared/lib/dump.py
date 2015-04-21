@@ -129,7 +129,8 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 #similar arguments as list()
 #param push_to_dumps: if true, the dump will stored in the dumps dict. this is only useful for the init function.
 #param load_from_file: if true, the dump will be loaded from the meta file. if false, the dump will be taken from the dumps dict.
-def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False, load_from_file=False):
+#dump_on_error: set to true if you wish a dump to be created on error, i.e., this was an internal call.
+def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False, load_from_file=False, dump_on_error=False):
 	global dumps
 	with dumps_lock:
 		dump = None
@@ -139,12 +140,12 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 				with open(filename, "r") as f:
 					dump = json.load(f)
 			except:
-				raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, todump=True)
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, todump=dump_on_error)
 		else:
 			if dump_id in dumps:
 				dump = dumps[dump_id].copy()
 			else:
-				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, todump=True)
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, todump=dump_on_error)
 
 		if push_to_dumps:
 			dumps[dump_id] = dump.copy()
@@ -244,7 +245,7 @@ def getAll(after=None, list_only=False, include_data=False, compress_data=True):
 			if list_only:
 				dump = d
 			elif include_data:
-				dump = load_dump(d['dump_id'], True, True)
+				dump = load_dump(d['dump_id'], True, True, dump_on_error=True)
 			return_list.append(dump)
 	return return_list
 
@@ -267,7 +268,7 @@ def init(env_cmds, tomatoComponent, tomatoVersion):
 			for d in dump_file_list:
 				if d.endswith('.meta.json'):
 					dump_id = re.sub('\.meta\.json', '', d)
-					dump = load_dump(dump_id, push_to_dumps=True, load_data=False, load_from_file=True)
+					dump = load_dump(dump_id, push_to_dumps=True, load_data=False, load_from_file=True, dump_on_error=True)
 	scheduler.scheduleRepeated(60 * 60 * 24, auto_cleanup, immediate=True)
 
 
