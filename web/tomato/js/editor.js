@@ -1045,7 +1045,6 @@ var PermissionsWindow = Window.extend({
 		this.userList = $('<div />');
 		this.userListFinder = {};
 		this.div.append(this.userList);
-		this.listCreated = false;
 		
 		this.buttons = $('<div />');
 		this.div.append(this.buttons);
@@ -1078,8 +1077,6 @@ var PermissionsWindow = Window.extend({
 	createUserPermList: function() {
 		var t = this;
 		
-		if (this.listCreated) return;
-		this.listCreated = true;
 		
 		if (!this.options.allowChange) {
 			this.options.allowChange = (this.topology.data.permissions[this.options.ownUserId] == "owner");
@@ -1089,8 +1086,10 @@ var PermissionsWindow = Window.extend({
 		}
 		
 		
-		this.userTable = $('<div class="row"><div class="col-sm-4 col-sm-offset-1"><h4>User</h4></div><div class="col-sm-4"><h4>Permission</h4></div></div>');
-		if (this.options.allowChange) this.userTable.append($('<div class="col-sm-3" />'));
+		this.userTable = $('<div />');
+		var tableHeader = $('<div class="row"><div class="col-sm-1" /><div class="col-sm-5"><h4>User</h4></div><div class="col-sm-3"><h4>Permission</h4></div><div class="col-sm-3" /></div>');
+		this.userTable.append(tableHeader); 
+		this.userList.empty();
 		this.userList.append(this.userTable);
 		var perm = this.topology.data.permissions;
 		for (u in perm) {
@@ -1102,8 +1101,8 @@ var PermissionsWindow = Window.extend({
 	addUserToList: function(username) {
 		var t = this;
 		var tr = $('<div class="row" />');
-		var td_name = $('<div class="col-sm-4" />');
-		var td_perm = $('<div class="col-sm-4" />');
+		var td_name = $('<div class="col-sm-5" />');
+		var td_perm = $('<div class="col-sm-3" />');
 		var td_buttons = $('<div class="col-sm-3" />');
 		var td_icon = $('<div class="col-sm-1" />');
 	
@@ -1111,8 +1110,8 @@ var PermissionsWindow = Window.extend({
 		ajax({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
-				var s = data.realname+' (<a href="/account/info/'+data.id+'" target="_blank" style="font-size:10pt;">'+data.id+'</a>)'
-				td_name.append($(s));
+				td_name.append(''+data.realname+' (<a href="/account/info/'+data.id+'" target="_blank" style="font-size:10pt;">'+data.id+'</a>)');
+				
 				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
 			}
 		});
@@ -1204,7 +1203,6 @@ var PermissionsWindow = Window.extend({
 			if (perm != "null")
 				sel.append($('<option value="'+perm+'" title="'+this.permissions[perm].description+'">'+this.permissions[perm].title+'</option>'));
 		}
-		sel.change(function() { sel[0].title = t.permissions[sel[0].value].description });
 		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
