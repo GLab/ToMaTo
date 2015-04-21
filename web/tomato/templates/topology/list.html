@@ -56,7 +56,7 @@ While waiting for the account activation you can create and design topologies bu
 {% if top_list|length > 10 and not 'no_topology_create' in request.session.user.flags %}
     <form>
     <button type="submit" formaction="{%url "topology.create"%}" onClick="loadbusy(event,'Loading Topology Editor')" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
-	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
+	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Tutorials</button>
 	<button type="submit" formaction="{%url "topology.import_"%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
     </form>
 {% endif %}
@@ -123,7 +123,7 @@ While waiting for the account activation you can create and design topologies bu
 {% else %}
     <form>
     <button type="submit" formaction="{%url "topology.create"%}" onClick="loadbusy(event,'Loading Topology Editor')" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
-	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
+	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Tutorials</button>
 	<button type="submit" formaction="{%url "topology.import_"%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
     </form>
 {% endif %}
