@@ -630,13 +630,14 @@ var TutorialWindow = Window.extend({
 			var t = this
 			this.text = $("<div>.</div>");
 			this.buttons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
-			this.backButton = $("<input type=\"button\" value=\"Back\" />");
+			this.backButton = $('<button class="btn btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Back</button>');
 			this.buttons.append(this.backButton);
 			this.backButton.click(function() {t.tutorialGoBack(); });
-			this.skipButton = $("<input type=\"button\" value=\"Skip\" />");
+			this.skipButton = $('<button class="btn btn-default">Skip <span class="glyphicon glyphicon-arrow-right"></span></button>');
+			this.buttons.append("&nbsp;");
 			this.buttons.append(this.skipButton);
 			this.skipButton.click(function() {t.tutorialGoForth(); });
-			this.closeButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
+			this.closeButton = $('<button class="btn btn-success">Close Tutorial <span class="glyphicon glyphicon-remove"></span></button>');
 			this.buttons.append(this.closeButton);
 			
 			this.closeButton.click(function() {
@@ -744,11 +745,31 @@ var TutorialWindow = Window.extend({
 		}
 		
 		var skipButtonText = this.tutorialSteps[this.tutorialState.step].skip_button;
-		if (skipButtonText) {
-			this.skipButton[0].value = skipButtonText;
-		} else {
-			this.skipButton[0].value = "Skip";
+		var highlight_skipbutton = true;
+		if (!(skipButtonText)) {
+			skipButtonText = "Skip";
+			highlight_skipbutton = false;
 		}
+		this.skipButton[0].innerHTML = skipButtonText + ' <span class="glyphicon glyphicon-arrow-right"></span>';
+		if (highlight_skipbutton) { //this has not the 'skip' text on it, i.e., highlight the button
+			if (this.tutorialState.step == 0) { //this is the first step, which has the 'start tutorial' button
+				$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).removeClass('glyphicon-arrow-right');
+				$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).addClass('glyphicon-play');
+				$(this.skipButton[0]).removeClass('btn-default btn-info');
+				$(this.skipButton[0]).addClass('btn-success');
+			} else {
+				$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).removeClass('glyphicon-play');
+				$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).addClass('glyphicon-arrow-right');
+				$(this.skipButton[0]).removeClass('btn-success btn-default');
+				$(this.skipButton[0]).addClass('btn-info');
+			}
+		} else {
+			$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).removeClass('glyphicon-play');
+			$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).addClass('glyphicon-arrow-right');
+			$(this.skipButton[0]).removeClass('btn-info btn-success');
+			$(this.skipButton[0]).addClass('btn-default');
+		}
+
 	},
 	getData: function() {
 		return this.tutorialState.data;
