@@ -2619,7 +2619,7 @@ var Connection = Component.extend({
 				         || attrs.delay_from || attrs.jitter_from || attrs.lossratio_from || attrs.duplicate_from || attrs.corrupt_from);
 		var bw = 10000000;
 		if (attrs && attrs.emulation) bw = Math.min(attrs.bandwidth_to, attrs.bandwidth_from); 
-		this.path.attr({stroke: color, "stroke-dasharray": [le ? "-" : ""]});
+		this.path.attr({stroke: color});
 		this.path.attr({"stroke-width": bw < 10000 ? 1 : ( bw > 10000 ? 4 : 2.5 )});
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
