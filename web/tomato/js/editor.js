@@ -127,10 +127,10 @@ Menu.button = function(options) {
 };
 
 Menu.checkbox = function(options) {
-	var html = $('<input type="checkbox" id="'+options.name+'"/><label for="'+options.name+'">'+options.label+'</label>');
+	var html = $('<input type="checkbox" id="'+options.name+'" /><label for="'+options.name+'">'+options.label+'</label>');
 	if (options.tooltip) html.attr("title", options.tooltip);
 	if (options.func) html.click(function(){
-		options.func(html.attr("checked"), html);
+		options.func(html.prop("checked"));
 	});
 	html.setChecked = function(value){
 		this.attr("checked", value);
@@ -250,20 +250,20 @@ var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 
-		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
+		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'" checked="true"/>');
 		this.element = $('<div class="col-sm-12">').append(this.checkbox);
 		if (options.disabled) this.checkbox.attr({disabled: true});
 		var t = this;
 		this.checkbox.change(function() {
-			t.onChanged(this.checked);
+			t.onChanged(t.prop("checked"));
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.checkbox[0].checked;
+		return this.checkbox.attr("checked");
 	},
 	setValue: function(value) {
-		this.checkbox[0].checked = value;
+		this.checkbox.attr("checked",value);
 	}
 });
 
@@ -287,10 +287,11 @@ var ChoiceElement = FormElement.extend({
 		}
 		
 		if (this.showInfo) {
-			this.element = $('<div class="col-sm-9" />');
-			this.element.append(this.select);
+			var choiceElement = $('<div class="col-sm-9" />');
+			choiceElement.append(this.select);
 			this.info = $('<div class="col-sm-3"></div>');
-			this.element.after(this.info);
+			this.element = $('<div />');
+			this.element.append(choiceElement,this.info);
 			
 			var t = this;
 			this.select.change(function(){
@@ -345,14 +346,14 @@ var TemplateElement = FormElement.extend({
 		this.disabled = options.disabled;
 		this.call_element = options.call_element;
 		
-		this.element = $('<div style="display:none;"></div>');
+		this.element = $('<div />');
 		this.labelarea = $('<div class="col-sm-6"/>');
 		this.changebuttonarea = $('<div class="col-sm-3"/>');
 		this.infoarea = $('<div class="col-sm-3"/>');
 		
-		this.element.after(this.labelarea);
-		this.element.after(this.changebuttonarea);
-		this.element.after(this.infoarea);
+		this.element.append(this.labelarea);
+		this.element.append(this.changebuttonarea);
+		this.element.append(this.infoarea);
 		
 		template = editor.templates.get(options.type,options.value);
 		if (options.custom_template) {
@@ -371,7 +372,7 @@ var TemplateElement = FormElement.extend({
 		this.template = template;
 		var t = this;
 		
-		var changebutton = $('&nbsp;<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
+		var changebutton = $('<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
 			t.call_element.showTemplateWindow(
 				
@@ -417,7 +418,7 @@ var TemplateElement = FormElement.extend({
 var Window = Class.extend({
 	init: function(options) {
 		this.options = options;
-		this.options.position = options.position || ['center',200];
+		this.options.position = options.position || { my: "center-"+options.width/4+" center", at: "center top", of: "#workspace" };
 		this.div = $('<div style="overflow:visible;"/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
@@ -441,7 +442,7 @@ var Window = Class.extend({
 		if (options.closeOnEscape != undefined)
 			this.div.closeOnEscape = options.closeOnEscape;
 		this.setPosition(options.position);
-		if (options.content) this.div.append(options.content);
+		if (options.content) this.div.append($('<div style="min-height: auto;" />').append(options.content));
 		if (options.autoShow) this.show();
 		
 
@@ -521,7 +522,6 @@ var errorWindow = Window.extend({
 				show_error_appendix: false,
 				error_message_appendix: editor.options.error_message_appendix,
 			};
-		
 		//Copy error to new variable and remove it from the options dict
 		var error = options.error;
 		delete options.error;
@@ -532,43 +532,46 @@ var errorWindow = Window.extend({
 		this._super(this.windowOptions);
 		
 		//Create the content of the error window
-		this.errorContent = $('<div>');
+		this.errorContent = $('<div />');
 
-		console.log(error);
+		
+		this.errorResponse = $('<div />');
 		
 		if(error.parsedResponse) {
-			this.errorContent.after(this.addError(error.parsedResponse.error));
+			this.errorResponse.append(this.addError(error.parsedResponse.error));
 		} else {
-			this.errorContent.after(this.addText(error.originalResponse));
+			this.errorResponse.append(this.addText(error.originalResponse));
 		}
 		
 		if(!(editor.options.isDebugUser || editor.options.debug_mode) && !options.show_error_appendix) {
-			this.errorContent.after('<p style="color: #a0a0a0">'+this.options.error_message_appendix+'</p>');
+			this.errorResponse.append('<p style="color: #a0a0a0">'+this.options.error_message_appendix+'</p>');
 		}
-		this.errorContent.after($('</div>'));
+		this.errorContent.append(this.errorResponse);
 		this.div.append(this.errorContent);
+
 	},
 
 	addError: function(error) {
 		//Show additional information for debug users like the errorcode, the errormessage and errordata for debugusers
-		var content = $('');
-		
 		this.setTitle("Error: "+error.typemsg);
 		
-		var errorMessage = $('<p>'+error.errormsg+'</p>');
-		content.after(errorMessage);
+		this.content = $('<div />');
+		this.errorMessage = $('<p>'+error.errormsg+'</p>');
+
+		this.content.append(this.errorMessage);
 		
 		if(editor.options.isDebugUser && editor.options.debug_mode) {
 			
-			content.after($('<b>Error details:</b>'))
+			this.content.append($('<b>Error details:</b>'))
 			var errorDebugInfos = $('<table />');
 			
 			for(var line=0;line<error.debuginfos.length;line++) {
 				errorDebugInfos.append($('<tr><th>'+error.debuginfos[line].th+'</th><td>'+error.debuginfos[line].td+'</td></tr>'));
 			}
-			content.after(errorDebugInfos);
+			this.content.append(errorDebugInfos);
 		}
-		return content;
+		console.log(this.content);
+		return this.content;
 	},
 	
 	addText: function(text) {
@@ -872,11 +875,10 @@ var InputWindow = Window.extend({
 		}
 
 		var label = $('<label for="newname" class="col-sm-4 control-label" />');
-
 		label.append(options.inputlabel);
-		label.after($('<div class="col-sm-8"/>').append(this.element.getElement()));
-		
 		div.append(label);
+		div.append($('<div class="col-sm-8"/>').append(this.element.getElement()));
+		
 		this.add(form);
 		this.setTitle(options.title);
 	}
@@ -985,7 +987,7 @@ var TemplateWindow = Window.extend({
 				radio.prop("checked","checked");
 			}
 			
-			var radiolabel = $('<label for="'+t.name+'">'+t.label+'</label>');
+			var radiolabel = $('<label for="'+winID+t.name+'">'+t.label+'</label>');
 			radiolabel.click( function(){
 				$(this).children('input').attr('checked', 'checked');
 			});
@@ -1043,7 +1045,6 @@ var PermissionsWindow = Window.extend({
 		this.userList = $('<div />');
 		this.userListFinder = {};
 		this.div.append(this.userList);
-		this.listCreated = false;
 		
 		this.buttons = $('<div />');
 		this.div.append(this.buttons);
@@ -1076,8 +1077,6 @@ var PermissionsWindow = Window.extend({
 	createUserPermList: function() {
 		var t = this;
 		
-		if (this.listCreated) return;
-		this.listCreated = true;
 		
 		if (!this.options.allowChange) {
 			this.options.allowChange = (this.topology.data.permissions[this.options.ownUserId] == "owner");
@@ -1087,8 +1086,10 @@ var PermissionsWindow = Window.extend({
 		}
 		
 		
-		this.userTable = $('<div class="row"><div class="col-sm-4 col-sm-offset-1"><h4>User</h4></div><div class="col-sm-4"><h4>Permission</h4></div></div>');
-		if (this.options.allowChange) this.userTable.append($('<div class="col-sm-3" />'));
+		this.userTable = $('<div />');
+		var tableHeader = $('<div class="row"><div class="col-sm-1" /><div class="col-sm-5"><h4>User</h4></div><div class="col-sm-3"><h4>Permission</h4></div><div class="col-sm-3" /></div>');
+		this.userTable.append(tableHeader); 
+		this.userList.empty();
 		this.userList.append(this.userTable);
 		var perm = this.topology.data.permissions;
 		for (u in perm) {
@@ -1100,8 +1101,8 @@ var PermissionsWindow = Window.extend({
 	addUserToList: function(username) {
 		var t = this;
 		var tr = $('<div class="row" />');
-		var td_name = $('<div class="col-sm-4" />');
-		var td_perm = $('<div class="col-sm-4" />');
+		var td_name = $('<div class="col-sm-5" />');
+		var td_perm = $('<div class="col-sm-3" />');
 		var td_buttons = $('<div class="col-sm-3" />');
 		var td_icon = $('<div class="col-sm-1" />');
 	
@@ -1109,8 +1110,8 @@ var PermissionsWindow = Window.extend({
 		ajax({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
-				var s = data.realname+' (<a href="/account/info/'+data.id+'" target="_blank" style="font-size:10pt;">'+data.id+'</a>)'
-				td_name.append($(s));
+				td_name.append(''+data.realname+' (<a href="/account/info/'+data.id+'" target="_blank" style="font-size:10pt;">'+data.id+'</a>)');
+				
 				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
 			}
 		});
@@ -1126,7 +1127,7 @@ var PermissionsWindow = Window.extend({
 				td_buttons: td_buttons,
 				tr: tr
 		};
-		this.userTable.after(tr);
+		this.userTable.append(tr);
 		
 		this.drawView(username);
 	},
@@ -1202,7 +1203,6 @@ var PermissionsWindow = Window.extend({
 			if (perm != "null")
 				sel.append($('<option value="'+perm+'" title="'+this.permissions[perm].description+'">'+this.permissions[perm].title+'</option>'));
 		}
-		sel.change(function(){ sel[0].title = t.permissions[sel[0].value].description });
 		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
@@ -1522,7 +1522,9 @@ var Topology = Class.extend({
 
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
-			width: "600",
+			width: 600,
+			height: 600,
+			maxHeight:800,
 			buttons: {
 				Save: function() {
 					t.configWindow.hide();
@@ -1832,8 +1834,7 @@ var Topology = Class.extend({
 		 	successFn: function(result) {
 		 		var win = new Window({
 		 			title: "Debug info",
-		 			position: "center top",
-		 			width: 800,
+		 			width: 500,
 		 			buttons: {
 		 				Close: function() {
 		 					win.hide();
@@ -1937,6 +1938,7 @@ var Topology = Class.extend({
 		dialog = new AttributeWindow({
 			title: "Topology Timeout",
 			width: 500,
+			height: 400,
 			buttons: [
 						{ 
 							text: "Save",
@@ -1977,6 +1979,7 @@ var Topology = Class.extend({
 		dialog = new AttributeWindow({
 			title: "New Topology",
 			width: 500,
+			height: 500,
 			closable: false,
 			buttons: [
 						{ 
@@ -2229,8 +2232,7 @@ var Component = Class.extend({
 		 	successFn: function(result) {
 		 		var win = new Window({
 		 			title: "Debug info",
-		 			position: "center top",
-		 			width: 800,
+		 			width: 500,
 		 			buttons: {
 		 				Close: function() {
 		 					win.hide();
@@ -2281,7 +2283,7 @@ var Component = Class.extend({
 		
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
-			width: "600",
+			width: 600,
 			helpTarget:helpTarget,
 			buttons: {
 				Save: function() {
@@ -2430,10 +2432,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			});
 			this.elements.push(el);
 			var link_emulation = $('<div class="tab-pane active" id="Link_Emulation" />');
-			var link_emulation_elements = $('<div class="form-group" />')
+			link_emulation.append($('<div class="form-group" />')
 						.append($('<label class="col-sm-4 control-label">Enabled</label>'))
 						.append($('<div class="col-sm-8" style="padding: 0px" />')
-						.append(el.getElement()));
+						.append(el.getElement())));
 			
 			//direction arrows
 			var size = 30;
@@ -2459,7 +2461,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			}
 			var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
 			var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
-			link_emulation_elements.after($('<div class="form-group" />')
+			link_emulation.append($('<div class="form-group" />')
 				.append($('<label class="col-sm-4 control-label">Direction</label>'))
 				.append($('<div class="col-sm-4" />').append(fromDir).append(dir1))
 				.append($('<div class="col-sm-4" />').append(toDir).append(dir2))
@@ -2474,7 +2476,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				var el_to = this.autoElement(con.caps.attrs[name+"_to"], con.data.attrs[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
-				link_emulation_elements.after($('<div class="form-group" />')
+				link_emulation.append($('<div class="form-group" />')
 					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attrs[name+"_to"].desc))
 					.append($('<div class="col-sm-3" style="padding: 0;"/>').append(el_from.getElement()))
 					.append($('<div class="col-sm-3" style="padding: 0;" />').append(el_to.getElement()))
@@ -2483,9 +2485,6 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			}
 			this.updateEmulationStatus(con.data.attrs.emulation);
 			
-			
-
-			link_emulation.append(link_emulation_elements);
 			tab_content.append(link_emulation);
 			this.table.append(tab_content);
 		}
@@ -2493,7 +2492,6 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var t = this;
 			var packet_capturing = $('<div class="tab-pane" id="Packet_capturing" />');
 			
-			packet_capturing.append(packet_capturing_elements);
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
 				name: "capturing",
@@ -2503,10 +2501,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				}
 			});
 			this.elements.push(el);
-			var packet_capturing_elements = $('<div class="form-group" />')
-			.append($('<label class="col-sm-6 control-label">Enabled</label>'))
-			.append($('<div class="col-sm-6" />')
-			.append(el.getElement()));
+			packet_capturing.append($('<div class="form-group" />')
+					.append($('<label class="col-sm-6 control-label">Enabled</label>'))
+					.append($('<div class="col-sm-6" />')
+					.append(el.getElement())));
 		
 			
 			var order = ["capture_mode", "capture_filter"];
@@ -2515,7 +2513,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				var el = this.autoElement(con.caps.attrs[name], con.data.attrs[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
-				packet_capturing_elements.after($('<div class="form-group" />')
+				packet_capturing.append($('<div class="form-group" />')
 					.append($('<label class="col-sm-6 control-label">').append(con.caps.attrs[name].desc))
 					.append($('<div class="col-sm-6" />').append(el.getElement()))
 				);
@@ -2523,7 +2521,6 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			this.updateCapturingStatus(con.data.attrs.capturing);
 			
 
-			packet_capturing.append(packet_capturing_elements);
 			tab_content.append(packet_capturing);
 			this.table.append(tab_content);
 		}
@@ -2620,7 +2617,7 @@ var Connection = Component.extend({
 				         || attrs.delay_from || attrs.jitter_from || attrs.lossratio_from || attrs.duplicate_from || attrs.corrupt_from);
 		var bw = 10000000;
 		if (attrs && attrs.emulation) bw = Math.min(attrs.bandwidth_to, attrs.bandwidth_from); 
-		this.path.attr({stroke: color, "stroke-dasharray": [le ? "-" : ""]});
+		this.path.attr({stroke: color});
 		this.path.attr({"stroke-width": bw < 10000 ? 1 : ( bw > 10000 ? 4 : 2.5 )});
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
@@ -4363,10 +4360,12 @@ var Editor = Class.extend({
 	optionMenuItem: function(options) {
 		var t = this;
 		return Menu.checkbox({
-			name: options.name, label: options.label, tooltip: options.tooltip,
+			name: options.name, 
+			label: options.label, 
+			tooltip: options.tooltip,
 			func: function(value){
-				t.options[options.name]=value != null;
-			  t.onOptionChanged(options.name);
+				t.setOption(options.name,value);
+				t.onOptionChanged(options.name);
 			},
 			checked: this.options[options.name]
 		});
