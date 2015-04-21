@@ -19,10 +19,14 @@
   display: inline-block;  
 }
 
+
+.ui-dialog {
+	overflow: visible;
+}
+
 .ui-dialog .ui-dialog-content {
 	max-height: 800px !important;
 }
-
 
 .ui-widget-overlay {
 	background: rgba(200,200,200,0.5);
