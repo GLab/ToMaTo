@@ -716,7 +716,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 
 	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
 		# TODO: return None if unreachable, return dummy if it does not exist
-		dump = self.getProxy().dump_info(dump_id, include_data=True, compress_data=True)
+		dump = self.getProxy().dump_info(dump_id, include_data=True, compress_data=True, dump_on_error=False)
 		if not keep_compressed:
 			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
 		return dump

@@ -5,7 +5,7 @@ from .lib import anyjson as json
 import host
 from .lib import attributes, db, keyvaluestore  # @UnresolvedImport
 from . import scheduler, config, currentUser
-from .lib.error import InternalError, UserError  # @UnresolvedImport
+from .lib.error import InternalError, UserError, Error  # @UnresolvedImport
 
 
 # Zero-th part: database stuff
@@ -258,8 +258,9 @@ class DumpSource:
                 self.dump_set_last_fetch(this_fetch_time)
             return fetch_results
         except Exception, exc:
-            InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
-                          data={"source": repr(self)}).dump()
+            if not isinstance(exc, Error) or exc.todump: # do not dump if this is an Error that doesn't need to be dumped anymore (i.e., has been dumped, or doesn't need to be dumped)
+                InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
+                              data={"source": repr(self), "exception": exc}).dump()
             return []
 
 
@@ -275,7 +276,7 @@ class BackendDumpSource(DumpSource):
     def dump_fetch_with_data(self, dump_id, keep_compressed=True):
         import dump
 
-        d = dump.get(dump_id, include_data=True, compress_data=True)
+        d = dump.get(dump_id, include_data=True, compress_data=True, dump_on_error=False)
         if not keep_compressed:
             d['data'] = json.loads(zlib.decompress(base64.b64decode(d['data'])))
         return d
