@@ -166,7 +166,10 @@ class ErrorDump(attributes.Mixin, models.Model):
         return dump
 
     def remove(self):
+        g = self.group
         self.delete()
+        g.removed_dumps += 1
+        g.save()
 
 
 def create_dump(dump, source, nosave=False):
