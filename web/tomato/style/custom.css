@@ -153,7 +153,8 @@ div.hoverdescription {
 div.hoverdescription div.hiddenbox {
 	display:none;
 	font-size: 10pt;
-	white-space:normal !important;
+	white-space:nowrap !important;
+	z-index: 1000;
 }
 div.hoverdescription:hover div.hiddenbox {
 	display:inline;
@@ -170,9 +171,11 @@ div.hoverdescription:hover div.hiddenbox p {
 }
 div.hoverdescription:hover div.hiddenbox td {
 	white-space:normal !important;
+	padding: 2px;
 }
 div.hoverdescription:hover div.hiddenbox td p {
 	padding-left: 0px;
+	font-size:10pt;
 	padding-right: 0px;
 }
 
