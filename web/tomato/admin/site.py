@@ -37,7 +37,7 @@ from django.core.urlresolvers import reverse
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc
-from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list, InputTransformerForm
+from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list
 
 
 geolocation_script = '<script>\n\
@@ -105,7 +105,7 @@ class SiteForm(AddEditForm):
          )
         
     def get_values(self):
-        formData = InputTransformerForm.get_values(self)
+        formData = super(SiteForm, self).get_values()
         formData['geolocation'] = {'longitude':formData['geolocation_longitude'],
                                    'latitude':formData['geolocation_latitude']}
         del formData['geolocation_longitude']
