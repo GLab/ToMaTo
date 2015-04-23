@@ -26,7 +26,7 @@ function pretty_json_popup(obj,title,filename) {
 	div.dialog({autoOpen: true,
 				draggable: false,
 				resizable: false,
-				position: "top",
+				position: { my: "center center", at: "center top", of: "#content"},
 				width: "60%",
 				title: title,
 				modal: true,

@@ -153,7 +153,8 @@ div.hoverdescription {
 div.hoverdescription div.hiddenbox {
 	display:none;
 	font-size: 10pt;
-	white-space:normal !important;
+	white-space:nowrap !important;
+	z-index: 1000;
 }
 div.hoverdescription:hover div.hiddenbox {
 	display:inline;
@@ -170,9 +171,11 @@ div.hoverdescription:hover div.hiddenbox p {
 }
 div.hoverdescription:hover div.hiddenbox td {
 	white-space:normal !important;
+	padding: 2px;
 }
 div.hoverdescription:hover div.hiddenbox td p {
 	padding-left: 0px;
+	font-size:10pt;
 	padding-right: 0px;
 }
 
@@ -291,4 +294,122 @@ textarea {
 td.critical-timeout {
 	font-weight: bold;
 	color:red;
+}
+
+
+/* JQuery UI Updates for Dialogs */
+.ui-widget-content {
+    border: 1px solid #AAA;
+    background: url("images/ui-bg_flat_75_ffffff_40x100.png") repeat-x scroll 50% 50% #FFF;
+    color: #222;
+}
+.ui-widget {
+    font-family: Verdana,Arial,sans-serif;
+    font-size: 10pt;
+}
+
+.ui-dialog-titlebar {
+	border: 1px solid #AAA;
+	background: url("images/ui-bg_highlight-soft_75_cccccc_1x100.png") repeat-x scroll 50% 50% #CCC;
+	color: #222;
+	font-weight: bold;
+}
+
+.ui-dialog .ui-dialog-titlebar button.ui-state-default {
+	border: 1px solid #D3D3D3;
+	background: url("images/ui-bg_glass_75_e6e6e6_1x400.png") repeat-x scroll 50% 50% #E6E6E6;
+	font-weight: normal;
+	color: #555;
+	border-radius: 4px;
+	
+}
+.ui-dialog .ui-dialog-titlebar button.ui-state-hover {
+	border: 1px solid #999;
+	background: url("images/ui-bg_glass_75_dadada_1x400.png") repeat-x scroll 50% 50% #DADADA;
+	font-weight: normal;
+	color: #212121;
+	
+}
+.ui-dialog .ui-dialog-titlebar button.ui-state-focus,
+.ui-dialog .ui-dialog-titlebar button.ui-state-active {
+	border: 1px solid #AAA;
+	background: url("images/ui-bg_glass_75_ffffff_1x400.png") repeat-x scroll 50% 50% #FFFFFF;
+	font-weight: normal;
+	color: #212121;
+	
+}
+
+.ui-icon-closethick {
+	background-image: url("images/ui-icons_888888_256x240.png");
+	background-position: -96px -128px;
+	background-repeat: no-repeat;
+	cursor:pointer;
+	display:block;
+	font-weight: normal;
+	color: #555;
+	height:16px;
+	width: 16px;
+	line-height:13px;
+	margin-left: -8px;
+	margin-top:-8px;
+	top: 9px;
+	left: 9px;
+}
+
+.ui-widget-overlay {
+	background: rgba(200,200,200,0.5);
+}
+
+.ui-dialog-buttons .ui-button-text-only {
+  display: inline-block;
+  padding: 6px 12px;
+  margin-bottom: 0;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.428571429;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+       -o-user-select: none;
+          user-select: none;
+  color: #ffffff;
+  background-color: #428bca;
+  border-color: #357ebd;
+}
+
+
+.ui-button-text-only .ui-button-text {
+	padding:0px;
+	width:100%;
+}
+
+.ui-dialog-buttons .ui-button-text-only:focus {
+  outline: thin dotted #333;
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
+}
+
+.ui-dialog-buttons .ui-button-text-only:hover {
+  color: #ffffff;
+  background-color: #3276b1;
+  border-color: #285e8e;
+  text-decoration: none;
+}
+
+.ui-dialog-buttons .ui-button-text-only:active,
+.ui-dialog-buttons .ui-button-checked {
+  background-image: none;
+  outline: 0; button 
+  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+          .ui-button  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  color: #ffffff;
+  background-color: #3276b1;
+  border-color: #285e8e;
 }
