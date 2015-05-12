@@ -315,17 +315,17 @@ class Repy(elements.Element):
 		return fileserver.addGrant(self.dataPath("program.repy"), fileserver.ACTION_DOWNLOAD)
 
 	def action_download_log_grant(self):
-        # make sure there is no leftover log from last download
+		# make sure there is no leftover log from last download
 		if os.path.exists(self.dataPath("download.log")):
 			os.remove(self.dataPath("download.log"))
 
-        # if a log exists, use this. if not, create an empty file for the user to download
+		# if a log exists, use this. if not, create an empty file for the user to download
 		if os.path.exists(self.dataPath("program.log")):
 			shutil.copyfile(self.dataPath("program.log"),self.dataPath("download.log"))
 		else:
 			open(self.dataPath("download.log"), 'a').close()
 
-        # now, return a grant to download this.
+		# now, return a grant to download this.
 		return fileserver.addGrant(self.dataPath("download.log"), fileserver.ACTION_DOWNLOAD)
 		
 	def upcast(self):
