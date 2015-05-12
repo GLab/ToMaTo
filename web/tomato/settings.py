@@ -80,7 +80,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('django.core.context_processors.request',)
 
 import os
 CURRENT_DIR = os.path.dirname(__file__)
-TEMPLATE_DIRS = os.path.join(CURRENT_DIR, 'templates')
+TEMPLATE_DIRS = (os.path.join(CURRENT_DIR, 'templates'),)
 
 INSTALLED_APPS = (
     'django.contrib.auth',
