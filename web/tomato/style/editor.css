@@ -213,6 +213,7 @@ div.windowHelp {
 .context-menu-item.icon-connect { background-image: url(../img/connect16.png); }
 .context-menu-item.icon-control { background-image: url(../img/control.png); }
 .context-menu-item.icon-console { background-image: url(../img/console.png); }
+.context-menu-item.icon-console_download { background-image: url(../img/console_download.png); }
 .context-menu-item.icon-edit { background-image: url(../img/pencil.png); }
 .context-menu-item.icon-usage { background-image: url(../img/chart_bar.png); }
 .context-menu-item.icon-notes { background-image: url(../img/notes16.png); }
