@@ -156,6 +156,7 @@ def getAllOrganizations(**kwargs):
 
 def createOrganization(name, description="", attrs={}):
 	UserError.check(currentUser().hasFlag(Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
+	UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Organization name may not include a '/'")
 	logging.logMessage("create", category="site", name=name, description=description)
 	organization = Organization(name=name)
 	organization.save()
@@ -245,6 +246,7 @@ def getAllSites(**kwargs):
 
 
 def createSite(name, organization, description="", attrs={}):
+	UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Site name may not include a '/'")
 	orga = getOrganization(organization)
 	UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
 		data={"name": organization})
@@ -995,6 +997,7 @@ def getAll(**kwargs):
 
 
 def create(name, site, attrs=None):
+	UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Host name may not include a '/'")
 	if not attrs: attrs = {}
 	user = currentUser()
 	UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
