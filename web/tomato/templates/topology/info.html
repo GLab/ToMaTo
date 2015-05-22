@@ -46,12 +46,21 @@
 
 <div id="editor" style="width: 800px; padding: 0px; border:0px; margin-left: auto; margin-right:auto;">
 	<div id="browser_issues"></div>
-	<h1 id="topology_name" style=" margin-left:{{editor.size.marginleft}}px;">Topology '{{top.attrs.name}}'</h1>
-	<div id="menu" style="width:{{editor.size.width}}px; margin-left:{{editor.size.marginleft}}px;"></div>
-	<div id="workspace" style="width:{{editor.size.width}}px; height:{{editor.size.height}}px; margin-left:{{editor.size.marginleft}}px;"></div>
+	<h1 id="topology_name">Topology '{{top.attrs.name}}'</h1>
+	<div id="menu" style="width:{{editor.size.width}}px;"></div>
+	<div id="workspace" style="width:{{editor.size.width}}px; height:{{editor.size.height}}px;"></div>
 </div>
 
 <script language="JavaScript" type="text/javascript">
+
+  $(window).resize(function() {
+    var margin = ( $(this).width() > 1600 ) ? "{{editor.size.marginleft}}px" : "0px"
+	$("#topology_name").css("margin-left", margin);
+	$("#menu").css("margin-left", margin);
+	$("#workspace").css("margin-left", margin);
+  });
+  $(window).trigger('resize');
+
   display_issues($("#browser_issues"));
   help_baseUrl = "{%externalurl 'help' %}";
   {% if tutorial_info.state.enabled %}
