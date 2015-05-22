@@ -43,11 +43,12 @@
 {% block content %}
 
 
+
 <div id="editor" style="width: 800px; padding: 0px; border:0px; margin-left: auto; margin-right:auto;">
 	<div id="browser_issues"></div>
 	<h1 id="topology_name">Topology '{{top.attrs.name}}'</h1>
-	<div id="menu" style="width:800px;"></div>
-	<div id="workspace" style="width:800px; height:600px;"></div>
+	<div id="menu" style="width:{{editor.size.width}}px; margin-left:{{editor.size.marginleft}}px"></div>
+	<div id="workspace" style="width:{{editor.size.width}}px; height:{{editor.size.height}}px; margin-left:{{editor.size.marginleft}}px"></div>
 </div>
 
 <script language="JavaScript" type="text/javascript">
