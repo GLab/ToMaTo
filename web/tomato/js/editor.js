@@ -127,7 +127,7 @@ Menu.button = function(options) {
 };
 
 Menu.checkbox = function(options) {
-	var html = $('<input type="checkbox" id="'+options.name+'" /><label for="'+options.name+'">'+options.label+'</label>');
+	var html = $('<input style="margin-left:0.25cm;" type="checkbox" id="'+options.name+'" /> <label style="margin-right:0.25cm;" for="'+options.name+'">'+options.label+'</label>');
 	if (options.tooltip) html.attr("title", options.tooltip);
 	if (options.func) html.click(function(){
 		options.func(html.prop("checked"));
@@ -4854,6 +4854,12 @@ var Editor = Class.extend({
 		        label:"Colorify segments",
 		        tooltip:"Paint different network segments with different colors"
 		    }),
+
+		    big_editor: this.optionMenuItem({
+		    	name:"big_editor",
+		    	label:"Big workspace",
+		    	tooltip:"Have a bigger editor workspace. Requires page reload."
+		    }),
 		    
 		    show_ids: this.optionMenuItem({
 		        name:"show_ids",
@@ -4871,12 +4877,6 @@ var Editor = Class.extend({
 		        name:"debug_mode",
 		        label:"Debug mode",
 		        tooltip:"Displays debug messages"
-		    }),
-
-		    big_editor: this.optionMenuItem({
-		    	name:"big_editor",
-		    	label:"Big workspace",
-		    	tooltip:"Have a bigger editor workspace. Requires page reload."
 		    })
 		};
 
