@@ -70,7 +70,7 @@ def _display(api, request, info, tutorial_state):
 	except:
 		pass
 
-	editor_size_scale = 1
+	editor_size_scale =  2 if ("_big_editor" in info["attrs"] and info['attrs']['_big_editor']) else 1
 	editor_size = {
 		'width': int(800 * editor_size_scale),
 		'height':int(600 * editor_size_scale)
