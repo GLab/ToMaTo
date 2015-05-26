@@ -51,7 +51,8 @@
 	<div id="workspace" style="width:{{editor.size.width}}px; height:{{editor.size.height}}px;"></div>
 </div>
 
-<script language="JavaScript" type="text/javascript">
+<script language="JavaScript" type="text/javascript"> 
+
 
   $(window).resize(function() {
     var margin = ( $(this).width() > 1600 ) ? "{{editor.size.marginleft}}px" : "0px"
@@ -97,7 +98,11 @@
   	
   });
   
-
+  scroll_target = $("#topology_name").offset().top;
+  $('html, body').animate({
+      scrollTop: scroll_target
+  }, 800);
+  
   
   
 </script>
