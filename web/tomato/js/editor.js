@@ -3067,6 +3067,13 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
+	downloadLog: function() {
+		this.action("download_log_grant", {callback: function(el, res) {
+			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name + '.log';
+			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name);
+			window.location.href = url;
+		}})
+	},
 	changeTemplate: function(tmplName,action_callback) {
 		this.action("change_template", {
 			params:{
@@ -3283,38 +3290,46 @@ var createElementMenu = function(obj) {
 					}
 				} : null,
 				"sep2": "---",
-				"console": obj.consoleAvailable() ? {
+				"console": obj.consoleAvailable() || obj.actionEnabled("download_log_grant") ? {
 					name:"Console",
 					icon:"console",
 					items: {
-						"console_novnc": obj.data.attrs.websocket_pid ? {
+						"console_novnc": obj.consoleAvailable() && obj.data.attrs.websocket_pid ? {
 							name:"NoVNC (HTML5+JS)",
 							icon:"novnc",
 							callback: function(){
 								obj.openConsoleNoVNC();
 							}
 						} : null,
-						"console_java": {
+						"console_java": obj.consoleAvailable() ? {
 							name: "Java applet",
 							icon: "java-applet",
 							callback: function(){
 								obj.openConsole();
 							}
-						}, 
-						"console_link": {
+						} : null,
+						"console_link": obj.consoleAvailable() ? {
 							name:"vnc:// link",
 							icon:"console",
 							callback: function(){
 								obj.openVNCurl();
 							}
-						},
-						"console_info": {
+						} : null,
+						"console_info": obj.consoleAvailable() ? {
 							name:"VNC Information",
 							icon:"info",
 							callback: function(){
 								obj.showVNCinfo();
 							}
-						},
+						} : null,
+						"sepconsole": obj.actionEnabled("download_log_grant") && obj.consoleAvailable() ? "---" : null,
+						"log": obj.actionEnabled("download_log_grant") ? {
+							name:"Download Log",
+							icon:"console_download",
+							callback: function(){
+								obj.downloadLog();
+							},
+						} : null,
 					}
 				} : null,
 				"used_addresses": obj.data.attrs.used_addresses ? {
@@ -3390,7 +3405,7 @@ var createElementMenu = function(obj) {
 					name:'Configure',
 					icon:'configure',
 					callback:function(){
-					obj.showConfigWindow(true);
+						obj.showConfigWindow(true);
 					}
 				},
 				"debug": obj.editor.options.debug_mode ? {
