@@ -127,7 +127,7 @@ Menu.button = function(options) {
 };
 
 Menu.checkbox = function(options) {
-	var html = $('<input type="checkbox" id="'+options.name+'" /><label for="'+options.name+'">'+options.label+'</label>');
+	var html = $('<input style="margin-left:0.25cm;" type="checkbox" id="'+options.name+'" /> <label style="margin-right:0.25cm;" for="'+options.name+'">'+options.label+'</label>');
 	if (options.tooltip) html.attr("title", options.tooltip);
 	if (options.func) html.click(function(){
 		options.func(html.prop("checked"));
@@ -1518,7 +1518,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode", "show_ids", "show_sites_on_elements"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "big_editor", "debug_mode", "show_ids", "show_sites_on_elements"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
@@ -4854,6 +4854,12 @@ var Editor = Class.extend({
 		        label:"Colorify segments",
 		        tooltip:"Paint different network segments with different colors"
 		    }),
+
+		    big_editor: this.optionMenuItem({
+		    	name:"big_editor",
+		    	label:"Big workspace",
+		    	tooltip:"Have a bigger editor workspace. Requires page reload."
+		    }),
 		    
 		    show_ids: this.optionMenuItem({
 		        name:"show_ids",
@@ -4878,6 +4884,7 @@ var Editor = Class.extend({
 									this.optionCheckboxes.snap_to_grid,
 									this.optionCheckboxes.colorify_segments,
 									this.optionCheckboxes.fixed_pos,
+									this.optionCheckboxes.big_editor,
 									this.optionCheckboxes.show_ids,
 									this.optionCheckboxes.show_sites_on_elements,
 									this.optionCheckboxes.debug_mode
