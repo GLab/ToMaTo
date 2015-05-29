@@ -123,17 +123,16 @@ class AddProfileForm(ProfileForm):
 
 @wrap_rpc
 def list(api, request, tech):
-	profile_list = api.resource_list('profile')
+	profile_list = api.profile_list()
+	print profile_list
 	def _cmp(ta, tb):
-		a = ta["attrs"]
-		b = tb["attrs"]
-		c = cmp(a["tech"], b["tech"])
+		c = cmp(ta["tech"], tb["tech"])
 		if c:
 			return c
-		c = -cmp(a["preference"], b["preference"])
+		c = -cmp(ta["preference"], tb["preference"])
 		if c:
 			return c
-		return cmp(a["name"], b["name"])
+		return cmp(ta["name"], tb["name"])
 	profile_list.sort(_cmp)
 	if tech:
 		profile_list = filter(lambda t: t["attrs"]["tech"] == tech, profile_list)

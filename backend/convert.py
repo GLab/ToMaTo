@@ -1,3 +1,4 @@
+import sys
 from tomato.models import *
 
 def loadDumpData(file):
@@ -53,7 +54,7 @@ def rebuildIndexes(cls):
 		collection.drop_index(index)
 	cls.ensure_indexes()
 
-def modifyDict(data, rename=None, remove=None, emptyToNone=False):
+def modifyDict(data, rename=None, remove=None, emptyToNone=False, encapsulate=None, encapsulateName='directData'):
 	data = dict(data)
 	if not remove:
 		remove = []
@@ -70,7 +71,41 @@ def modifyDict(data, rename=None, remove=None, emptyToNone=False):
 		for key, value in data.items():
 			if value == '':
 				data[key] = None
+	dd = {}
+	for n in encapsulate or []:
+		if n in data:
+			dd[n] = data[n]
+			del data[n]
+	if dd:
+		data[encapsulateName] = dd
 	return data
+
+def cleanup():
+	print "cleaning up..."
+	Connection.objects.delete()
+	ExternalNetworkEndpoint.objects.delete()
+	Host.objects.delete()
+	Site.objects.delete()
+	User.objects.delete()
+	ErrorGroup.objects.delete()
+	NetworkInstance.objects.delete()
+	Network.objects.delete()
+	Profile.objects.delete()
+	Template.objects.delete()
+	KVMQM_Interface.objects.delete()
+	OpenVZ_Interface.objects.delete()
+	VMElement.objects.delete()
+	ExternalNetwork.objects.delete()
+	Element.objects.delete()
+	Topology.objects.delete()
+	LinkStatistics.objects.delete()
+	HostConnection.objects.delete()
+	HostElement.objects(parent__ne=None).delete()
+	HostElement.objects.delete()
+	Organization.objects().delete()
+	UsageStatistics.objects.delete()
+	rebuildIndexes(LinkStatistics)
+	rebuildIndexes(ErrorGroup)
 
 def importData(data):
 	print "importing objects..."
@@ -80,7 +115,6 @@ def importData(data):
 		entry = modifyDict(entry, remove=['id'])
 		usages[key] = Usage(**entry)
 	print "\tUsage statistics..."
-	UsageStatistics.objects.delete()
 	usagestatistics = {}
 	for key, entry in data['usagestatistics'].items():
 		obj = UsageStatistics()
@@ -129,7 +163,6 @@ def importData(data):
 		obj = Quota(monthly=monthly, used=used, **entry)
 		quotas[key] = obj
 	print "\tOrganizations..."
-	Organization.objects().delete()
 	organizations = {}
 	for key, entry in data['organization'].items():
 		totalUsage = usagestatistics.get(entry['totalUsage'])
@@ -141,7 +174,6 @@ def importData(data):
 		obj.save()
 		organizations[key] = obj
 	print "\tSites..."
-	Site.objects.delete()
 	sites = {}
 	for key, entry in data['site'].items():
 		orga = organizations.get(entry['organization'])
@@ -154,7 +186,6 @@ def importData(data):
 		site.save()
 		sites[key] = site
 	print "\tUsers..."
-	User.objects.delete()
 	users = {}
 	for key, entry in data['user'].items():
 		orga = organizations.get(entry['organization'])
@@ -167,7 +198,7 @@ def importData(data):
 		if not quota:
 			print "\t\tInvalid reference: User[%d] -> Quota[%d]" % (key, entry['quota'])
 		entry = modifyDict(entry, rename=(('password_time', 'passwordTime'), ('last_login', 'lastLogin')),
-			remove=['id', 'organization', 'totalUsage', 'quota'])
+			remove=['id', 'organization', 'totalUsage', 'quota', '_reason', 'send_mail', 'affiliation', 'tutorial'])
 		obj = User(organization=orga, totalUsage=totalUsage, quota=quota, **entry)
 		obj.save()
 		users[key] = obj
@@ -184,11 +215,10 @@ def importData(data):
 		if permission is None:
 			print "\t\tInvalid reference: PermissionEntry[%d] -> Permission[%d]" % (key, entry['set'])
 			continue
-		entry = modifyDict(entry, remove=['id', 'user'])
+		entry = modifyDict(entry, remove=['id', 'user', 'set'])
 		obj = Permission(user=user, **entry)
 		permission.append(obj)
 	print "\tErrorgroups..."
-	ErrorGroup.objects.delete()
 	errorgroups = {}
 	for key, entry in data['errorgroup'].items():
 		entry = modifyDict(entry, rename={'id': 'groupId', 'removed_dumps': 'removedDumps'})
@@ -210,7 +240,6 @@ def importData(data):
 	for obj in errorgroups.values():
 		obj.save()
 	print "\tHosts..."
-	Host.objects.delete()
 	hosts = {}
 	for key, entry in data['host'].items():
 		totalUsage = usagestatistics.get(entry['totalUsage'])
@@ -230,7 +259,6 @@ def importData(data):
 		obj.save()
 		hosts[key] = obj
 	print "\tNetworks..."
-	Network.objects.delete()
 	networks = {}
 	for key, entry in data['network'].items():
 		entry = modifyDict(entry, remove=['id'])
@@ -238,7 +266,6 @@ def importData(data):
 		obj.save()
 		networks[key] = obj
 	print "\tNetwork instances..."
-	NetworkInstance.objects.delete()
 	networkinstances = {}
 	for key, entry in data['networkinstance'].items():
 		host = hosts.get(entry['host'])
@@ -254,7 +281,6 @@ def importData(data):
 		obj.save()
 		networkinstances[key] = obj
 	print "\tProfiles..."
-	Profile.objects.delete()
 	profiles = {}
 	for key, entry in data['profile'].items():
 		entry = modifyDict(entry, remove=['id'])
@@ -265,7 +291,6 @@ def importData(data):
 		except:
 			print "\t\tDuplicate object: %r" % entry
 	print "\tTemplates..."
-	Template.objects.delete()
 	templates = {}
 	templates_index = {}
 	for key, entry in data['template'].items():
@@ -288,7 +313,6 @@ def importData(data):
 	for obj in hosts.values():
 		obj.save()
 	print "\tTopologies..."
-	Topology.objects.delete()
 	topologies = {}
 	for key, entry in data['topology'].items():
 		perms = permissions.get(entry['permissions'])
@@ -311,8 +335,6 @@ def importData(data):
 		obj.save()
 		topologies[key] = obj
 	print "\tLink measurements..."
-	LinkStatistics.objects.delete()
-	rebuildIndexes(LinkStatistics)
 	linkStats = {}
 	for key, entry in data['linkmeasurement'].items():
 		siteA = sites.get(entry['siteA'])
@@ -348,7 +370,6 @@ def importData(data):
 			continue
 		stats.save()
 	print "\tHost elements..."
-	HostElement.objects.delete()
 	hostelements = {}
 	hostelements_index = {}
 	for key, entry in data['hostelement'].items():
@@ -369,7 +390,6 @@ def importData(data):
 		hostelements[key] = obj
 		hostelements_index[(host.name, obj.num)] = obj
 	print "\tHost connections..."
-	HostConnection.objects.delete()
 	hostconnections = {}
 	for key, entry in data['hostconnection'].items():
 		host = hosts.get(entry['host'])
@@ -495,7 +515,7 @@ def importData(data):
 	for key, entry in data.get('kvmqm', {}).items():
 		entry = adaptVmElement(entry, 'kvmqm')
 		entry = modifyDict(entry, rename={'last_sync': 'lastSync', 'next_sync': 'nextSync',
-			'rextfv_last_started': 'rextfvLastStarted'}, remove=['id', 'type'])
+			'rextfv_last_started': 'rextfvLastStarted'}, remove=['id', 'type', 'host'], encapsulate=['usbtablet', 'kblang'])
 		obj = KVMQM(**entry)
 		obj.save()
 		elements[key] = obj
@@ -516,7 +536,8 @@ def importData(data):
 	for key, entry in data.get('openvz', {}).items():
 		entry = adaptVmElement(entry, 'openvz')
 		entry = modifyDict(entry, rename={'last_sync': 'lastSync', 'next_sync': 'nextSync',
-			'rextfv_last_started': 'rextfvLastStarted'}, remove=['id', 'type'])
+			'rextfv_last_started': 'rextfvLastStarted'}, remove=['id', 'type', 'host'], encapsulate=['hostname', 'rootpassword',
+			'gateway4', 'gateway6'])
 		obj = OpenVZ(**entry)
 		obj.save()
 		elements[key] = obj
@@ -527,7 +548,7 @@ def importData(data):
 	for key, entry in data.get('openvz_interface', {}).items():
 		entry = adaptVmInterface(entry)
 		entry = modifyDict(entry, remove=['id', 'type'])
-		entry = modifyDict(entry, rename={'use_dhcp': 'useDhcp'})
+		entry = modifyDict(entry, encapsulate=['ip4address', 'ip6address', 'use_dhcp'])
 		obj = OpenVZ_Interface(**entry)
 		obj.save()
 		elements[key] = obj
@@ -537,7 +558,7 @@ def importData(data):
 	print "\tRepy elements..."
 	for key, entry in data.get('repy', {}).items():
 		entry = adaptVmElement(entry, 'repy')
-		entry = modifyDict(entry, remove=['id', 'type'])
+		entry = modifyDict(entry, remove=['id', 'type', 'rextfv_last_started', 'next_sync'])
 		obj = Repy(**entry)
 		obj.save()
 		elements[key] = obj
@@ -568,7 +589,8 @@ def importData(data):
 		if entry['element'] and not elem:
 			print "\t\tInvalid reference: TincEndpoint[%d] -> HostElement[%d]" % (entry['id'], entry['element'])
 			return
-		entry = modifyDict(entry, remove=['id', 'type', 'element'])
+		entry = modifyDict(entry, remove=['id', 'type', 'element', 'path'])
+		print entry
 		obj = TincEndpoint(element=elem, **entry)
 		obj.save()
 		elements[key] = obj
@@ -590,7 +612,6 @@ def importData(data):
 			elem.topologyElement = obj
 			elem.save()
 	print "\tConnections..."
-	Connection.objects.delete()
 	connections = {}
 	for key, entry in data['connection'].items():
 		perms = permissions.get(entry['permissions'])
@@ -618,7 +639,9 @@ def importData(data):
 		if not len(elems) == 2:
 			print "\t\tInvalid connection: Connection[%d] has %d elements" % (key, len(elems))
 			continue
-		entry = modifyDict(entry, remove=['id', 'topology', 'permissions', 'totalUsage'])
+		entry = modifyDict(entry, remove=['id', 'topology', 'permissions', 'totalUsage', 'connectionElement1',
+			'connectionElement2', 'connection1', 'connection2'], encapsulate=['bandwidth_from', 'bandwidth_to',
+			'emulation'])
 		clientData = {}
 		for k, value in entry.items():
 			if k.startswith('_'):
@@ -650,6 +673,7 @@ def importData(data):
 	print "done."
 	
 if __name__ == "__main__":
-	data = loadDumpData('dump.json')
+	data = loadDumpData(sys.argv[1])
 	data = convertData(data)
+	cleanup()
 	importData(data)

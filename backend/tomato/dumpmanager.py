@@ -10,7 +10,7 @@ from .lib.error import InternalError, UserError # @UnresolvedImport
 # Zero-th part: database stuff
 class ErrorDump(EmbeddedDocument):
 	source = StringField(required=True)
-	dumpId = StringField(db_field='dump_id', required=True, unique=True)
+	dumpId = StringField(db_field='dump_id', required=True) #not unique, different semantics on embedded documents
 	description = DictField(required=True)
 	data = StringField()
 	dataAvailable = BooleanField(default=False, db_field='data_available')
@@ -19,9 +19,6 @@ class ErrorDump(EmbeddedDocument):
 	timestamp = FloatField(required=True)
 	meta = {
 		'ordering': ['+timestamp'],
-		'indexes': [
-			'dumpId'
-		]
 	}
 
 	def getSource(self):

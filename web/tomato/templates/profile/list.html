@@ -59,40 +59,40 @@
 	  </tr>
 	{% for profile in profile_list %}
 	  <tr>
-	  	<td enhancetable_customkey="{{profile.attrs.tech}}" align="right" class="icononly">
-	  		<img src="/img/{{profile.attrs.tech}}16.png" title="{{techs_dict|get:profile.attrs.tech}}" />
+	  	<td enhancetable_customkey="{{profile.tech}}" align="right" class="icononly">
+	  		<img src="/img/{{profile.tech}}16.png" title="{{techs_dict|get:profile.tech}}" />
 		</td>
-	    <td><a href="{%url "profile.info" profile.id%}">{{profile.attrs.name}}</a></td>
-	    <td>{{profile.attrs.label}}</td>
+	    <td><a href="{%url "profile.info" profile.id%}">{{profile.name}}</a></td>
+	    <td>{{profile.label}}</td>
 		<td>
-			{% if profile.attrs.tech != 'repy' %}
-				{{profile.attrs.diskspace}} MB
+			{% if profile.tech != 'repy' %}
+				{{profile.diskspace}} MB
 			{% endif %}
 		</td>
 		
-		<td>{{profile.attrs.ram}} MB</td>
-		<td>{{profile.attrs.cpus}}</td>
-		<td>{{profile.attrs.preference}}</td>
+		<td>{{profile.ram}} MB</td>
+		<td>{{profile.cpus}}</td>
+		<td>{{profile.preference}}</td>
 		<td class="icononly">
 		<div class="hoverdescription">
-			{% if profile.attrs.description %}
+			{% if profile.description %}
 				<img src="/img/info.png" alt="i" />
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 			{% endif %}
 			
-			{% if profile.attrs.restricted %}
+			{% if profile.restricted %}
 		    	<img src="/img/lock.png" />
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 		    {% endif %}
 			
 			<div class="hiddenbox"><table>
-				{% if profile.attrs.description %}
-					<tr><td><img src="/img/info.png" /></td><td>{{ profile.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td></tr>
+				{% if profile.description %}
+					<tr><td><img src="/img/info.png" /></td><td>{{ profile.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td></tr>
 				{% endif %}
 				
-				{% if profile.attrs.restricted %}
+				{% if profile.restricted %}
 					<tr><td><img src="/img/lock.png" /></td><td>This profile is restricted. It can only be used by users with the "Restricted Profiles" flag.</td></tr>
 				{% endif %}
 			</table></div>

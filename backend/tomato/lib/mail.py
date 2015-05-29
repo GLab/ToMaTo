@@ -1,5 +1,4 @@
 
-from django.core.mail import send_mail
 from ..config import EMAIL_FROM
 from . import logging
 

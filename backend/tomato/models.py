@@ -19,6 +19,7 @@ from .auth import User
 from .auth.permissions import Permission
 from .topology import Topology
 from .elements import Element
+from .elements.generic import VMElement, VMInterface
 from .elements.openvz import OpenVZ, OpenVZ_Interface
 from .elements.kvmqm import KVMQM, KVMQM_Interface
 from .elements.repy import Repy, Repy_Interface

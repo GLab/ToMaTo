@@ -607,6 +607,7 @@ class HostObject(BaseDocument):
 		"abstract": True
 	}
 
+
 def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None):
 	# STEP 1: limit host choices to what is possible
 	if not sitePrefs: sitePrefs = {}
