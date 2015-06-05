@@ -56,7 +56,7 @@
 	      	{% endif %}
 	      {% endif %}
 	      
-	      Show instances of '{{net.attrs.label}}'</a></li>    
+	      Show instances of '{{net.label}}'</a></li>
     {% endfor %}
   </ul>
 </div>
@@ -155,9 +155,9 @@
 	  </tr>
 	{% for ni in nis %}
 	  <tr>
-	  	<td><a href="{%url "admin.host.info" ni.attrs.host%}">{{ni.attrs.host}}</a></td>
-	  	<td>{{ni.attrs.bridge}}</td>
-	  	<td>{{ni.attrs.network}}</td>
+	  	<td><a href="{%url "admin.host.info" ni.host%}">{{ni.host}}</a></td>
+	  	<td>{{ni.bridge}}</td>
+	  	<td>{{ni.network}}</td>
 	    
 	    {% if request.session.user.isHostManager %}
 	    <td>

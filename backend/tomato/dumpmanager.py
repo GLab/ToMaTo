@@ -95,7 +95,7 @@ class ErrorGroup(BaseDocument):
             'dump_contents':{}
 		}
 
-		select_unique_values = ['software_version', 'source', 'type', 'description']
+		select_unique_values = ['softwareVersion', 'source', 'type', 'description']
 		for val in select_unique_values:
 			res['dump_contents'][val] = []
 
@@ -328,7 +328,7 @@ def api_errorgroup_list(show_empty=False):
 	with lock_db:
 		res = []
 		for grp in getAll_group():
-			if show_empty or (grp.dumps.count()>0):
+			if show_empty or grp.dumps:
 				res.append(grp.info())
 		return res
 

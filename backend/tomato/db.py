@@ -58,6 +58,16 @@ class ExtDocument(object):
 class BaseDocument(ExtDocument, Document):
 	meta = {'abstract': True}
 
+	def __init__(self, *args , **kwargs):
+		Document.__init__(self, *args, **kwargs)
+		for key, value in kwargs.items():
+			if key.startswith('_'):
+				continue
+			if key in self._fields:
+				continue
+			print("Warning: value set on untracked field: %s.%s = %r" % (self.__class__.__name__, key, value))
+
+
 	def __setattr__(self, key, value):
 		if key.startswith('_') or key in ['id'] or hasattr(self, key) or (key.startswith('get_') and key.endswith('_display')):
 			Document.__setattr__(self, key, value)

@@ -20,42 +20,42 @@
 {% for netw in netw_list %}
 <div class="skip-sm"><hr/></div>
 
-<h2>External network {{netw.attrs.kind}}</h2>
+<h2>External network {{netw.kind}}</h2>
 
 <table class="table">
 	<tr>
 		<th>Label:</th>
-	    <td>{{netw.attrs.label}}</td>
+	    <td>{{netw.label}}</td>
 	</tr>
 	<tr>
 		<th>Preference:</th>
-		<td>{{netw.attrs.preference}}</td>
+		<td>{{netw.preference}}</td>
 	</tr>
 	
-	{% if netw.attrs.show_as_common %}
+	{% if netw.show_as_common %}
 	<tr>
 		<th>Common Element:</th>
 		<td><img src="/img/tick.png" /></td>
 	</tr>
 	{% endif %}
 	
-	{% if netw.attrs.big_icon %}
+	{% if netw.big_icon %}
 	<tr>
 		<th>Big icon:</th>
 		<td><img src="/img/tick.png" /></td>
 	</tr>
 	{% endif %}
 	
-	{% if netw.attrs.description %}
+	{% if netw.description %}
 	<tr>
 		<th>Description:</th>
-	    <td>{{netw.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
+	    <td>{{netw.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
 	</tr>
 	{% endif %}
 	<tr>
 		<th>Restricted:</th>
 		<td>
-		{% if netw.attrs.restricted %}
+		{% if netw.restricted %}
 			<img src="/img/lock.png" /> yes
 		{% else %}
 			no
@@ -66,7 +66,7 @@
 
 
 <form>
-	<button type="submit" formaction="{%url "external_network_instances" netw.id%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> instances of {{netw.attrs.kind}}</button>
+	<button type="submit" formaction="{%url "external_network_instances" netw.id%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> instances of {{netw.kind}}</button>
 	{% if request.session.user.isHostManager %}
   	<button type="submit" formaction="{%url "external_network.edit" netw.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit</button>
   	<button type="submit" formaction="{%url "external_network.remove" netw.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove</button>

@@ -82,17 +82,16 @@ def statistics():
 	usage['topologies_active'] = 0
 	for top in list(topology.Topology.objects.all()):
 		usage['topologies'] += 1
-		topUsage = top.info()['usage']['usage']
+		topUsage = top.info()['usage']
 		if topUsage['memory']>0 or topUsage['cputime']>0 or topUsage['traffic']>0:
 			usage['topologies_active'] += 1
 	
 	usage['elements'] = elements.Element.objects.count()
 	usage['connections'] = connections.Connection.objects.count()
-	types = elements.Element.objects.values('type').order_by().annotate(models.Count('type'))
-	usage['element_types'] = dict([(t['type'], t['type__count']) for t in types])
+	usage['element_types'] = {key: cls.objects.count() for (key, cls) in elements.TYPES.items()}
 	
 	usage['users'] = auth.User.objects.count()
-	usage['users_active_30days'] = auth.User.objects.filter(last_login__gte = time.time() - 30*24*60*60).count()
+	usage['users_active_30days'] = auth.User.objects.filter(lastLogin__gte = time.time() - 30*24*60*60).count()
 	
 	
 	return stats

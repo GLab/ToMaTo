@@ -31,7 +31,11 @@ class Profile(BaseDocument, Entity):
 	name = StringField(required=True, unique_with='tech')
 	preference = IntField(default=0, required=True)
 	label = StringField()
+	description = StringField()
 	restricted = BooleanField(default=False)
+	ram = IntField(min_value=0)
+	cpus = FloatField(min_value=0)
+	diskspace = IntField(min_value=0)
 	meta = {
 		'ordering': ['tech', '+preference', 'name'],
 		'indexes': [
@@ -39,14 +43,23 @@ class Profile(BaseDocument, Entity):
 		]
 	}
 
-	ACTIONS = {}
+	def remove(self):
+		self.delete()
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=remove)
+	}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"tech": Attribute(field=tech, schema=schema.String(options=TECHS)),
 		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
 		"label": Attribute(field=label, schema=schema.String()),
-		"restricted": Attribute(field=restricted, schema=schema.Bool())
+		"description": Attribute(field=description, schema=schema.String()),
+		"restricted": Attribute(field=restricted, schema=schema.Bool()),
+		"ram": Attribute(field=ram, schema=schema.Int(minValue=0)),
+		"cpus": Attribute(field=ram, schema=schema.Number(minValue=0)),
+		"diskspace": Attribute(field=ram, schema=schema.Int(minValue=0))
 	}
 
 	def init(self, attrs):

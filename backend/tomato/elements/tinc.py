@@ -226,7 +226,6 @@ class TincEndpoint(ConnectingElement, Element):
 	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
 	name = StringField()
 	mode = StringField(choices=['switch', 'hub'])
-	peers = ListField(DictField())
 
 	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy"]
 	DIRECT_ATTRS_EXCLUDE = ["timeout"]
@@ -256,11 +255,6 @@ class TincEndpoint(ConnectingElement, Element):
 		if self.element:
 			self.element.modify({"mode": val})
 
-	def modify_peers(self, val):
-		self.peers = val
-		if self.element:
-			self.element.modify({"peers": val})
-
 	def onError(self, exc):
 		if self.element:
 			try:
@@ -284,7 +278,6 @@ class TincEndpoint(ConnectingElement, Element):
 		attrs = self._remoteAttrs
 		attrs.update({
 			"mode": self.mode,
-			"peers": self.peers,
 		})
 		self.element = _host.createElement(self.remoteType, parent=None, attrs=attrs, ownerElement=self)
 		self.save()
@@ -313,7 +306,6 @@ class TincEndpoint(ConnectingElement, Element):
 	ATTRIBUTES.update({
 		"name": Attribute(field=name),
 		"mode": StatefulAttribute(field=mode, set=modify_mode, writableStates=[ST_CREATED, ST_PREPARED], schema=schema.String(options=['hub', 'switch'])),
-		"peers": StatefulAttribute(field=peers, set=modify_peers, writableStates=[ST_CREATED, ST_PREPARED])
 	})
 
 	ACTIONS = Element.ACTIONS.copy()

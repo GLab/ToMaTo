@@ -214,7 +214,7 @@ def remove(api, request, res_id=None):
 			return HttpResponseRedirect(reverse("template_list"))
 	form = RemoveConfirmForm.build(reverse("tomato.template.remove", kwargs={"res_id": res_id}))
 	res = api.template_info(res_id)
-	return render(request, "form.html", {"heading": "Remove Template", "message_before": "Are you sure you want to remove the template '"+res["attrs"]["name"]+"'?", 'form': form})	
+	return render(request, "form.html", {"heading": "Remove Template", "message_before": "Are you sure you want to remove the template '"+res["name"]+"'?", 'form': form})
 
 @wrap_rpc
 def edit_torrent(api, request, res_id=None):
@@ -226,7 +226,7 @@ def edit_torrent(api, request, res_id=None):
 			torrent_data = base64.b64encode(f.read())
 			res_info = api.template_info(formData['res_id'])
 			creation_date = str(formData['creation_date'])
-			api.resource_modify(formData["res_id"],{'torrent_data':torrent_data,
+			api.template_modify(formData["res_id"],{'torrent_data':torrent_data,
 													'creation_date':creation_date})
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 		label = request.POST["label"]
@@ -236,7 +236,7 @@ def edit_torrent(api, request, res_id=None):
 		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
 		res_info = api.template_info(res_id)
 		form = ChangeTemplateTorrentForm(res_id, {'res_id': res_id})
-		return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
+		return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['label']+"' ("+res_info['tech']+")"})
 		
 
 @wrap_rpc
@@ -272,9 +272,9 @@ def edit(api, request, res_id=None):
 @wrap_rpc
 def download_torrent(api, request, res_id):
 	res_inf = api.template_info(res_id, include_torrent_data=True)
-	UserError.check('torrent_data' in res_inf['attrs'],UserError.NO_DATA_AVAILABLE,"This template does not have a torrent file", data={'id':res_inf['id']})
-	tdata = base64.b64decode(res_inf['attrs']['torrent_data'])
-	filename = re.sub('[^\w\-_\. :]', '_', '%s__%s' % (res_inf['attrs']['name'],res_inf['attrs']['tech']) ) + ".torrent"
+	UserError.check('torrent_data' in res_inf,UserError.NO_DATA_AVAILABLE,"This template does not have a torrent file", data={'id':res_inf['id']})
+	tdata = base64.b64decode(res_inf['torrent_data'])
+	filename = re.sub('[^\w\-_\. :]', '_', '%s__%s' % (res_inf['name'],res_inf['tech']) ) + ".torrent"
 	response = HttpResponse(tdata, content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response

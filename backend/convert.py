@@ -1,5 +1,6 @@
-import sys
+import sys, base64, datetime
 from tomato.models import *
+from tomato.lib.util import utcDatetimeToTimestamp
 
 def loadDumpData(file):
 	import ujson as json
@@ -261,13 +262,25 @@ def importData(data):
 	print "\tNetworks..."
 	networks = {}
 	for key, entry in data['network'].items():
-		entry = modifyDict(entry, remove=['id'])
+		res = data['resource'].get(key)
+		if not res:
+			print "\t\tInvalid reference: Network[%d] -> Resource[%d]" % (key, key)
+			continue
+		res.update(entry)
+		entry = res
+		entry = modifyDict(entry, remove=['id', 'type'])
 		obj = Network(**entry)
 		obj.save()
 		networks[key] = obj
 	print "\tNetwork instances..."
 	networkinstances = {}
 	for key, entry in data['networkinstance'].items():
+		res = data['resource'].get(key)
+		if not res:
+			print "\t\tInvalid reference: NetworkInstance[%d] -> Resource[%d]" % (key, key)
+			continue
+		res.update(entry)
+		entry = res
 		host = hosts.get(entry['host'])
 		if not host:
 			print "\t\tInvalid reference: NetworkInstance[%d] -> Host[%d]" % (key, entry['host'])
@@ -276,14 +289,23 @@ def importData(data):
 		if not network:
 			print "\t\tInvalid reference: NetworkInstance[%d] -> Network[%d]" % (key, entry['network'])
 			continue
-		entry = modifyDict(entry, remove=['id', 'host', 'network'])
+		entry = modifyDict(entry, remove=['id', 'host', 'network', 'type', 'kind'])
 		obj = NetworkInstance(host=host, network=network, **entry)
 		obj.save()
 		networkinstances[key] = obj
 	print "\tProfiles..."
 	profiles = {}
 	for key, entry in data['profile'].items():
-		entry = modifyDict(entry, remove=['id'])
+		res = data['resource'].get(key)
+		if not res:
+			print "\t\tInvalid reference: Profile[%d] -> Resource[%d]" % (key, key)
+			continue
+		if not res['type'] == 'profile':
+			print "\t\tInvalid resource: Profile[%d].type == %r" % (key, res['type'])
+			continue
+		res.update(entry)
+		entry = res
+		entry = modifyDict(entry, remove=['id', 'type'])
 		obj = Profile(**entry)
 		try:
 			obj.save()
@@ -294,7 +316,22 @@ def importData(data):
 	templates = {}
 	templates_index = {}
 	for key, entry in data['template'].items():
-		entry = modifyDict(entry, remove=['id'])
+		res = data['resource'].get(key)
+		if not res:
+			print "\t\tInvalid reference: Template[%d] -> Resource[%d]" % (key, key)
+			continue
+		res.update(entry)
+		entry = res
+		entry = modifyDict(entry, remove=['id', 'type'], rename={'torrent_data': 'torrentData',
+			'creation_date': 'creationDate', 'nlXTP_installed': 'nlXTPInstalled', 'show_as_common': 'showAsCommon',
+			'custom_icon': 'icon'})
+		if 'torrentData' in entry:
+			entry['torrentData'] = base64.b64decode(entry['torrentData'])
+		if 'creationDate' in entry:
+			try:
+				entry['creationDate'] = utcDatetimeToTimestamp(datetime.datetime.strptime(entry['creationDate'], '%Y-%m-%d'))
+			except ValueError:
+				del entry['creationDate']
 		obj = Template(**entry)
 		obj.save()
 		templates[key] = obj
@@ -316,7 +353,7 @@ def importData(data):
 	topologies = {}
 	for key, entry in data['topology'].items():
 		perms = permissions.get(entry['permissions'])
-		if not perms:
+		if perms is None:
 			print "\t\tInvalid reference: Topology[%d] -> Permissions[%d]" % (key, entry['permissions'])
 		totalUsage = usagestatistics.get(entry['totalUsage'])
 		if not totalUsage:
@@ -443,7 +480,7 @@ def importData(data):
 		if entry['parent'] and not parent:
 			print "\t\tInvalid reference: Element[%d] -> Element[%d]" % (entry['id'], entry['parent'])
 		perms = permissions.get(entry['permissions'])
-		if not perms:
+		if perms is None:
 			print "\t\tInvalid reference: Element[%d] -> Permission[%d]" % (entry['id'], entry['permissions'])
 		totalUsage = usagestatistics.get(entry['totalUsage'])
 		if not totalUsage:
@@ -589,8 +626,7 @@ def importData(data):
 		if entry['element'] and not elem:
 			print "\t\tInvalid reference: TincEndpoint[%d] -> HostElement[%d]" % (entry['id'], entry['element'])
 			return
-		entry = modifyDict(entry, remove=['id', 'type', 'element', 'path'])
-		print entry
+		entry = modifyDict(entry, remove=['id', 'type', 'element', 'path'], encapsulate=['peers', 'pubkey', 'port'])
 		obj = TincEndpoint(element=elem, **entry)
 		obj.save()
 		elements[key] = obj
@@ -615,7 +651,7 @@ def importData(data):
 	connections = {}
 	for key, entry in data['connection'].items():
 		perms = permissions.get(entry['permissions'])
-		if not perms:
+		if perms is None:
 			print "\t\tInvalid reference: Connection[%d] -> Permissions[%d]" % (key, entry['permissions'])
 		totalUsage = usagestatistics.get(entry['totalUsage'])
 		if not totalUsage:
@@ -640,8 +676,9 @@ def importData(data):
 			print "\t\tInvalid connection: Connection[%d] has %d elements" % (key, len(elems))
 			continue
 		entry = modifyDict(entry, remove=['id', 'topology', 'permissions', 'totalUsage', 'connectionElement1',
-			'connectionElement2', 'connection1', 'connection2'], encapsulate=['bandwidth_from', 'bandwidth_to',
-			'emulation'])
+			'connectionElement2', 'connection1', 'connection2'], encapsulate=sum([[e+'_to', e+'_from'] for e in
+			['bandwidth', 'duplicate', 'jitter', 'distribution', 'delay', 'lossratio', 'corrupt']],
+			['capturing', 'capture_mode', 'capture_filter', 'emulation']))
 		clientData = {}
 		for k, value in entry.items():
 			if k.startswith('_'):

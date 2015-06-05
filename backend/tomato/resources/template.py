@@ -75,7 +75,19 @@ class Template(BaseDocument, Entity):
 			}
 		}
 
-	ACTIONS = {}
+	def remove(self):
+		if self.tech and os.path.exists(self.getTorrentPath()):
+			os.remove(self.getTorrentPath())
+		if self.tech and os.path.exists(self.getPath()):
+			if os.path.isdir(self.getPath()):
+				shutil.rmtree(self.getPath())
+			else:
+				os.remove(self.getPath())
+		self.delete()
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=remove)
+	}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
@@ -144,16 +156,6 @@ class Template(BaseDocument, Entity):
 				message="Torrent content must be named like the template", data={"expected_name": shouldName})
 			with open(self.getTorrentPath(), "w") as fp:
 				fp.write(raw)
-
-	def remove(self):
-		if self.tech and os.path.exists(self.getTorrentPath()):
-			os.remove(self.getTorrentPath())
-		if self.tech and os.path.exists(self.getPath()):
-			if os.path.isdir(self.getPath()):
-				shutil.rmtree(self.getPath())
-			else:
-				os.remove(self.getPath())
-		self.delete()
 
 	def isReady(self):
 		try:

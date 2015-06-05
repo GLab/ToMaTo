@@ -24,6 +24,10 @@ class Network(BaseDocument, Entity):
 	kind = StringField(required=True)
 	preference = IntField(default=0, required=True)
 	restricted = BooleanField(default=False)
+	label = StringField()
+	description = StringField()
+	big_icon = BooleanField(default=False)
+	show_as_common = BooleanField(default=False)
 	meta = {
 		'ordering': ['-preference', 'kind'],
 		'indexes': [
@@ -34,12 +38,25 @@ class Network(BaseDocument, Entity):
 	def instances(self):
 		return NetworkInstance.objects(network=self)
 
-	ACTIONS = {}
+	def _remove(self):
+		self.delete()
+
+	def _checkRemove(self):
+		UserError.check(not self.instances.count(), code=UserError.NOT_EMPTY, message="Cannot remove network with instances")
+		return True
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=_remove, check=_checkRemove)
+	}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"kind": Attribute(field=kind, schema=schema.String()),
 		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
 		"restricted": Attribute(field=restricted, schema=schema.Bool()),
+		"big_icon": Attribute(field=big_icon, schema=schema.Bool()),
+		"show_as_common": Attribute(field=show_as_common, schema=schema.Bool()),
+		"label": Attribute(field=label, schema=schema.String()),
+		"description": Attribute(field=description, schema=schema.String())
 	}
 
 	def init(self, *args, **kwargs):
@@ -77,7 +94,12 @@ class NetworkInstance(BaseDocument, Entity):
 		]
 	}
 
-	ACTIONS = {}
+	def remove(self):
+		self.delete()
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=remove)
+	}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"network": Attribute(set=lambda obj, val: obj.modify_network(val), get=lambda obj: obj.network.kind),

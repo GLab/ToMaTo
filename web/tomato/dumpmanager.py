@@ -106,9 +106,6 @@ def group_remove(api, request, group_id):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			errordumps = api.errordump_list(group_id)
-			for dump in errordumps:
-				api.errordump_remove(dump['source'],dump['dump_id'])
 			api.errorgroup_remove(group_id)
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
 	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_remove", kwargs={"group_id": group_id}))
