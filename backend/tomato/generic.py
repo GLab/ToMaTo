@@ -126,7 +126,7 @@ class Entity(object):
 		self.save()
 
 	def checkUnknownAction(self, action, params=None):
-		raise Error(code=Error.UNSUPPORTED_ACTION, message="Unsupported action")
+		raise Error(code=Error.UNSUPPORTED_ACTION, message="Unsupported action", data={"capabilities": self.capabilities()})
 
 	def executeUnknownAction(self, action, params=None):
 		raise NotImplemented()
@@ -168,7 +168,7 @@ class StatefulAction(Action):
 	def check(self, obj, **kwargs):
 		Action.check(self, obj, **kwargs)
 		if not self.allowedStates is None:
-			Error.check(obj.state in self.allowedStates, Error.INVALID_STATE, "Action is not available in this state")
+			Error.check(obj.state in self.allowedStates, Error.INVALID_STATE, "Action is not available in this state", data={"allowed_states": self.allowedStates, "state": obj.state})
 	def info(self):
 		info = Action.info(self)
 		info.update(allowed_states=self.allowedStates, state_change=self.stateChange)

@@ -161,14 +161,14 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			UserError.check(not currentUser().hasFlag(Flags.OverQuota), code=UserError.DENIED, message="Over quota")
 			UserError.check(self.topology.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
-			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
-		UserError.check(self.mainElement, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
+			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (no direct actions for this type)")
+		UserError.check(self.mainElement, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (not deployed)")
 		if not action in self.mainElement.getAllowedActions():
 			self.mainElement.updateInfo()
 			self.state = self.mainElement.state
 			self.save()
 		UserError.check(action in self.mainElement.getAllowedActions(),
-			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
+			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (not supported by deployed element)")
 		return True
 
 	def executeUnknownAction(self, action, params=None):
@@ -315,7 +315,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
 			self.checkRole(Role.user)
 		mel = self.mainElement
-		if mel:
+		if isinstance(mel, HostElement):
 			info = mel.objectInfo
 		else:
 			info = {}
@@ -372,7 +372,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 
 	@property
 	def host(self):
-		return self.mainElement.host if self.mainElement else None
+		return self.mainElement.host if isinstance(self.mainElement, HostElement) else None
 
 	@property
 	def host_info(self):
@@ -419,3 +419,4 @@ Element.register_delete_rule(Connection, "elementFrom", DENY)
 Element.register_delete_rule(Connection, "elementTo", DENY)
 
 from .. import currentUser, host
+from ..host.element import HostElement

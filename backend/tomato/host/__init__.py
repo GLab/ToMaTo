@@ -228,10 +228,10 @@ class Host(DumpSource, BaseDocument, Entity):
 			ownerConnection.save()
 		logging.logMessage("element_create", category="host", host=self.name, element=el,
 						   ownerElement=(
-							   ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
+							   ownerElement.__class__.__name__.lower(), ownerElement.idStr) if ownerElement else None,
 						   ownerConnection=(
 							   ownerConnection.__class__.__name__.lower(),
-							   ownerConnection.id) if ownerConnection else None)
+							   ownerConnection.idStr) if ownerConnection else None)
 		return hel
 
 	def getElement(self, num):
@@ -249,10 +249,15 @@ class Host(DumpSource, BaseDocument, Entity):
 			raise
 		from .connection import HostConnection
 		hcon = HostConnection(host=self, num=con["id"], topologyElement=ownerElement,
-							  topologyConnection=ownerConnection)
+							  topologyConnection=ownerConnection, state=con["state"], type=con["type"],
+							  elementFrom=hel1, elementTo=hel2)
 		hcon.usageStatistics = UsageStatistics.objects.create()
 		hcon.objectInfo = con
 		hcon.save()
+		hel1.connection = hcon
+		hel1.save()
+		hel2.connection = hcon
+		hel2.save()
 		if ownerElement:
 			ownerElement.hostConnections.append(hcon)
 			ownerElement.save()
@@ -261,10 +266,10 @@ class Host(DumpSource, BaseDocument, Entity):
 			ownerConnection.save()
 		logging.logMessage("connection_create", category="host", host=self.name, element=con,
 						   ownerElement=(
-							   ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
+							   ownerElement.__class__.__name__.lower(), ownerElement.idStr) if ownerElement else None,
 						   ownerConnection=(
 							   ownerConnection.__class__.__name__.lower(),
-							   ownerConnection.id) if ownerConnection else None)
+							   ownerConnection.idStr) if ownerConnection else None)
 		return hcon
 
 	def getConnection(self, num):

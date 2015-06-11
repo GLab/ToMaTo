@@ -90,7 +90,15 @@ class Error(Exception):
 		return exception
 
 	def __str__(self):
-		return "%s %s error [%s]: %s (%r)" % (self.module, self.type, self.code, self.message or "", self.data)
+		lines = []
+		for k, v in self.data.items():
+			if k == "trace":
+				lines.append("\ttrace=")
+				for l in v.splitlines():
+					lines.append("\t\t" + l)
+			else:
+				lines.append("\t%s=%r" % (k, v))
+		return "%s %s error [%s]: %s\n%s" % (self.module, self.type, self.code, self.message or "", "\n".join(lines))
 
 	def __repr__(self):
 		return "Error(module=%r, type=%r, code=%r, message=%r, data=%r, onscreenmessage=%r)" % (self.module, self.type, self.code, self.message, self.data,self.onscreenmessage)

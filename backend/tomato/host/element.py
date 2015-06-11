@@ -76,7 +76,14 @@ class HostElement(HostObject):
 				self.host.incrementErrors()
 		except:
 			self.host.incrementErrors()
-		self.delete()
+		try:
+			self.delete()
+		except OperationError:
+			from .connection import HostConnection
+			for hcon in HostConnection.objects(elementFrom=self):
+				hcon.remove()
+			for hcon in HostConnection.objects(elementTo=self):
+				hcon.remove()
 		self.usageStatistics.delete()
 
 	def getConnection(self):
@@ -85,6 +92,8 @@ class HostElement(HostObject):
 	def updateInfo(self):
 		try:
 			self.objectInfo = self.host.getProxy().element_info(self.num)
+			self.state = self.objectInfo["state"]
+			self.type = self.objectInfo["type"]
 		except error.UserError, err:
 			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)

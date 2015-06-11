@@ -180,7 +180,11 @@ class VMElement(Element):
 		
 	def action_destroy(self):
 		if isinstance(self.element, HostElement):
-			self.element.action("destroy")
+			try:
+				self.element.action("destroy")
+			except UserError:
+				if self.element.state != ST_CREATED:
+					raise
 			for iface in self.children:
 				iface._remove()
 			self.element.remove()
@@ -261,8 +265,7 @@ class VMInterface(Element):
 		self.save()
 		
 	def _remove(self, recurse=None):
-		Element.remove(self)
-		if self.element:
+		if isinstance(self.element, HostElement):
 			self.element.remove()
 			self.element = None
 			self.save()

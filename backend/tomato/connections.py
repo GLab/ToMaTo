@@ -142,7 +142,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		caps = getConnectionCapabilities(self.remoteType)
 		allowed = caps["attrs"].keys() if caps else []
 		attrs = {}
-		for key, value in self.attrs.iteritems():
+		for key, value in self.directData.iteritems():
 			if key in allowed:
 				attrs[key] = value
 		attrs = self._adaptAttrs(attrs)
@@ -240,14 +240,14 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		"""
 		Find out whether the directions are correct
 		"""
-		el1 = self.elementFrom.mainElement()
+		el1 = self.elementFrom.mainElement
 		InternalError.check(el1, code=InternalError.INVALID_STATE,
 			message="Can not check directions on unprepared element", data={"element": self.elementFrom.id})
 		id1 = el1.num
 		if self.connectionElementFrom:
 			id2 = self.connectionElementFrom.num
 		else:
-			el2 = self.elementTo.mainElement()
+			el2 = self.elementTo.mainElement
 			InternalError.check(el2, code=InternalError.INVALID_STATE,
 				message="Can not check directions on unprepared element", data={"element": self.elementTo.id})
 			id2 = el2.num
@@ -268,7 +268,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			# complex case: helper elements needed to connect elements on different hosts
 			self.connectionElementFrom = el1.host.createElement("udp_tunnel", ownerConnection=self)
 			self.connectionElementTo = el2.host.createElement("udp_tunnel", attrs={
-				"connect": "%s:%d" % (el1.host.address, self.connectionElementFrom.attrs["attrs"]["port"])
+				"connect": "%s:%d" % (el1.host.address, self.connectionElementFrom.objectInfo["attrs"]["port"])
 			}, ownerConnection=self)
 			self.connectionFrom = el1.connectWith(self.connectionElementFrom, attrs={}, ownerConnection=self)
 			self.connectionTo = el2.connectWith(self.connectionElementTo, attrs={}, ownerConnection=self)
@@ -286,9 +286,9 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		attrs = dict(filter(lambda (k, v): k in allowed, self._remoteAttrs.items()))
 		self.connectionFrom.modify(attrs)
 		# Unset all disallowed attributes
-		for key in self.attrs.keys():
+		for key in self._remoteAttrs.keys():
 			if not key in allowed:
-				del self.attrs[key]
+				del self._remoteAttrs[key]
 		self.setState(ST_STARTED)
 			
 	def _stop(self):
@@ -407,10 +407,12 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			self._elementsHint = elementsHint
 		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
 			self.checkRole(Role.user)
-		info = LockedStatefulEntity.info(self)
 		mcon = self.mainConnection
-		if mcon:
-			info.update(mcon.objectInfo)
+		if isinstance(mcon, HostConnection):
+			info = mcon.objectInfo
+		else:
+			info = {}
+		info.update(LockedStatefulEntity.info(self))
 		for key, val in self.clientData.items():
 			info["_"+key] = val
 		return info
@@ -491,3 +493,4 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 
 from . import currentUser
 from .host import getConnectionCapabilities, select
+from .host.connection import HostConnection
