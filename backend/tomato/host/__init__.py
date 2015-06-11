@@ -99,7 +99,7 @@ class Host(DumpSource, BaseDocument, Entity):
 	description = StringField()
 	dumpLastFetch = FloatField(db_field='dump_last_fetch')
 	templates = ListField(ReferenceField(Template, reverse_delete_rule=PULL))
-	hostNetworks = DictField(db_field='host_networks')
+	hostNetworks = ListField(db_field='host_networks')
 	meta = {
 		'ordering': ['site', 'name'],
 		'indexes': [
@@ -126,7 +126,7 @@ class Host(DumpSource, BaseDocument, Entity):
 	ATTRIBUTES = {
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"address": Attribute(field=address, schema=schema.String(regex="\d+\.\d+.\d+.\d+")),
-		"rpcurl": Attribute(field=rpcurl, schema=schema.String(regex="\w+://\w+:\d+")),
+		"rpcurl": Attribute(field=rpcurl, schema=schema.String(regex="[a-zA-Z0-9+_-]+://[a-zA-Z0-9._-]+:\d+")),
 		"site": Attribute(
 			check=lambda obj, val: Site.get(val),
 			set=lambda obj, val: setattr(obj, "site", Site.get(val)),
@@ -183,7 +183,7 @@ class Host(DumpSource, BaseDocument, Entity):
 		try:
 			self.hostNetworks = self.getProxy().host_networks()
 		except:
-			self.hostNetworks = None
+			self.hostNetworks = []
 		caps = self._capabilities()
 		self.elementTypes = caps["elements"]
 		self.connectionTypes = caps["connections"]
@@ -281,17 +281,14 @@ class Host(DumpSource, BaseDocument, Entity):
 
 		logging.logMessage("resource_sync begin", category="host", name=self.name)
 		# TODO: implement for other resources
-		from .. import resources
+		from ..resources import template
 
 		hostNets = {}
 		for net in self.getProxy().resource_list("network"):
 			hostNets[net["attrs"]["bridge"]] = net
 		for net in self.networks.all():
 			key = net.bridge
-			attrs = net.attrs.copy()
-			attrs["bridge"] = net.bridge
-			attrs["kind"] = net.getKind()
-			attrs["preference"] = net.network.preference
+			attrs = {"bridge": net.bridge, "kind": net.getKind(), "preference": net.network.preference}
 			if not key in hostNets:
 				# create resource
 				self.getProxy().resource_create("network", attrs)
@@ -304,47 +301,23 @@ class Host(DumpSource, BaseDocument, Entity):
 					logging.logMessage("network update", category="host", name=self.name, network=attrs)
 		tpls = {}
 		for tpl in self.getProxy().resource_list("template"):
-			tpls[tpl["attrs"]["tech"]] = tpls.get(tpl["attrs"]["tech"], {})
-			tpls[tpl["attrs"]["tech"]][tpl["attrs"]["name"]] = tpl
-		for tpl in resources.getAll(type="template"):
-			attrs = tpl.attrs.copy()
-			attrs["name"] = tpl.name
-			attrs["tech"] = tpl.tech
-			try:
-				toh = self.templates.get(template=tpl)
-			except TemplateOnHost.DoesNotExist:
-				toh = TemplateOnHost.objects.create(host=self, template=tpl, ready=False, date=time.time())
-			if not attrs["tech"] in tpls or not attrs["name"] in tpls[attrs["tech"]]:
+			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
+		avail = []
+		for tpl in template.Template.objects():
+			attrs = {"tech": tpl.tech, "name": tpl.name, "preference": tpl.preference, "torrent_data": base64.b64encode(tpl.torrentData), "kblang": tpl.kblang}
+			if not (attrs["tech"], attrs["name"]) in tpls:
 				# create resource
 				self.getProxy().resource_create("template", attrs)
 				logging.logMessage("template create", category="host", name=self.name, template=attrs)
-				toh.ready = False
-				toh.date = time.time()
-				toh.save()
 			else:
-				hTpl = tpls[attrs["tech"]][attrs["name"]]
+				hTpl = tpls[(attrs["tech"], attrs["name"])]
 				isAttrs = dict(hTpl["attrs"])
-				if isAttrs["ready"] != toh.ready:
-					toh.ready = isAttrs["ready"]
-					toh.date = time.time()
-					toh.save()
-				del isAttrs["ready"]
-				del isAttrs["preference"]  # we have our own
-				shouldAttrs = dict(attrs)
-				shouldAttrs["torrent_data_hash"] = hashlib.md5(
-					attrs["torrent_data"]).hexdigest() if "torrent_data" in attrs else None
-				del shouldAttrs["torrent_data"]
-				if isAttrs != shouldAttrs:
-					# update resource
-					if isAttrs["torrent_data_hash"] == shouldAttrs["torrent_data_hash"]:
-						# only send torrent data when needed
-						del attrs["torrent_data"]
-					else:
-						toh.ready = False
-						toh.date = time.time()
-						toh.save()
+				if hTpl["attrs"]["torrent_data_hash"] != hashlib.md5(attrs["torrent_data"]).hexdigest():
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
+				elif isAttrs["ready"]:
+					avail.append(tpl)
+		self.templates = avail
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()
 		self.save()
@@ -368,7 +341,7 @@ class Host(DumpSource, BaseDocument, Entity):
 				print "Missing accounting data for element #%d on host %s" % (el.num, self.name)
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name,
-							   records=data["elements"][str(el.num)], object=("element", el.id))
+							   records=data["elements"][str(el.num)], object=("element", el.idStr))
 			el.updateAccountingData(data["elements"][str(el.num)])
 		for con in self.connections.all():
 			if not con.usageStatistics:
@@ -378,7 +351,7 @@ class Host(DumpSource, BaseDocument, Entity):
 				print "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name,
-							   records=data["connections"][str(con.num)], object=("connection", con.id))
+							   records=data["connections"][str(con.num)], object=("connection", con.idStr))
 			con.updateAccountingData(data["connections"][str(con.num)])
 		self.accountingTimestamp = time.time()
 		self.save()

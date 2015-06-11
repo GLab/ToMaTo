@@ -4,6 +4,9 @@ import time
 from . import HostObject
 
 class HostElement(HostObject):
+	"""
+	:type connection: ..connection.HostConnection
+	"""
 	connection = ReferenceField('HostConnection') #reverse_delete_rule=NULLIFY defined at bottom of connection.py
 	parent = ReferenceField('self', reverse_delete_rule=DENY)
 	meta = {
@@ -12,6 +15,10 @@ class HostElement(HostObject):
 			('host', 'num')
 		]
 	}
+
+	@property
+	def children(self):
+		return HostElement.objects(parent=self)
 
 	def createChild(self, type_, attrs=None, ownerConnection=None, ownerElement=None):
 		if not attrs: attrs = {}
@@ -73,7 +80,7 @@ class HostElement(HostObject):
 		self.usageStatistics.delete()
 
 	def getConnection(self):
-		return self.host.getConnection(self.connection) if self.connection else None
+		return self.connection
 
 	def updateInfo(self):
 		try:

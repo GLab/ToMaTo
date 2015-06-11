@@ -50,7 +50,6 @@ class VMElement(Element):
 	def updateInfo(self): 
 		if self.element is None:
 			return
-		
 		try:
 			self.element.updateInfo()
 		except:
@@ -180,7 +179,7 @@ class VMElement(Element):
 		self.setState(ST_PREPARED, True)
 		
 	def action_destroy(self):
-		if self.element:
+		if isinstance(self.element, HostElement):
 			self.element.action("destroy")
 			for iface in self.children:
 				iface._remove()
@@ -190,7 +189,7 @@ class VMElement(Element):
 		self.setState(ST_CREATED, True)
 		
 	def action_stop(self):
-		if self.element:
+		if isinstance(self.element, HostElement):
 			self.element.action("stop")
 		self.setState(ST_PREPARED, True)
 		self.after_stop()
@@ -262,6 +261,7 @@ class VMInterface(Element):
 		self.save()
 		
 	def _remove(self, recurse=None):
+		Element.remove(self)
 		if self.element:
 			self.element.remove()
 			self.element = None

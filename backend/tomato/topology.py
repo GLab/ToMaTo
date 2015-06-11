@@ -72,7 +72,7 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 		self.timeout = time.time() + config.TOPOLOGY_TIMEOUT_INITIAL
 		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
 		self.save()
-		self.name = "Topology #%s" % self.id
+		self.name = "Topology #%s" % self.idStr
 		self.modify(attrs)
 
 	def isBusy(self):
@@ -159,8 +159,8 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 
 	def remove(self, recurse=True):
 		self.checkRemove(recurse)
-		logging.logMessage("info", category="topology", id=self.id, info=self.info())
-		logging.logMessage("remove", category="topology", id=self.id)
+		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
+		logging.logMessage("remove", category="topology", id=self.idStr)
 		self.delete()
 		self.totalUsage.remove()
 
@@ -172,7 +172,7 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 			data={"roles": Role.RANKING})
 		self.checkRole(Role.owner)
 		UserError.check(user != currentUser(), code=UserError.INVALID_VALUE, message="Must not set permissions for yourself")
-		logging.logMessage("permission", category="topology", id=self.id, user=user.name, role=role)
+		logging.logMessage("permission", category="topology", id=self.idStr, user=user.name, role=role)
 		self.setRole(user, role)
 			
 	def sendMail(self, role=Role.manager, **kwargs):
@@ -266,28 +266,28 @@ def create(attrs=None):
 		message="User can not create new topologies")
 	top = Topology()
 	top.init(owner=currentUser(), attrs=attrs)
-	logging.logMessage("create", category="topology", id=str(top.id))
-	logging.logMessage("info", category="topology", id=str(top.id), info=top.info())
+	logging.logMessage("create", category="topology", id=top.idStr)
+	logging.logMessage("info", category="topology", id=top.idStr, info=top.info())
 	return top
 	
 	
 def timeout_task():
 	now = time.time()
 	setCurrentUser(True) #we are a global admin
-	for top in Topology.objects.filter(timeout_step=TimeoutStep.INITIAL, timeout__lte=now+config.TOPOLOGY_TIMEOUT_WARNING):
-		logging.logMessage("timeout warning", category="topology", id=top.id)
+	for top in Topology.objects.filter(timeoutStep=TimeoutStep.INITIAL, timeout__lte=now+config.TOPOLOGY_TIMEOUT_WARNING):
+		logging.logMessage("timeout warning", category="topology", id=top.idStr)
 		top.sendMail(subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
-		top.timeout_step = TimeoutStep.WARNED
+		top.timeoutStep = TimeoutStep.WARNED
 		top.save()
-	for top in Topology.objects.filter(timeout_step=TimeoutStep.WARNED, timeout__lte=now):
-		logging.logMessage("timeout stop", category="topology", id=top.id)
+	for top in Topology.objects.filter(timeoutStep=TimeoutStep.WARNED, timeout__lte=now):
+		logging.logMessage("timeout stop", category="topology", id=top.idStr)
 		top.action_stop()
-		top.timeout_step = TimeoutStep.STOPPED
+		top.timeoutStep = TimeoutStep.STOPPED
 		top.save()
-	for top in Topology.objects.filter(timeout_step=TimeoutStep.STOPPED, timeout__lte=now-config.TOPOLOGY_TIMEOUT_WARNING):
-		logging.logMessage("timeout destroy", category="topology", id=top.id)
+	for top in Topology.objects.filter(timeoutStep=TimeoutStep.STOPPED, timeout__lte=now-config.TOPOLOGY_TIMEOUT_WARNING):
+		logging.logMessage("timeout destroy", category="topology", id=top.idStr)
 		top.action_destroy()
-		top.timeout_step = TimeoutStep.DESTROYED
+		top.timeoutStep = TimeoutStep.DESTROYED
 		top.save()
 
 scheduler.scheduleRepeated(600, timeout_task)

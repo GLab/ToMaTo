@@ -22,7 +22,7 @@ from ..lib.error import UserError, InternalError
 TECHS = ["kvmqm", "openvz", "repy"]
 DEFAULTS = {
 	"kvmqm": {"ram": 512, "cpus": 1, "diskspace": 10240},
-	"openvz": {"ram": 512, "diskspace": 10240},
+	"openvz": {"ram": 512, "cpus": 1, "diskspace": 10240},
 	"repy": {"ram": 50, "cpus": 0.25},
 }
 
@@ -58,8 +58,8 @@ class Profile(BaseDocument, Entity):
 		"description": Attribute(field=description, schema=schema.String()),
 		"restricted": Attribute(field=restricted, schema=schema.Bool()),
 		"ram": Attribute(field=ram, schema=schema.Int(minValue=0)),
-		"cpus": Attribute(field=ram, schema=schema.Number(minValue=0)),
-		"diskspace": Attribute(field=ram, schema=schema.Int(minValue=0))
+		"cpus": Attribute(field=cpus, schema=schema.Number(minValue=0)),
+		"diskspace": Attribute(field=diskspace, schema=schema.Int(minValue=0))
 	}
 
 	def init(self, attrs):

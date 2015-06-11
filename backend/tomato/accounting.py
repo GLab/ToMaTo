@@ -238,10 +238,10 @@ class UsageStatistics(BaseDocument):
 		"""
 		if not sources:
 			return
-		lists = [source._getList("5minutes") for source in sources]
+		lists = [source.by5minutes for source in sources]
 		minAll = _toTime(_lastPoint("5minutes", _toPoint(time.time() - 1800)))
 		lastAll = max(minAll, min(lists, key=lambda l: l[-1].end if l else minAll))
-		myList = self._getList("5minutes")
+		myList = self.by5minutes
 		begin = myList[-1].begin if myList else minAll
 		end = _toTime(_nextPoint(_toPoint(begin), "5minutes"))
 		while end <= lastAll:
@@ -288,6 +288,9 @@ class Quota(EmbeddedDocument):
 				self.used.traffic/self.monthly.traffic)
 
 	def update(self, usageStats):
+		"""
+		:type usageStats: UsageStatistics
+		"""
 		start_of_month = util.startOfMonth(*util.getYearMonth(time.time()))
 		if self.usedTime < start_of_month:
 			self.used.cputime = 0.0
@@ -295,7 +298,7 @@ class Quota(EmbeddedDocument):
 			self.used.diskspace = 0.0
 			self.used.traffic = 0.0
 			self.usedTime = start_of_month
-		recs = usageStats.getRecords(type="5minutes", end__gt=self.usedTime)
+		recs = filter(lambda rec: rec.end > self.usedTime, usageStats.by5minutes)
 		factor = 300.0 / util.secondsInMonth(*util.getYearMonth(time.time())) 
 		end = self.usedTime
 		for rec in recs:

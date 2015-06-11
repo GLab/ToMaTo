@@ -8,8 +8,10 @@ var settings = {
 	                  		label: "Switch",
 	                		name: "vpn-switch",
 	                		icon: "img/switch32.png",
-	                		type: "tinc_vpn",
-	                		mode: "switch"
+	                		data: {
+	                		  type: "tinc_vpn",
+	                		  mode: "switch"
+	                		}
 	                      }
 	],
 	supported_configwindow_help_pages: ['kvmqm','openvz','connection'],
@@ -4520,7 +4522,7 @@ var Editor = Class.extend({
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: false,
-				func: this.createPositionElementFunc(this.createElementFunc(cel))
+				func: this.createPositionElementFunc(this.createElementFunc(cel.data))
 			}));			
 		}
 		var common = t.networks.getCommon();

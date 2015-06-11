@@ -242,6 +242,8 @@ class TincEndpoint(ConnectingElement, Element):
 	def init(self, *args, **kwargs):
 		self.state = ST_CREATED
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		if self.parent:
+			self.mode = self.parent.mode
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()

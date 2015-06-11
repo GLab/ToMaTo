@@ -136,9 +136,9 @@ class TaskScheduler(threading.Thread):
 	def scheduleOnce(self, timeout, fn, *args, **kwargs):
 		return self._schedule(Task(fn, args, kwargs, timeout=timeout, repeated=False))
 	def scheduleRepeated(self, timeout, fn, *args, **kwargs):
-		print "Ignoring task %s" % fn
-		return
-		immediate = kwargs.pop("immediate", False)
+		#print "Ignoring task %s" % fn
+		#return
+		immediate = kwargs.pop("immediate", True)
 		return self._schedule(Task(fn, args, kwargs, timeout=timeout, repeated=True, immediate=immediate))
 	def cancelTask(self, taskId):
 		with self.tasksLock:

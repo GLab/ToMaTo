@@ -480,6 +480,10 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		con = cls()
 		con.init(el1.topology, el1, el2, attrs)
 		con.save()
+		el1.connection = con
+		el1.save()
+		el2.connection = con
+		el2.save()
 		con.triggerStart()
 		logging.logMessage("create", category="connection", id=con.idStr)
 		logging.logMessage("info", category="connection", id=con.idStr, info=con.info())

@@ -245,7 +245,7 @@ backend_dumpsource = BackendDumpSource()
 
 def getDumpSources():
 	sources = [backend_dumpsource]
-	hosts = host.getAll()
+	hosts = host.Host.getAll()
 	for h in hosts:
 		if h.enabled:
 			sources.append(h)

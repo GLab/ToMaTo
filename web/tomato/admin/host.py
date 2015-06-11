@@ -45,7 +45,7 @@ class HostForm(AddEditForm):
     rpcurl = forms.CharField(max_length=255,help_text="The host's RPC url.")
     site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
     enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
-    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
+    description = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     
     buttons = Buttons.cancel_add
     
@@ -62,7 +62,7 @@ class HostForm(AddEditForm):
             'rpcurl',
             'site',
             'enabled',
-            'description_text',
+            'description',
             self.buttons
         )
         
