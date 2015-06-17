@@ -39,7 +39,7 @@ def start(port, vncport, sslcert=None):
 	sslcert = params.convert(sslcert, convert=str, null=True, check=os.path.exists)
 	WebsockifyError.check(not netstat.isPortFree(vncport), WebsockifyError.CODE_DEST_PORT_FREE, "Destination port is free", {"port": vncport})
 	netstat.checkPortFree(port, tcp=True, ipv4=True)
-	pid = spawnDaemon(["websockify", "0.0.0.0:%d" % port, "localhost:%d" % vncport] + ["--cert=%s" % sslcert] if sslcert else [])
+	pid = spawnDaemon(["websockify", "0.0.0.0:%d" % port, "localhost:%d" % vncport] + (["--cert=%s" % sslcert] if sslcert else []))
 	try:
 		wait.waitFor(lambda :netstat.isPortUsedBy(port, pid), failCond=lambda :not proc.isAlive(pid))
 		return pid
