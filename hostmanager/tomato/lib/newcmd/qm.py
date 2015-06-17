@@ -1,5 +1,5 @@
-from . import Error, dpkg, tcpserver, brctl, websockify, qemu_img, SUPPORT_CHECK_PERIOD
-from util import run, CommandError, LockMatrix, params, wait, net, cmd, proc, cache
+from . import Error, dpkg, brctl, websockify, qemu_img, SUPPORT_CHECK_PERIOD
+from util import spawnDaemon, run, CommandError, LockMatrix, params, wait, net, cmd, proc, cache
 import collections, os, socket, json, re
 
 locks = LockMatrix()
@@ -211,13 +211,13 @@ def _check():
 	QMError.check(os.access("/dev/kvm", os.W_OK), QMError.CODE_UNSUPPORTED, "No permission to use KVM")
 	QMError.check(os.geteuid() == 0, QMError.CODE_UNSUPPORTED, "Not running as root")
 	QMError.check(cmd.exists("qm"), QMError.CODE_UNSUPPORTED, "Binary qm does not exist")
+	QMError.check(cmd.exists("socat"), QMError.CODE_UNSUPPORTED, "Binary socat does not exist")
 	dpkg.checkSupport()
 	QMError.check(dpkg.isInstalled("pve-qemu-kvm"), QMError.CODE_UNSUPPORTED, "Package pve-qemu-kvm not installed")
 	global qmVersion
 	qmVersion = dpkg.getVersion("pve-qemu-kvm")
-	QMError.check(([0, 15, 0] <= qmVersion < [1, 8]), QMError.CODE_UNSUPPORTED, "Unsupported version of pve-qemu-kvm", {"version": qmVersion})
+	QMError.check(([0, 15, 0] <= qmVersion < [2, 2]), QMError.CODE_UNSUPPORTED, "Unsupported version of pve-qemu-kvm", {"version": qmVersion})
 	brctl.checkSupport()
-	tcpserver.checkSupport()
 	return True
 
 def _public(method):
@@ -309,7 +309,7 @@ def startVnc(vmid, vncpassword, vncport, websockifyPort=None, websockifyCert=Non
 	with locks[vmid]:
 		_checkStatus(vmid, Status.Running)
 		_setVncPassword(vmid, vncpassword)
-		vncPid = tcpserver.start(vncport, ["qm", "vncproxy", str(vmid)])
+		vncPid = spawnDaemon(["socat", "TCP-LISTEN:%d,reuseaddr,fork" % vncport, "UNIX-CLIENT:/var/run/qemu-server/%d.vnc" % vmid])
 		websockifyPid = None
 		try:
 			if websockifyPort:
@@ -321,7 +321,8 @@ def startVnc(vmid, vncpassword, vncport, websockifyPort=None, websockifyCert=Non
 
 @_public
 def stopVnc(pid, websockifyPid=None):
-	tcpserver.stop(pid)
+	proc.autoKill(pid, group=True)
+	QMError.check(not proc.isAlive(pid), QMError.CODE_STILL_RUNNING, "Failed to stop socat")
 	if websockifyPid:
 		websockify.stop(websockifyPid)
 	
