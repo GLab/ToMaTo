@@ -140,7 +140,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	@property
 	def _remoteAttrs(self):
 		caps = getConnectionCapabilities(self.remoteType)
-		allowed = caps["attrs"].keys() if caps else []
+		allowed = caps["attributes"].keys() if caps else []
 		attrs = {}
 		for key, value in self.directData.iteritems():
 			if key in allowed:
@@ -157,8 +157,8 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if self.mainConnection:
 			allowed = self.mainConnection.getAllowedAttributes().keys()
 		else:
-			caps = getConnectionCapabilities(self.remoteType())
-			allowed = caps["attrs"].keys() if caps else []
+			caps = getConnectionCapabilities(self.remoteType)
+			allowed = caps["attributes"].keys() if caps else []
 		UserError.check(key in allowed, code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
 		return True
 
@@ -378,7 +378,7 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 						params = {'state_change': None, 'param_schema': None, 'description': None, 'allowed_states': params}
 					caps["actions"][action] = params
 		if cls.DIRECT_ATTRS:
-			for attr, params in host_cap["attrs"].iteritems():
+			for attr, params in host_cap["attributes"].iteritems():
 				if not attr in cls.DIRECT_ATTRS_EXCLUDE:
 					caps["attributes"][attr] = params
 		return caps
@@ -409,9 +409,11 @@ class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			self.checkRole(Role.user)
 		mcon = self.mainConnection
 		if isinstance(mcon, HostConnection):
-			info = mcon.objectInfo
+			info = mcon.objectInfo.get("attrs", {})
 		else:
 			info = {}
+		if self.directData:
+			info.update(self.directData)
 		info.update(LockedStatefulEntity.info(self))
 		for key, val in self.clientData.items():
 			info["_"+key] = val

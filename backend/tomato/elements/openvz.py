@@ -39,7 +39,7 @@ class OpenVZ(VMElement):
 
 	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=VMElement.name, set=modify_name)
+		"name": Attribute(field=VMElement.name, set=modify_name, label="Name")
 	})
 
 class OpenVZ_Interface(VMInterface):

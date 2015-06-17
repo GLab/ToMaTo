@@ -24,7 +24,7 @@ def topology_info(api, id): #@ReservedAssignment
 	return info
 
 @wrap_json
-def topology_modify(api, id, attrs={}): #@ReservedAssignment
+def topology_modify(api, id, **attrs): #@ReservedAssignment
 	info = api.topology_modify(id, attrs)
 	return info
 
@@ -69,7 +69,7 @@ def element_remove(api, id): #@ReservedAssignment
 	return res
 
 @wrap_json
-def connection_create(api, elements, attrs={}):
+def connection_create(api, elements, **attrs):
 	info = api.connection_create(elements[0], elements[1], attrs)
 	return info
 
@@ -79,7 +79,7 @@ def connection_info(api, id, fetch=False): #@ReservedAssignment
 	return info
 
 @wrap_json
-def connection_modify(api, id, attrs={}): #@ReservedAssignment
+def connection_modify(api, id, **attrs): #@ReservedAssignment
 	info = api.connection_modify(id, attrs)
 	return info
 

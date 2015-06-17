@@ -14,7 +14,7 @@ var settings = {
 	                		}
 	                      }
 	],
-	supported_configwindow_help_pages: ['kvmqm','openvz','connection'],
+	supported_configwindow_help_pages: ['kvmqm','openvz','connection']
 }
 
 var ignoreErrors = false;
@@ -536,7 +536,7 @@ var errorWindow = Window.extend({
 		//Create the content of the error window
 		this.errorContent = $('<div>');
 
-		console.log(error);
+		console.log(error); //keep this logging
 		
 		if(error.parsedResponse) {
 			this.errorContent.after(this.addError(error.parsedResponse.error));
@@ -564,7 +564,7 @@ var errorWindow = Window.extend({
 			
 			content.after($('<b>Error details:</b>'))
 			var errorDebugInfos = $('<table />');
-			
+			log(error); //keep this logging
 			for(var line=0;line<error.debuginfos.length;line++) {
 				errorDebugInfos.append($('<tr><th>'+error.debuginfos[line].th+'</th><td>'+error.debuginfos[line].td+'</td></tr>'));
 			}
@@ -759,10 +759,7 @@ var TutorialWindow = Window.extend({
 	updateStatusToBackend: function() {
 		ajax({
 			url: 'topology/'+this.editor.topology.id+'/modify',
-		 	data: {attrs: {
-		 					_tutorial_state: this.tutorialState
-		 					},
-		 			}
+		 	data: {_tutorial_state: this.tutorialState}
 		});
 	},
 	closeTutorial: function() {
@@ -772,10 +769,7 @@ var TutorialWindow = Window.extend({
 		} else {
 			ajax({
 				url: 'topology/'+this.editor.topology.id+'/modify',
-			 	data: {attrs: {
-			 					_tutorial_disabled: true
-			 					},
-			 			}
+			 	data: {_tutorial_disabled: true}
 			});
 		}
 	}
@@ -814,40 +808,55 @@ var AttributeWindow = Window.extend({
 	},
 	autoElement: function(info, value, enabled) {
 		var el;
-		if (info.options) {
-			el = new ChoiceElement({
-				label: info.desc || info.name,
+		var options = null;
+		var type = null;
+		if (info.read_only) enabled = false;
+		if (info.type) type = info.type;
+		if (info.options) options = info.options;
+		var schema = null;
+		if (info.value_schema) {
+		    schema = info.value_schema;
+		    if (schema.options && schema.options.length) options = schema.options;
+		    if (schema.types) type = schema.types[0];
+		}
+		if (options) {
+		    var choices = {};
+		    for (var i=0; i<options.length; i++) {
+		        if (schema && schema.options_desc) choices[options[i]] = schema.options_desc[i] || options[i];
+		        else choices[options[i]] = options[i];
+		    }
+		    return new ChoiceElement({
+			    label: info.label || info.name,
+			    name: info.name,
+			    choices: choices,
+			    value: value || info["default"],
+			    disabled: !enabled
+		    });
+		}
+		if (type == "bool") {
+			return new CheckboxElement({
+				label: info.label || info.name,
 				name: info.name,
-				choices: info.options,
 				value: value || info["default"],
 				disabled: !enabled
-			});
-		} else if (info.type == "bool") {
-			el = new CheckboxElement({
-				label: info.desc || info.name,
-				name: info.name,
-				value: value || info["default"],
-				disabled: !enabled
-			});
-		} else {
-			var converter = null;
-			switch (info.type) {
-				case "int":
-					converter = parseInt;
-					break;
-				case "float":
-					converter = parseFloat;
-					break;
-			}
-			el = new TextElement({
-				label: info.desc || info.name,
-				name: info.name,
-				value: value || info["default"],
-				disabled: !enabled,
-				inputConverter: converter 
 			});
 		}
-		return el;
+		var converter = null;
+		switch (type) {
+			case "int":
+				converter = parseInt;
+				break;
+			case "float":
+				converter = parseFloat;
+				break;
+		}
+		return new TextElement({
+			label: info.label || info.name,
+			name: info.name,
+			value: value || info["default"],
+			disabled: !enabled,
+			inputConverter: converter
+		});
 	},
 	autoAdd: function(info, value, enabled) {
 		this.add(this.autoElement(info, value, enabled));
@@ -1462,7 +1471,6 @@ var Topology = Class.extend({
 				elObj = new UnknownElement(this, el, this._getCanvas());
 				break;
 		}
-		log(elObj);
 		if (el.id) this.elements[el.id] = elObj;
 		if (el.parent) {
 			//parent id is less and thus objects exists
@@ -1572,7 +1580,7 @@ var Topology = Class.extend({
 		var t = this;
 		ajax({
 			url: 'topology/'+this.id+'/modify',
-		 	data: {attrs: attrs},
+		 	data: attrs,
 		 	successFn: function(result) {
 				t.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "end", attrs: attrs});
 		 	},
@@ -2204,7 +2212,11 @@ var Component = Class.extend({
 		return (action in this.caps.actions) && (! this.caps.actions[action].allowed_states || (this.caps.actions[action].allowed_states.indexOf(this.data.state) >= 0));
 	},
 	attrEnabled: function(attr) {
-		return (attr[0] == "_") || (attr in this.caps.attributes) && (! this.caps.attributes[attr].states || this.caps.attributes[attr].writable_states.indexOf(this.data.state) >= 0);
+	    if (attr[0] == "_") return true;
+	    if (!(attr in this.caps.attributes)) return false;
+	    var cap = this.caps.attributes[attr];
+	    if (cap.read_only) return false;
+	    return (!cap.writable_states || cap.writable_states.indexOf(this.data.state) >= 0);
 	},
 	setData: function(data) {
 		this.data = data;
@@ -2258,10 +2270,10 @@ var Component = Class.extend({
 	configWindowSettings: function() {
 		return {
 			order: ["name"],
-			ignore: [],
+			ignore: ["id", "parent", "connection", "host_info", "host", "state", "debug", "type", "children", "topology"],
 			unknown: true,
 			special: {}
-		} 
+		}
 	},
 	showConfigWindow: function(showTemplate,callback) {
 		
@@ -2311,7 +2323,11 @@ var Component = Class.extend({
 			var name = settings.order[i];
 			if(showTemplate || !(name == 'template')) {
 				if (settings.special[name]) this.configWindow.add(settings.special[name]);
-				else if (this.caps.attributes[name]) this.configWindow.autoAdd(this.caps.attributes[name], this.data.attributes[name], this.attrEnabled(name));
+				else if (this.caps.attributes[name]) {
+				    var info = this.caps.attributes[name];
+				    info.name = name;
+				    this.configWindow.autoAdd(info, this.data[name], this.attrEnabled(name));
+				}
 			}
 		}
 		if (settings.unknown) {
@@ -2319,7 +2335,11 @@ var Component = Class.extend({
 				if (settings.order.indexOf(name) >= 0) continue; //do not repeat ordered fields
 				if (settings.ignore.indexOf(name) >= 0) continue;
 				if (settings.special[name]) this.configWindow.add(settings.special[name]);
-				else if (this.caps.attributes[name]) this.configWindow.autoAdd(this.caps.attributes[name], this.data.attributes[name], this.attrEnabled(name));
+				else if (this.caps.attributes[name]) {
+				    var info = this.caps.attributes[name];
+				    info.name = name;
+				    this.configWindow.autoAdd(info, this.data[name], this.attrEnabled(name));
+				}
 			}
 		}
 		this.configWindow.show();
@@ -2423,7 +2443,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var t = this;
 			var el = new CheckboxElement({
 				name: "emulation",
-				value: con.data.emulation,
+				value: con.data.emulation == undefined ? con.caps.attributes.emulation['default'] : con.data.emulation,
 				callback: function(el, value) {
 					t.updateEmulationStatus(value);
 				}
@@ -2468,14 +2488,14 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el_from = this.autoElement(con.caps.attributes[name+"_from"], con.data.attributes[name+"_from"], true)
+				var el_from = this.autoElement(con.caps.attributes[name+"_from"], con.data[name+"_from"], true)
 				this.elements.push(el_from);
 				this.emulation_elements.push(el_from);
-				var el_to = this.autoElement(con.caps.attributes[name+"_to"], con.data.attributes[name+"_to"], true)
+				var el_to = this.autoElement(con.caps.attributes[name+"_to"], con.data[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
 				link_emulation_elements.after($('<div class="form-group" />')
-					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].desc))
+					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].label))
 					.append($('<div class="col-sm-3" style="padding: 0;"/>').append(el_from.getElement()))
 					.append($('<div class="col-sm-3" style="padding: 0;" />').append(el_to.getElement()))
 					.append($('<div class="col-sm-2" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].unit))
@@ -2512,11 +2532,11 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["capture_mode", "capture_filter"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el = this.autoElement(con.caps.attributes[name], con.data.attributes[name], con.attrEnabled(name));
+				var el = this.autoElement(con.caps.attributes[name], con.data[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
 				packet_capturing_elements.after($('<div class="form-group" />')
-					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].desc))
+					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].label))
 					.append($('<div class="col-sm-6" />').append(el.getElement()))
 				);
 			}
@@ -3698,6 +3718,7 @@ var VMElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
+		config.ignore.push("info_last_sync");
 		
 		var profileInfo = {};
 		var profiles = this.editor.profiles.getAllowed(this.data.type);
@@ -4137,13 +4158,11 @@ var NetworkStore = Class.extend({
 		});
 		this.nets = [];
 		for (var i=0; i<data.length; i++) {
-		 if (data[i].type == "network") {
-			 net = data[i];
+		     net = data[i];
 			 if (!net.icon) {
 				 net.icon = this.getNetworkIcon(net.kind);
 			 }
 			 this.nets.push(net);
-		 }
 		}
 	},
 	getAll: function() {
@@ -4315,7 +4334,7 @@ var Editor = Class.extend({
 		setInterval(function(){t.rextfv_status_updater.updateAll(t.rextfv_status_updater)}, 1200);
 	},
 	triggerEvent: function(event) {
-		log(event);
+		log(event); //keep this logging
 		for (var i = 0; i < this.listeners.length; i++) this.listeners[i](event);
 	},
 	setOption: function(name, value) {

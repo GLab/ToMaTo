@@ -28,13 +28,16 @@ class Action:
 		}
 
 class Attribute:
-	def __init__(self, field=None, get=None, set=None, check=None, readOnly=False, schema=None):
+	def __init__(self, field=None, get=None, set=None, check=None, readOnly=False, schema=None, description=None, label=None, default=None):
 		self.getFn = get
 		self.setFn = set
 		self.checkFn = check
 		self.readOnly = readOnly
 		self.schema = schema
 		self.field = field
+		self.label = label or description or (field.name if field and hasattr(field, "name") else None)
+		self.description = description
+		self.default = default if not default is None else (field.default if field and hasattr(field, "default") else None)
 	def check(self, obj, value):
 		Error.check(not self.readOnly, code=Error.INVALID_CONFIGURATION, message="Attribute is read-only")
 		if self.schema:
@@ -59,6 +62,9 @@ class Attribute:
 			return self.field.__get__(obj, obj.__class__)
 	def info(self):
 		return {
+			"default": self.default,
+			"label": self.label,
+			"description": self.description,
 			"read_only": self.readOnly,
 			"value_schema": self.schema.describe() if self.schema else None
 		}
@@ -181,7 +187,7 @@ class StatefulAttribute(Attribute):
 		self.readableStates = readableStates
 	def check(self, obj, value):
 		if not self.writableStates is None:
-			Error.check(obj.state in self.writableStates, code=Error.INVALID_STATE, message="Attribute is not writable in this state")
+			Error.check(obj.state in self.writableStates, code=Error.INVALID_STATE, message="Attribute is not writable in this state", data={"writable_states": self.writableStates, "state": obj.state})
 		Attribute.check(self, obj, value)
 	def info(self):
 		info = Attribute.info(self)

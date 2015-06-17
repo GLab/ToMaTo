@@ -123,7 +123,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 	@property
 	def _remoteAttrs(self):
 		caps = host.getElementCapabilities(self.remoteType)
-		allowed = caps["attrs"].keys() if caps else []
+		allowed = caps["attributes"].keys() if caps else []
 		attrs = {}
 		for key, value in self.info().iteritems():
 			if key in allowed:
@@ -140,7 +140,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			allowed = self.mainElement.getAllowedAttributes().keys()
 		else:
 			caps = host.getElementCapabilities(self.remoteType)
-			allowed = caps["attrs"].keys() if caps else []
+			allowed = caps["attributes"].keys() if caps else []
 		UserError.check(key in allowed, code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
 		return True
 
@@ -293,6 +293,7 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 		if cls.DIRECT_ACTIONS:
 			# noinspection PyUnboundLocalVariable
 			for action, params in host_cap["actions"].iteritems():
+				if action in caps["actions"]: continue
 				if not action in cls.DIRECT_ACTIONS_EXCLUDE:
 					if action == '__remove__':
 						action = Entity.REMOVE_ACTION
@@ -302,7 +303,8 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 						params = {'state_change': None, 'param_schema': None, 'description': None, 'allowed_states': params}
 					caps["actions"][action] = params
 		if cls.DIRECT_ATTRS:
-			for attr, params in host_cap["attrs"].iteritems():
+			for attr, params in host_cap["attributes"].iteritems():
+				if attr in caps["attributes"]: continue
 				if not attr in cls.DIRECT_ATTRS_EXCLUDE:
 					caps["attributes"][attr] = params
 		caps.update(children=cls.CAP_CHILDREN, parent=cls.CAP_PARENT, connectable=cls.CAP_CONNECTABLE)
@@ -316,9 +318,11 @@ class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
 			self.checkRole(Role.user)
 		mel = self.mainElement
 		if isinstance(mel, HostElement):
-			info = mel.objectInfo
+			info = mel.objectInfo.get("attrs", {})
 		else:
 			info = {}
+		if self.directData:
+			info.update(self.directData)
 		info.update(LockedStatefulEntity.info(self))
 		for key, val in self.clientData.items():
 			info["_"+key] = val

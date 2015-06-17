@@ -219,7 +219,7 @@ class VMElement(Element):
 		"site": StatefulAttribute(get=lambda self: self.site.name if self.site else None, set=modify_site, writableStates=[ST_CREATED]),
 		"profile": StatefulAttribute(get=lambda self: self.profile.name if self.profile else None, set=modify_profile, writableStates=[ST_CREATED, ST_PREPARED]),
 		"template": StatefulAttribute(get=lambda self: self.template.name if self.template else None, set=modify_template, writableStates=[ST_CREATED]),
-		"name": Attribute(field=name),
+		"name": Attribute(field=name, label="Name"),
 		"info_last_sync": Attribute(field=lastSync, readOnly=True)
 	})
 
@@ -276,7 +276,7 @@ class VMInterface(Element):
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=name),
+		"name": Attribute(field=name, label="Name"),
 	})
 
 	ACTIONS = Element.ACTIONS.copy()

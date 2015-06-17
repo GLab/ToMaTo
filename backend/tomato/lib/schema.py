@@ -2,8 +2,9 @@ import types, re
 from .error import UserError as Error
 
 class Common:
-	def __init__(self, options=None, minValue=None, maxValue=None, null=False):
+	def __init__(self, options=None, optionsDesc=None, minValue=None, maxValue=None, null=False):
 		self.options = options
+		self.optionsDesc = optionsDesc
 		self.minValue = minValue
 		self.maxValue = maxValue
 		self.null = null
@@ -24,6 +25,8 @@ class Common:
 		desc = {"null": self.null}
 		if not self.options is None:
 			desc['options'] = self.options
+		if not self.optionsDesc is None:
+			desc['options_desc'] = self.optionsDesc
 		if not self.minValue is None:
 			desc['min_value'] = self.minValue
 		if not self.maxValue is None:

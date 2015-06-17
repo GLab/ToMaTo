@@ -43,6 +43,7 @@ class ExternalNetwork(Element):
 	CAP_CHILDREN = {"external_network_endpoint": [ST_CREATED]}
 	
 	def init(self, *args, **kwargs):
+		self.state = ST_CREATED
 		Element.init(self, *args, **kwargs)
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
@@ -52,6 +53,7 @@ class ExternalNetwork(Element):
 		network = Network.get(val)
 		if network.restricted and not self.kind == val:
 			UserError.check(currentUser().hasFlag(Flags.RestrictedNetworks), code=UserError.DENIED, message="Network is restricted")
+		return True
 
 	def modify_kind(self, val):
 		self.kind = val
@@ -73,10 +75,10 @@ class ExternalNetwork(Element):
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=name, schema=schema.String()),
-		"samenet": StatefulAttribute(field=samenet, writableStates=[ST_CREATED], schema=schema.Bool()),
+		"name": Attribute(field=name, schema=schema.String(), label="Name"),
+		"samenet": StatefulAttribute(field=samenet, writableStates=[ST_CREATED], schema=schema.Bool(), label="Same network"),
 		"kind": StatefulAttribute(field=kind, set=modify_kind, check=check_kind, writableStates=[ST_CREATED],
-			schema=schema.Identifier())
+			schema=schema.Identifier(), label="Kind")
 	})
 
 	ACTIONS = {

@@ -142,8 +142,8 @@ class TincVPN(ConnectingElement, Element):
 			info = ch.info()
 			peerInfo[ch.id] = {
 				"host": ch.element.host.address,
-				"port": info["attrs"]["port"],
-				"pubkey": info["attrs"]["pubkey"],
+				"port": info["port"],
+				"pubkey": info["pubkey"],
 			}
 			peers[ch.id] = []
 		clusters = _cluster(children)
@@ -208,8 +208,8 @@ class TincVPN(ConnectingElement, Element):
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=name),
-		"mode": StatefulAttribute(field=mode, set=modify_mode, writableStates=[ST_CREATED, ST_PREPARED], schema=schema.String(options=['hub', 'switch']))
+		"name": Attribute(field=name, label="Name"),
+		"mode": StatefulAttribute(field=mode, label="Mode", set=modify_mode, writableStates=[ST_CREATED, ST_PREPARED], schema=schema.String(options=['hub', 'switch'], optionsDesc=['Hub', 'Learning switch']))
 	})
 
 	ACTIONS = Element.ACTIONS.copy()
@@ -306,8 +306,8 @@ class TincEndpoint(ConnectingElement, Element):
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=name),
-		"mode": StatefulAttribute(field=mode, set=modify_mode, writableStates=[ST_CREATED, ST_PREPARED], schema=schema.String(options=['hub', 'switch'])),
+		"name": Attribute(field=name, label="Name"),
+		"mode": StatefulAttribute(field=mode, label="Mode", set=modify_mode, writableStates=[ST_CREATED, ST_PREPARED], schema=schema.String(options=['hub', 'switch'], optionsDesc=['Hub', 'Learning switch'])),
 	})
 
 	ACTIONS = Element.ACTIONS.copy()

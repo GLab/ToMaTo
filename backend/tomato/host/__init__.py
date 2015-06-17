@@ -195,7 +195,58 @@ class Host(DumpSource, BaseDocument, Entity):
 		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
 
 	def _capabilities(self):
-		return self.getProxy().host_capabilities()
+		def convertActions(actions, next_state):
+			res = {}
+			for action, states in actions.items():
+				res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state.get(action)).info()
+			return res
+		def convertAttributes(attrs):
+			res = {}
+			for attr, desc in attrs.items():
+				options = desc.get('options', {})
+				optionsDesc = []
+				if isinstance(options, dict):
+					optionsDesc = [options[k] for k in options.keys()]
+					options = options.keys()
+				params = {
+					"options": options, "optionsDesc": optionsDesc,
+					"minValue": desc.get('minvalue'), "maxValue": desc.get('maxvalue'),
+					"null": desc.get('null', True)
+				}
+				if desc.get('type') == "int":
+					sch = schema.Int(**params)
+				elif desc.get('type') == "float":
+					sch = schema.Number(**params)
+				elif desc.get('type') == "str":
+					sch = schema.String(regex=desc.get("regex"), **params)
+				elif desc.get('type') == "bool":
+					sch = schema.Bool(**params)
+				else:
+					sch = schema.Any(**params)
+				res[attr] = StatefulAttribute(writableStates=desc.get('states'), label=desc.get('desc'), schema=sch, default=desc.get('default')).info()
+			return res
+		caps = self.getProxy().host_capabilities()
+		elems = {}
+		for name, info in caps['elements'].items():
+			elems[name] = {
+				"actions": convertActions(info.get('actions'), info.get('next_state')),
+				"attributes": convertAttributes(info.get('attrs')),
+				"children": {n: {"allowed_states": states} for n, states in info.get('children').items()},
+				"parent": info.get('parent'),
+				"connectability": [{"concept": n, "allowed_states": None} for n in info.get('con_concepts')]
+			}
+		cons = {}
+		for name, info in caps['connections'].items():
+			cons[name] = {
+				"actions": convertActions(info.get('actions'), info.get('next_state')),
+				"attributes": convertAttributes(info.get('attrs')),
+				"connectability": [{"concept_from": names[0], "concept_to": names[1]} for names in info.get('con_concepts')]
+			}
+		return {
+			"elements": elems,
+			"connections": cons,
+			"resources": caps.get('resources')
+		}
 
 	def _info(self):
 		return self.getProxy().host_info()
@@ -584,6 +635,27 @@ class HostObject(BaseDocument):
 	meta = {
 		"abstract": True
 	}
+
+	@property
+	def capabilities(self):
+		raise NotImplemented()
+
+	def getAllowedActions(self):
+		caps = self.capabilities["actions"]
+		res = {}
+		for key, info in caps.iteritems():
+			if self.state in info["allowed_states"]:
+				res[key] = info
+		return res
+
+	def getAllowedAttributes(self):
+		caps = self.capabilities["attributes"]
+		ret = {}
+		for key, info in caps.iteritems():
+			states = info.get("states_writable")
+			if states is None or self.state in states:
+				ret[key] = info
+		return ret
 
 
 def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None):

@@ -88,17 +88,9 @@ class HostConnection(HostObject):
 	def getAttrs(self):
 		return self.objectInfo["attrs"]
 
-	def getAllowedActions(self):
-		caps = self.host.getConnectionCapabilities(self.type)["actions"]
-		res = []
-		for key, states in caps.iteritems():
-			if self.state in states:
-				res.append(key)
-		return res
-
-	def getAllowedAttributes(self):
-		caps = self.host.getConnectionCapabilities(self.type)["attrs"]
-		return dict(filter(lambda attr: not "states" in attr[1] or self.state in attr[1]["states"], caps.iteritems()))
+	@property
+	def capabilities(self):
+		return self.host.getConnectionCapabilities(self.type)
 
 	def updateAccountingData(self, data):
 		self.usageStatistics.importRecords(data)

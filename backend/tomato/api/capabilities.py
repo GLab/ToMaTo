@@ -35,7 +35,7 @@ def capabilities_connection(type, host=None): #@ReservedAssignment
 def capabilities():
 	return {
 		"element": dict((t, capabilities_element(t)) for t in elements.TYPES),
-		"connection": dict((t, capabilities_connection(t)) for t in ["bridge", "fixed_bridge"])
+		"connection": dict((t, capabilities_connection(t)) for t in ["bridge", "fixed_bridge"]),
 	}
 
 from .. import elements, connections

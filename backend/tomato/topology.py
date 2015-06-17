@@ -164,7 +164,7 @@ class Topology(BaseDocument, Entity, PermissionMixin):
 		self.delete()
 		self.totalUsage.remove()
 
-	def modify_site(self, val, cls):
+	def modify_site(self, val):
 		self.site = Site.get(val)
 
 	def modifyRole(self, user, role):

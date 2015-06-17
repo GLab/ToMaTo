@@ -111,23 +111,9 @@ class HostElement(HostObject):
 	def getAttrs(self):
 		return self.objectInfo["attrs"]
 
-	def getAllowedActions(self):
-		try:
-			caps = self.host.getElementCapabilities(self.type)["actions"]
-			res = []
-			for key, states in caps.iteritems():
-				if self.state in states:
-					res.append(key)
-			return res
-		except:
-			self.host.incrementErrors()
-			logging.logException(host=self.host.name)
-			return []
-
-	def getAllowedAttributes(self):
-		caps = self.host.getElementCapabilities(self.type)["attrs"]
-		ret = dict(filter(lambda attr: not "states" in attr[1] or self.state in attr[1]["states"], caps.iteritems()))
-		return ret
+	@property
+	def capabilities(self):
+		return self.host.getElementCapabilities(self.type)
 
 	def updateAccountingData(self, data):
 		self.usageStatistics.importRecords(data)
