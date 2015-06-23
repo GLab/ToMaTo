@@ -19,7 +19,7 @@ from .. import util
 from . import run, CommandError, spawn
 from process import killTree
 import path
-import os, re, random, struct, json
+import os, re, random, struct, json, socket, select
 from fcntl import ioctl
 
 def getIfbCount():
@@ -173,27 +173,39 @@ def ipspy_read(filename):
 		return []
 
 class IfaceAccess:
-	def __init__(self, ifname):
+	def __init__(self, ifname, timeout=None):
 		self.sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
 		self.sock.bind((ifname, 0x0003))
 		self.sock.setblocking(1)
+		if timeout:
+			self.sock.settimeout(timeout)
 	def receive(self, mtu=1516):
 		return self.sock.recv(mtu)
 	def send(self, pkg):
 		self.sock.send(pkg)
 	def close(self):
-		self.sock.close()		
+		self.sock.close()
+	def __enter__(self):
+		pass
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		self.close()
 
 class BridgeAccess:
-	def __init__(self, brname, ifname):
+	def __init__(self, brname, ifname, timeout=None):
 		self.fd = os.open('/dev/net/tun', os.O_RDWR)
 		ifs = ioctl(self.fd, 0x400454ca, struct.pack("16sH", ifname, 0x1002))
 		ifname = ifs[:16].strip("\x00")
 		ifUp(ifname)
 		bridgeAddInterface(brname, ifname)
+		self.timeout = timeout
 	def receive(self, mtu=1516):
-		return os.read(self.fd, mtu)
+		if not self.timeout or select.select([self.fd], [], [], self.timeout)[0]:
+			return os.read(self.fd, mtu)
 	def send(self, pkg):
 		os.write(self.fd, pkg)
 	def close(self):
 		os.close(self.fd)
+	def __enter__(self):
+		pass
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		self.close()
