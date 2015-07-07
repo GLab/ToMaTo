@@ -72,7 +72,7 @@ def stopCaching():
 	global _caching
 	_caching = False
 
-class Host(DumpSource, BaseDocument, Entity):
+class Host(DumpSource, Entity, BaseDocument):
 	"""
 	:type totalUsage: UsageStatistics
 	:type site: host.site.Site
@@ -184,7 +184,7 @@ class Host(DumpSource, BaseDocument, Entity):
 			self.hostNetworks = self.getProxy().host_networks()
 		except:
 			self.hostNetworks = []
-		caps = self._capabilities()
+		caps = self._convertCapabilities(self.getProxy().host_capabilities())
 		self.elementTypes = caps["elements"]
 		self.connectionTypes = caps["connections"]
 		self.componentErrors = max(0, self.componentErrors / 2)
@@ -194,7 +194,7 @@ class Host(DumpSource, BaseDocument, Entity):
 		logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)
 		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
 
-	def _capabilities(self):
+	def _convertCapabilities(self, caps):
 		def convertActions(actions, next_state):
 			res = {}
 			for action, states in actions.items():
@@ -225,7 +225,6 @@ class Host(DumpSource, BaseDocument, Entity):
 					sch = schema.Any(**params)
 				res[attr] = StatefulAttribute(writableStates=desc.get('states'), label=desc.get('desc'), schema=sch, default=desc.get('default')).info()
 			return res
-		caps = self.getProxy().host_capabilities()
 		elems = {}
 		for name, info in caps['elements'].items():
 			elems[name] = {
@@ -677,7 +676,9 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 		if set(networkKinds) - set(host.getNetworkKinds()):
 			continue
 		hosts.append(host)
-	UserError.check(hosts, code=UserError.INVALID_CONFIGURATION, message="No hosts found for requirements")
+	UserError.check(hosts, code=UserError.INVALID_CONFIGURATION, message="No hosts found for requirements", data={
+		'site': site, 'element_types': elementTypes, 'connection_types': connectionTypes, 'network_kinds': networkKinds
+	})
 	# any host in hosts can handle the request
 	prefs = dict([(h, 0.0) for h in hosts])
 	# STEP 2: calculate preferences based on host load

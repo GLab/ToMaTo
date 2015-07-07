@@ -40,7 +40,7 @@ PATTERNS = {
 	"repy": "%s.repy",
 }
 
-class Template(BaseDocument, Entity):
+class Template(Entity, BaseDocument):
 	tech = StringField(required=True)
 	name = StringField(required=True, unique_with='tech')
 	preference = IntField(default=0)

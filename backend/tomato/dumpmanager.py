@@ -151,11 +151,10 @@ def create_dump(dump, source):
 	return ErrorDump(
 		source=source.dump_source_name(),
 		dumpId=dump['dump_id'],
-		groupId=dump['group_id'],
 		timestamp = dump['timestamp'],
 		description = dump['description'],
 		type = dump['type'],
-		software_version = dump['software_version']
+		softwareVersion = dump['software_version']
 	)
 
 #First part: fetching dumps from all the sources.

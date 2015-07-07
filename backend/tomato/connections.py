@@ -51,7 +51,7 @@ starting_list_lock = threading.RLock()
 stopping_list = set()
 stopping_list_lock = threading.RLock()
 
-class Connection(BaseDocument, LockedStatefulEntity, PermissionMixin):
+class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	"""
 	:type topology: Topology
 	:type clientData: dict

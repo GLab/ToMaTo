@@ -22,18 +22,36 @@ os.environ['TOMATO_MODULE'] = "backend"
 import monkey
 monkey.patch_all()
 
-def db_migrate():
-	"""
-	NOT CALLABLE VIA XML-RPC
-	Migrates the database forward to the current structure using migrations
-	from the package tomato.migrations.
-	"""
-	pass
-
-
 import config
 from mongoengine import connect
 connect(config.DATABASE, host=config.DATABASE_HOST)
+
+def db_migrate():
+	def getMigration(version):
+		try:
+			return __import__("tomato.migrations.migration_%04d" % version, {}, {}, 'migration_%04d' % version).migrate
+		except ImportError:
+			return None
+
+	from .db import data
+	version = data.get('db_version', 0)
+	if version > 0 and not getMigration(version):
+		raise Exception("Database is newer than code")
+	if not version and not getMigration(1):
+		raise Exception("Failed to migrate to initial version")
+	while True:
+		version += 1
+		migrate = getMigration(version)
+		if not migrate:
+			break
+		print "migrating to version %04d" % version
+		try:
+			migrate()
+		except:
+			import traceback
+			traceback.print_exc()
+			raise
+		data.set('db_version', version)
 
 import threading
 _currentUser = threading.local()

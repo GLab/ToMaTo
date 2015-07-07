@@ -26,7 +26,7 @@ DEFAULTS = {
 	"repy": {"ram": 50, "cpus": 0.25},
 }
 
-class Profile(BaseDocument, Entity):
+class Profile(Entity, BaseDocument):
 	tech = StringField(required=True)
 	name = StringField(required=True, unique_with='tech')
 	preference = IntField(default=0, required=True)

@@ -20,8 +20,8 @@ from ..generic import *
 from ..host import Host
 from ..lib.error import UserError
 
-class Network(BaseDocument, Entity):
-	kind = StringField(required=True)
+class Network(Entity, BaseDocument):
+	kind = StringField(required=True, unique=True)
 	preference = IntField(default=0, required=True)
 	restricted = BooleanField(default=False)
 	label = StringField()
@@ -77,7 +77,7 @@ class Network(BaseDocument, Entity):
 		obj.save()
 		return obj
 
-class NetworkInstance(BaseDocument, Entity):
+class NetworkInstance(Entity, BaseDocument):
 	"""
 	:type network: Network
 	:type host: Host

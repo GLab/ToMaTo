@@ -31,7 +31,7 @@ class TimeoutStep:
 	DESTROYED = 20
 
 
-class Topology(BaseDocument, Entity, PermissionMixin):
+class Topology(Entity, PermissionMixin, BaseDocument):
 	"""
 	:type permissions: list of Permission
 	:type totalUsage: UsageStatistics

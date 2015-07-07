@@ -29,7 +29,7 @@ from ..connections import Connection
 
 TYPES = {}
 
-class Element(BaseDocument, LockedStatefulEntity, PermissionMixin):
+class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	"""
 	:type topology: Topology
 	:type parent: Element

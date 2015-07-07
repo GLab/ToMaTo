@@ -49,7 +49,7 @@ class OpenVZ_Interface(VMInterface):
 
 @util.wrap_task
 def syncRexTFV():
-	for e in OpenVZ.objects.filter(next_sync__gt=0.0, next_sync__lte=time.time()):
+	for e in OpenVZ.objects.filter(nextSync__gt=0.0, nextSync__lte=time.time()):
 		with e:
 			e.reload().updateInfo()
 
