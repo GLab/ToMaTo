@@ -1,8 +1,0 @@
-Topology #171 info(full=True): 1.696749
-Topology #171 info(): 0.257304
-Topology #171 totalUsage.info(): 0.074669
-Topology list: 0.308362
-Topology #171 info(full=True): 0.420585
-Topology #171 info(): 0.043266
-Topology #171 totalUsage.info(): 0.009700
-Topology list: 0.082293

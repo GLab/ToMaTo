@@ -63,7 +63,10 @@ SERVER.append({
 	"SSL": False
 })
 
-DATABASE = 'test'
+DATABASE = 'tomato'
+DATABASE_HOST = 'localhost'
+if "DB_PORT_27017_TCP" in os.environ:
+	DATABASE_HOST = 'mongodb://%s:%s/tomato' % (os.getenv('DB_PORT_27017_TCP_ADDR'), os.getenv('DB_PORT_27017_TCP_PORT'))
 
 RPC_TIMEOUT = 60
 HOST_UPDATE_INTERVAL = 60

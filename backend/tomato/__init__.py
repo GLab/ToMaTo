@@ -33,7 +33,7 @@ def db_migrate():
 
 import config
 from mongoengine import connect
-connect(config.DATABASE)
+connect(config.DATABASE, host=config.DATABASE_HOST)
 
 import threading
 _currentUser = threading.local()
