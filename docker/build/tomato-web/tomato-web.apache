@@ -1,0 +1,18 @@
+<Directory /code>
+    Require all granted
+</Directory>
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+
+    DocumentRoot /code/tomato
+
+    Alias /static /code/tomato/static
+    Alias /style /code/tomato/style
+    Alias /img /code/tomato/img
+    Alias /js /code/tomato/js
+    Alias /fonts /code/tomato/fonts
+    Alias /editor_tutorial /code/tomato/editor_tutorial
+    
+    WSGIScriptAlias / /code/django.wsgi
+</VirtualHost>

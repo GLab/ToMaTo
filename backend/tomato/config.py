@@ -51,6 +51,11 @@ SERVER = []
 
 SERVER.append({
 	"PORT": 8000,
+	"SSL": False
+})
+
+SERVER.append({
+	"PORT": 8001,
 	"SSL": True,
 	"SSL_OPTS": {
 		"cert_file" : "/etc/tomato/server.cert",
@@ -58,10 +63,6 @@ SERVER.append({
 	}
 })
 
-SERVER.append({
-	"PORT": 8001,
-	"SSL": False
-})
 
 DATABASE = 'tomato'
 DATABASE_HOST = 'localhost'

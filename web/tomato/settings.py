@@ -80,7 +80,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('django.core.context_processors.request',)
 
 import os
 CURRENT_DIR = os.path.dirname(__file__)
-TEMPLATE_DIRS = os.path.join(CURRENT_DIR, 'templates')
+TEMPLATE_DIRS = (os.path.join(CURRENT_DIR, 'templates'),)
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -93,6 +93,10 @@ INSTALLED_APPS = (
 server_protocol = "http"
 server_host = "localhost"
 server_port = "8000"
+if "BACKEND_PORT_8000_TCP" in os.environ:
+    server_host = os.getenv('BACKEND_PORT_8000_TCP_ADDR')
+    server_port = os.getenv('BACKEND_PORT_8000_TCP_PORT')
+
 server_httprealm="G-Lab ToMaTo"
 tutorial_list_url="http://packages.tomato-lab.org/tutorials/index.json"
 
