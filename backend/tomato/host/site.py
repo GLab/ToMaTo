@@ -42,6 +42,8 @@ class Site(BaseDocument):
 			elif key == "location":
 				self.location = value
 			elif key == "geolocation":
+				if isinstance(value, dict):
+					value = (value.get('latitude'), value.get('longitude'))
 				self.geolocation = value
 			elif key == "description":
 				self.description = value
@@ -66,7 +68,7 @@ class Site(BaseDocument):
 			"name": self.name,
 			"label": self.label,
 			"location": self.location,
-			"geolocation": self.geolocation,
+			"geolocation": {'latitude': self.geolocation[0], 'longitude': self.geolocation[1]},
 			"organization": self.organization.name,
 			"description": self.description
 		}
@@ -85,7 +87,7 @@ class Site(BaseDocument):
 			return None
 
 	@classmethod
-	def create(cls, name, organization, description=""):
+	def create(cls, name, organization, label=""):
 		from .organization import Organization
 		orga = Organization.get(organization)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
@@ -93,10 +95,9 @@ class Site(BaseDocument):
 		user = currentUser()
 		UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == orga,
 			code=UserError.DENIED, message="Not enough permissions")
-		logging.logMessage("create", category="site", name=name, description=description)
-		site = Site(name=name, organization=orga)
+		logging.logMessage("create", category="site", name=name, label=label)
+		site = Site(name=name, organization=orga, label=label)
 		site.save()
-		site.init({"description": description})
 		return site
 
 from .organization import Organization

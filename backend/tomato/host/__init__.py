@@ -75,7 +75,7 @@ def stopCaching():
 class Host(DumpSource, Entity, BaseDocument):
 	"""
 	:type totalUsage: UsageStatistics
-	:type site: host.site.Site
+	:type site: tomato.host.site.Site
 	:type templates: list of Template
 	"""
 	from ..resources.template import Template
@@ -85,9 +85,9 @@ class Host(DumpSource, Entity, BaseDocument):
 	from .site import Site
 	site = ReferenceField(Site, required=True, reverse_delete_rule=DENY)
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
-	elementTypes = DictField(db_field='element_types', required=True)
-	connectionTypes = DictField(db_field='connection_types', required=True)
-	hostInfo = DictField(db_field='host_info', required=True)
+	elementTypes = DictField(db_field='element_types')
+	connectionTypes = DictField(db_field='connection_types')
+	hostInfo = DictField(db_field='host_info')
 	hostInfoTimestamp = FloatField(db_field='host_info_timestamp', required=True)
 	accountingTimestamp = FloatField(db_field='accounting_timestamp', required=True)
 	lastResourcesSync = FloatField(db_field='last_resource_sync', required=True)
@@ -150,6 +150,9 @@ class Host(DumpSource, Entity, BaseDocument):
 	def init(self, attrs=None):
 		self.attrs = {}
 		self.totalUsage = UsageStatistics.objects.create()
+		self.hostInfoTimestamp = 0
+		self.accountingTimestamp = 0
+		self.lastResourcesSync = 0
 		if attrs:
 			self.modify(attrs)
 		self.update()
@@ -377,9 +380,6 @@ class Host(DumpSource, Entity, BaseDocument):
 		self.lastResourcesSync = time.time()
 		self.save()
 
-	def hasTemplate(self, tpl):
-		return len(self.templates.filter(template=tpl, ready=True))
-
 	def updateUsage(self):
 		self.totalUsage.updateFrom(
 			[hel.usageStatistics for hel in self.elements.all()] + [hcon.usageStatistics for hcon in
@@ -448,7 +448,7 @@ class Host(DumpSource, Entity, BaseDocument):
 	def checkPermissions(self):
 		return self.site.checkPermissions()
 
-	def remove(self):
+	def remove(self, params=None):
 		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		UserError.check(not self.elements.all(), code=UserError.NOT_EMPTY, message="Host still has active elements")
 		UserError.check(not self.connections.all(), code=UserError.NOT_EMPTY, message="Host still has active connections")

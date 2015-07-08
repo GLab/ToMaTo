@@ -133,9 +133,9 @@ def migrate():
 		org = Organization.objects.get(name="others")
 	try:
 		User(name="admin", origin="", organization=org, password="", passwordTime=time.time(),
-			lastLogin=time.time(), totalUsage=UsageStatistics().save(),
+			lastLogin=time.time(), totalUsage=UsageStatistics().save(), email="mail@example.com",
 			quota=Quota(monthly=Usage(cputime= 5.0 *(60*60*24*30), memory=10e9, diskspace=100e9, traffic=5.0e6 /8.0*(60*60*24*30)), used=Usage(), usedTime=time.time(), continousFactor=1.0),
-			realname="Admin", flags=["global_admin", "nomails"]).save().storePassword("changeme")
+			realname="Admin", flags=["global_admin", "global_host_manager", "debug", "nomails"]).save().storePassword("changeme")
 	except NotUniqueError:
 		pass
 	for tech, defaults in DEFAULTS.items():

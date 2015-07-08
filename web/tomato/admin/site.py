@@ -37,12 +37,12 @@ from django.core.urlresolvers import reverse
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc
-from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list
+from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list, InputTransformerForm
 
 
 geolocation_script = '<script>\n\
         function fillCoordinates() {\n\
-            var address = document.getElementById("id_description").value;\n\
+            var address = document.getElementById("id_label").value;\n\
             queryAndFillCoordinates(address);\n\
         }\n\
         function queryAndFillCoordinates(address) {\n\
@@ -85,7 +85,7 @@ class SiteForm(AddEditForm):
     buttons = Buttons.cancel_add
     
     primary_key = "name"
-    create_keys = ['name', 'organization', 'description']
+    create_keys = ['name', 'organization', 'label']
     redirect_after = "tomato.admin.site.info"
     
     message_after = geolocation_script

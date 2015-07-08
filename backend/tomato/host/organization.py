@@ -89,12 +89,11 @@ class Organization(BaseDocument):
 			return None
 
 	@classmethod
-	def create(cls, name, description=""):
+	def create(cls, name, label=""):
 		UserError.check(currentUser().hasFlag(Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
-		logging.logMessage("create", category="site", name=name, description=description)
-		organization = Organization(name=name)
+		logging.logMessage("create", category="site", name=name, label=label)
+		organization = Organization(name=name, label=label)
 		organization.save()
-		organization.init({"description": description})
 		return organization
 
 from ..auth import Flags

@@ -45,7 +45,7 @@ class OrganizationForm(AddEditForm):
     buttons = Buttons.cancel_add
     
     primary_key = "name"
-    create_keys = ['name', 'description']
+    create_keys = ['name', 'label']
     redirect_after = "tomato.admin.organization.info"
     
     def __init__(self, *args, **kwargs):

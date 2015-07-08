@@ -17,7 +17,8 @@ function tomato-backend-start () {
 
 function tomato-web-start () {
   mkdir -p "$DIR"/web/config
-  docker run -d -v "$TOMATODIR"/web:/code -v "$TOMATODIR"/shared:/shared -v "$DIR"/web/config:/config --link tomato-backend:backend -p 8080:80 --name tomato-web tomato-web
+  SECRET_KEY=$(cat /dev/urandom | tr -cd 'a-zA-Z0-9' | head -c 32)
+  docker run -d -v "$TOMATODIR"/web:/code -v "$TOMATODIR"/shared:/shared -v "$DIR"/web/config:/config --link tomato-backend:backend --link memcached:cache -p 8080:80 --name -e SECRET_KEY="$SECRET_KEY" tomato-web tomato-web
   docker start tomato-web
 }
 
@@ -28,12 +29,12 @@ function tomato-db-stop () {
 
 function tomato-backend-stop () {
   docker stop tomato-backend
-  docker rm tomato-backend 
+  docker rm tomato-backend
 }
 
 function tomato-web-stop () {
   docker stop tomato-web
-  docker rm tomato-web 
+  docker rm tomato-web
 }
 
 function tomato-backend-restart() {
