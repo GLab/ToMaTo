@@ -1567,7 +1567,7 @@ var Topology = Class.extend({
 			label: "Site",
 			name: "site",
 			choices: createMap(this.editor.sites, "name", function(site) {
-				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
+				return (site.label || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
 			value: this.data.site,
 			disabled: false
@@ -3223,9 +3223,9 @@ var createElementMenu = function(obj) {
 				"")+
 		(editor.options.show_sites_on_elements && obj.component_type=="element" && obj.data && "site" in obj.data ? "<br />"+
 				(obj.data.host_info && obj.data.host_info.site ?
-						"at "+editor.sites_dict[obj.data.host_info.site].description :
+						"at "+editor.sites_dict[obj.data.host_info.site].label :
 						(obj.data.site ?
-								"will be at " + editor.sites_dict[obj.data.site].description :
+								"will be at " + editor.sites_dict[obj.data.site].label :
 								"no site selected")  ) : 
 				"")+
 		'</small></span>', 
@@ -3784,8 +3784,8 @@ var VMElement = IconElement.extend({
 				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
 			}
 
-			if (site.description_text) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+site.description_text+'</td></tr>'));
+			if (site.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+site.description+'</td></tr>'));
 			}
 			
 			var hostinfo_l = '<tr><td style="background:white;"><img src="/img/server.png" /></td><td style="background:white;"><h3>Hosted By:</h3>';
@@ -3795,9 +3795,9 @@ var VMElement = IconElement.extend({
 				hostinfo_r = '</a>' + hostinfo_r;
 			}
 			if (site.organization.image_url) {
-				hostinfo_l = hostinfo_l + '<img style="max-width:8cm;max-height:8cm;" src="' + site.organization.image_url + '" title="' + site.organization.description + '" />';
+				hostinfo_l = hostinfo_l + '<img style="max-width:8cm;max-height:8cm;" src="' + site.organization.image_url + '" title="' + site.organization.label + '" />';
 			} else {
-				hostinfo_l = hostinfo_l + site.organization.description;
+				hostinfo_l = hostinfo_l + site.organization.label;
 			}
 			desc.append($(hostinfo_l + hostinfo_r));
 			
@@ -3819,7 +3819,7 @@ var VMElement = IconElement.extend({
 			name: "site",
 			info: siteInfo,
 			choices: createMap(this.editor.sites, "name", function(site) {
-				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
+				return (site.label || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
 			value: this.data.host_info.site || this.data.site || this.caps.attributes.site["default"],
 			disabled: !this.attrEnabled("site")

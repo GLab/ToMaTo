@@ -90,12 +90,12 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 	organizations = api.organization_list()
 	network_kind = None
 	network_label = None
-	organization_description=None
-	site_description=None
+	organization_label=None
+	site_label=None
 	if site:
-		site_description=api.site_info(site)['description']
+		site_label=api.site_info(site)['label']
 	if organization:
-		organization_description = api.organization_info(organization)['description']
+		organization_label = api.organization_info(organization)['label']
 	if network:
 		for net in networks:
 			if net["id"] == network:
@@ -113,7 +113,7 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 				nis_new.append(ni)
 		nis = nis_new
 	
-	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, 'sites':sites, 'site':site, 'site_description':site_description, 'organization_description': organization_description, 'organizations':organizations, 'organization':organization, "network": network, "network_kind": network_kind, "network_label": network_label})
+	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, 'sites':sites, 'site':site, 'site_label':site_label, 'organization_label': organization_label, 'organizations':organizations, 'organization':organization, "network": network, "network_kind": network_kind, "network_label": network_label})
 
 @wrap_rpc
 def add(api, request, network=None, host=None):

@@ -86,7 +86,7 @@ def organization_name_list(api):
 	l = api.organization_list()
 	res = []
 	for organization in l:
-		res.append((organization["name"],organization["description"] or organization["name"]))
+		res.append((organization["name"],organization["label"] or organization["name"]))
 	res.sort()
 	return res
 

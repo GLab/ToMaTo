@@ -37,13 +37,13 @@ class Site(BaseDocument):
 		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		logging.logMessage("modify", category="site", name=self.name, attrs=attrs)
 		for key, value in attrs.iteritems():
-			if key == "description":
+			if key == "label":
 				self.label = value
 			elif key == "location":
 				self.location = value
 			elif key == "geolocation":
 				self.geolocation = value
-			elif key == "description_text":
+			elif key == "description":
 				self.description = value
 			elif key == "organization":
 				orga = Organization.get(value)
@@ -64,11 +64,11 @@ class Site(BaseDocument):
 	def info(self):
 		return {
 			"name": self.name,
-			"description": self.label,
+			"label": self.label,
 			"location": self.location,
 			"geolocation": self.geolocation,
 			"organization": self.organization.name,
-			"description_text": self.description
+			"description": self.description
 		}
 
 	def __str__(self):

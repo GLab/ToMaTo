@@ -6,16 +6,16 @@
 {% for site in sites %}
 		<Placemark>
 			<styleUrl>#site</styleUrl>
-			<name>{{site.displayName}}, {{site.location}} ({{site.name}})</name>
+			<name>{{site.label}}, {{site.location}} ({{site.name}})</name>
 			<description><![CDATA[
 			{% if site.description %}
 				<p>{{site.description}}</p>
 			{% endif %}
 			<p>Hosted by:<br />
 				{% if site.organization.image_url %}
-					<img style="max-width:6cm; max-height:4cm;" src="{{site.organization.image_url}}" title="{{site.organization.description}}" />
+					<img style="max-width:6cm; max-height:4cm;" src="{{site.organization.image_url}}" title="{{site.organization.label}}" />
 				{% else %}
-					{{site.organization.description}}
+					{{site.organization.label}}
 				{% endif %}
 				<br />
 				<a href="{{site.organization.homepage_url}}">{{site.organization.homepage_url}}</a></p>			

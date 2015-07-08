@@ -43,10 +43,10 @@ def site_location_list(api):
 	for i in l:
 		r.append({'name':i['name'],
 				  'geolocation':get_site_location(i['name'],api),
-				  'displayName':i['description'],
+				  'label':i['label'],
 				  'location':i['location'],
 				  'organization':orgas[i['organization']],
-				  'description':i['description_text']
+				  'description':i['description']
 				  })
 	return r
 

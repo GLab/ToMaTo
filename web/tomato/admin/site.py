@@ -75,8 +75,8 @@ geolocation_script = '<script>\n\
 
 class SiteForm(AddEditForm):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
-    description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
-    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
+    label = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    description = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     organization = forms.CharField(max_length=50)
     location = forms.CharField(max_length=255, help_text="e.g.: Germany")
     geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",label="Geolocation: Longitude")
@@ -95,8 +95,8 @@ class SiteForm(AddEditForm):
         self.fields["organization"].widget = forms.widgets.Select(choices=orga_namelist)
         self.helper.layout = Layout(
 	     'name',
+	     'label',
 	     'description',
-	     'description_text',
 	     'organization',
 	     'location',
 	     'geolocation_longitude',
