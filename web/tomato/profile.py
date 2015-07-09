@@ -149,9 +149,7 @@ def add(api, request, tech=None):
 		form = AddProfileForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			data={'tech': formData['tech'],
-				 'name': formData['name'],
-				 'ram':formData['ram'],
+			data={'ram':formData['ram'],
 				 'label':formData['label'],
 				 'preference':formData['preference'],
 				 'description':formData['description']}
@@ -163,7 +161,7 @@ def add(api, request, tech=None):
 				data['restricted'] = formData['restricted']
 			else:
 				data['restricted'] = False
-			res = api.profile_create(data)
+			res = api.profile_create(formData['tech'], formData['name'], data)
 			return HttpResponseRedirect(reverse("tomato.profile.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})

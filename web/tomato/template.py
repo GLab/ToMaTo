@@ -181,11 +181,9 @@ def add(api, request, tech=None):
 			creation_date = formData['creation_date']
 			f = request.FILES['torrentfile']
 			torrent_data = base64.b64encode(f.read())
-			attrs = {'name':formData['name'],
-						'label':formData['label'],
+			attrs = {	'label':formData['label'],
 						'subtype':formData['subtype'],
 						'preference':formData['preference'],
-						'tech': formData['tech'],
 						'restricted': formData['restricted'],
 						'torrent_data':torrent_data,
 						'description':formData['description'],
@@ -195,7 +193,7 @@ def add(api, request, tech=None):
 						'show_as_common':formData['show_as_common']}
 			if formData['tech'] == "kvmqm":
 				attrs['kblang'] = formData['kblang']
-			res = api.template_create(attrs)
+			res = api.template_create(formData['tech'], formData['name'], attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})

@@ -36,6 +36,9 @@ def _combine(records):
 	combined = LinkMeasurement()
 	combined.measurements = sum([r.measurements for r in records])
 	if not combined.measurements:
+		combined.loss = 0
+		combined.delayAvg = 0
+		combined.delayStddev = 0
 		return combined
 	combined.loss = _avg([(r.loss, r.measurements) for r in records], combined.measurements)
 	combined.delayAvg = _avg([(r.delayAvg, r.measurements) for r in records], combined.measurements)
@@ -154,7 +157,7 @@ class LinkStatistics(BaseDocument):
 
 def _measure():
 	for siteA in Site.objects.all():
-		if not siteA.hosts.exists():
+		if not siteA.hosts.count():
 			continue
 		for siteB in Site.objects.all():
 			if siteA.id > siteB.id:

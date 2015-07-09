@@ -35,6 +35,7 @@ def db_migrate():
 
 	from .db import data
 	version = data.get('db_version', 0)
+	print >>sys.stderr, "Database version: %04d" % version
 	if version > 0 and not getMigration(version):
 		raise Exception("Database is newer than code")
 	if not version and not getMigration(1):
@@ -44,7 +45,7 @@ def db_migrate():
 		migrate = getMigration(version)
 		if not migrate:
 			break
-		print "migrating to version %04d" % version
+		print >>sys.stderr, " - migrating to version %04d..." % version
 		try:
 			migrate()
 		except:
@@ -70,6 +71,7 @@ def login(credentials, sslCert):
 from lib import logging
 def handleError():
 	logging.logException()
+	dump.dumpException()
 
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=25)

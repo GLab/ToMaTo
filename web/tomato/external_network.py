@@ -78,7 +78,7 @@ def add(api, request):
 		form = NetworkForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			api.network_create({'kind':formData['kind'],
+			api.network_create(formData['kind'], {
 										   'label':formData['label'],
 										   'preference':formData['preference'],
 										   'description':formData['description'],

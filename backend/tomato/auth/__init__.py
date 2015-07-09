@@ -345,11 +345,11 @@ class Provider:
 		return User.objects.filter(origin=self.name, **kwargs)
 	def cleanup(self):
 		if self.getPasswordTimeout():
-			for user in self.getUsers(password_time__lte = time.time() - self.getPasswordTimeout()):
+			for user in self.getUsers(passwordTime__lte = time.time() - self.getPasswordTimeout()):
 				logging.logMessage("password cache timeout", category="auth", user=user.name)
 				user.forgetPassword()
 		if self.getAccountTimeout():
-			for user in self.getUsers(last_login__lte = time.time() - self.getAccountTimeout()):
+			for user in self.getUsers(lastLogin__lte = time.time() - self.getAccountTimeout()):
 				logging.logMessage("account timeout", category="auth", user=user.name)
 				user.remove()
 

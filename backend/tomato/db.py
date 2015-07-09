@@ -1,7 +1,7 @@
 from __future__ import print_function
 from mongoengine import *
 from mongoengine.base.fields import BaseField
-import bson
+import bson, sys
 
 # noinspection PyUnresolvedReferences
 
@@ -10,11 +10,10 @@ class _DummyDoesNotExist(Exception):
 class _DummyMultipleObjectsReturned(Exception):
 	pass
 class _DummyQuerySetManager(QuerySetManager):
-	def __init__(self, Type=None):
+	def __init__(self):
 		QuerySetManager.__init__(self)
-		self.Type = Type
 	def get(self, *args, **kwargs):
-		return self.Type()
+		raise NotImplemented()
 
 class ReferenceFieldId(object):
 	def __init__(self, referenceField, asString=True):
@@ -65,14 +64,14 @@ class BaseDocument(ExtDocument, Document):
 				continue
 			if key in self._fields:
 				continue
-			print("Warning: value set on untracked field: %s.%s = %r" % (self.__class__.__name__, key, value))
+			print("Warning: value set on untracked field: %s.%s = %r" % (self.__class__.__name__, key, value), file=sys.stderr)
 
 
 	def __setattr__(self, key, value):
 		if key.startswith('_') or key in ['id'] or hasattr(self, key) or (key.startswith('get_') and key.endswith('_display')):
 			Document.__setattr__(self, key, value)
 		else:
-			print("Warning: value set on untracked field: %s.%s = %r" % (self.__class__.__name__, key, value))
+			print("Warning: value set on untracked field: %s.%s = %r" % (self.__class__.__name__, key, value), file=sys.stderr)
 
 class DataEntry(BaseDocument):
 	key = StringField(unique=True)
@@ -81,8 +80,11 @@ class DataEntry(BaseDocument):
 		'indexes': ['key'], 'collection': 'key_value_store'
 	}
 
+	def __str__(self):
+		return "%s=%r" % (self.key, self.value)
+
 class DataHub:
-	def __getattr__(self, item):
+	def __getitem__(self, item):
 		return DataEntry.objects.get(key=item).value
 	def get(self, item, default=None):
 		try:
@@ -96,7 +98,7 @@ class DataHub:
 			entry.save()
 		except DataEntry.DoesNotExist:
 			DataEntry(key=key, value=value).save()
-	def __setattr__(self, key, value):
+	def __setitem__(self, key, value):
 		self.set(key, value)
 
 data = DataHub()

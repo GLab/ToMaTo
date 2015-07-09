@@ -148,9 +148,9 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 	def checkRemove(self, recurse=True):
 		self.checkRole(Role.owner)
 		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
-		UserError.check(recurse or self.elements.exists(), code=UserError.NOT_EMPTY,
+		UserError.check(recurse or self.elements.count()==0, code=UserError.NOT_EMPTY,
 			message="Cannot remove topology with elements")
-		UserError.check(recurse or self.connections.exists(), code=UserError.NOT_EMPTY,
+		UserError.check(recurse or self.connections.count()==0, code=UserError.NOT_EMPTY,
 			message="Cannot remove topology with connections")
 		for el in self.elements:
 			el.checkRemove(recurse=recurse)

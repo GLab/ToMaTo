@@ -1,5 +1,5 @@
 from .lib import dump as dump_lib
-import misc
+import misc, traceback, sys
 
 envCmds = { 
   "disks": ["df", "-h"],
@@ -11,6 +11,7 @@ envCmds = {
 }
 
 def dumpException(**kwargs):
+    traceback.print_exc(file=sys.stderr)
     return dump_lib.dumpException(**kwargs)
 
 def getCount():

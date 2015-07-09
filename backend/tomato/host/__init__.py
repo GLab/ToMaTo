@@ -505,8 +505,6 @@ class Host(DumpSource, Entity, BaseDocument):
 		return problems
 
 	def checkProblems(self):
-		from auth import mailFilteredUsers
-
 		problems = self.problems()
 		if problems and not self.problemAge:
 			# a brand new problem, wait until it is stable
@@ -586,11 +584,11 @@ class Host(DumpSource, Entity, BaseDocument):
 		return host_obj.dump_source_name() == self.dump_source_name()
 
 	def dump_set_last_fetch(self, last_fetch):
-		self.dump_last_fetch = last_fetch
+		self.dumpLastFetch = last_fetch
 		self.save()
 
 	def dump_get_last_fetch(self):
-		return self.dump_last_fetch
+		return self.dumpLastFetch
 
 	@classmethod
 	def get(cls, **kwargs):
@@ -796,7 +794,7 @@ def synchronizeComponents():
 		hcon.synchronize()
 
 
-from ..auth import Flags
+from ..auth import Flags, mailFilteredUsers
 from .site import Site
 
 scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize)  # @UndefinedVariable

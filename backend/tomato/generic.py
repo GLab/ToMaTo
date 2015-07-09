@@ -44,7 +44,7 @@ class Attribute:
 			try:
 				self.schema.check(value)
 			except Error as err:
-				err.data.update(data=value, schema=self.schema, data_failed=err.data.get('data'),
+				err.data.update(data=value, schema=self.schema.describe(), data_failed=err.data.get('data'),
 					schema_failed=err.data.get('schema'))
 				raise
 		if self.checkFn:

@@ -240,13 +240,13 @@ class UsageStatistics(BaseDocument):
 			return
 		lists = [source.by5minutes for source in sources]
 		minAll = _toTime(_lastPoint("5minutes", _toPoint(time.time() - 1800)))
-		lastAll = max(minAll, min(lists, key=lambda l: l[-1].end if l else minAll))
+		lastAll = max(minAll, min([l[-1].end if l else minAll for l in lists]))
 		myList = self.by5minutes
 		begin = myList[-1].begin if myList else minAll
 		end = _toTime(_nextPoint(_toPoint(begin), "5minutes"))
 		while end <= lastAll:
 			usage = Usage()
-			record = UsageRecord(usage=usage)
+			record = UsageRecord(usage=usage, begin=begin, end=end)
 			for l in lists:
 				for rec in l:
 					if rec.end == end:
@@ -349,17 +349,18 @@ class Quota(EmbeddedDocument):
 @util.wrap_task
 def aggregate():
 	from . import host, elements, connections, topology, auth
-	for el in elements.getAll():
+	from .host import organization
+	for el in elements.Element.objects():
 		el.updateUsage()
-	for con in connections.getAll():
+	for con in connections.Connection.objects():
 		con.updateUsage()
-	for top in topology.getAll():
+	for top in topology.Topology.objects():
 		top.updateUsage()
-	for user in auth.getAllUsers():
+	for user in auth.User.objects():
 		user.updateUsage()
-	for orga in host.getAllOrganizations():
+	for orga in organization.Organization.objects():
 		orga.updateUsage()
-	for h in host.getAll():
+	for h in host.Host.objects():
 		if h.enabled:
 			h.updateUsage()
 
@@ -367,7 +368,7 @@ def aggregate():
 def updateQuota():
 	from . import auth
 	try:
-		for user in auth.getAllUsers():
+		for user in auth.User.objects():
 			user.updateQuota()
 			user.enforceQuota()
 	except:
