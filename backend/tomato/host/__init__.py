@@ -47,14 +47,14 @@ class RemoteWrapper:
 					if isinstance(err, TransportError):
 						self._proxy = None
 						if retries >= 0:
-							print("Retrying after error on %s: %s, retries left: %d" % (self._host, err, retries))
+							print >>sys.stderr, "Retrying after error on %s: %s, retries left: %d" % (self._host, err, retries)
 							continue
 						if not err.data:
 							err.data = {}
 						err.data["host"] = self._host
 					raise err, None, sys.exc_info()[2]
 				except Exception as exc:
-					print "Warning: received unwrapped error:"
+					print >>sys.stderr, "Warning: received unwrapped error:"
 					import traceback
 					traceback.print_exc()
 					raise InternalError(code=InternalError.UNKNOWN, message=repr(exc), module="hostmanager",
@@ -370,7 +370,7 @@ class Host(DumpSource, Entity, BaseDocument):
 			else:
 				hTpl = tpls[(attrs["tech"], attrs["name"])]
 				isAttrs = dict(hTpl["attrs"])
-				if hTpl["attrs"]["torrent_data_hash"] != hashlib.md5(attrs["torrent_data"]).hexdigest():
+				if hTpl["attrs"]["torrent_data_hash"] != tpl.torrentDataHash:
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
 				elif isAttrs["ready"]:
@@ -393,7 +393,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				el.usageStatistics = UsageStatistics.objects.create()
 				el.save()
 			if not str(el.num) in data["elements"]:
-				print "Missing accounting data for element #%d on host %s" % (el.num, self.name)
+				print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (el.num, self.name)
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name,
 							   records=data["elements"][str(el.num)], object=("element", el.idStr))
@@ -403,7 +403,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				con.usageStatistics = UsageStatistics.objects.create()
 				con.save()
 			if not str(con.num) in data["connections"]:
-				print "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
+				print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name,
 							   records=data["connections"][str(con.num)], object=("connection", con.idStr))
@@ -770,7 +770,7 @@ def synchronizeHost(host):
 
 			traceback.print_exc()
 			logging.logException(host=host.name)
-			print "Error updating information from %s" % host
+			print >>sys.stderr, "Error updating information from %s" % host
 		host.checkProblems()
 	finally:
 		with checkingHostsLock:

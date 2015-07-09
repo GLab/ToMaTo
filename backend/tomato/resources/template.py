@@ -65,6 +65,17 @@ class Template(Entity, BaseDocument):
 		from ..host import Host
 		return Host.objects(templates=self)
 
+	@property
+	def torrentDataHash(self):
+		return hashlib.md5(self.torrentData).hexdigest() if self.torrentData else None
+
+	@property
+	def size(self):
+		try:
+			return bittorrent.fileSize(self.torrentData)
+		except:
+			return -1
+
 	def getReadyInfo(self):
 		from ..host import Host
 		return {
@@ -97,16 +108,16 @@ class Template(Entity, BaseDocument):
 		"description": Attribute(field=description, schema=schema.String()),
 		"restricted": Attribute(field=restricted, schema=schema.Bool()),
 		"subtype": Attribute(field=subtype, schema=schema.String()),
-		"torrent_data": Attribute(field=torrentData, set=lambda obj, value: obj.modify_torrent_data(value),
+		"torrent_data": Attribute(field=torrentData, set=lambda obj, value: obj.modify_torrent_data(value), get=lambda obj: base64.b64encode(obj.torrentData),
 			schema=schema.String()),
 		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
 			schema=schema.String(options=kblang_options.keys())),
-		"torrent_data_hash": Attribute(readOnly=True, schema=schema.String(null=True),
-			get=lambda obj: hashlib.md5(obj.torrentData).hexdigest() if obj.torrentData else None),
+		"torrent_data_hash": Attribute(readOnly=True, schema=schema.String(null=True), get=lambda obj: obj.torrentDataHash),
 		"nlXTP_installed": Attribute(field=nlXTPInstalled),
 		"show_as_common": Attribute(field=showAsCommon),
 		"creation_date": Attribute(field=creationDate, schema=schema.Number(null=True)),
 		"icon": Attribute(field=icon),
+		"size": Attribute(readOnly=True, schema=schema.Int(null=False), get=lambda obj: obj.size),
 		"ready": Attribute(readOnly=True, get=getReadyInfo, schema=schema.StringMap(items={
 				'backend': schema.Bool(),
 				'hosts': schema.StringMap(items={
@@ -129,7 +140,7 @@ class Template(Entity, BaseDocument):
 		Entity.init(self, attrs)
 		if kblang:
 			self.modify({'kblang':kblang})
-		self.modify_torrent_data(self.torrentData) #might have been set before name or tech
+		self.modify_torrent_data(base64.b64encode(self.torrentData)) #might have been set before name or tech
 				
 	def getPath(self):
 		return os.path.join(config.TEMPLATE_PATH, PATTERNS[self.tech] % self.name)
@@ -149,7 +160,7 @@ class Template(Entity, BaseDocument):
 			raise UserError(code=UserError.INVALID_VALUE, message="Invalid torrent file")
 		UserError.check(not "files" in info or len(info["files"]) == 1, code=UserError.INVALID_VALUE,
 			message="Torrent must contain exactly one file")
-		self.torrentData = val
+		self.torrentData = raw
 		if self.name and self.tech:
 			shouldName = PATTERNS[self.tech] % self.name
 			UserError.check(info["name"] == shouldName, code=UserError.INVALID_VALUE,
@@ -161,7 +172,7 @@ class Template(Entity, BaseDocument):
 		try:
 			path = self.getPath()
 			size = os.path.getsize(path)
-			return size == bittorrent.fileSize(base64.b64decode(self.torrentData))
+			return size == self.size
 		except:
 			return False
 

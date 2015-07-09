@@ -56,7 +56,8 @@ def wrapError(error, func, args, kwargs):
 	assert isinstance(error, Error)
 	import traceback
 	error.data['trace'] = traceback.format_exc()
-	print error
+	if isinstance(error, InternalError):
+		print >>sys.stderr, error
 	if error.code == UserError.NOT_LOGGED_IN:
 		return rpc.xmlrpc.ErrorUnauthorized()
 	return rpc.Fault(999, error.rawstr)

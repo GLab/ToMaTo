@@ -223,9 +223,9 @@ def edit_torrent(api, request, res_id=None):
 			f = request.FILES['torrentfile']
 			torrent_data = base64.b64encode(f.read())
 			res_info = api.template_info(formData['res_id'])
-			creation_date = str(formData['creation_date'])
+			creation_date = formData['creation_date']
 			api.template_modify(formData["res_id"],{'torrent_data':torrent_data,
-													'creation_date':creation_date})
+													'creation_date':dateToTimestamp(creation_date) if creation_date else None})
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 		label = request.POST["label"]
 		UserError.check(label, UserError.INVALID_DATA, "Form transmission failed.")
