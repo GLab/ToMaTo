@@ -783,6 +783,10 @@ var AttributeWindow = Window.extend({
 		this.table = $('<form class="form-horizontal" role="form"></form>');
 		this.div.append(this.table);
 		this.elements = [];
+		this.table.submit(function(evt) {
+		  options.buttons[0].click();
+		  evt.preventDefault();
+		});
 	},
 	addText: function(text) {
 		this.table.append("<p>"+text+"</p>");		
