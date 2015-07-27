@@ -241,7 +241,8 @@ def add_function(request,
 			for key in form.create_dict_keys:
 				create_dict[key] = formData[key]
 				del formData[key]
-			create_values.append(create_dict)
+			if create_dict:
+				create_values.append(create_dict)
 			create_function(*create_values)
 			modify_function(primary_value, formData)
 			return form.get_redirect_after()
