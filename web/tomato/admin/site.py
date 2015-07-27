@@ -116,7 +116,7 @@ class SiteForm(AddEditForm):
 		return formData
 
 	def input_values(self, formData):
-		if formData is not None and 'geolocation' in formData:
+		if formData is not None and 'geolocation' in formData and formData['geolocation']:
 			formData['geolocation_longitude'] = formData['geolocation']['longitude']
 			formData['geolocation_latitude'] = formData['geolocation']['latitude']
 			del formData['geolocation']

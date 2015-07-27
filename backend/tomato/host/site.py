@@ -68,7 +68,7 @@ class Site(BaseDocument):
 			"name": self.name,
 			"label": self.label,
 			"location": self.location,
-			"geolocation": {'latitude': self.geolocation[0], 'longitude': self.geolocation[1]},
+			"geolocation": {'latitude': self.geolocation[0], 'longitude': self.geolocation[1]} if self.geolocation else None,
 			"organization": self.organization.name,
 			"description": self.description
 		}

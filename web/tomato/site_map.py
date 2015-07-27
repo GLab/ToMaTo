@@ -23,10 +23,6 @@ import math
 
 from lib import wrap_rpc
 
-def get_site_location(site_name,api):
-	geoloc = api.site_info(site_name)['geolocation']
-	return {'longitude':geoloc[1], 'latitude':geoloc[0]}
-
 def site_list(api):
 	r = []
 	for i in api.site_list():
@@ -41,13 +37,14 @@ def site_location_list(api):
 	for o in organizations:
 		orgas[o['name']] = o
 	for i in l:
-		r.append({'name':i['name'],
-				  'geolocation':get_site_location(i['name'],api),
-				  'label':i['label'],
-				  'location':i['location'],
-				  'organization':orgas[i['organization']],
-				  'description':i['description']
-				  })
+		if i['geolocation']:
+			r.append({'name':i['name'],
+				'geolocation': i['geolocation'],
+				'label':i['label'],
+				'location':i['location'],
+				'organization':orgas[i['organization']],
+				'description':i['description']
+			})
 	return r
 
 def site_site_pairs(api,allow_self=True): # allow_self: allow self-referencing pairs like ('ukl','ukl')

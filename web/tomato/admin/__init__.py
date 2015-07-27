@@ -171,9 +171,9 @@ class ActionForm(RedirectAfterForm):
 				kwargs={self.formaction_targetkey: self.formaction_targetvalue})
 			found_form_action = True
 		if not found_form_action:
-			if self.is_valid() and self.formaction_haskeys:
-				self.helper.form_action = reverse(self.formaction,
-					kwargs={self.formaction_targetkey: self.cleaned_data[self.primary_key]})
+			if self.formaction_haskeys:
+				val = self.cleaned_data[self.primary_key] if self.is_valid() else self.clean()[self.primary_key]
+				self.helper.form_action = reverse(self.formaction, kwargs={self.formaction_targetkey: val})
 			else:
 				self.helper.form_action = reverse(self.formaction)
 
