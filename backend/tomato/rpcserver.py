@@ -17,8 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import sys, threading
-import django.db
+import sys
 
 import config
 from . import currentUser, api, login, dump
@@ -72,7 +71,7 @@ def start():
 		sslOpts = None
 		if settings["SSL"]:
 			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
-		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, wrapper=Wrapper(), beforeExecute=logCall, afterExecute=afterCall, onError=wrapError)
+		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=wrapError)
 		server.register(api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
 		util.start_thread(server.serve_forever)

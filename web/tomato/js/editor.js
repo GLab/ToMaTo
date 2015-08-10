@@ -536,13 +536,10 @@ var errorWindow = Window.extend({
 		//Create the content of the error window
 		this.errorContent = $('<div />');
 
-<<<<<<< HEAD
 		console.log(error); //keep this logging
-=======
-		
+
 		this.errorResponse = $('<div />');
->>>>>>> 590fad54ca1e8178d58fc4247080bf4cab186013
-		
+
 		if(error.parsedResponse) {
 			this.errorResponse.append(this.addError(error.parsedResponse.error));
 		} else {
