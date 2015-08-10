@@ -107,7 +107,7 @@ class SiteForm(AddEditForm):
 		)
 
 	def get_values(self):
-		formData = super(SiteForm, self).get_values(self)
+		formData = super(SiteForm, self).get_values()
 		formData['geolocation'] = {'longitude': formData['geolocation_longitude'],
 								   'latitude': formData['geolocation_latitude']}
 		del formData['geolocation_longitude']
