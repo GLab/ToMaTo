@@ -15,11 +15,9 @@ if ! [ -d $NAME ]; then
   exit 1
 fi
 
-make prepare_vm.sh
-cp -a prepare_vm.sh $NAME/prepare_vm.sh
+make -C .. prepare_vm.sh
+cp -a ../prepare_vm.sh $NAME/prepare_vm.sh
 docker build --rm -t $NAME $NAME
-#docker run -it --name $NAME $NAME /bin/false
-#docker export $NAME | gzip > $OUTPUT
 docker run -d --name $NAME $NAME bash -c 'while true; do sleep 1; done'
 ID=$(docker inspect --format='{{.Id}}' $NAME)
 MOUNTDIR=/var/lib/docker/aufs/mnt/$ID

@@ -2,10 +2,10 @@
 
 while read distro; do
   case $distro in
-    squeeze|wheezy)
+    squeeze|wheezy|jessie)
       type=debian
       ;;
-    lucid|oneiric|precise|quantal|raring|saucy)
+    lucid|oneiric|precise|quantal|raring|saucy|trusty|utopic|vivid)
       type=ubuntu
       ;;
   esac

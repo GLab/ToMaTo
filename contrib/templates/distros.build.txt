@@ -1,5 +1,4 @@
 wheezy
-squeeze
-lucid
+jessie
 precise
-raring
+trusty

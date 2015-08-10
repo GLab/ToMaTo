@@ -3,6 +3,8 @@
 # can be automated via:
 # echo -e "precise\n\n\n333\n131.246.112.93\n\n\n" | ./create_kvm_template.sh
 
+set -e
+
 if [ $EUID -gt 0 ]; then
   echo "Must be run as root, trying sudo..."
   exec sudo "$0" "$@"
@@ -45,7 +47,7 @@ esac
 
 get DISTRO "Distribution (nickname)" precise
 case "$DISTRO" in
-  squeeze|wheezy|lucid|natty|oneiric|precise|quantal|raring|saucy)
+  squeeze|wheezy|jessie|lucid|natty|oneiric|precise|quantal|raring|saucy|trusty)
     PRESEED="/$DISTRO.preseed.txt"
     KERNEL="boot/$DISTRO/$ARCH/linux"
     INITRD="boot/$DISTRO/$ARCH/initrd.gz"

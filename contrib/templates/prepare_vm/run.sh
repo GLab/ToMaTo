@@ -39,6 +39,9 @@ case "$ISSUE" in
   Debian*7*)
     DISTRO="debian_7"
     ;;
+  Debian*8*)
+    DISTRO="debian_8"
+    ;;
   Ubuntu*10.04*)
     DISTRO="ubuntu_1004"
     ;;
@@ -65,6 +68,15 @@ case "$ISSUE" in
     ;;
   Ubuntu*14.04*)
     DISTRO="ubuntu_1404"
+    ;;
+  Ubuntu*14.10*)
+    DISTRO="ubuntu_1410"
+    ;;
+  Ubuntu*15.04*)
+    DISTRO="ubuntu_1504"
+    ;;
+  Ubuntu*15.10*)
+    DISTRO="ubuntu_1510"
     ;;
   *)
     fail "Unknown distribution: $ISSUE"
@@ -149,9 +161,10 @@ echo "Auto-login on consoles..."
 case $DISTRO in
   ubuntu*|debian*)
     apt-get install --no-install-recommends -y mingetty
-    for file in /etc/inittab /etc/init/tty1.conf; do
+    for file in /etc/inittab /etc/init/tty1.conf "/etc/systemd/system/getty.target.wants/getty@tty1.service"; do
       if [ -f "$file" ]; then
         sed -i -e 's/\/sbin\/getty\( -8\)\? 38400/\/sbin\/mingetty --autologin root --noclear/g' "$file"
+        sed -i -e 's/ExecStart=-\/sbin\/agetty/ExecStart=-\/sbin\/mingetty --autologin root/g' "$file"
       fi
     done
     ;;
@@ -252,7 +265,7 @@ rm -f \$0
 EOF
     chmod a+x /etc/rc2.d/S15ssh_gen_host_keys
     ;;
-  debian_6|debian_7)
+  debian_*)
     cat <<EOF >/etc/init.d/ssh_gen_host_keys
 #!/bin/sh
 ### BEGIN INIT INFO
