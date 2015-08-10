@@ -108,6 +108,9 @@ ul {
   display: none
 }
 
+#menu.ui-ribbon .ui-ribbon-tabs .ui-ribbon-tab .ui-tabs-anchor {
+  padding: 2px 6px !important;
+}
 
 #menu label {
   font-weight: normal;
