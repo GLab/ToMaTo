@@ -20,6 +20,8 @@ ADD code/ /code/
 ADD init.sh /init.sh
 ADD inittab /etc/inittab
 
+ENV PYTHONUNBUFFERED 0
+
 VOLUME ["/config", "/logs", "/code", "/data"]
 EXPOSE 8000 8001 8002
 

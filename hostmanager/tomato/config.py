@@ -77,7 +77,7 @@ subdirectory of the data directory.
 """
 
 SERVER = [{
-    "TYPE": "https+xmlrpc",
+	"TYPE": "https+xmlrpc",
 	"PORT": 8000,
 	"SSL_OPTS": {
 		"cert_file" : "/etc/tomato/server.pem",
@@ -85,7 +85,7 @@ SERVER = [{
 		"client_certs": "/etc/tomato/client_certs",
 	}
 }, {
-    "TYPE": "ssl+jsonrpc",
+  "TYPE": "ssl+jsonrpc",
 	"PORT": 8003,
 	"SSL_OPTS": {
 		"cert_file" : "/etc/tomato/server.pem",

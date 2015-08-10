@@ -21,6 +21,8 @@ ADD tomato-web.apache /etc/apache2/sites-available/tomato-web.conf
 
 RUN a2ensite tomato-web; a2dissite 000-default
 
+ENV PYTHONUNBUFFERED 0
+
 VOLUME ["/config", "/code", "/var/log/apache2"]
 EXPOSE 80 443
 
