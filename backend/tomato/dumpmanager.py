@@ -211,6 +211,9 @@ class DumpSource(object):
 
 	def dump_getUpdates(self):
 		this_fetch_time = time.time() - self.dump_clock_offset()
+		if this_fetch_time is None:
+			return []  # this is due to missing or incomplete host info. Do nothing in this case and wait for next try to fetch
+
 		try:
 			fetch_results = self.dump_fetch_list(self.dump_get_last_fetch())
 			if len(
