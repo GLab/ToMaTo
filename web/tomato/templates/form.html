@@ -27,7 +27,7 @@
 	{% crispy form %}
 	{{message_after|safe}}
 <script>
-$('form .backbutton').live('click', function(e) {
+$('form .backbutton').on('click', function(e) {
 	history.back();
 });
 </script>

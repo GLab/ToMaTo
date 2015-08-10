@@ -87,9 +87,10 @@ class Site(BaseDocument):
 			return None
 
 	@classmethod
-	def create(cls, name, organization, label=""):
+	def create(cls, name, organization, label="", attrs={}):
 		from .organization import Organization
 		orga = Organization.get(organization)
+		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Site name may not include a '/'")
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
 			data={"name": organization})
 		user = currentUser()
@@ -98,6 +99,11 @@ class Site(BaseDocument):
 		logging.logMessage("create", category="site", name=name, label=label)
 		site = Site(name=name, organization=orga, label=label)
 		site.save()
+		try:
+			site.modify(attrs)
+		except:
+			site.remove()
+			raise
 		return site
 
 from .organization import Organization

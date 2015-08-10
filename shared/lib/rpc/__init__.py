@@ -76,7 +76,7 @@ def createProxy(url, sslcert, timeout=30):
 
 SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate", "client_certs"])
 
-def runXmlRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecute, onError):
+def runXmlRpcServer(address, api, sslOpts, certCheck, wrapper, beforeExecute, afterExecute, onError):
 	def wrapError(error, func, args, kwargs):
 		error = onError(error, func, args, kwargs)
 		if isinstance(error, Fault):
@@ -87,19 +87,19 @@ def runXmlRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecut
 		return Fault(999, error.rawstr)
 	server = xmlrpc.XMLRPCServerIntrospection(address, sslOpts=sslOpts,
 											  loginFunc=lambda _, cert: certCheck(cert.get_subject().commonName),
-											  beforeExecute=beforeExecute, afterExecute=afterExecute,
+											  wrapper=wrapper, beforeExecute=beforeExecute, afterExecute=afterExecute,
 											  onError=wrapError)
 	server.register(api)
 	util.start_thread(server.serve_forever)
 	return server
 
-def runJsonRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecute, onError):
+def runJsonRpcServer(address, api, sslOpts, certCheck, wrapper, beforeExecute, afterExecute, onError):
 	def wrapError(error, func, args, kwargs):
 		error = onError(error, func, args, kwargs)
 		assert isinstance(error, Error)
 		return sslrpc.RPCError(None, category=sslrpc.RPCError.Category.CALL, type="call_error", message="", data=error.raw)
 	server = sslrpc.RPCServer(address, certCheck=lambda cert: certCheck(
-		dict(map(lambda l: l[0], cert['subject']))['commonName']), beforeExecute=beforeExecute,
+		dict(map(lambda l: l[0], cert['subject']))['commonName']), wrapper=wrapper, beforeExecute=beforeExecute,
 							  afterExecute=afterExecute, onError=wrapError, keyfile=sslOpts.private_key,
 							  certfile=sslOpts.certificate, ca_certs=sslOpts.client_certs,
 							  cert_reqs=ssl.CERT_REQUIRED)
@@ -107,10 +107,10 @@ def runJsonRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecu
 	util.start_thread(server.serve_forever)
 	return server
 
-def runServer(type, address, api, sslOpts, certCheck, beforeExecute, afterExecute, onError):
+def runServer(type, address, api, sslOpts, certCheck, wrapper, beforeExecute, afterExecute, onError):
 	if type == "https+xmlrpc":
-		return runXmlRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecute, onError)
+		return runXmlRpcServer(address, api, sslOpts, certCheck, wrapper, beforeExecute, afterExecute, onError)
 	elif type == "ssl+jsonrpc":
-		return runJsonRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecute, onError)
+		return runJsonRpcServer(address, api, sslOpts, certCheck, wrapper, beforeExecute, afterExecute, onError)
 	else:
 		raise TransportError(code=TransportError.INVALID_URL, message="unsupported protocol: %s" % type)

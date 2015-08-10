@@ -56,7 +56,7 @@ While waiting for the account activation you can create and design topologies bu
 {% if top_list|length > 10 and not 'no_topology_create' in request.session.user.flags %}
     <form>
     <button type="submit" formaction="{%url "topology.create"%}" onClick="loadbusy(event,'Loading Topology Editor')" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
-	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
+	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Tutorials</button>
 	<button type="submit" formaction="{%url "topology.import_"%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
     </form>
 {% endif %}
@@ -84,8 +84,8 @@ While waiting for the account activation you can create and design topologies bu
   </tr>  
 {% for top in top_list %}
   <tr>
-    <td>{% if top.state_max == "started" %}<img src="/img/started.png"/>{%else%}{% if top.state_max == "prepared" %}<img src="/img/prepared.png"/>{%endif%}{%endif%}</td>
-    <td>{% if top.tutorial_enabled %}<img src="/img/tutorial.png"/>{% endif %}</td>
+    <td>{% if top.state_max == "started" %}<img src="/img/started.png" title="has started elements"/>{%else%}{% if top.state_max == "prepared" %}<img src="/img/prepared.png" title="has prepared elements, no started elements"/>{%endif%}{%endif%}</td>
+    <td>{% if top.attrs.tutorial_enabled %}<img src="/img/tutorial.png" title="Tutorial in progress"/>{% endif %}</td>
     <td><a href="{% url "topology.info" top.id %}" onclick="loadbusy(event,'Loading Topology Editor');">{{top.name}}</a></td>
     <td>
     	{% for user, role in top.permissions.items %}
@@ -121,7 +121,7 @@ While waiting for the account activation you can create and design topologies bu
 {% else %}
     <form>
     <button type="submit" formaction="{%url "topology.create"%}" onClick="loadbusy(event,'Loading Topology Editor')" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
-	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
+	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Tutorials</button>
 	<button type="submit" formaction="{%url "topology.import_"%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
     </form>
 {% endif %}

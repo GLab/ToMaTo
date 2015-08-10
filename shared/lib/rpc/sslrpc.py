@@ -322,12 +322,18 @@ class RPCResponse:
 		except Exception, exc:
 			raise RPCError(self.id, RPCError.Category.JSON, "invalid_data", "Failed to encode request: %s" % exc)
 
+class DummyWrapper:
+	def __enter__(self):
+		pass
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		pass
 
 class RPCServer(SocketServer.ThreadingMixIn, SSLServer):
-	def __init__(self, server_address, certCheck=None, beforeExecute=None, afterExecute=None, onError=None, **sslargs):
+	def __init__(self, server_address, certCheck=None, wrapper=DummyWrapper, beforeExecute=None, afterExecute=None, onError=None, **sslargs):
 		SSLServer.__init__(self, server_address, RPCHandler, **sslargs)
 		self.beforeExecute = beforeExecute
 		self.afterExecute = afterExecute
+		self.wrapper = wrapper
 		self.onError = onError
 		self.certCheck = certCheck
 		self.funcs = {}
@@ -434,34 +440,35 @@ class RPCHandler(SocketServer.StreamRequestHandler):
 		self.server.delSession()
 
 	def handleRequestLine(self, request_line, session):
-		self.server.session = session
-		request = None
-		try:
-			if callable(self.server.certCheck):
-				if not self.server.certCheck(self.connection.getpeercert()):
-					raise RPCError(
-						id=request.id,
-						category=RPCError.Category.METHOD,
-						type="unauthorized",
-						message="Certificate is not accepted"
-					)
-			request = RPCRequest.decode_json(request_line)
-			result = self.server.handleRequest(request)
-			resp = RPCResponse(id=request.id, result=result, hasResult=True).encode()
-			self.writeLine(resp)
-		except RPCError, err:
-			self.writeLine(RPCResponse(error=err).encode())
-		except Exception, exc:
-			err = RPCError(
-				id=request.id if request else request_line,
-				category=RPCError.Category.UNKNOWN,
-				type=type(exc).__name__,
-				message=str(exc)
-			)
+		with self.server.wrapper:
+			self.server.session = session
+			request = None
 			try:
+				if callable(self.server.certCheck):
+					if not self.server.certCheck(self.connection.getpeercert()):
+						raise RPCError(
+							id=request.id,
+							category=RPCError.Category.METHOD,
+							type="unauthorized",
+							message="Certificate is not accepted"
+						)
+				request = RPCRequest.decode_json(request_line)
+				result = self.server.handleRequest(request)
+				resp = RPCResponse(id=request.id, result=result, hasResult=True).encode()
+				self.writeLine(resp)
+			except RPCError, err:
 				self.writeLine(RPCResponse(error=err).encode())
-			except:
-				self.failed = True
+			except Exception, exc:
+				err = RPCError(
+					id=request.id if request else request_line,
+					category=RPCError.Category.UNKNOWN,
+					type=type(exc).__name__,
+					message=str(exc)
+				)
+				try:
+					self.writeLine(RPCResponse(error=err).encode())
+				except:
+					self.failed = True
 
 	def readLine(self):
 		line = self.rfile.readline()

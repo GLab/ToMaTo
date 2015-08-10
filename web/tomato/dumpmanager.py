@@ -61,8 +61,8 @@ class EditErrorGroupForm(ErrorGroupForm):
 
 @wrap_rpc
 def group_list(api, request, site=None, organization=None):	
-	errorgroup = api.errorgroup_list()
-	for e in errorgroup:
+	errorgroups = api.errorgroup_list()
+	for e in errorgroups:
 		e['frontend_mod'] = {'sources':[]}
 		host_count = 0
 		for s in e['dump_contents']['source']:
@@ -74,17 +74,18 @@ def group_list(api, request, site=None, organization=None):
 			if len(e['frontend_mod']['sources'])>0:
 				e['frontend_mod']['sources'].append(", ")
 			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
-		 
-		
-	return render(request, "dumpmanager/list.html", {'errorgroup_list': errorgroup})
+
+	errorgroups.sort(key=lambda e: e['last_timestamp'], reverse=True)
+	return render(request, "dumpmanager/list.html", {'errorgroup_list': errorgroups})
 
 @wrap_rpc
 def group_info(api, request, group_id):
-	errorgroup = api.errorgroup_info(group_id,include_dumps=True)
+	errorgroup = api.errorgroup_info(group_id, include_dumps=True)
 	for errordump in errorgroup['dumps']:
 		errordump['source___link'] = None
 		if errordump['source'].startswith('host:'):
-			errordump['source___link'] = errordump['source'].replace('host:','')
+			errordump['source___link'] = errordump['source'].replace('host:', '')
+	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup})
 
 @wrap_rpc
@@ -128,7 +129,7 @@ def group_edit(api, request, group_id):
 		UserError.check(group_id, UserError.INVALID_DATA, "No error group specified.")
 		errorgroupinfo=api.errorgroup_info(group_id,False)
 		form = EditErrorGroupForm(api, group_id, errorgroupinfo)
-		return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
+		return render(request, "form.html", {"heading": "Renaming errorgroup '"+errorgroupinfo['description']+"'", 'form': form})
 
 
 @wrap_rpc
@@ -165,4 +166,3 @@ def dump_export_with_data(request, source, dump_id):
 def refresh(api,request):
 	api.errordumps_force_refresh()
 	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
-		

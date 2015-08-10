@@ -129,10 +129,10 @@ Menu.button = function(options) {
 };
 
 Menu.checkbox = function(options) {
-	var html = $('<input type="checkbox" id="'+options.name+'"/><label for="'+options.name+'">'+options.label+'</label>');
+	var html = $('<input style="margin-left:0.25cm;" type="checkbox" id="'+options.name+'" /> <label style="margin-right:0.25cm;" for="'+options.name+'">'+options.label+'</label>');
 	if (options.tooltip) html.attr("title", options.tooltip);
 	if (options.func) html.click(function(){
-		options.func(html.attr("checked"), html);
+		options.func(html.prop("checked"));
 	});
 	html.setChecked = function(value){
 		this.attr("checked", value);
@@ -252,20 +252,20 @@ var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 
-		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
+		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'" checked="true"/>');
 		this.element = $('<div class="col-sm-12">').append(this.checkbox);
 		if (options.disabled) this.checkbox.attr({disabled: true});
 		var t = this;
 		this.checkbox.change(function() {
-			t.onChanged(this.checked);
+			t.onChanged(t.prop("checked"));
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.checkbox[0].checked;
+		return this.checkbox.attr("checked");
 	},
 	setValue: function(value) {
-		this.checkbox[0].checked = value;
+		this.checkbox.attr("checked",value);
 	}
 });
 
@@ -289,10 +289,11 @@ var ChoiceElement = FormElement.extend({
 		}
 		
 		if (this.showInfo) {
-			this.element = $('<div class="col-sm-9" />');
-			this.element.append(this.select);
+			var choiceElement = $('<div class="col-sm-9" />');
+			choiceElement.append(this.select);
 			this.info = $('<div class="col-sm-3"></div>');
-			this.element.after(this.info);
+			this.element = $('<div />');
+			this.element.append(choiceElement,this.info);
 			
 			var t = this;
 			this.select.change(function(){
@@ -347,14 +348,14 @@ var TemplateElement = FormElement.extend({
 		this.disabled = options.disabled;
 		this.call_element = options.call_element;
 		
-		this.element = $('<div style="display:none;"></div>');
+		this.element = $('<div />');
 		this.labelarea = $('<div class="col-sm-6"/>');
 		this.changebuttonarea = $('<div class="col-sm-3"/>');
 		this.infoarea = $('<div class="col-sm-3"/>');
 		
-		this.element.after(this.labelarea);
-		this.element.after(this.changebuttonarea);
-		this.element.after(this.infoarea);
+		this.element.append(this.labelarea);
+		this.element.append(this.changebuttonarea);
+		this.element.append(this.infoarea);
 		
 		template = editor.templates.get(options.type,options.value);
 		if (options.custom_template) {
@@ -373,7 +374,7 @@ var TemplateElement = FormElement.extend({
 		this.template = template;
 		var t = this;
 		
-		var changebutton = $('&nbsp;<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
+		var changebutton = $('<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
 			t.call_element.showTemplateWindow(
 				
@@ -419,7 +420,7 @@ var TemplateElement = FormElement.extend({
 var Window = Class.extend({
 	init: function(options) {
 		this.options = options;
-		this.options.position = options.position || ['center',200];
+		this.options.position = options.position || { my: "center-"+options.width/4+" center", at: "center top", of: "#workspace" };
 		this.div = $('<div style="overflow:visible;"/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
@@ -443,7 +444,7 @@ var Window = Class.extend({
 		if (options.closeOnEscape != undefined)
 			this.div.closeOnEscape = options.closeOnEscape;
 		this.setPosition(options.position);
-		if (options.content) this.div.append(options.content);
+		if (options.content) this.div.append($('<div style="min-height: auto;" />').append(options.content));
 		if (options.autoShow) this.show();
 		
 
@@ -523,7 +524,6 @@ var errorWindow = Window.extend({
 				show_error_appendix: false,
 				error_message_appendix: editor.options.error_message_appendix,
 			};
-		
 		//Copy error to new variable and remove it from the options dict
 		var error = options.error;
 		delete options.error;
@@ -534,43 +534,50 @@ var errorWindow = Window.extend({
 		this._super(this.windowOptions);
 		
 		//Create the content of the error window
-		this.errorContent = $('<div>');
+		this.errorContent = $('<div />');
 
+<<<<<<< HEAD
 		console.log(error); //keep this logging
+=======
+		
+		this.errorResponse = $('<div />');
+>>>>>>> 590fad54ca1e8178d58fc4247080bf4cab186013
 		
 		if(error.parsedResponse) {
-			this.errorContent.after(this.addError(error.parsedResponse.error));
+			this.errorResponse.append(this.addError(error.parsedResponse.error));
 		} else {
-			this.errorContent.after(this.addText(error.originalResponse));
+			this.errorResponse.append(this.addText(error.originalResponse));
 		}
 		
 		if(!(editor.options.isDebugUser || editor.options.debug_mode) && !options.show_error_appendix) {
-			this.errorContent.after('<p style="color: #a0a0a0">'+this.options.error_message_appendix+'</p>');
+			this.errorResponse.append('<p style="color: #a0a0a0">'+this.options.error_message_appendix+'</p>');
 		}
-		this.errorContent.after($('</div>'));
+		this.errorContent.append(this.errorResponse);
 		this.div.append(this.errorContent);
+
 	},
 
 	addError: function(error) {
 		//Show additional information for debug users like the errorcode, the errormessage and errordata for debugusers
-		var content = $('');
-		
 		this.setTitle("Error: "+error.typemsg);
 		
-		var errorMessage = $('<p>'+error.errormsg+'</p>');
-		content.after(errorMessage);
+		this.content = $('<div />');
+		this.errorMessage = $('<p>'+error.errormsg+'</p>');
+
+		this.content.append(this.errorMessage);
 		
 		if(editor.options.isDebugUser && editor.options.debug_mode) {
 			
-			content.after($('<b>Error details:</b>'))
+			this.content.append($('<b>Error details:</b>'))
 			var errorDebugInfos = $('<table />');
 			log(error); //keep this logging
 			for(var line=0;line<error.debuginfos.length;line++) {
 				errorDebugInfos.append($('<tr><th>'+error.debuginfos[line].th+'</th><td>'+error.debuginfos[line].td+'</td></tr>'));
 			}
-			content.after(errorDebugInfos);
+			this.content.append(errorDebugInfos);
 		}
-		return content;
+		console.log(this.content);
+		return this.content;
 	},
 	
 	addText: function(text) {
@@ -629,13 +636,14 @@ var TutorialWindow = Window.extend({
 			var t = this
 			this.text = $("<div>.</div>");
 			this.buttons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
-			this.backButton = $("<input type=\"button\" value=\"Back\" />");
+			this.backButton = $('<button class="btn btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Back</button>');
 			this.buttons.append(this.backButton);
 			this.backButton.click(function() {t.tutorialGoBack(); });
-			this.skipButton = $("<input type=\"button\" value=\"Skip\" />");
+			this.skipButton = $('<button class="btn btn-default">Skip <span class="glyphicon glyphicon-arrow-right"></span></button>');
+			this.buttons.append("&nbsp;");
 			this.buttons.append(this.skipButton);
 			this.skipButton.click(function() {t.tutorialGoForth(); });
-			this.closeButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
+			this.closeButton = $('<button class="btn btn-success">Close Tutorial <span class="glyphicon glyphicon-remove"></span></button>');
 			this.buttons.append(this.closeButton);
 			
 			this.closeButton.click(function() {
@@ -743,11 +751,31 @@ var TutorialWindow = Window.extend({
 		}
 		
 		var skipButtonText = this.tutorialSteps[this.tutorialState.step].skip_button;
-		if (skipButtonText) {
-			this.skipButton[0].value = skipButtonText;
-		} else {
-			this.skipButton[0].value = "Skip";
+		var highlight_skipbutton = true;
+		if (!(skipButtonText)) {
+			skipButtonText = "Skip";
+			highlight_skipbutton = false;
 		}
+		this.skipButton[0].innerHTML = skipButtonText + ' <span class="glyphicon glyphicon-arrow-right"></span>';
+		if (highlight_skipbutton) { //this has not the 'skip' text on it, i.e., highlight the button
+			if (this.tutorialState.step == 0) { //this is the first step, which has the 'start tutorial' button
+				$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).removeClass('glyphicon-arrow-right');
+				$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).addClass('glyphicon-play');
+				$(this.skipButton[0]).removeClass('btn-default btn-info');
+				$(this.skipButton[0]).addClass('btn-success');
+			} else {
+				$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).removeClass('glyphicon-play');
+				$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).addClass('glyphicon-arrow-right');
+				$(this.skipButton[0]).removeClass('btn-success btn-default');
+				$(this.skipButton[0]).addClass('btn-info');
+			}
+		} else {
+			$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).removeClass('glyphicon-play');
+			$(this.skipButton[0].getElementsByClassName('glyphicon')[0]).addClass('glyphicon-arrow-right');
+			$(this.skipButton[0]).removeClass('btn-info btn-success');
+			$(this.skipButton[0]).addClass('btn-default');
+		}
+
 	},
 	getData: function() {
 		return this.tutorialState.data;
@@ -887,11 +915,10 @@ var InputWindow = Window.extend({
 		}
 
 		var label = $('<label for="newname" class="col-sm-4 control-label" />');
-
 		label.append(options.inputlabel);
-		label.after($('<div class="col-sm-8"/>').append(this.element.getElement()));
-		
 		div.append(label);
+		div.append($('<div class="col-sm-8"/>').append(this.element.getElement()));
+		
 		this.add(form);
 		this.setTitle(options.title);
 	}
@@ -1000,7 +1027,7 @@ var TemplateWindow = Window.extend({
 				radio.prop("checked","checked");
 			}
 			
-			var radiolabel = $('<label for="'+t.name+'">'+t.label+'</label>');
+			var radiolabel = $('<label for="'+winID+t.name+'">'+t.label+'</label>');
 			radiolabel.click( function(){
 				$(this).children('input').attr('checked', 'checked');
 			});
@@ -1058,7 +1085,6 @@ var PermissionsWindow = Window.extend({
 		this.userList = $('<div />');
 		this.userListFinder = {};
 		this.div.append(this.userList);
-		this.listCreated = false;
 		
 		this.buttons = $('<div />');
 		this.div.append(this.buttons);
@@ -1091,8 +1117,6 @@ var PermissionsWindow = Window.extend({
 	createUserPermList: function() {
 		var t = this;
 		
-		if (this.listCreated) return;
-		this.listCreated = true;
 		
 		if (!this.options.allowChange) {
 			this.options.allowChange = (this.topology.data.permissions[this.options.ownUserId] == "owner");
@@ -1102,8 +1126,10 @@ var PermissionsWindow = Window.extend({
 		}
 		
 		
-		this.userTable = $('<div class="row"><div class="col-sm-4 col-sm-offset-1"><h4>User</h4></div><div class="col-sm-4"><h4>Permission</h4></div></div>');
-		if (this.options.allowChange) this.userTable.append($('<div class="col-sm-3" />'));
+		this.userTable = $('<div />');
+		var tableHeader = $('<div class="row"><div class="col-sm-1" /><div class="col-sm-5"><h4>User</h4></div><div class="col-sm-3"><h4>Permission</h4></div><div class="col-sm-3" /></div>');
+		this.userTable.append(tableHeader); 
+		this.userList.empty();
 		this.userList.append(this.userTable);
 		var perm = this.topology.data.permissions;
 		for (u in perm) {
@@ -1115,8 +1141,8 @@ var PermissionsWindow = Window.extend({
 	addUserToList: function(username) {
 		var t = this;
 		var tr = $('<div class="row" />');
-		var td_name = $('<div class="col-sm-4" />');
-		var td_perm = $('<div class="col-sm-4" />');
+		var td_name = $('<div class="col-sm-5" />');
+		var td_perm = $('<div class="col-sm-3" />');
 		var td_buttons = $('<div class="col-sm-3" />');
 		var td_icon = $('<div class="col-sm-1" />');
 	
@@ -1124,8 +1150,8 @@ var PermissionsWindow = Window.extend({
 		ajax({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
-				var s = data.realname+' (<a href="/account/info/'+data.id+'" target="_blank" style="font-size:10pt;">'+data.id+'</a>)'
-				td_name.append($(s));
+				td_name.append(''+data.realname+' (<a href="/account/info/'+data.id+'" target="_blank" style="font-size:10pt;">'+data.id+'</a>)');
+				
 				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
 			}
 		});
@@ -1141,7 +1167,7 @@ var PermissionsWindow = Window.extend({
 				td_buttons: td_buttons,
 				tr: tr
 		};
-		this.userTable.after(tr);
+		this.userTable.append(tr);
 		
 		this.drawView(username);
 	},
@@ -1217,7 +1243,6 @@ var PermissionsWindow = Window.extend({
 			if (perm != "null")
 				sel.append($('<option value="'+perm+'" title="'+this.permissions[perm].description+'">'+this.permissions[perm].title+'</option>'));
 		}
-		sel.change(function(){ sel[0].title = t.permissions[sel[0].value].description });
 		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
@@ -1512,7 +1537,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode", "show_ids", "show_sites_on_elements"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "big_editor", "debug_mode", "show_ids", "show_sites_on_elements"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data["_"+opts[i]]);
 		}
@@ -1537,7 +1562,9 @@ var Topology = Class.extend({
 
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
-			width: "600",
+			width: 600,
+			height: 600,
+			maxHeight:800,
 			buttons: {
 				Save: function() {
 					t.configWindow.hide();
@@ -1844,8 +1871,7 @@ var Topology = Class.extend({
 		 	successFn: function(result) {
 		 		var win = new Window({
 		 			title: "Debug info",
-		 			position: "center top",
-		 			width: 800,
+		 			width: 500,
 		 			buttons: {
 		 				Close: function() {
 		 					win.hide();
@@ -1949,6 +1975,7 @@ var Topology = Class.extend({
 		dialog = new AttributeWindow({
 			title: "Topology Timeout",
 			width: 500,
+			height: 400,
 			buttons: [
 						{ 
 							text: "Save",
@@ -1989,6 +2016,7 @@ var Topology = Class.extend({
 		dialog = new AttributeWindow({
 			title: "New Topology",
 			width: 500,
+			height: 500,
 			closable: false,
 			buttons: [
 						{ 
@@ -2245,8 +2273,7 @@ var Component = Class.extend({
 		 	successFn: function(result) {
 		 		var win = new Window({
 		 			title: "Debug info",
-		 			position: "center top",
-		 			width: 800,
+		 			width: 500,
 		 			buttons: {
 		 				Close: function() {
 		 					win.hide();
@@ -2297,7 +2324,7 @@ var Component = Class.extend({
 		
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
-			width: "600",
+			width: 600,
 			helpTarget:helpTarget,
 			buttons: {
 				Save: function() {
@@ -2454,10 +2481,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			});
 			this.elements.push(el);
 			var link_emulation = $('<div class="tab-pane active" id="Link_Emulation" />');
-			var link_emulation_elements = $('<div class="form-group" />')
+			link_emulation.append($('<div class="form-group" />')
 						.append($('<label class="col-sm-4 control-label">Enabled</label>'))
 						.append($('<div class="col-sm-8" style="padding: 0px" />')
-						.append(el.getElement()));
+						.append(el.getElement())));
 			
 			//direction arrows
 			var size = 30;
@@ -2483,7 +2510,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			}
 			var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
 			var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
-			link_emulation_elements.after($('<div class="form-group" />')
+			link_emulation.append($('<div class="form-group" />')
 				.append($('<label class="col-sm-4 control-label">Direction</label>'))
 				.append($('<div class="col-sm-4" />').append(fromDir).append(dir1))
 				.append($('<div class="col-sm-4" />').append(toDir).append(dir2))
@@ -2498,8 +2525,8 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				var el_to = this.autoElement(con.caps.attributes[name+"_to"], con.data[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
-				link_emulation_elements.after($('<div class="form-group" />')
-					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].label))
+				link_emulation.append($('<div class="form-group" />')
+					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].desc))
 					.append($('<div class="col-sm-3" style="padding: 0;"/>').append(el_from.getElement()))
 					.append($('<div class="col-sm-3" style="padding: 0;" />').append(el_to.getElement()))
 					.append($('<div class="col-sm-2" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].unit))
@@ -2507,9 +2534,6 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			}
 			this.updateEmulationStatus(con.data.emulation);
 			
-			
-
-			link_emulation.append(link_emulation_elements);
 			tab_content.append(link_emulation);
 			this.table.append(tab_content);
 		}
@@ -2517,7 +2541,6 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var t = this;
 			var packet_capturing = $('<div class="tab-pane" id="Packet_capturing" />');
 			
-			packet_capturing.append(packet_capturing_elements);
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
 				name: "capturing",
@@ -2527,10 +2550,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				}
 			});
 			this.elements.push(el);
-			var packet_capturing_elements = $('<div class="form-group" />')
-			.append($('<label class="col-sm-6 control-label">Enabled</label>'))
-			.append($('<div class="col-sm-6" />')
-			.append(el.getElement()));
+			packet_capturing.append($('<div class="form-group" />')
+					.append($('<label class="col-sm-6 control-label">Enabled</label>'))
+					.append($('<div class="col-sm-6" />')
+					.append(el.getElement())));
 		
 			
 			var order = ["capture_mode", "capture_filter"];
@@ -2539,15 +2562,14 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				var el = this.autoElement(con.caps.attributes[name], con.data[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
-				packet_capturing_elements.after($('<div class="form-group" />')
-					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].label))
+				packet_capturing.append($('<div class="form-group" />')
+					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].desc))
 					.append($('<div class="col-sm-6" />').append(el.getElement()))
 				);
 			}
 			this.updateCapturingStatus(con.data.capturing);
 			
 
-			packet_capturing.append(packet_capturing_elements);
 			tab_content.append(packet_capturing);
 			this.table.append(tab_content);
 		}
@@ -2644,7 +2666,7 @@ var Connection = Component.extend({
 				         || attrs.delay_from || attrs.jitter_from || attrs.lossratio_from || attrs.duplicate_from || attrs.corrupt_from);
 		var bw = 10000000;
 		if (attrs && attrs.emulation) bw = Math.min(attrs.bandwidth_to, attrs.bandwidth_from); 
-		this.path.attr({stroke: color, "stroke-dasharray": [le ? "-" : ""]});
+		this.path.attr({stroke: color});
 		this.path.attr({"stroke-width": bw < 10000 ? 1 : ( bw > 10000 ? 4 : 2.5 )});
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
@@ -3073,6 +3095,13 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
+	downloadLog: function() {
+		this.action("download_log_grant", {callback: function(el, res) {
+			var name = el.topology.data.name + "_" + el.data.name + '.log';
+			var url = "http://" + el.data.host_info.address + ":" + el.data.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name);
+			window.location.href = url;
+		}})
+	},
 	changeTemplate: function(tmplName,action_callback) {
 		this.action("change_template", {
 			params:{
@@ -3289,38 +3318,46 @@ var createElementMenu = function(obj) {
 					}
 				} : null,
 				"sep2": "---",
-				"console": obj.consoleAvailable() ? {
+				"console": obj.consoleAvailable() || obj.actionEnabled("download_log_grant") ? {
 					name:"Console",
 					icon:"console",
 					items: {
-						"console_novnc": obj.data.websocket_pid ? {
+						"console_novnc": obj.consoleAvailable() && obj.data.websocket_pid ? {
 							name:"NoVNC (HTML5+JS)",
 							icon:"novnc",
 							callback: function(){
 								obj.openConsoleNoVNC();
 							}
 						} : null,
-						"console_java": {
+						"console_java": obj.consoleAvailable() ? {
 							name: "Java applet",
 							icon: "java-applet",
 							callback: function(){
 								obj.openConsole();
 							}
-						}, 
-						"console_link": {
+						} : null,
+						"console_link": obj.consoleAvailable() ? {
 							name:"vnc:// link",
 							icon:"console",
 							callback: function(){
 								obj.openVNCurl();
 							}
-						},
-						"console_info": {
+						} : null,
+						"console_info": obj.consoleAvailable() ? {
 							name:"VNC Information",
 							icon:"info",
 							callback: function(){
 								obj.showVNCinfo();
 							}
-						},
+						} : null,
+						"sepconsole": obj.actionEnabled("download_log_grant") && obj.consoleAvailable() ? "---" : null,
+						"log": obj.actionEnabled("download_log_grant") ? {
+							name:"Download Log",
+							icon:"console_download",
+							callback: function(){
+								obj.downloadLog();
+							},
+						} : null,
 					}
 				} : null,
 				"used_addresses": obj.data.used_addresses ? {
@@ -3396,7 +3433,7 @@ var createElementMenu = function(obj) {
 					name:'Configure',
 					icon:'configure',
 					callback:function(){
-					obj.showConfigWindow(true);
+						obj.showConfigWindow(true);
 					}
 				},
 				"debug": obj.editor.options.debug_mode ? {
@@ -4203,6 +4240,34 @@ var RexTFV_status_updater = Class.extend({
 		this.options = options;
 		this.elements = [];
 	},
+	updateFirst: function(t) { //Takes RexTFV_status_updater as argument.
+	    entry = t.elements.shift();
+        elExists = true;
+        mustRemove = false;
+
+        if (entry.element in editor.topology.elements) { //element exists
+            editor.topology.elements[entry.element].update(undefined, undefined, true) //hide errors.
+        } else {
+            elExists = false;
+        }
+
+        if (elExists &&
+            editor.topology.elements[entry.element].rextfvStatusSupport() &&
+			editor.topology.elements[entry.element].data.rextfv_run_status.running) {
+			    entry.tries = 1;
+		} else {
+    		entry.tries--;
+    		mustRemove = (entry.tries < 0)
+		}
+
+		if (!mustRemove) t.elements.push(entry)
+	},
+	updateSome: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
+		                      //update only the first five elements of the array. This boundary is to avoid server overload.
+		var count = 5;
+        if (t.elements.length < count) count = t.elements.length; //do not update elements twice.
+		while (count-- > 0) t.updateFirst(t);
+	},
 	updateAll: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
 		toRemove = [];
 		//iterate through all entries, update them, and then update their retry-count according to the refreshed data.
@@ -4335,7 +4400,7 @@ var Editor = Class.extend({
 			}
 		});
 
-		setInterval(function(){t.rextfv_status_updater.updateAll(t.rextfv_status_updater)}, 1200);
+		setInterval(function(){t.rextfv_status_updater.updateSome(t.rextfv_status_updater)}, 1200);
 	},
 	triggerEvent: function(event) {
 		log(event); //keep this logging
@@ -4355,10 +4420,12 @@ var Editor = Class.extend({
 	optionMenuItem: function(options) {
 		var t = this;
 		return Menu.checkbox({
-			name: options.name, label: options.label, tooltip: options.tooltip,
+			name: options.name, 
+			label: options.label, 
+			tooltip: options.tooltip,
 			func: function(value){
-				t.options[options.name]=value != null;
-			  t.onOptionChanged(options.name);
+				t.setOption(options.name,value);
+				t.onOptionChanged(options.name);
 			},
 			checked: this.options[options.name]
 		});
@@ -4823,6 +4890,12 @@ var Editor = Class.extend({
 		        label:"Colorify segments",
 		        tooltip:"Paint different network segments with different colors"
 		    }),
+
+		    big_editor: this.optionMenuItem({
+		    	name:"big_editor",
+		    	label:"Big workspace",
+		    	tooltip:"Have a bigger editor workspace. Requires page reload."
+		    }),
 		    
 		    show_ids: this.optionMenuItem({
 		        name:"show_ids",
@@ -4847,6 +4920,7 @@ var Editor = Class.extend({
 									this.optionCheckboxes.snap_to_grid,
 									this.optionCheckboxes.colorify_segments,
 									this.optionCheckboxes.fixed_pos,
+									this.optionCheckboxes.big_editor,
 									this.optionCheckboxes.show_ids,
 									this.optionCheckboxes.show_sites_on_elements,
 									this.optionCheckboxes.debug_mode

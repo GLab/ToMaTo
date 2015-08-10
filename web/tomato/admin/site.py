@@ -38,7 +38,7 @@ from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc
 from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, \
-	organization_name_list, InputTransformerForm
+	organization_name_list
 
 geolocation_script = '<script>\n\
         function fillCoordinates() {\n\
@@ -107,7 +107,7 @@ class SiteForm(AddEditForm):
 		)
 
 	def get_values(self):
-		formData = InputTransformerForm.get_values(self)
+		formData = super(SiteForm, self).get_values(self)
 		formData['geolocation'] = {'longitude': formData['geolocation_longitude'],
 								   'latitude': formData['geolocation_latitude']}
 		del formData['geolocation_longitude']
@@ -121,7 +121,6 @@ class SiteForm(AddEditForm):
 			formData['geolocation_latitude'] = formData['geolocation']['latitude']
 			del formData['geolocation']
 		return formData
-
 
 class AddSiteForm(SiteForm):
 	title = "Add Site"
@@ -194,3 +193,4 @@ def remove(api, request, name):
 						   delete_function=api.site_remove,
 						   primary_value=name
 						   )
+

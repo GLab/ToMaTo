@@ -4,13 +4,13 @@ from .lib import anyjson as json
 
 import host
 from . import scheduler, config, currentUser
-from .lib.error import InternalError, UserError # @UnresolvedImport
+from .lib.error import InternalError, UserError, Error  # @UnresolvedImport
 
 
 # Zero-th part: database stuff
 class ErrorDump(EmbeddedDocument):
 	source = StringField(required=True)
-	dumpId = StringField(db_field='dump_id', required=True) #not unique, different semantics on embedded documents
+	dumpId = StringField(db_field='dump_id', required=True)  # not unique, different semantics on embedded documents
 	description = DictField(required=True)
 	data = StringField()
 	dataAvailable = BooleanField(default=False, db_field='data_available')
@@ -57,6 +57,7 @@ class ErrorDump(EmbeddedDocument):
 			dump['data_available'] = self.dataAvailable
 		return dump
 
+
 class ErrorGroup(BaseDocument):
 	"""
 	:type dumps: list of ErrorDump
@@ -76,7 +77,7 @@ class ErrorGroup(BaseDocument):
 	def update_description(self, description):
 		self.description = description
 		self.save()
-		
+
 	def shrink(self):
 		oldLen = len(self.dumps)
 		if oldLen <= 10:
@@ -91,8 +92,8 @@ class ErrorGroup(BaseDocument):
 			'description': self.description,
 			'count': self.removedDumps,
 			'last_timestamp': 0,
-		    'data_available':False,
-            'dump_contents':{}
+			'data_available': False,
+			'dump_contents': {}
 		}
 
 		select_unique_values = ['softwareVersion', 'source', 'type', 'description']
@@ -136,6 +137,7 @@ def get_group(group_id):
 	except ErrorGroup.DoesNotExist:
 		return None
 
+
 def getAll_group():
 	return ErrorGroup.objects.all()
 
@@ -147,56 +149,63 @@ def remove_group(group_id):
 		return True
 	return False
 
+
 def create_dump(dump, source):
 	return ErrorDump(
 		source=source.dump_source_name(),
 		dumpId=dump['dump_id'],
-		timestamp = dump['timestamp'],
-		description = dump['description'],
-		type = dump['type'],
-		softwareVersion = dump['software_version']
+		timestamp=dump['timestamp'],
+		description=dump['description'],
+		type=dump['type'],
+		softwareVersion=dump['software_version']
 	)
 
-#First part: fetching dumps from all the sources.
 
-#this class should not be instantiated. There are two subclasses available: one that can connect to a host, and one that connects to this backend.
+# First part: fetching dumps from all the sources.
+
+# this class should not be instantiated. There are two subclasses available: one that can connect to a host, and one that connects to this backend.
 class DumpSource(object):
-	#dump_last_fetch = None
+	# dump_last_fetch = None
 
-	#to be implemented in subclass
-	#fetches all dumps from the source, which were thrown after *after*.
-	#after is a float and will be used unchanged.
-	#if this throws an exception, the fetching is assumed to have been unsuccessful.
+	# to be implemented in subclass
+	# fetches all dumps from the source, which were thrown after *after*.
+	# after is a float and will be used unchanged.
+	# if this throws an exception, the fetching is assumed to have been unsuccessful.
 	def dump_fetch_list(self, after):
 		raise NotImplemented()
 
 	def dump_get_last_fetch(self):
 		raise NotImplemented()
 
-	#to be implemented in subclass
-	#fetches all data about the given dump.
-	#if this throws an exception, the fetching is assumed to have been unsuccessful.
+		# to be implemented in subclass
+		# fetches all data about the given dump.
+		# if this throws an exception, the fetching is assumed to have been unsuccessful.
+
 	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
 		raise NotImplemented()
 
-	#to be implemented in a subclass
-	#if the source has its clock before the backend, and an error is thrown in exactly this difference,
-	#the dump would be skipped.
-	#Thus, use the known clock offset to fetch dumps that might have occurred in this phase (i.e., right after the last fetch)
-	#returns a float. should be ==0 if the source's clock is ahead, and >0 if the source's clock is behind
+		# to be implemented in a subclass
+		# if the source has its clock before the backend, and an error is thrown in exactly this difference,
+		# the dump would be skipped.
+		# Thus, use the known clock offset to fetch dumps that might have occurred in this phase (i.e., right after the last fetch)
+		# returns a float. should be ==0 if the source's clock is ahead, and >0 if the source's clock is behind
+
 	def dump_clock_offset(self):
 		raise NotImplemented()
 
-	#to be implemented in a subclass
-	#returns a string to uniquely identify the source
+		# to be implemented in a subclass
+		# returns a string to uniquely identify the source
+
 	def dump_source_name(self):
 		raise NotImplemented()
 
-	#override for HostDumpSource. Return true if the given host is this one
+		# override for HostDumpSource. Return true if the given host is this one
+
 	def dump_matches_host(self, host_obj):
 		raise NotImplemented()
 
-	#override in subclass
+		# override in subclass
+
 	def dump_set_last_fetch(self, last_fetch):
 		raise NotImplemented()
 
@@ -204,26 +213,30 @@ class DumpSource(object):
 		this_fetch_time = time.time() - self.dump_clock_offset()
 		try:
 			fetch_results = self.dump_fetch_list(self.dump_get_last_fetch())
-			if len(fetch_results)>0: #if the list is empty, no need to set this. However, if the list is empty for incorrect reasons (i.e., errors), 
-									#we may still be able to get the dumps when the error is resolved.
+			if len(
+					fetch_results) > 0:  # if the list is empty, no need to set this. However, if the list is empty for incorrect reasons (i.e., errors),
+				# we may still be able to get the dumps when the error is resolved.
 				self.dump_set_last_fetch(this_fetch_time)
 			return fetch_results
 		except Exception as exc:
-			InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc, data={"source": repr(self)}).dump()
+			InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
+						  data={"source": repr(self)}).dump()
 			return []
 
 
-#fetches from this backend
+# fetches from this backend
 class BackendDumpSource(DumpSource):
 	keyvaluestore_key = "dumpmanager:lastBackendFetch"
 
 	def dump_fetch_list(self, after):
 		import dump
+
 		return dump.getAll(after=after, list_only=False, include_data=False, compress_data=True)
 
 	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
 		import dump
-		d = dump.get(dump_id, include_data=True, compress_data=True)
+
+		d = dump.get(dump_id, include_data=True, compress_data=True, dump_on_error=False)
 		if not keep_compressed:
 			d['data'] = json.loads(zlib.decompress(base64.b64decode(d['data'])))
 		return d
@@ -240,7 +253,9 @@ class BackendDumpSource(DumpSource):
 	def dump_get_last_fetch(self):
 		return data.get(self.keyvaluestore_key, 0)
 
+
 backend_dumpsource = BackendDumpSource()
+
 
 def getDumpSources():
 	sources = [backend_dumpsource]
@@ -250,7 +265,8 @@ def getDumpSources():
 			sources.append(h)
 	return sources
 
-#only one thread may write to the dump table at a time.
+
+# only one thread may write to the dump table at a time.
 lock_db = threading.RLock()
 
 
@@ -274,18 +290,21 @@ def insert_dump(dump, source):
 			must_fetch_data = True
 			group = create_group(dump['group_id'], dump['description'])
 			mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
-				"A new group of error has been found, with ID %s. It has first been observed on %s." % (
-				dump['group_id'], source.dump_source_name()))
+							 "A new group of error has been found, with ID %s. It has first been observed on %s." % (
+								 dump['group_id'], source.dump_source_name()))
 
-		#insert the dump.
+			# insert the dump.
 		for d in group.dumps:
 			if d.dumpId == dump['dump_id'] and d.source == source_name:
 				return
 		dump_db = create_dump(dump, source)
 
-		#if needed, load data
-		if must_fetch_data:
-			dump_db.fetch_data_from_source()
+		# insert the dump.
+	dump_db = create_dump(dump, source)
+
+	# if needed, load data
+	if must_fetch_data:
+		dump_db.fetch_data_from_source()
 
 
 def update_source(source):
@@ -297,7 +316,6 @@ def update_source(source):
 		for group in getAll_group():
 			with lock_db:
 				group.shrink()
-
 
 
 def update_all(async=True):
@@ -337,9 +355,10 @@ def api_errorgroup_modify(group_id, attrs):
 	with lock_db:
 		for i in attrs.keys():
 			UserError.check(i == "description", code=UserError.UNSUPPORTED_ATTRIBUTE,
-				message="Unsupported attribute for error group", data={"attribute": i})
+							message="Unsupported attribute for error group", data={"attribute": i})
 		grp = get_group(group_id)
-		UserError.check(grp is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist", data={"group_id":group_id})
+		UserError.check(grp is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+						data={"group_id": group_id})
 		grp.update_description(attrs['description'])
 
 
@@ -347,7 +366,8 @@ def api_errorgroup_info(group_id, include_dumps=False):
 	checkPermissions()
 	with lock_db:
 		group = get_group(group_id)
-		UserError.check(group is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist", data={"group_id":group_id})
+		UserError.check(group is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+						data={"group_id": group_id})
 		res = group.info()
 		if include_dumps:
 			res['dumps'] = []
@@ -355,30 +375,37 @@ def api_errorgroup_info(group_id, include_dumps=False):
 				res['dumps'].append(i.info())
 		return res
 
+
 def api_errordump_info(group_id, source, dump_id, include_data=False):
 	checkPermissions()
 	with lock_db:
 		group = get_group(group_id)
-		UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist", data={"group_id":group_id})
+		UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+						data={"group_id": group_id})
 		dump = None
 		for d in group.dumps:
 			if d.dumpId == dump_id and d.source == source:
 				dump = d
 				break
-		UserError.check(dump, code=UserError.ENTITY_DOES_NOT_EXIST, message="error dump does not exist", data={"dump_id":dump_id,"source":source})
+		UserError.check(dump, code=UserError.ENTITY_DOES_NOT_EXIST, message="error dump does not exist",
+						data={"dump_id": dump_id, "source": source})
 		return dump.info(include_data)
+
 
 def api_errorgroup_remove(group_id):
 	checkPermissions()
 	with lock_db:
 		res = remove_group(group_id)
-		UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist", data={"group_id":group_id})
+		UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+						data={"group_id": group_id})
+
 
 def api_errordump_list(group_id, source=None, data_available=None):
 	checkPermissions()
 	with lock_db:
 		group = get_group(group_id)
-		UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist", data={"group_id":group_id})
+		UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+						data={"group_id": group_id})
 		res = []
 		for d in group.dumps:
 			di = d.info(include_data=False)
@@ -390,6 +417,7 @@ def api_errordump_list(group_id, source=None, data_available=None):
 			if append_to_res:
 				res.append(di)
 		return res
+
 
 def api_force_refresh():
 	checkPermissions()

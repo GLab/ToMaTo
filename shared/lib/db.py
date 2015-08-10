@@ -17,6 +17,7 @@
 
 from . import anyjson as json
 from django.db import models, transaction
+from django import db
 from django.core import validators
 from .. import config
 
@@ -87,6 +88,21 @@ class CommaSeparatedListField(models.TextField):
 		if isinstance(value, list):
 			value = "," + (",".join(value)) + ","
 		return super(CommaSeparatedListField, self).get_db_prep_save(value)
+
+def wrap_task(fn):
+	def call(*args, **kwargs):
+		try:
+			return fn(*args, **kwargs)
+		finally:
+			if transaction.is_dirty():
+				transaction.commit()
+				db.connections.all()[0].close()
+			db.close_old_connections()
+	call.__module__ = fn.__module__
+	call.__name__ = fn.__name__
+	call.__doc__ = fn.__doc__
+	call.__dict__.update(fn.__dict__)
+	return call
 
 def commit_after(fn):
 	def call(*args, **kwargs):

@@ -27,9 +27,31 @@ def testSimpleTopologyLifecycle(topId):
 	print "Destroying topology..."
 	topology_action(topId, "destroy")
 	
+@testCase("Account Flags consistent")
+def checkFlagCategoryIntegrity():
+	config = account_flag_configuration()
+	
+	cats = []
+	flags_from_cats = []
+	for cat in config['categories']:
+		assert 'title' in cat and 'onscreentitle' in cat and 'flags' in cat
+		assert cat['title'] not in cats #check whether each category occurs only once
+		cats.append(cat['title'])
+		for flag in cat['flags']:
+			assert flag not in flags_from_cats #check whether each flag occurs only once
+			flags_from_cats.append(flag)
+			
+	for f in config['flags']:
+		assert f in flags_from_cats #check whether each flag has a category
+		
+	for f in flags_from_cats:
+		assert f in config['flags'] #check whether each category only contains valid flags
+	
+	
 tests = [
 	testDummy,
-	testSimpleTopologyLifecycle
+	testSimpleTopologyLifecycle,
+	checkFlagCategoryIntegrity
 ]
 	
 if __name__ == "__main__":

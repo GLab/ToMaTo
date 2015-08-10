@@ -216,13 +216,6 @@ class ConfirmForm(ActionForm):
 		self.message = self.message % {'name': name}
 		self.title = self.title % {'name': name}
 
-
-class RemoveConfirmForm(ConfirmForm):
-	buttons = Buttons.cancel_remove
-
-
-# functions
-
 def add_function(request,
 		Form,
 		create_function, modify_function,
@@ -252,6 +245,14 @@ def add_function(request,
 		clean_formkwargs.update(formkwargs)
 		form = Form(*(formargs + clean_formargs), **(clean_formkwargs))
 		return form.create_response(request)
+
+
+class RemoveConfirmForm(ConfirmForm):
+	buttons = Buttons.cancel_remove
+
+
+# functions
+
 
 
 def edit_function(request,

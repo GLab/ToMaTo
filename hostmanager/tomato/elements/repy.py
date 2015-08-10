@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys
+import os, sys, shutil
 from django.db import models
 from .. import connections, elements, config
 from ..resources import template
@@ -109,6 +109,9 @@ Actions:
 	 	http://server:port/grant/download where server is the address of this
 	 	host, port is the fileserver port of this server (can be requested via
 	 	host_info) and grant is the grant.
+	*download_log_grant*, callable in state *prepared* or *created*
+	    Create/update a grant to download the program log for the Repy device.
+	    Works like download_grant.
 """
 
 ST_PREPARED = "prepared"
@@ -146,6 +149,7 @@ class Repy(elements.Element):
 		"upload_grant": [ST_PREPARED],
 		"upload_use": [ST_PREPARED],
 		"download_grant": [ST_PREPARED],
+        "download_log_grant": [ST_PREPARED, ST_STARTED],
 		elements.REMOVE_ACTION: [ST_PREPARED],
 	}
 	CAP_NEXT_STATE = {
@@ -309,6 +313,20 @@ class Repy(elements.Element):
 	def action_download_grant(self):
 		#no need to copy file first
 		return fileserver.addGrant(self.dataPath("program.repy"), fileserver.ACTION_DOWNLOAD)
+
+	def action_download_log_grant(self):
+		# make sure there is no leftover log from last download
+		if os.path.exists(self.dataPath("download.log")):
+			os.remove(self.dataPath("download.log"))
+
+		# if a log exists, use this. if not, create an empty file for the user to download
+		if os.path.exists(self.dataPath("program.log")):
+			shutil.copyfile(self.dataPath("program.log"),self.dataPath("download.log"))
+		else:
+			open(self.dataPath("download.log"), 'a').close()
+
+		# now, return a grant to download this.
+		return fileserver.addGrant(self.dataPath("download.log"), fileserver.ACTION_DOWNLOAD)
 		
 	def upcast(self):
 		return self

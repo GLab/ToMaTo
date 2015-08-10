@@ -569,7 +569,7 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
 		# TODO: return None if unreachable, return dummy if it does not exist
-		dump = self.getProxy().dump_info(dump_id, include_data=True, compress_data=True)
+		dump = self.getProxy().dump_info(dump_id, include_data=True, compress_data=True, dump_on_error=False)
 		if not keep_compressed:
 			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
 		return dump
@@ -605,8 +605,11 @@ class Host(DumpSource, Entity, BaseDocument):
 	def create(cls, name, site, attrs=None):
 		if not attrs: attrs = {}
 		user = currentUser()
+		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Host name may not include a '/'") #FIXME: find out if still used
 		UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
 			code=UserError.DENIED, message="Not enough permissions")
+		for attr in ["address", "rpcurl"]:
+			UserError.check(attr in attrs.keys(), code=UserError.INVALID_CONFIGURATION, message="Missing attribute for host: %s" % attr)
 		host = Host(name=name, site=site)
 		host.init(attrs)
 		host.save()

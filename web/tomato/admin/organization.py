@@ -117,8 +117,7 @@ def info(api, request, name):
 def add(api, request):
     return add_function(request,
                         Form=AddOrganizationForm,
-                        create_function=api.organization_create,
-                        modify_function=api.organization_modify
+                        create_function=api.organization_create
                         )
 
 @wrap_rpc
