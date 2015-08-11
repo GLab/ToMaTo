@@ -125,7 +125,20 @@ class CachedMethod:
 	def __call__(self, *args, **kwargs):
 		return self._cache.get(args, kwargs)
 	def invalidate(self):
-		self._cache.clear()	
+		self._cache.clear()
+
+
+def invalidates(cachedFn):
+	assert isinstance(cachedFn, CachedMethod)
+	def wrap(fn):
+		def call(*args, **kwargs):
+			try:
+				return fn(*args, **kwargs)
+			finally:
+				cachedFn.invalidate()
+		return call
+	return wrap
+
 	
 def cached(timeout=None, maxSize=100, autoupdate=False):
 	if maxSize is None:
