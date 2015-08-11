@@ -107,7 +107,7 @@ class UDPEndpoint(Element):
 
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
-		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element._checkRemove, allowedStates=[ST_CREATED]),
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
 		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
 		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
 		"destroy": StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),

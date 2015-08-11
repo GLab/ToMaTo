@@ -202,7 +202,7 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			raise
 		return res
 
-	def _checkRemove(self):
+	def checkRemove(self):
 		self.checkRole(Role.manager)
 		return True
 
@@ -211,7 +211,7 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			self.reload()
 		except Connection.DoesNotExist:
 			return
-		self._checkRemove()
+		self.checkRemove()
 		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		self.triggerStop()
@@ -435,7 +435,7 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		}
 
 	ACTIONS = {
-		Entity.REMOVE_ACTION: StatefulAction(_remove, check=_checkRemove)
+		Entity.REMOVE_ACTION: StatefulAction(_remove, check=checkRemove)
 	}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
