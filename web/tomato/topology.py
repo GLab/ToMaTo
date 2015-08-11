@@ -145,10 +145,10 @@ def import_(api, request):
 			if errors != []:
 				errors = ["%s %s: failed to set %s=%r, %s" % (type_, cid, key, val, err) for type_, cid, key, val, err
 					in errors]
-				note = "Errors occured during import:\n" + "\n".join(errors)
+				note = "Errors occured during import:\n\n" + "\n\n".join(errors)
 				t = api.topology_info(id_)
-				if t['attrs'].has_key('_notes') and t['attrs']['_notes']:
-					note += "\n__________\nOriginal Notes:\n" + t['attrs']['_notes']
+				if t.has_key('_notes') and t['_notes']:
+					note += "\n__________\nOriginal Notes:\n" + t['_notes']
 				api.topology_modify(id_, {'_notes': note, '_notes_autodisplay': True})
 			return redirect("tomato.topology.info", id=id_)
 		else:
@@ -166,7 +166,7 @@ def export(api, request, id):
 		raise AuthError()
 	top = api.topology_export(id)
 	filename = re.sub('[^\w\-_\. ]', '_',
-		id + "__" + top['topology']['attrs']['name'].lower().replace(" ", "_")) + ".tomato3.json"
+		top['topology']['name'].lower().replace(" ", "_")) + "__" + id + ".tomato4.json"
 	response = HttpResponse(json.orig.dumps(top, indent=2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response
