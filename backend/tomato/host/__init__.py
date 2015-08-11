@@ -575,7 +575,10 @@ class Host(DumpSource, Entity, BaseDocument):
 		return dump
 
 	def dump_clock_offset(self):
-		return max(0, -self.hostInfo['time_diff'])
+		if self.hostInfo and 'time_diff' in self.hostInfo:
+			return max(0, -self.hostInfo['time_diff'])
+		else:
+			return None
 
 	def dump_source_name(self):
 		return "host:%s" % self.info()['name']
@@ -765,7 +768,9 @@ def synchronizeHost(host):
 		checkingHosts.add(host)
 	try:
 		try:
+			print >>sys.stderr, "update start"
 			host.update()
+			print >>sys.stderr, "update done"
 			host.synchronizeResources()
 			host.updateAccountingData()
 		except:
