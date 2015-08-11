@@ -52,6 +52,7 @@
 {% endif %}
 
 {% if request.session.user and request.session.user.isGlobalHostManager %}
+	<div class="skip-sm"></div>
 	<form>
 	<button type="submit" formaction="{%url "admin.organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
 	</form>
