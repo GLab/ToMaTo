@@ -55,8 +55,17 @@ class HostForm(AddEditForm):
 	create_dict_keys = ['rpcurl', 'address', 'enabled']
 	redirect_after = "tomato.admin.host.info"
 
-	def __init__(self, site_namelist, *args, **kwargs):
+	def __init__(self, site_namelist, publickey=None, *args, **kwargs):
 		super(HostForm, self).__init__(*args, **kwargs)
+		if publickey is not None:
+			self.message_after = \
+				'<div>\
+					<div class="col-lg-4 col-sm-4"></div>\
+					<div class="col-lg-6 col-sm-8">\
+						<label class="control-label">Backend Public Key</label>\
+						<pre>%s</pre>\
+					</div>\
+				</div>' % publickey
 		self.fields["site"].widget = forms.widgets.Select(choices=site_namelist)
 		self.helper.layout = Layout(
 			'name',
@@ -134,7 +143,10 @@ def add(api, request, site=None):
 		create_function=api.host_create,
 		modify_function=api.host_modify,
 		clean_formkwargs=({'site': site} if site is not None else {}),
-		formkwargs={'site_namelist': append_empty_choice(site_name_list(api))}
+		formkwargs={
+			'site_namelist': append_empty_choice(site_name_list(api)),
+			'publickey': api.server_info().get("public_key", "unknown")
+		}
 	)
 
 
