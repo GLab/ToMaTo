@@ -71,7 +71,7 @@
 
 <script language="javascript">
 
-ElementID = {{id}};
+ElementID = "{{id}}";
 
 function doAjaxCall(url,successfn) {
 	var xmlhttp=new XMLHttpRequest();
@@ -90,11 +90,11 @@ function TopologyInfoURL(top_id){return "/ajax/topology/"+top_id+"/info"}
 //auto-refresh process. timer initited by initWindow().
 function updateRexTFVStatus() {
 	doAjaxCall(ElementInfoURL(),function(element_info){
-		
-		var info_date = new Date(element_info['info_sync_date'] * 1000);
+		console.log(element_info);
+		var info_date = new Date(element_info['info_last_sync'] * 1000);
 		document.getElementById("info_age").innerHTML = info_date.toLocaleTimeString() + " &nbsp; " + /\((.*)\)/.exec(info_date.toString())[1];
 		
-		rextfv_status = element_info['attrs']['rextfv_run_status'];
+		rextfv_status = element_info['rextfv_run_status'];
 		if (element_info['state'] == 'started') {
 			s = rextfv_status;
 			if (s['readable']) {
@@ -126,16 +126,16 @@ function updateRexTFVStatus() {
 //called once. fetches permanent info and starts the auto refresh process.
 function initWindow() {
 	doAjaxCall(ElementInfoURL(),function(info){
-		elName = info['attrs']['name'];
+		elName = info['name'];
 		document.title = "Element "+elName+": RexTFV Status";
 		document.getElementById('heading').innerHTML = document.title;
 		document.getElementById('element_name').innerHTML = elName;
 		
 		doAjaxCall(TopologyInfoURL(info['topology']),function(topinfo){
-			document.getElementById('topology_name').innerHTML = topinfo['attrs']['name'];
+			document.getElementById('topology_name').innerHTML = topinfo['name'];
 		});
 		
-		if (info['attrs']['rextfv_supported']) {//this shouldn't be called by the user if not rextfv_supported. However, this can be called by url.
+		if (info['rextfv_supported']) {//this shouldn't be called by the user if not rextfv_supported. However, this can be called by url.
 			updateRexTFVStatus();
 			setInterval(updateRexTFVStatus, 1200);
 		} else

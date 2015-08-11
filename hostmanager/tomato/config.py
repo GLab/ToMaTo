@@ -170,6 +170,8 @@ BITTORRENT_RESTART = 60 * 30 # 30 minutes
 This field defines how often the bittorrent client should be restarted.
 """
 
+BITTORRENT_PORT_RANGE = (8010, 8020)
+
 RESOURCES = {
 	'port': xrange(6000, 7000),
 	'vmid': xrange(1000, 2000)

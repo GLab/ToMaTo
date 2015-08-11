@@ -61,13 +61,13 @@ def fileSize(torrentData):
 		file_length += file['length']
 	return file_length
 	
-def startClient(path, bwlimit=10000):
+def startClient(path, bwlimit=10000, minport=8010, maxport=8020):
 	global _clientPid, _clientConfig
 	if _clientPid:
 		return
 	assert os.path.exists(path)
 	_clientConfig = {"path": path, "bwlimit": bwlimit} 
-	_clientPid = spawn(["btlaunchmany", ".", "--max_upload_rate", str(bwlimit)], cwd=path, daemon=False)
+	_clientPid = spawn(["btlaunchmany", ".", "--max_upload_rate", str(bwlimit), "--minport", str(minport), "--maxport", str(maxport)], cwd=path, daemon=False)
 	try:
 		process.ionice(_clientPid, process.IoPolicy.Idle)
 	except:

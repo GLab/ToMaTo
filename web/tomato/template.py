@@ -260,10 +260,11 @@ def edit(api, request, res_id=None):
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 		label = request.POST["label"]
 		UserError.check(label, UserError.INVALID_DATA, "Form transmission failed.")
-		return render(request, "form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+request.POST['tech']+")"})
+		return render(request, "form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+res_inf['tech']+")"})
 	else:
 		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
 		res_inf['res_id'] = res_id
+		res_inf['creation_date'] = datetime.date.fromtimestamp(float(res_inf['creation_date'] or "0.0"))
 		form = EditTemplateForm(res_id, (res_inf['tech']=="kvmqm"), res_inf)
 		return render(request, "form.html", {'label': res_inf['label'], 'form': form, "heading":"Edit Template Data for '"+str(res_inf['label'])+"' ("+res_inf['tech']+")"})
 		

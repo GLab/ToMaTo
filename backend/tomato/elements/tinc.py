@@ -206,6 +206,13 @@ class TincVPN(ConnectingElement, Element):
 		self._parallelChildActions(self._childsByState[ST_PREPARED], "start")
 		self.setState(ST_STARTED)
 
+	def _nextName(self, baseName):
+		num = 0
+		names = [ch.name for ch in self.children]
+		while baseName + str(num) in names:
+			num += 1
+		return baseName + str(num)
+
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
 		"name": Attribute(field=name, label="Name"),
@@ -245,7 +252,7 @@ class TincEndpoint(ConnectingElement, Element):
 		if self.parent:
 			self.mode = self.parent.mode
 		if not self.name:
-			self.name = self.TYPE + str(self.id)
+			self.name = self.parent._nextName("port")
 		self.save()
 	
 	@property

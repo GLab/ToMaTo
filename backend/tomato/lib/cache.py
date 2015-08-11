@@ -136,6 +136,9 @@ def invalidates(cachedFn):
 				return fn(*args, **kwargs)
 			finally:
 				cachedFn.invalidate()
+		call.__name__ = fn.__name__
+		call.__doc__ = fn.__doc__
+		call.__dict__.update(fn.__dict__)
 		return call
 	return wrap
 
