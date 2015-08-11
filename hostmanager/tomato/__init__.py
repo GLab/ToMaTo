@@ -79,7 +79,7 @@ def start():
 	dump.init()
 	db_migrate()
 	firewall.add_all_networks(network.getAll())
-	bittorrent.startClient(config.TEMPLATE_DIR)
+	bittorrent.startClient(config.TEMPLATE_DIR, config.BITTORRENT_PORT_RANGE[0], config.BITTORRENT_PORT_RANGE[1])
 	fileserver.start()
 	rpcserver.start()
 	scheduler.start()
@@ -121,10 +121,10 @@ def stop(*args):
 		print >>sys.stderr, "Shutting down..."
 		thread.start_new_thread(_stopHelper, ())
 		firewall.remove_all_networks(resources.network.getAll())
+		bittorrent.stopClient()
 		rpcserver.stop()
 		scheduler.stop()
 		fileserver.stop()
-		bittorrent.stopClient()
 		logging.closeDefault()
 		stopped.set()
 	except:
