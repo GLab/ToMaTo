@@ -242,7 +242,7 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 			schema=schema.StringMap(additional=True)),
 		"usage": Attribute(readOnly=True, get=lambda self: self.totalUsage.latest, schema=schema.StringMap(additional=True, null=True)),
 		"site": Attribute(get=lambda self: self.site.name if self.site else None,
-			set=modify_site, schema=schema.Identifier()),
+			set=modify_site, schema=schema.Identifier(null=True)),
 		"elements": Attribute(readOnly=True, schema=schema.List()),
 		"connections": Attribute(readOnly=True, schema=schema.List()),
 		"timeout": Attribute(field=timeout, readOnly=True, schema=schema.Number()),
