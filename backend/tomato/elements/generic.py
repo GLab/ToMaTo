@@ -281,7 +281,7 @@ class VMInterface(Element):
 
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
-		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element._checkRemove, allowedStates=[ST_CREATED])
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element._checkRemove, allowedStates=[ST_CREATED, ST_PREPARED])
 	})
 
 
