@@ -19,6 +19,9 @@
   display: inline-block;  
 }
 
+.ui-corner-all {
+  border-radius: 5px;
+}
 
 .ui-dialog {
 	overflow: visible;
