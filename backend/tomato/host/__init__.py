@@ -614,9 +614,13 @@ class Host(DumpSource, Entity, BaseDocument):
 		for attr in ["address", "rpcurl"]:
 			UserError.check(attr in attrs.keys(), code=UserError.INVALID_CONFIGURATION, message="Missing attribute for host: %s" % attr)
 		host = Host(name=name, site=site)
-		host.init(attrs)
-		host.save()
-		logging.logMessage("create", category="host", info=host.info())
+		try:
+			host.init(attrs)
+			host.save()
+			logging.logMessage("create", category="host", info=host.info())
+		except:
+			host.remove()
+			raise
 		return host
 
 

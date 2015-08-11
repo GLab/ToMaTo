@@ -98,9 +98,9 @@ class Site(BaseDocument):
 			code=UserError.DENIED, message="Not enough permissions")
 		logging.logMessage("create", category="site", name=name, label=label)
 		site = Site(name=name, organization=orga, label=label)
-		site.save()
 		try:
-			site.modify(attrs)
+			site.init(attrs)
+			site.save()
 		except:
 			site.remove()
 			raise
