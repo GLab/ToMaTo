@@ -768,7 +768,9 @@ def synchronizeHost(host):
 		checkingHosts.add(host)
 	try:
 		try:
+			print >>sys.stderr, "update start"
 			host.update()
+			print >>sys.stderr, "update done"
 			host.synchronizeResources()
 			host.updateAccountingData()
 		except:
