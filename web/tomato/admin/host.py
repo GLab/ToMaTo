@@ -55,17 +55,8 @@ class HostForm(AddEditForm):
 	create_dict_keys = ['rpcurl', 'address', 'enabled']
 	redirect_after = "tomato.admin.host.info"
 
-	def __init__(self, site_namelist, publickey=None, *args, **kwargs):
+	def __init__(self, site_namelist, *args, **kwargs):
 		super(HostForm, self).__init__(*args, **kwargs)
-		if publickey is not None:
-			self.message_after = \
-				'<div>\
-					<div class="col-lg-4 col-sm-4"></div>\
-					<div class="col-lg-6 col-sm-8">\
-						<label class="control-label">Backend Public Key</label>\
-						<pre>%s</pre>\
-					</div>\
-				</div>' % publickey
 		self.fields["site"].widget = forms.widgets.Select(choices=site_namelist)
 		self.helper.layout = Layout(
 			'name',
@@ -83,8 +74,17 @@ class AddHostForm(HostForm):
 	formaction = "tomato.admin.host.add"
 	formaction_haskeys = False
 
-	def __init__(self, site=None, *args, **kwargs):
+	def __init__(self, site=None, publickey=None, *args, **kwargs):
 		super(AddHostForm, self).__init__(*args, **kwargs)
+		if publickey is not None:
+			self.message_after = \
+				'<div>\
+					<div class="col-lg-4 col-sm-4"></div>\
+					<div class="col-lg-6 col-sm-8">\
+						<label class="control-label">Backend Public Key</label>\
+						<pre>%s</pre>\
+					</div>\
+				</div>' % publickey
 		if site is not None:
 			self.fields['organization'].initial = site
 
