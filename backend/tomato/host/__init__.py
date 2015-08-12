@@ -633,11 +633,11 @@ class HostObject(BaseDocument):
 	:type topologyConnection: connection.Connection
 	:type usageStatistics: UsageStatistics
 	"""
-	host = ReferenceField(Host, required=True)
+	host = ReferenceField(Host, required=True, reverse_delete_rule=CASCADE)
 	num = IntField(unique_with='host', required=True)
-	topologyElement = ReferenceField('Element', db_field='topology_element')
-	topologyConnection = ReferenceField('Connection', db_field='topology_connection')
-	usageStatistics = ReferenceField(UsageStatistics, db_field='usage_statistics', required=True)
+	topologyElement = ReferenceField('Element', db_field='topology_element') #reverse_delete_rule=NULLIFY defined at bottom of element/__init__.py
+	topologyConnection = ReferenceField('Connection', db_field='topology_connection')  #reverse_delete_rule=NULLIFY defined at bottom of connections.py
+	usageStatistics = ReferenceField(UsageStatistics, db_field='usage_statistics', required=True, reverse_delete_rule=DENY)
 	state = StringField(required=True)
 	type = StringField(required=True)
 	objectInfo = DictField(db_field='object_info')

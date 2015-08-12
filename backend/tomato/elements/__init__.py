@@ -419,8 +419,10 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		"host_info": Attribute(field=host_info, readOnly=True)
 	}
 
-Element.register_delete_rule(Connection, "elementFrom", DENY)
-Element.register_delete_rule(Connection, "elementTo", DENY)
-
 from .. import currentUser, host
 from ..host.element import HostElement
+from ..host import HostObject
+
+Element.register_delete_rule(Connection, "elementFrom", DENY)
+Element.register_delete_rule(Connection, "elementTo", DENY)
+Element.register_delete_rule(HostObject, "topologyElement", NULLIFY)

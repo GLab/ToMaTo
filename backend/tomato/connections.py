@@ -497,3 +497,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 from . import currentUser
 from .host import getConnectionCapabilities, select
 from .host.connection import HostConnection
+from .host import HostObject
+
+Connection.register_delete_rule(HostObject, "topologyConnection", NULLIFY)
