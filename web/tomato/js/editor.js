@@ -3819,7 +3819,7 @@ var VMElement = IconElement.extend({
 			
 			info.append('<img src="/img/info.png" />');
 			
-			if (this.data.host_info && this.data.host_info.site && (this.data.host_info.site == null)) {
+			if (this.data.host_info && this.data.host_info.site && this.data.site == null) {
 				info.append('<img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
 				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
 			}
