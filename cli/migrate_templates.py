@@ -1,6 +1,7 @@
-__author__ = 't-gerhard'
+#!/usr/bin/python
 
-from .lib import getConnection, createUrl
+from lib import getConnection, createUrl
+import argparse, getpass, datetime
 
 def parseArgs():
 	"""
@@ -37,65 +38,117 @@ def parseArgs():
 	parser = argparse.ArgumentParser(description="ToMaTo RPC Client", add_help=False)
 	parser.add_argument('--help', action='help')
 
-	parser.add_argument("--url_source" , "-su", required=False, help="the whole URL of the server")
-	parser.add_argument("--protocol_source", required=False, default="http+xmlrpc", help="the protocol of the server")
-	parser.add_argument("--hostname_source", "-sh", required=False, help="the host of the server")
-	parser.add_argument("--port_source", "-sp", default=8000, help="the port of the server")
-	parser.add_argument("--ssl_source", "-ss", action="store_true", default=False, help="whether to use ssl")
-	parser.add_argument("--client_cert_source", "-sc", required=False, default=None, help="path of the ssl certificate")
-	parser.add_argument("--username_source", "-sU", help="the username to use for login")
-	parser.add_argument("--password_source", "-sP", help="the password to use for login")
+	parser.add_argument("--url_source" , "-su", required=False, help="the whole URL of the source server")
+	parser.add_argument("--protocol_source", required=False, default="http+xmlrpc", help="the protocol of the source server")
+	parser.add_argument("--hostname_source", "-sh", required=False, help="the host of the source server")
+	parser.add_argument("--port_source", "-sp", default=8000, help="the port of the source server")
+	parser.add_argument("--ssl_source", "-ss", action="store_true", default=False, help="whether to use ssl on source server")
+	parser.add_argument("--client_cert_source", "-sc", required=False, default=None, help="path of the ssl certificate to use for source server")
+	parser.add_argument("--username_source", "-sU", help="the username to use for login on source server")
+	parser.add_argument("--password_source", "-sP", help="the password to use for login on source server")
 
-	parser.add_argument("--url_destination" , "-du", required=False, help="the whole URL of the server")
-	parser.add_argument("--protocol_destination", required=False, default="http+xmlrpc", help="the protocol of the server")
-	parser.add_argument("--hostname_destination", "-dh", required=False, help="the host of the server")
-	parser.add_argument("--port_destination", "-dp", default=8000, help="the port of the server")
-	parser.add_argument("--ssl_destination", "-ds", action="store_true", default=False, help="whether to use ssl")
-	parser.add_argument("--client_cert_destination", "-dc", required=False, default=None, help="path of the ssl certificate")
-	parser.add_argument("--username_destination", "-dU", help="the username to use for login")
-	parser.add_argument("--password_destination", "-dP", help="the password to use for login")
+	parser.add_argument("--url_destination" , "-du", required=False, help="the whole URL of the destination server")
+	parser.add_argument("--protocol_destination", required=False, default="http+xmlrpc", help="the protocol of the destination server")
+	parser.add_argument("--hostname_destination", "-dh", required=False, help="the host of the destination server")
+	parser.add_argument("--port_destination", "-dp", default=8000, help="the port of the destination server")
+	parser.add_argument("--ssl_destination", "-ds", action="store_true", default=False, help="whether to use ssl on destination server")
+	parser.add_argument("--client_cert_destination", "-dc", required=False, default=None, help="path of the ssl certificate to use for destination server")
+	parser.add_argument("--username_destination", "-dU", help="the username to use for login on destination server")
+	parser.add_argument("--password_destination", "-dP", help="the password to use for login on destination server")
+
+	parser.add_argument("--include_restricted", default=False, help="whether to include restricted templates")
+	parser.add_argument("--template", "-t", default=None, help="only migrate templates with this name")
+	parser.add_argument("--overwrite_on_conflict", default=False, action="store_true", help="in case of conflict, overwrite the template (default: ignore)")
 
 	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
 	options = parser.parse_args()
-	if not options.username and not options.client_cert:
-		options.username=raw_input("Username: ")
-	if not options.password and not options.client_cert:
-		options.password=getpass.getpass("Password: ")
-	if options.ssl and options.protocol == "http+xmlrpc":
-		options.protocol = "https+xmlrpc"
+
+	if not options.username_source and not options.client_cert_source:
+		options.username_source=raw_input("Username for %s: " % options.hostname_source)
+	if not options.password_source and not options.client_cert_source:
+		options.password_source= getpass.getpass("Password for %s: " % options.hostname_source)
+	if options.ssl_source and options.protocol_source == "http+xmlrpc":
+		options.protocol_source = "https+xmlrpc"
+
+	if not options.username_destination and not options.client_cert_destination:
+		options.username_destination=raw_input("Username for %s: " % options.hostname_destination)
+	if not options.password_destination and not options.client_cert_destination:
+		options.password_destination= getpass.getpass("Password for %s: " % options.hostname_destination)
+	if options.ssl_destination and options.protocol_destination == "http+xmlrpc":
+		options.protocol_destination = "https+xmlrpc"
+
 	return options
 
 
 
-def _read_templates_3_0_0(api):
+def _read_templates_3_0_0(api, include_restricted, name):
+	results = []
 	templates = api.resource_list('template')
 	for t in templates:
-		pass  # todo: transform to internal format.
+		if include_restricted or not t['attrs'].get('restricted', False):
+			if name is None or t['attrs']['name'] == name:
+				templ = api.resource_info(t['id'], include_torrent_data=True)
+				res_entry = {
+					'name': templ['attrs']['name'],
+					'tech': templ['attrs']['tech'],
+					'attrs': {k: v for k, v in templ['attrs'].iteritems()
+									 if k not in ['name', 'tech', 'torrent_data', 'torrent_data_hash', 'ready']},
+					'torrent_data': templ['attrs']['torrent_data']
+				}
 
-def _read_templates_4_0_0(api):
-	pass  # todo: read them and transform to internal format.
+				# todo: convert string creation dat to float
 
-def _insert_template_3_0_0(api, template):
+				results.append(res_entry)
+
+	return results
+
+
+def _read_templates_4_0_0(api, include_restricted, name):
+	print "reading from 4.0.0 is not implemented yet."
+	return []  # todo: read them and transform to internal format.
+
+def _insert_template_3_0_0(api, template, overwrite_on_conflict):
+	print "inserting to tomato3 is not implemented yet."
 	pass  # todo: takes internal formatted template and inserts it to api
 
-def _insert_template_4_0_0(api, template):
-	pass  # todo: takes internal formatted template and inserts it to api
+def _insert_template_4_0_0(api, template, overwrite_on_conflict):
+	try:
+		t = api.template_create(template['tech'], template['name'], {'torrent_data': template['torrent_data']})
+		templ_id = t['id']
+	except Exception, e:  # something went wrong.
+		if not overwrite_on_conflict:  # if we don't want to overwrite this, abort.
+			raise e
+		try:  # let's see whether this template exists. if yes, just overwrite it. otherwise, abort.
+			templates = api.template_list(template['tech'])
+			for t in templates:
+				if t['name'] == template['name']:
+					templ_id = t['id']
+		except:
+			raise e
+	try:
+		api.template_modify(templ_id, template['attrs'])
+	except:
+		for k, v in template['attrs'].iteritems():
+			try:
+				api.template_modify(templ_id, {k: v})
+			except:
+				print "  error setting %s=%s" % (k, v)
 
 
 
-def read_templates(api, version):
+def read_templates(api, version, include_restricted, name):
 	if version[0] == 3:
-		return _read_templates_3_0_0(api)
+		return _read_templates_3_0_0(api, include_restricted, name)
 	elif version[0] == 4:
-		return _read_templates_4_0_0(api)
+		return _read_templates_4_0_0(api, include_restricted, name)
 	else:
 		print "unknown source version: %s" % ".".join(version)
 
-def insert_template(api, version, template):
+def insert_template(api, version, template, overwrite_on_conflict):
 	if version[0] == 3:
-		return _insert_template_3_0_0(api, template)
+		return _insert_template_3_0_0(api, template, overwrite_on_conflict)
 	elif version[0] == 4:
-		return _insert_template_4_0_0(api, template)
+		return _insert_template_4_0_0(api, template, overwrite_on_conflict)
 	else:
 		print "unknown source version: %s" % ".".join(version)
 
@@ -121,11 +174,16 @@ api_destination = getConnection(url_destination, options.client_cert_destination
 source_version = api_source.server_info().get('api_version', (3, 0, 0))
 target_version = api_destination.server_info().get('api_version', (3, 0, 0))
 
-source_templates = read_templates(api_source, source_version)
+print "fetching source templates"
+source_templates = read_templates(api_source, source_version, options.include_restricted, options.template)
+print "  done"
 for template in source_templates:
+	print ""
 	try:
 		print "inserting template %s" % template.get('name', '[name unknown]')
-		insert_template(api_destination, target_version, template)
+		insert_template(api_destination, target_version, template, options.overwrite_on_conflict)
 		print "  done"
 	except:
+		import traceback
+		print traceback.print_exc()
 		print "  ERROR"
