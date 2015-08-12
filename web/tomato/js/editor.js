@@ -2528,7 +2528,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].label))
 					.append($('<div class="col-sm-3" style="padding: 0;"/>').append(el_from.getElement()))
 					.append($('<div class="col-sm-3" style="padding: 0;" />').append(el_to.getElement()))
-					.append($('<div class="col-sm-2" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].unit))
+					.append($('<div class="col-sm-2" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].value_schema.unit))
 				);
 			}
 			this.updateEmulationStatus(con.data.emulation);
