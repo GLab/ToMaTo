@@ -2518,10 +2518,14 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el_from = this.autoElement(con.caps.attributes[name+"_from"], con.data[name+"_from"], true)
+				var info_from = con.caps.attributes[name+"_from"];
+				info_from.name = name + "_from";
+				var el_from = this.autoElement(info_from, con.data[name+"_from"], true)
 				this.elements.push(el_from);
 				this.emulation_elements.push(el_from);
-				var el_to = this.autoElement(con.caps.attributes[name+"_to"], con.data[name+"_to"], true)
+				var info_to = con.caps.attributes[name+"_to"];
+				info_to.name = name + "_to";
+				var el_to = this.autoElement(info_to, con.data[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
 				link_emulation.append($('<div class="form-group" />')
@@ -2558,7 +2562,9 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["capture_mode", "capture_filter"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el = this.autoElement(con.caps.attributes[name], con.data[name], con.attrEnabled(name));
+				var info = con.caps.attributes[name];
+				info.name = name;
+				var el = this.autoElement(info, con.data[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
 				packet_capturing.append($('<div class="form-group" />')
