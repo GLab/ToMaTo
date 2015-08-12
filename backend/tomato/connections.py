@@ -171,7 +171,7 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 				remoteAttrs[key] = value
 		self.directData.update(remoteAttrs)
 		if self.mainConnection:
-			self.mainConnection.modify(remoteAttrs)
+			self.mainConnection.modify(self._remoteAttrs)
 
 	def checkUnknownAction(self, action, params=None):
 		self.checkRole(Role.manager)
@@ -239,6 +239,7 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	def _correctDirection(self):
 		"""
 		Find out whether the directions are correct
+		The hostmanager treats the lower internal number as FROM and the higher internal number as TO
 		"""
 		el1 = self.elementFrom.mainElement
 		InternalError.check(el1, code=InternalError.INVALID_STATE,
