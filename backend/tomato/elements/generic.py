@@ -158,8 +158,8 @@ class VMElement(Element):
 				self.element = None
 			self.save()
 			
-	def action_change_template(self, tmplName):
-		self.modify_template(tmplName)
+	def action_change_template(self, template):
+		self.modify_template(template)
 
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()

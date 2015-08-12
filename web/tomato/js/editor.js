@@ -3111,7 +3111,7 @@ var Element = Component.extend({
 	changeTemplate: function(tmplName,action_callback) {
 		this.action("change_template", {
 			params:{
-				tmplName: tmplName
+				template: tmplName
 				},
 			callback: action_callback
 			}
