@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from lib import getConnection, createUrl
-import argparse, getpass, datetime
+import argparse, getpass, datetime, time
 
 def parseArgs():
 	"""
@@ -96,7 +96,7 @@ def _read_templates_3_0_0(api, include_restricted, name):
 					'torrent_data': templ['attrs']['torrent_data']
 				}
 
-				# todo: convert string creation dat to float
+				res_entry['attrs']['creation_date'] = time.mktime(datetime.datetime.strptime(res_entry['attrs']['creation_date'], "%Y-%m-%d").timetuple())
 
 				results.append(res_entry)
 
