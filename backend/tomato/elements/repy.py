@@ -26,7 +26,7 @@ class Repy(VMElement):
 	CAP_CHILDREN = {
 		"repy_interface": [ST_CREATED, ST_PREPARED],
 	}
-	PROFILE_ATTRS = ["ram", "diskspace", "cpus", "bandwidth"]
+	PROFILE_ATTRS = ["ram", "cpus", "bandwidth"]
 	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy"]
 
 	def action_prepare(self):
@@ -37,7 +37,7 @@ class Repy(VMElement):
 		attrs.update({
 			"template": self.template.name,
 		})
-		attrs.update(self._profileAttrs())
+		attrs.update(self._profileAttrs)
 		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		for iface in self.children:

@@ -34,8 +34,7 @@ def handleError(error, function, args, kwargs):
 		else:
 			error = InternalError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
 	logging.logException()
-	if isinstance(error, InternalError):
-		dump.dumpException()
+	dump.dumpException()
 	return error
 
 def afterCall(*args, **kwargs):
@@ -51,8 +50,6 @@ servers = []
 
 def wrapError(error, func, args, kwargs):
 	error = handleError(error, func, args, kwargs)
-	if isinstance(error, rpc.Fault):
-		return error
 	assert isinstance(error, Error)
 	import traceback
 	error.data['trace'] = traceback.format_exc()

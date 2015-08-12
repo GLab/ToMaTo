@@ -137,6 +137,15 @@ class Entity(object):
 	def executeUnknownAction(self, action, params=None):
 		raise NotImplemented()
 
+	def checkAction(self, action, **params):
+		if not params: params = {}
+		actn = self.ACTIONS.get(action)
+		if actn:
+			actn.check(self, **params)
+		else:
+			self.checkUnknownAction(action, params)
+		return True
+
 	def action(self, action, params=None):
 		if not params: params = {}
 		try:

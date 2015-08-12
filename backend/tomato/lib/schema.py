@@ -62,7 +62,15 @@ class Number(Type):
 	TYPES = (types.IntType, types.LongType, types.FloatType)
 	TYPE_NAMES = ["int", "float"]
 
-class Int(Type):
+	def __init__(self, unit=None, **kwargs):
+		Type.__init__(self, **kwargs)
+		self.unit = unit
+	def describe(self):
+		desc = Type.describe(self)
+		desc['unit'] = self.unit
+		return desc
+
+class Int(Number):
 	TYPES = (types.IntType, types.LongType)
 	TYPE_NAMES = ["int"]
 

@@ -367,13 +367,9 @@ def aggregate():
 @util.wrap_task
 def updateQuota():
 	from . import auth
-	try:
-		for user in auth.User.objects():
-			user.updateQuota()
-			user.enforceQuota()
-	except:
-		import traceback
-		traceback.print_exc()
+	for user in auth.User.objects():
+		user.updateQuota()
+		user.enforceQuota()
 
 scheduler.scheduleRepeated(60, aggregate) #every minute @UndefinedVariable
 scheduler.scheduleRepeated(60, updateQuota) #every minute @UndefinedVariable

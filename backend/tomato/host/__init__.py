@@ -216,6 +216,8 @@ class Host(DumpSource, Entity, BaseDocument):
 					"minValue": desc.get('minvalue'), "maxValue": desc.get('maxvalue'),
 					"null": desc.get('null', True)
 				}
+				if not desc.get('unit') is None:
+					params['unit'] = desc.get('unit')
 				if desc.get('type') == "int":
 					sch = schema.Int(**params)
 				elif desc.get('type') == "float":
@@ -772,9 +774,7 @@ def synchronizeHost(host):
 		checkingHosts.add(host)
 	try:
 		try:
-			print >>sys.stderr, "update start"
 			host.update()
-			print >>sys.stderr, "update done"
 			host.synchronizeResources()
 			host.updateAccountingData()
 		except:

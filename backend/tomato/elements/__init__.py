@@ -184,13 +184,13 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			raise
 		return res
 
-	def _checkRemove(self, recurse=True):
+	def checkRemove(self, recurse=True):
 		self.checkRole(Role.manager)
 		UserError.check(recurse or self.children.empty(), code=UserError.NOT_EMPTY, message="Cannot remove element with children")
 		for ch in self.children:
 			ch.checkRemove(recurse=recurse)
 		if self.connection:
-			self.connection._checkRemove()
+			self.connection.checkRemove()
 		return True
 
 	def setState(self, state, recursive=False):
@@ -398,7 +398,7 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		return map(str, chs)
 
 	ACTIONS = {
-		Entity.REMOVE_ACTION: StatefulAction(_remove, check=_checkRemove)
+		Entity.REMOVE_ACTION: StatefulAction(_remove, check=checkRemove)
 	}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
