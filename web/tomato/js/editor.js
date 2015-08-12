@@ -478,7 +478,7 @@ var Window = Class.extend({
 		this.div.dialog("option", "position", position);
 	},
 	show: function() {
-		this.setPosition(this.position);
+		this.setPosition(this.options.position);
 		this.div.dialog("open");
 	},
 	hide: function() {
@@ -618,6 +618,8 @@ var ajax = function(options) {
 
 var TutorialWindow = Window.extend({
 	init: function(options) {
+			this.pos = {my: "right bottom", at: "right bottom", of: "#editor"};
+			options.position = this.pos;
 			this._super(options);
 			if (options.hideCloseButton)
 				$(this.div.parent()[0].getElementsByClassName("ui-dialog-titlebar-close")).hide();
@@ -658,7 +660,6 @@ var TutorialWindow = Window.extend({
 			//load the basic tutorial at the creating of the editor.
 			this.tutorialSteps = [];
 			this.loadTutorial();
-			
 	},
 	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
 		if (vis) {
@@ -680,6 +681,7 @@ var TutorialWindow = Window.extend({
 		}
 		this.updateText();
 		this.updateStatusToBackend();
+		this.setPosition(this.pos);
 	},
 	tutorialGoForth: function() {
 		if (this.tutorialState.step + 1 < this.tutorialSteps.length) {
@@ -692,6 +694,7 @@ var TutorialWindow = Window.extend({
 		}
 		this.updateText();
 		this.updateStatusToBackend();
+		this.setPosition(this.pos);
 	},
 	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.tutorialVisible) { //don't waste cpu time if not needed... trigger function may be complex.
