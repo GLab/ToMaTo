@@ -573,7 +573,6 @@ var errorWindow = Window.extend({
 			}
 			this.content.append(errorDebugInfos);
 		}
-		console.log(this.content);
 		return this.content;
 	},
 	
@@ -618,7 +617,7 @@ var ajax = function(options) {
 
 var TutorialWindow = Window.extend({
 	init: function(options) {
-			this.pos = {my: "right bottom", at: "right bottom", of: "#editor"};
+			this.pos = {my: "right bottom", at: "right-50 bottom-50", of: window};
 			options.position = this.pos;
 			this._super(options);
 			if (options.hideCloseButton)
@@ -2248,7 +2247,7 @@ var Component = Class.extend({
 	    if (!(attr in this.caps.attributes)) return false;
 	    var cap = this.caps.attributes[attr];
 	    if (cap.read_only) return false;
-	    return (!cap.writable_states || cap.writable_states.indexOf(this.data.state) >= 0);
+	    return (!cap.states_writable || cap.states_writable.indexOf(this.data.state) >= 0);
 	},
 	setData: function(data) {
 		this.data = data;
