@@ -252,20 +252,20 @@ var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 
-		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'" checked="true"/>');
+		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
 		this.element = $('<div class="col-sm-12">').append(this.checkbox);
 		if (options.disabled) this.checkbox.attr({disabled: true});
 		var t = this;
 		this.checkbox.change(function() {
-			t.onChanged(t.prop("checked"));
+			t.onChanged(t.checkbox.prop("checked"));
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.checkbox.attr("checked");
+		return this.checkbox.prop("checked");
 	},
 	setValue: function(value) {
-		this.checkbox.attr("checked",value);
+		this.checkbox.prop("checked", value);
 	}
 });
 
@@ -1023,7 +1023,7 @@ var TemplateWindow = Window.extend({
 			}
 			
 			if (t.name == this.element.data.template) {
-				radio.prop("checked","checked");
+				radio.prop("checked",true);
 			}
 			
 			var radiolabel = $('<label for="'+winID+t.name+'">'+t.label+'</label>');
@@ -2568,7 +2568,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				this.capturing_elements.push(el);
 				this.elements.push(el);
 				packet_capturing.append($('<div class="form-group" />')
-					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].desc))
+					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].label))
 					.append($('<div class="col-sm-6" />').append(el.getElement()))
 				);
 			}
