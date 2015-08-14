@@ -26,8 +26,9 @@ def checkSupport():
 	return _check()
 
 @_public
-def create(brname):
+def create(brname, stp=True):
 	run(["brctl", "addbr", brname])
+	run(["brctl", "stp", brname, {True: "on", False: "off"}[stp]])
 	
 @_public
 def remove(brname):
