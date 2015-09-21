@@ -468,6 +468,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		mel = self.mainElement()
 		if mel:
 			mel.updateInfo()
+			
+			
 
 	def updateUsage(self):
 		self.totalUsage.updateFrom([el.usageStatistics for el in self.getHostElements()]

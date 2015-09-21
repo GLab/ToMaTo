@@ -19,10 +19,11 @@ from django.db import models
 from .. import elements, resources, host
 from ..resources import network as r_network
 from ..lib.attributes import Attr #@UnresolvedImport
-from generic import ST_CREATED, ST_STARTED
+from generic import ST_CREATED, ST_STARTED, ST_PREPARED
 from .. import currentUser
 from ..auth import Flags
 from ..lib.error import UserError
+from tomato.config import MIGRATION_TRESHOLD
 
 class External_Network(elements.generic.ConnectingElement, elements.Element):
 	name_attr = Attr("name", desc="Name")
@@ -36,6 +37,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	CUSTOM_ACTIONS = {
 		"start": [ST_CREATED],
 		"stop": [ST_STARTED],
+		"migrate": [ST_PREPARED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
@@ -191,6 +193,42 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 			self.element.remove()
 			self.element = None
 		self.setState(ST_CREATED, True)
+
+	def checkMigrate(self):
+		#We only migrate if the external network is already started, otherwise we don't have to migrate
+		return self.state in [ST_PREPARED]
+	
+	def try_migrate(self):
+		
+		UserError.check(self.element.checkMigrate(), code=UserError.UNSUPPORTED_ACTION, message="Element can't be migrated",data={"type": self.TYPE})
+
+
+		hPref, sPref = self.getLocationPrefs()
+		
+		bestHost,bestPref = host.getBestHost(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
+		UserError.check(bestHost, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
+		
+		
+		hostScore = host.getHostScore(self.element.host,site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
+		
+		if bestPref > hostScore*MIGRATION_TRESHOLD:
+			return		
+		
+		
+
+		kind = self.getParent().network.kind if self.parent and self.getParent().samenet else self.kind
+		
+		if self.parent and self.getParent().samenet:
+			self.network = r_network.getInstance(host, self.getParent().network.kind)
+		else:
+			self.network = r_network.getInstance(host, self.kind)			
+		attrs = {"network": self.network.network.kind}
+		
+		self.action_destroy()
+		self.element = bestHost.createElement("external_network", parent=None, attrs=attrs, ownerElement=self)
+		self.setState(ST_STARTED)
+		self.triggerConnectionStart()
+		
 
 	def readyToConnect(self):
 		return bool(self.element)

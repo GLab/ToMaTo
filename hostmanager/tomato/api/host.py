@@ -141,6 +141,7 @@ def host_info():
 				"data": hostinfo.diskinfo(config.DATA_DIR),
 			},
 		},
+		"detachable":config.DETACHABLE,
 		"uptime": hostinfo.uptime(),
 		"system": hostinfo.system(),
 		"dumps": dump.getCount()

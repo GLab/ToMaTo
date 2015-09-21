@@ -170,6 +170,16 @@ def host_modify(name, attrs):
 	return h.info()
 
 @checkauth
+def host_deactivate(name):
+	"""
+	undocumented
+	"""
+	h = _getHost(name)
+	h.deactivate()
+	return h.info()
+	
+
+@checkauth
 def host_remove(name):
 	"""
 	undocumented
@@ -177,6 +187,7 @@ def host_remove(name):
 	h = _getHost(name)
 	h.remove()
 	host_list.invalidate()
+
 
 @checkauth
 def host_users(name):

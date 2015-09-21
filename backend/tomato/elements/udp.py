@@ -20,6 +20,8 @@ from .. import elements, host
 from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 from ..lib.error import UserError
+from tomato.config import MIGRATION_TRESHOLD
+
 
 class UDP_Endpoint(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
@@ -32,6 +34,7 @@ class UDP_Endpoint(elements.Element):
 		"stop": [ST_STARTED],
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
+		"migrate": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
@@ -109,6 +112,30 @@ class UDP_Endpoint(elements.Element):
 	def action_stop(self):
 		if self.element:
 			self.element.action("stop")
+		self.setState(ST_PREPARED, True)
+
+	def checkMigrate(self):
+		return self.state in [ST_CREATED,ST_PREPARED]
+	
+
+	def try_migrate(self):		
+			
+		if self.state in [ST_CREATED]: return
+		
+		host_ = host.select(elementTypes=[self.remoteType()])
+		
+		bestHost,bestPref = host.getBestHost(elementTypes=[self.remoteType()])
+		UserError.check(bestHost, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
+		
+		hostScore = host.getHostScore(self.element.host,elementTypes=[self.remoteType()])
+		
+		if bestPref > hostScore*MIGRATION_TRESHOLD:
+			return		
+		
+		
+		self.action_destroy()
+		self.element = bestHost.createElement(self.remoteType(), parent=None, attrs=attrs, ownerElement=self)
+		self.save()
 		self.setState(ST_PREPARED, True)
 
 	def upcast(self):

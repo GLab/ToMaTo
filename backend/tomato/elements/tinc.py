@@ -22,6 +22,7 @@ from .. import elements, host
 from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 from ..lib.error import UserError, assert_
+from tomato.config import MIGRATION_TRESHOLD
 
 class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 	name_attr = Attr("name", desc="Name", type="str")
@@ -34,6 +35,7 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 		"destroy": [ST_PREPARED],
 		"start": [ST_PREPARED],
 		"stop": [ST_STARTED],
+		"migrate": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
@@ -225,6 +227,31 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 		self._parallelChildActions(self._childsByState()[ST_PREPARED], "start")
 		self.setState(ST_STARTED)
 
+
+	def checkMigrate(self):
+		return self._childsByState()[ST_PREPARED] != [] or self._childsByState()[ST_CREATED] != []
+
+	def try_migrate(self):
+		
+		childList = self._childsByState()[ST_PREPARED]
+		lock = threading.RLock()
+		class WorkerThread(threading.Thread):
+			def run(self):
+				while True:
+					with lock:
+						if not childList:
+							return
+						ch = childList.pop()
+					ch.try_migrate()
+		threads = []
+		for _ in xrange(0, min(len(childList), 10)):
+			thread = WorkerThread()
+			threads.append(thread)
+			thread.start()
+		for thread in threads:
+			thread.join()
+		
+
 	def upcast(self):
 		return self
 
@@ -249,6 +276,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 		"stop": [ST_STARTED],
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
+		"migrate": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
@@ -334,6 +362,30 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 		if self.element:
 			self.element.action("stop")
 		self.setState(ST_PREPARED, True)
+		
+	def checkMigrate(self):		
+		return self.state in [ST_CREATED,ST_PREPARED]
+		
+	def try_migrate(self):
+			
+		if self.state in [ST_CREATED]: return
+		
+		hPref, sPref = self.getLocationPrefs()
+		
+		
+		bestHost,bestPref = host.getBestHost(elementTypes=["tinc"], hostPrefs=hPref, sitePrefs=sPref)
+		UserError.check(bestHost, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
+		
+		hostScore = host.getHostScore(self.element.host,elementTypes=["tinc"], hostPrefs=hPref, sitePrefs=sPref)
+		
+		if bestPref > hostScore*MIGRATION_TRESHOLD:
+			return		
+		
+		
+		self.action_destroy()
+		self.element = bestHost.createElement(self.remoteType(), parent=None, attrs=attrs, ownerElement=self)
+		self.save()
+		self.setState(ST_PREPARED, True)	
 		
 	def upcast(self):
 		return self

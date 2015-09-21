@@ -201,6 +201,13 @@ DISABLE_TRANSACTION_MANAGEMENT = True
 
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
+
+"""
+A Flag that informs the backend if a host is detachable or not
+"""
+
+DETACHABLE = False
+
 try:
 	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/hostmanager.conf", os.path.expanduser("~/.tomato/hostmanager.conf"), "hostmanager.conf"]):

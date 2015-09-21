@@ -75,7 +75,7 @@ def create(path, format="qcow2", size=None, backingImage=None):
 @_public
 def convert(src, dst, srcFormat="qcow2", dstFormat="qcow2", compress=True):
 	src = params.convert(src, check=_checkImage)
-	dst = params.convert(dst, check=lambda p: not os.path.exists(p))
+	dst = params.convert(dst, check=lambda p: not os.path.exists(p[1]))
 	srcFormat = params.convert(srcFormat, convert=str)
 	dstFormat = params.convert(dstFormat, convert=str)
 	try:

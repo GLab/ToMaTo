@@ -179,3 +179,10 @@ A new user, %s, has just registered at the ToMaTo testbed.\n\
 You can review all pending user registrations at https://master.tomato-lab.org/account/registrations\n\n\
 Best Wishes,\nThe ToMaTo Testbed"								
 }
+
+
+
+# Load Balancing, Migration, Resource Allocator:
+MIGRATION_TRESHOLD = 1.2; #New Host has to be 20% better
+AVG_MINIMUM = 0.25;
+AVG_MAXIMUM = 0.7;

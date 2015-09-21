@@ -14,14 +14,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
-
 from django.db import models
 from .. import elements, resources, host
 from ..resources import profile as r_profile, template as r_template
 from ..lib.attributes import Attr, attribute #@UnresolvedImport
-from ..lib import attributes #@UnresolvedImport
+from ..lib import attributes,rpc #@UnresolvedImport
 from ..lib.error import UserError, InternalError
+from ..lib.util import upload
 import time
+import urllib
+from tomato.config import MIGRATION_TRESHOLD
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
@@ -47,6 +49,7 @@ class VMElement(elements.Element):
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
 		"change_template": [ST_CREATED, ST_PREPARED],
+		"migrate": [ST_PREPARED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
@@ -237,6 +240,47 @@ class VMElement(elements.Element):
 	def after_upload_use(self):
 		self.custom_template = True
 		self.save()
+		
+	def try_migrate(self):
+					
+				
+		if self.state in [ST_CREATED]: return
+		
+		hPref, sPref = self.getLocationPrefs()
+		
+		bestHost,bestPref = host.getBestHost(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
+		UserError.check(bestHost, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
+
+		hostScore = host.getHostScore(self.element.host,site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
+		
+		if bestPref > hostScore*MIGRATION_TRESHOLD:
+			return		
+		
+		
+		#Download template. Receive download_grant from template and save it to a tempfile?
+		urllib.urlretrieve(self.element.host.grantUrl(self.element.action("download_grant"), "download"), self.name+"_tmp_image.tar.gz")
+		
+		attrs = self._remoteAttrs()
+		#Create identical element on new host
+		new_el = bestHost.createElement(self.TYPE, parent=None, attrs=attrs, ownerElement=self)
+
+		#Kill old element on old host
+		self.action_destroy()
+		
+		#Set new element and save it
+		self.element = new_el
+		self.save()
+		
+		for iface in self.getChildren():
+			iface.try_migrate()
+		self.element.action("prepare")
+		
+		self.setState(ST_PREPARED, True)
+		
+		upload(bestHost.grantUrl(new_el.action("upload_grant"),"upload"),self.name+"_tmp_image.tar.gz")
+		new_el.action("upload_use")	
+			
+	
 
 	def upcast(self):
 		return self
@@ -297,13 +341,31 @@ class VMInterface(elements.Element):
 			self.element = None
 			self.save()
 
+	def checkMigrate(self):
+		return self.state in [ST_CREATED,ST_PREPARED]
+	
+	def try_migrate(self):
+			
+		if self.state in [ST_CREATED,ST_STARTED]: return
+			
+		
+			
+		parEl = self.getParent().element
+		assert parEl
+		attrs = self._remoteAttrs()
+		element = parEl.createChild(self.TYPE, attrs=attrs, ownerElement=self)
+		
+		self.element.remove()
+		self.element = element
+		self.save()
+
 	def readyToConnect(self):
 		return self.state == ST_STARTED
 
 	def upcast(self):
 		return self
 	
-
+		
 class ConnectingElement:
 	def getLocationData(self, maxDepth=3):
 		"""

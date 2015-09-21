@@ -298,6 +298,7 @@ def element_usage(id): #@ReservedAssignment
 	"""
 	el = _getElement(id)
 	return el.totalUsage.info()	
+	
 
 from .. import elements, currentUser
 from topology import _getTopology
