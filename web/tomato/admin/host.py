@@ -84,7 +84,7 @@ class AddHostForm(HostForm):
 							<div class="panel-heading">\
 								<h4 class="panel-title">\
 									<a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">\
-										<span class="glyphicon glyphicon-info-sign"></span> Backend Public Key <small>(click to expand)</small>\
+										<span class="glyphicon glyphicon-lock"></span> Backend Public Key <small>(click to expand)</small>\
 									</a>\
 								</h4>\
 							</div>\
