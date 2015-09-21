@@ -31,7 +31,11 @@ def index(request):
 		news = getNews()
 	except:
 		news = {}
-	return render(request, "main/start.html", {"news": news})
+
+	pending_registrations = False
+	#TODO: check if logged in (False if not logged in). then, check whether there are pending registrations for this user.
+
+	return render(request, "main/start.html", {"news": news, "pending_registrations": pending_registrations})
 
 @wrap_rpc
 def statistics(api, request):

@@ -26,6 +26,16 @@
 
 <div class="skip-xs" style="height:1cm;"></div>
 
+{% if pending_registrations %}
+<div class="row">
+<div class="alert alert-info col-xs-12 text-center" style="">
+	<p style="font-size: 0.7cm;">There are pending user registrations.</p>
+	<div class="skip-xs" style="height:0.4cm;"></div>
+	<a href="{%url "account_list_registrations"%}" class="btn btn-primary btn-lg">Review</a>
+</div>
+</div>
+{% endif %}
+
 <div class="row">
 <div class="alert alert-info col-xs-8 col-xs-offset-2 text-center" style="background-color:#eeeeee !important; color:black !important; border-color:grey !important;">
 	<p>
