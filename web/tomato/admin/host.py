@@ -79,7 +79,7 @@ class AddHostForm(HostForm):
 		if publickey is not None:
 			self.message_after = \
 				'<div class="row">\
-					<div class="panel-group col-sm-8 col-sm-offset-2 col-lg-8 col-lg-offset-2">\
+					<div class="panel-group col-sm-10 col-sm-offset-2 col-lg-8 col-lg-offset-2">\
 						<div class="panel panel-default">\
 							<div class="panel-heading">\
 								<h4 class="panel-title">\
