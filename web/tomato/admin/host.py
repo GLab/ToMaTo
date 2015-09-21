@@ -78,11 +78,20 @@ class AddHostForm(HostForm):
 		super(AddHostForm, self).__init__(*args, **kwargs)
 		if publickey is not None:
 			self.message_after = \
-				'<div>\
-					<div class="col-lg-4 col-sm-4"></div>\
-					<div class="col-lg-6 col-sm-8">\
-						<label class="control-label">Backend Public Key</label>\
-						<pre>%s</pre>\
+				'<div class="row">\
+					<div class="panel-group col-sm-8 col-sm-offset-2 col-lg-8 col-lg-offset-2">\
+						<div class="panel panel-default">\
+							<div class="panel-heading">\
+								<h4 class="panel-title">\
+									<a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">\
+										<span class="glyphicon glyphicon-info-sign"></span> Backend Public Key <small>(click to expand)</small>\
+									</a>\
+								</h4>\
+							</div>\
+							<div id="collapseOne" class="panel-collapse collapse" style="padding:0.2cm;">\
+								<pre style="border: none; background: transparent;">%s</pre>\
+							</div>\
+						</div>\
 					</div>\
 				</div>' % publickey
 		if site is not None:
