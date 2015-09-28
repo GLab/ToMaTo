@@ -40,15 +40,14 @@ def _pending_registrations(api, request):
 		return False
 	else:
 		# if the user may not see pending registrations, there are none to review.
-		pending_registrations = False
+		return False
 
 @wrap_rpc
 def index(api, request):
-	#try:
-	#	news = getNews()
-	#except:
-	#	news = {}
-	news = {}
+	try:
+		news = getNews()
+	except:
+		news = {}
 
 	if request.session.user:
 		pending_registrations = _pending_registrations(api, request)
