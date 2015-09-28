@@ -216,6 +216,8 @@ class Host(DumpSource, Entity, BaseDocument):
 					"minValue": desc.get('minvalue'), "maxValue": desc.get('maxvalue'),
 					"null": desc.get('null', True)
 				}
+				if not desc.get('unit') is None:
+					params['unit'] = desc.get('unit')
 				if desc.get('type') == "int":
 					sch = schema.Int(**params)
 				elif desc.get('type') == "float":
@@ -575,7 +577,10 @@ class Host(DumpSource, Entity, BaseDocument):
 		return dump
 
 	def dump_clock_offset(self):
-		return max(0, -self.hostInfo['time_diff'])
+		if self.hostInfo and 'time_diff' in self.hostInfo:
+			return max(0, -self.hostInfo['time_diff'])
+		else:
+			return None
 
 	def dump_source_name(self):
 		return "host:%s" % self.info()['name']
@@ -611,9 +616,13 @@ class Host(DumpSource, Entity, BaseDocument):
 		for attr in ["address", "rpcurl"]:
 			UserError.check(attr in attrs.keys(), code=UserError.INVALID_CONFIGURATION, message="Missing attribute for host: %s" % attr)
 		host = Host(name=name, site=site)
-		host.init(attrs)
-		host.save()
-		logging.logMessage("create", category="host", info=host.info())
+		try:
+			host.init(attrs)
+			host.save()
+			logging.logMessage("create", category="host", info=host.info())
+		except:
+			host.remove()
+			raise
 		return host
 
 
@@ -624,11 +633,11 @@ class HostObject(BaseDocument):
 	:type topologyConnection: connection.Connection
 	:type usageStatistics: UsageStatistics
 	"""
-	host = ReferenceField(Host, required=True)
+	host = ReferenceField(Host, required=True, reverse_delete_rule=CASCADE)
 	num = IntField(unique_with='host', required=True)
-	topologyElement = ReferenceField('Element', db_field='topology_element')
-	topologyConnection = ReferenceField('Connection', db_field='topology_connection')
-	usageStatistics = ReferenceField(UsageStatistics, db_field='usage_statistics', required=True)
+	topologyElement = ReferenceField('Element', db_field='topology_element') #reverse_delete_rule=NULLIFY defined at bottom of element/__init__.py
+	topologyConnection = ReferenceField('Connection', db_field='topology_connection')  #reverse_delete_rule=NULLIFY defined at bottom of connections.py
+	usageStatistics = ReferenceField(UsageStatistics, db_field='usage_statistics', required=True, reverse_delete_rule=DENY)
 	state = StringField(required=True)
 	type = StringField(required=True)
 	objectInfo = DictField(db_field='object_info')

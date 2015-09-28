@@ -11,7 +11,6 @@ envCmds = {
 }
 
 def dumpException(**kwargs):
-    traceback.print_exc(file=sys.stderr)
     return dump_lib.dumpException(**kwargs)
 
 def getCount():

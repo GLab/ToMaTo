@@ -12,7 +12,7 @@ class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=None,onscreenmessage=None):
+	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=None, onscreenmessage=None):
 		self.type = type or self.TYPE
 		self.code = code
 		self.message = message
@@ -55,7 +55,7 @@ class Error(Exception):
 		"""
 		creates a dict representation of this error.
 		"""
-		return self.__dict__
+		return dict(self.__dict__)
 
 	@property
 	def rawstr(self):

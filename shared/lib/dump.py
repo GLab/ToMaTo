@@ -313,20 +313,20 @@ def dumpError(error):
 	try:
 		if not error.todump:
 			return None
-		error.todump=False
+		error.todump = False
 		
 		(type_, value, trace) = sys.exc_info()
 		trace = traceback.extract_tb(trace) if trace else None
 		data = {"exception":{"trace":trace}}
 		
-		description = error.__dict__
+		description = error.raw
 		del description['todump']
 		
 		exception_id = error.group_id()
 		
 		return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
 	except:
-		dumpException(originalError=error)
+		dumpException(originalError=str(error))
 
 import error
 error.dumpError = dumpError

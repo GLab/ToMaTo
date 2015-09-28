@@ -252,20 +252,20 @@ var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 
-		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'" checked="true"/>');
+		this.checkbox = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
 		this.element = $('<div class="col-sm-12">').append(this.checkbox);
 		if (options.disabled) this.checkbox.attr({disabled: true});
 		var t = this;
 		this.checkbox.change(function() {
-			t.onChanged(t.prop("checked"));
+			t.onChanged(t.checkbox.prop("checked"));
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.checkbox.attr("checked");
+		return this.checkbox.prop("checked");
 	},
 	setValue: function(value) {
-		this.checkbox.attr("checked",value);
+		this.checkbox.prop("checked", value);
 	}
 });
 
@@ -420,7 +420,8 @@ var TemplateElement = FormElement.extend({
 var Window = Class.extend({
 	init: function(options) {
 		this.options = options;
-		this.options.position = options.position || { my: "center-"+options.width/4+" center", at: "center top", of: "#workspace" };
+		this.options.position = options.position || { my: "center center", at: "center center", of: "#editor" };
+		var t = this;
 		this.div = $('<div style="overflow:visible;"/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
@@ -438,12 +439,12 @@ var Window = Class.extend({
 			buttons: options.buttons || {},
 			closeOnEscape: false,
 			open: function(event, ui) { 
-				if (options.closable === false) $(".ui-dialog-titlebar-close").hide(); 
+				if (options.closable === false) $(".ui-dialog-titlebar-close").hide();
+				t.setPosition(options.position);
 			}
 		});
 		if (options.closeOnEscape != undefined)
 			this.div.closeOnEscape = options.closeOnEscape;
-		this.setPosition(options.position);
 		if (options.content) this.div.append($('<div style="min-height: auto;" />').append(options.content));
 		if (options.autoShow) this.show();
 		
@@ -478,7 +479,7 @@ var Window = Class.extend({
 		this.div.dialog("option", "position", position);
 	},
 	show: function() {
-		this.setPosition(this.position);
+		this.setPosition(this.options.position);
 		this.div.dialog("open");
 	},
 	hide: function() {
@@ -573,7 +574,6 @@ var errorWindow = Window.extend({
 			}
 			this.content.append(errorDebugInfos);
 		}
-		console.log(this.content);
 		return this.content;
 	},
 	
@@ -618,6 +618,8 @@ var ajax = function(options) {
 
 var TutorialWindow = Window.extend({
 	init: function(options) {
+			this.pos = {my: "right bottom", at: "right bottom", of: "#editor"};
+			options.position = this.pos;
 			this._super(options);
 			if (options.hideCloseButton)
 				$(this.div.parent()[0].getElementsByClassName("ui-dialog-titlebar-close")).hide();
@@ -658,7 +660,6 @@ var TutorialWindow = Window.extend({
 			//load the basic tutorial at the creating of the editor.
 			this.tutorialSteps = [];
 			this.loadTutorial();
-			
 	},
 	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
 		if (vis) {
@@ -680,6 +681,7 @@ var TutorialWindow = Window.extend({
 		}
 		this.updateText();
 		this.updateStatusToBackend();
+		//this.setPosition(this.pos);
 	},
 	tutorialGoForth: function() {
 		if (this.tutorialState.step + 1 < this.tutorialSteps.length) {
@@ -692,6 +694,7 @@ var TutorialWindow = Window.extend({
 		}
 		this.updateText();
 		this.updateStatusToBackend();
+		//this.setPosition(this.pos);
 	},
 	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.tutorialVisible) { //don't waste cpu time if not needed... trigger function may be complex.
@@ -1021,7 +1024,7 @@ var TemplateWindow = Window.extend({
 			}
 			
 			if (t.name == this.element.data.template) {
-				radio.prop("checked","checked");
+				radio.prop("checked",true);
 			}
 			
 			var radiolabel = $('<label for="'+winID+t.name+'">'+t.label+'</label>');
@@ -2245,7 +2248,7 @@ var Component = Class.extend({
 	    if (!(attr in this.caps.attributes)) return false;
 	    var cap = this.caps.attributes[attr];
 	    if (cap.read_only) return false;
-	    return (!cap.writable_states || cap.writable_states.indexOf(this.data.state) >= 0);
+	    return (!cap.states_writable || cap.states_writable.indexOf(this.data.state) >= 0);
 	},
 	setData: function(data) {
 		this.data = data;
@@ -2516,17 +2519,21 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el_from = this.autoElement(con.caps.attributes[name+"_from"], con.data[name+"_from"], true)
+				var info_from = con.caps.attributes[name+"_from"];
+				info_from.name = name + "_from";
+				var el_from = this.autoElement(info_from, con.data[name+"_from"], true)
 				this.elements.push(el_from);
 				this.emulation_elements.push(el_from);
-				var el_to = this.autoElement(con.caps.attributes[name+"_to"], con.data[name+"_to"], true)
+				var info_to = con.caps.attributes[name+"_to"];
+				info_to.name = name + "_to";
+				var el_to = this.autoElement(info_to, con.data[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
 				link_emulation.append($('<div class="form-group" />')
-					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].desc))
+					.append($('<label class="col-sm-4 control-label" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].label))
 					.append($('<div class="col-sm-3" style="padding: 0;"/>').append(el_from.getElement()))
 					.append($('<div class="col-sm-3" style="padding: 0;" />').append(el_to.getElement()))
-					.append($('<div class="col-sm-2" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].unit))
+					.append($('<div class="col-sm-2" style="padding: 0;" />').append(con.caps.attributes[name+"_to"].value_schema.unit))
 				);
 			}
 			this.updateEmulationStatus(con.data.emulation);
@@ -2556,11 +2563,13 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["capture_mode", "capture_filter"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el = this.autoElement(con.caps.attributes[name], con.data[name], con.attrEnabled(name));
+				var info = con.caps.attributes[name];
+				info.name = name;
+				var el = this.autoElement(info, con.data[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
 				packet_capturing.append($('<div class="form-group" />')
-					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].desc))
+					.append($('<label class="col-sm-6 control-label">').append(con.caps.attributes[name].label))
 					.append($('<div class="col-sm-6" />').append(el.getElement()))
 				);
 			}
@@ -3102,7 +3111,7 @@ var Element = Component.extend({
 	changeTemplate: function(tmplName,action_callback) {
 		this.action("change_template", {
 			params:{
-				tmplName: tmplName
+				template: tmplName
 				},
 			callback: action_callback
 			}
@@ -3817,7 +3826,7 @@ var VMElement = IconElement.extend({
 			
 			info.append('<img src="/img/info.png" />');
 			
-			if (this.data.host_info.site && (this.data.site == null)) {
+			if (this.data.host_info && this.data.host_info.site && this.data.site == null) {
 				info.append('<img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
 				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
 			}
@@ -3859,7 +3868,7 @@ var VMElement = IconElement.extend({
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.label || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
-			value: this.data.host_info.site || this.data.site || this.caps.attributes.site["default"],
+			value: (this.data.host_info && this.data.host_info.site) || this.data.site || this.caps.attributes.site["default"],
 			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({

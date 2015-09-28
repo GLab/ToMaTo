@@ -144,7 +144,6 @@ class ActionForm(RedirectAfterForm):
 	formaction_targetvalue = None
 
 	def __init__(self, *args, **kwargs):
-		print self.formaction_targetvalue
 		super(ActionForm, self).__init__(*args, **kwargs)
 		found_form_action = False
 		if self.formaction_key is None:

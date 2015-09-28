@@ -77,7 +77,7 @@ subdirectory of the data directory.
 """
 
 SERVER = [{
-    "TYPE": "https+xmlrpc",
+	"TYPE": "https+xmlrpc",
 	"PORT": 8000,
 	"SSL_OPTS": {
 		"cert_file" : "/etc/tomato/server.pem",
@@ -85,7 +85,7 @@ SERVER = [{
 		"client_certs": "/etc/tomato/client_certs",
 	}
 }, {
-    "TYPE": "ssl+jsonrpc",
+  "TYPE": "ssl+jsonrpc",
 	"PORT": 8003,
 	"SSL_OPTS": {
 		"cert_file" : "/etc/tomato/server.pem",
@@ -169,6 +169,8 @@ BITTORRENT_RESTART = 60 * 30 # 30 minutes
 """
 This field defines how often the bittorrent client should be restarted.
 """
+
+BITTORRENT_PORT_RANGE = (8010, 8020)
 
 RESOURCES = {
 	'port': xrange(6000, 7000),

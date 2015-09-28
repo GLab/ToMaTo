@@ -103,7 +103,7 @@ class Template(Entity, BaseDocument):
 		"id": IdAttribute(),
 		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
 		"name": Attribute(field=name, schema=schema.Identifier()),
-		"preference": Attribute(field=preference, schema=schema.Number(minValue=1)),
+		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
 		"label": Attribute(field=label, schema=schema.String()),
 		"description": Attribute(field=description, schema=schema.String()),
 		"restricted": Attribute(field=restricted, schema=schema.Bool()),

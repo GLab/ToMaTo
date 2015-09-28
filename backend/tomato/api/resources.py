@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import checkauth
-from ..lib.cache import cached
+from ..lib.cache import cached, invalidates
 
 def _getTemplate(id_):
 	res = Template.objects.get(id=id_)
@@ -64,6 +64,7 @@ def template_list(tech=None):
 	return [r.info() for r in res]
 
 @checkauth
+@invalidates(template_list)
 def template_create(tech, name, attrs=None):
 	"""
 	Creates a template of given tech and name, configuring it with the given attributes.
@@ -88,10 +89,10 @@ def template_create(tech, name, attrs=None):
 	attrs = dict(attrs)
 	attrs.update(name=name, tech=tech)
 	res = Template.create(attrs)
-	template_list.invalidate()
 	return res.info()
 
 @checkauth
+@invalidates(template_list)
 def template_modify(id, attrs):
 	"""
 	Modifies a template, configuring it with the given attributes.
@@ -118,10 +119,11 @@ def template_modify(id, attrs):
 	"""
 	res = _getTemplate(id)
 	res.modify(attrs)
-	template_list.invalidate()
 	return res.info()
 
+
 @checkauth
+@invalidates(template_list)
 def template_remove(id):
 	"""
 	Removes a template.
@@ -142,7 +144,6 @@ def template_remove(id):
 	"""
 	res = _getTemplate(id)
 	res.remove()
-	template_list.invalidate()
 	return {}
 
 @checkauth
@@ -189,7 +190,9 @@ def profile_list(tech=None):
 	res = Profile.objects(tech=tech) if tech else Profile.objects()
 	return [r.info() for r in res]
 
+
 @checkauth
+@invalidates(profile_list)
 def profile_create(tech, name, attrs=None):
 	"""
 	Creates a profile of given tech and name, configuring it with the given attributes.
@@ -214,10 +217,11 @@ def profile_create(tech, name, attrs=None):
 	attrs = dict(attrs)
 	attrs.update(name=name, tech=tech)
 	res = Profile.create(attrs)
-	profile_list.invalidate()
 	return res.info()
 
+
 @checkauth
+@invalidates(profile_list)
 def profile_modify(id, attrs):
 	"""
 	Modifies a profile, configuring it with the given attributes.
@@ -244,10 +248,11 @@ def profile_modify(id, attrs):
 	"""
 	res = _getProfile(id)
 	res.modify(attrs)
-	profile_list.invalidate()
 	return res.info()
 
+
 @checkauth
+@invalidates(profile_list)
 def profile_remove(id):
 	"""
 	Removes a profile.
@@ -268,8 +273,8 @@ def profile_remove(id):
 	"""
 	res = _getProfile(id)
 	res.remove()
-	profile_list.invalidate()
 	return {}
+
 
 @checkauth
 def profile_info(id):
@@ -294,6 +299,7 @@ def profile_info(id):
 	res = _getProfile(id)
 	return res.info()
 
+
 @cached(timeout=6*3600)
 def network_list():
 	"""
@@ -307,7 +313,9 @@ def network_list():
 	res = Network.objects()
 	return [r.info() for r in res]
 
+
 @checkauth
+@invalidates(network_list)
 def network_create(kind, attrs=None):
 	"""
 	Creates a network of given tech and name, configuring it with the given attributes.
@@ -328,10 +336,11 @@ def network_create(kind, attrs=None):
 	attrs = dict(attrs)
 	attrs.update(kind=kind)
 	res = Network.create(attrs)
-	network_list.invalidate()
 	return res.info()
 
+
 @checkauth
+@invalidates(network_list)
 def network_modify(id, attrs):
 	"""
 	Modifies a network, configuring it with the given attributes.
@@ -354,10 +363,11 @@ def network_modify(id, attrs):
 	"""
 	res = _getNetwork(id)
 	res.modify(attrs)
-	network_list.invalidate()
 	return res.info()
 
+
 @checkauth
+@invalidates(network_list)
 def network_remove(id):
 	"""
 	Removes a network.
@@ -374,8 +384,8 @@ def network_remove(id):
 	"""
 	res = _getNetwork(id)
 	res.remove()
-	network_list.invalidate()
 	return {}
+
 
 @checkauth
 def network_info(id): #@ReservedAssignment
@@ -395,6 +405,7 @@ def network_info(id): #@ReservedAssignment
 	"""
 	res = _getNetwork(id)
 	return res.info()
+
 
 @cached(timeout=6*3600)
 def network_instance_list(network=None, host=None):
@@ -416,7 +427,9 @@ def network_instance_list(network=None, host=None):
 		res = res.filter(hosT=_getHost(host))
 	return [r.info() for r in res]
 
+
 @checkauth
+@invalidates(network_instance_list)
 def network_instance_create(network, host, attrs=None):
 	"""
 	Creates a network_instance of given kind and host, configuring it with the given attributes.
@@ -441,10 +454,11 @@ def network_instance_create(network, host, attrs=None):
 	attrs = dict(attrs)
 	attrs.update(host=host, network=network)
 	res = NetworkInstance.create(attrs)
-	network_instance_list.invalidate()
 	return res.info()
 
+
 @checkauth
+@invalidates(network_instance_list)
 def network_instance_modify(id, attrs):
 	"""
 	Modifies a network_instance, configuring it with the given attributes.
@@ -471,10 +485,11 @@ def network_instance_modify(id, attrs):
 	"""
 	res = _getNetworkInstance(id)
 	res.modify(attrs)
-	network_instance_list.invalidate()
 	return res.info()
 
+
 @checkauth
+@invalidates(network_instance_list)
 def network_instance_remove(id):
 	"""
 	Removes a network_instance.
@@ -495,8 +510,8 @@ def network_instance_remove(id):
 	"""
 	res = _getNetworkInstance(id)
 	res.remove()
-	network_instance_list.invalidate()
 	return {}
+
 
 @checkauth
 def network_instance_info(id):

@@ -206,6 +206,13 @@ class TincVPN(ConnectingElement, Element):
 		self._parallelChildActions(self._childsByState[ST_PREPARED], "start")
 		self.setState(ST_STARTED)
 
+	def _nextName(self, baseName):
+		num = 0
+		names = [ch.name for ch in self.children]
+		while baseName + str(num) in names:
+			num += 1
+		return baseName + str(num)
+
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
 		"name": Attribute(field=name, label="Name"),
@@ -214,7 +221,7 @@ class TincVPN(ConnectingElement, Element):
 
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
-		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element._checkRemove, allowedStates=[ST_CREATED]),
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
 		"start": StatefulAction(action_start, allowedStates=[ST_PREPARED], stateChange=ST_STARTED),
 		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
 		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
@@ -245,7 +252,7 @@ class TincEndpoint(ConnectingElement, Element):
 		if self.parent:
 			self.mode = self.parent.mode
 		if not self.name:
-			self.name = self.TYPE + str(self.id)
+			self.name = self.parent._nextName("port")
 		self.save()
 	
 	@property
@@ -312,7 +319,7 @@ class TincEndpoint(ConnectingElement, Element):
 
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
-		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element._checkRemove, allowedStates=[ST_CREATED]),
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
 		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
 		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
 		"destroy": StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),

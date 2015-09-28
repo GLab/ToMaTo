@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import checkauth
-from ..lib.cache import cached #@UnresolvedImport
+from ..lib.cache import cached, invalidates #@UnresolvedImport
 
 def _getOrganization(name):
 	o = Organization.get(name)
@@ -41,12 +41,12 @@ def organization_list():
 	return [o.info() for o in Organization.objects.all()]
 
 @checkauth
+@invalidates(organization_list)
 def organization_create(name, label="", attrs={}):
 	"""
 	undocumented
 	"""
 	o = Organization.create(name, label, attrs)
-	organization_list.invalidate()
 	return o.info()
 
 def organization_info(name):
@@ -57,23 +57,23 @@ def organization_info(name):
 	return orga.info()
 
 @checkauth
+@invalidates(organization_list)
 def organization_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	orga = _getOrganization(name)
 	orga.modify(attrs)
-	organization_list.invalidate()
 	return orga.info()
 
 @checkauth
+@invalidates(organization_list)
 def organization_remove(name):
 	"""
 	undocumented
 	"""
 	orga = _getOrganization(name)
 	orga.remove()
-	organization_list.invalidate()
 
 @checkauth
 def organization_usage(name): #@ReservedAssignment
@@ -93,12 +93,12 @@ def site_list(organization=None):
 	return [s.info() for s in sites]
 
 @checkauth
+@invalidates(site_list)
 def site_create(name, organization, label="", attrs={}):
 	"""
 	undocumented
 	"""
 	s = Site.create(name, organization, label, attrs)
-	site_list.invalidate()
 	return s.info()
 
 def site_info(name):
@@ -109,23 +109,23 @@ def site_info(name):
 	return site.info()
 
 @checkauth
+@invalidates(site_list)
 def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	site = _getSite(name)
 	site.modify(attrs)
-	site_list.invalidate()
 	return site.info()
 
 @checkauth
+@invalidates(site_list)
 def site_remove(name):
 	"""
 	undocumented
 	"""
 	site = _getSite(name)
 	site.remove()
-	site_list.invalidate()
 
 @cached(timeout=300, maxSize=1000, autoupdate=True)
 def host_list(site=None, organization=None):
@@ -141,6 +141,7 @@ def host_list(site=None, organization=None):
 	return [h.info() for h in hosts]
 
 @checkauth
+@invalidates(host_list)
 def host_create(name, site, attrs=None):
 	"""
 	undocumented
@@ -148,7 +149,6 @@ def host_create(name, site, attrs=None):
 	if not attrs: attrs = {}
 	site = _getSite(site)
 	h = Host.create(name, site, attrs)
-	host_list.invalidate()
 	return h.info()
 
 @checkauth
@@ -160,23 +160,23 @@ def host_info(name):
 	return h.info()
 
 @checkauth
+@invalidates(host_list)
 def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	h = _getHost(name)
 	h.modify(attrs)
-	host_list.invalidate()
 	return h.info()
 
 @checkauth
+@invalidates(host_list)
 def host_remove(name):
 	"""
 	undocumented
 	"""
 	h = _getHost(name)
 	h.remove()
-	host_list.invalidate()
 
 @checkauth
 def host_users(name):

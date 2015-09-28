@@ -94,9 +94,9 @@ class Organization(BaseDocument):
 		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Organization name may not include a '/'")
 		logging.logMessage("create", category="site", name=name, label=label)
 		organization = Organization(name=name, label=label)
-		organization.save()
 		try:
-			organization.modify(attrs)
+			organization.init(attrs)
+			organization.save()
 		except:
 			organization.remove()
 			raise
