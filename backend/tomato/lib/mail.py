@@ -18,6 +18,4 @@ def send(to, subject, message, from_=None):
 		s.sendmail(from_, to, msg.as_string())
 		s.quit()
 	except:
-		import traceback
-		traceback.print_exc()
 		logging.logException()
