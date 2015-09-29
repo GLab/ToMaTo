@@ -1,5 +1,6 @@
 from ..db import *
 from ..lib import logging, error
+from .. import config
 import time
 from . import HostObject
 
@@ -124,7 +125,7 @@ class HostElement(HostObject):
 			if not self.topologyElement and not self.topologyConnection:
 				self.remove()
 				return
-			self.modify({"timeout": time.time() + 14 * 24 * 60 * 60})
+			self.modify({"timeout": time.time() + config.HOST_COMPONENT_TIMEOUT})
 		except error.UserError, err:
 			if err.code != error.UserError.UNSUPPORTED_ATTRIBUTE:
 				raise
