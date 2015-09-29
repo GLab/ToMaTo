@@ -152,9 +152,8 @@ urlpatterns = patterns('',
     (r'^dumpmanager/refresh$', 'tomato.dumpmanager.refresh'),
     (r'^dumpmanager/group/(?P<group_id>\w+)$', 'tomato.dumpmanager.group_info'),
     (r'^dumpmanager/group/(?P<group_id>\w+)/edit$', 'tomato.dumpmanager.group_edit'),
-    (r'^dumpmanager/group/(?P<group_id>\w+)/clear$', 'tomato.dumpmanager.group_clear'),
+    (r'^dumpmanager/group/(?P<group_id>\w+)/hide$', 'tomato.dumpmanager.group_hide'),
     (r'^dumpmanager/group/(?P<group_id>\w+)/remove$', 'tomato.dumpmanager.group_remove'),
-    (r'^dumpmanager/group/(?P<group_id>\w+)/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/remove$', 'tomato.dumpmanager.dump_remove'),
     (r'^dumpmanager/group/(?P<group_id>\w+)/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/export$', 'tomato.dumpmanager.dump_export'),
     (r'^dumpmanager/group/(?P<group_id>\w+)/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/export_data$', 'tomato.dumpmanager.dump_export_with_data')
 )

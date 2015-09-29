@@ -89,15 +89,13 @@ def group_info(api, request, group_id):
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup})
 
 @wrap_rpc
-def group_clear(api,request,group_id):	
+def group_hide(api,request,group_id):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			errordumps = api.errordump_list(group_id)
-			for dump in errordumps:
-				api.errordump_remove(dump['source'],dump['dump_id'])
-			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",  kwargs={"group_id": group_id}))
-	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_clear", kwargs={"group_id": group_id}))
+			api.errorgroup_hide(group_id)
+			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_hide", kwargs={"group_id": group_id}))
 	group_desc = api.errorgroup_info(group_id, include_dumps=False)['description']
 	return render(request, "form.html", {"heading": "Clear Errorgroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_desc+"' from all dumps?", 'form': form})
 
@@ -136,18 +134,6 @@ def group_edit(api, request, group_id):
 def dump_info(api, request, source, dump_id,data=False):
 	errordump = api.errordump_info(source, dump_id,data)
 	return render(request, "dumpmanager/info.html", {'errordump': errordump})
-
-@wrap_rpc
-def dump_remove(api, group_id, request, source, dump_id):
-	if request.method=='POST':
-		form = RemoveConfirmForm(api, request.POST)
-		if form.is_valid():
-			dump = api.errordump_info(group_id, source, dump_id, False)
-			api.errordump_remove(group_id, source, dump_id)
-			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",kwargs={'group_id':dump['group_id']}))
-	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.dump_remove", kwargs={"source": source, "dump_id":dump_id}))
-	return render(request, "form.html", {"heading": "Remove dump", "message_before": "Are you sure you want to remove the dump '"+dump_id+"' from '"+source+"'?", 'form': form})
-
 
 @wrap_rpc
 def dump_export(api, request, group_id, source, dump_id, data=False):
