@@ -3,7 +3,7 @@
 {% load url from future %}
 
 {% block title %}
-<title>Host {{host.name}} - G-Lab ToMaTo</title> 
+<title>Error Group {{errorgroup.description}} - G-Lab ToMaTo</title>
 {% endblock %}
 
 {% block header %}
@@ -41,7 +41,7 @@ function showDump(group_id, source, dump_id, include_data) {
   <button type="submit" formaction="{%url "errorgroup_list" %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Errorgroups</button>
 </form>
 
-<h1>Errorgroup</h1><h2>{{errorgroup.description}}</h2>
+<h1>Error Group</h1><h2>{{errorgroup.description}}</h2>
 
 <div class="skip-sm"></div>
 
@@ -51,7 +51,6 @@ function showDump(group_id, source, dump_id, include_data) {
 <table class="table" id="content">
 	<tr>
 		<th>Source</th>
-		<th>ID</th>
 		<th>Software version</th>
 		<th>Type</th>
 		<th>Description</th>	
@@ -67,7 +66,6 @@ function showDump(group_id, source, dump_id, include_data) {
 				{{errordump.source}}
 			{% endif %}
 			</td>
-		<td>{{errordump.dump_id}}</td>
 		<td>{{errordump.software_version.version}}</td>
 		<td>{{errordump.type}}</td>
 		<td style="white-space:normal;">
@@ -83,22 +81,23 @@ function showDump(group_id, source, dump_id, include_data) {
         <td>{{errordump.timestamp|todate}}</td>
 		<td>
 			<form style="margin:0px;padding:0px;" method="post">
-			<button type="button" class="btn btn-info" onclick="showDump('{{errorgroup.group_id}}', '{{errordump.source}}','{{errordump.dump_id}}',true); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span>&nbsp;</button>
-            &nbsp;
-	   		<button type="submit" formaction="{%url "dumpmanager.dump_remove" errorgroup.group_id errordump.source errordump.dump_id %}" class="btn btn-danger">&nbsp;<span class="glyphicon glyphicon-trash"></span>&nbsp;</button>
+				<button type="button" class="btn btn-info" onclick="showDump('{{errorgroup.group_id}}', '{{errordump.source}}','{{errordump.dump_id}}',true); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span>&nbsp;</button>
 			</form>
 		</td>
 	</tr>
 {% endfor %}
 
 </table>
+<big><b>{{errorgroup.count}}</b></big> instances of this error have been recorded.
+{% else %}
+This group is empty.
 {% endif %}
 <div class="skip-sm"></div>
 
 {% if request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id %}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit errorgroup</button>
-  <button type="submit" formaction="{%url "dumpmanager.group_clear" errorgroup.group_id %}" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> clear errorgroup</button>
+  <button type="submit" formaction="{%url "dumpmanager.group_hide" errorgroup.group_id %}" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> clear errorgroup</button>
   <button type="submit" formaction="{%url "dumpmanager.group_remove" errorgroup.group_id %}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove errorgroup</button>
 </form>
 {%endif%}

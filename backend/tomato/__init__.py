@@ -58,7 +58,7 @@ import threading
 _currentUser = threading.local()
 
 def currentUser():
-	return _currentUser.user if hasattr(_currentUser, "user") else None
+	return _currentUser.user if hasattr(_currentUser, "user") else None  # fixme
 	
 def setCurrentUser(user):
 	_currentUser.user = user

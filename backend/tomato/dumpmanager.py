@@ -6,6 +6,7 @@ import host
 from . import scheduler, config, currentUser
 from .lib.error import InternalError, UserError, Error  # @UnresolvedImport
 
+from auth import User
 
 # Zero-th part: database stuff
 class ErrorDump(EmbeddedDocument):
@@ -67,6 +68,8 @@ class ErrorGroup(BaseDocument):
 	description = StringField(required=True)
 	removedDumps = IntField(default=0, db_field='removed_dumps')
 	dumps = ListField(EmbeddedDocumentField(ErrorDump))
+	hidden = BooleanField(default=False)
+	users_favorite = ListField(ReferenceField(User))
 	meta = {
 		'collection': 'error_group',
 		'ordering': ['groupId'],
@@ -74,6 +77,16 @@ class ErrorGroup(BaseDocument):
 			'groupId'
 		]
 	}
+
+	def add_favorite_user(self, user_obj):
+		if user_obj not in self.users_favorite:
+			self.users_favorite.append(user_obj)
+			self.save()
+
+	def remove_favorite_user(self, user_obj):
+		if user_obj in self.users_favorite:
+			self.users_favorite.remove(user_obj)
+			self.save()
 
 	def update_description(self, description):
 		self.description = description
@@ -112,6 +125,24 @@ class ErrorGroup(BaseDocument):
 				if not dump[val] in res['dump_contents'][val]:
 					res['dump_contents'][val].append(getattr(dump, val))
 		return res
+
+	def hide(self):
+		self.hidden = True
+		self.save()
+
+	def insert_dump(self, dump, source):
+		dump_obj = ErrorDump(
+			source=source.dump_source_name(),
+			dumpId=dump['dump_id'],
+			timestamp=dump['timestamp'],
+			description=dump['description'],
+			type=dump['type'],
+			softwareVersion=dump['software_version']
+		)
+		self.hidden = False
+		self.dumps.append(dump_obj)
+		self.save()
+		return dump_obj
 
 	def remove(self):
 		self.delete()
@@ -153,17 +184,7 @@ def remove_group(group_id):
 
 
 def create_dump(dump, source, group_obj):
-	dump_obj = ErrorDump(
-		source=source.dump_source_name(),
-		dumpId=dump['dump_id'],
-		timestamp=dump['timestamp'],
-		description=dump['description'],
-		type=dump['type'],
-		softwareVersion=dump['software_version']
-	)
-	group_obj.dumps.append(dump_obj)
-	group_obj.save()
-	return dump_obj
+	return group_obj.insert_dump(dump, source)
 
 
 # First part: fetching dumps from all the sources.
@@ -351,8 +372,10 @@ def api_errorgroup_list(show_empty=False):
 	with lock_db:
 		res = []
 		for grp in getAll_group():
-			if show_empty or grp.dumps:
-				res.append(grp.info())
+			if show_empty or (grp.dumps and (not grp.hidden)):
+				info = grp.info()
+				info['user_favorite'] = (currentUser() in grp.users_favorite)
+				res.append(info)
 		return res
 
 
@@ -424,7 +447,20 @@ def api_errordump_list(group_id, source=None, data_available=None):
 				res.append(di)
 		return res
 
+def api_errorgroup_hide(group_id):
+	checkPermissions()
+	with lock_db:
+		group = get_group(group_id)
+		group.hide()
 
 def api_force_refresh():
 	checkPermissions()
 	return update_all(async=False)
+
+def api_errorgroup_favorite(group_id, is_favorite):
+	group = get_group(group_id)
+	user = currentUser()
+	if is_favorite:
+		group.add_favorite_user(user)
+	else:
+		group.remove_favorite_user(user)
