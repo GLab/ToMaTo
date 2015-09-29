@@ -42,8 +42,9 @@ cd /root
 rm /etc/sysconfig/tcedir; ln -s /tmp /etc/sysconfig/tcedir
 silent expect_ret 1 tce-load -wi compiletc perl5 autoconf automake openssl-1.0.1-dev linux-kernel-sources-env libtool libtool-dev python squashfs-tools
 silent expect_ret 6 linux-kernel-sources-env.sh
-export CFLAGS="-march=i486 -mtune=i686 -O2 -pipe"
-export CXXFLAGS="-march=i486 -mtune=i686 -O2 -pipe"
+export CFLAGS="-march=i486 -mtune=i686 -Os -pipe"
+export CXXFLAGS="-march=i486 -mtune=i686 -Os -pipe"
+export CPPFLAGS="-march=i486 -mtune=i686 -Os -pipe"
 export LDFLAGS="-Wl,-O1"
 
 echo "Building openvswitch..."
@@ -159,9 +160,7 @@ of() {
   ovs-ofctl "$CMD" br0 "$@"
 }
 END
-echo "KEYMAP=us" > /tmp/keymap
-sudo mv /tmp/keymap /etc/sysconfig/keymap
-echo "/etc/sysconfig/keymap" >> /opt/.filetool.lst
+sed -e 's/kmap=qwertz\/de-latin1-nodeadkeys/kmap=qwerty\/us/' -i /mnt/sda1/tce/boot/extlinux/extlinux.conf
 echo "/root/.profile" >> /opt/.filetool.lst
 silent expect_ret 1 filetool.sh -b
 rm /etc/sysconfig/tcedir; ln -s /mnt/sda1/tce /etc/sysconfig/tcedir
@@ -171,4 +170,4 @@ cp /tmp/optional/gcc_libs.tcz* /tmp/optional/openssl-1.0.1.tcz* /mnt/sda1/tce/op
 echo openvswitch >> /mnt/sda1/tce/onboot.lst
 
 echo "done."
-sudo poweroff
+#sudo poweroff
