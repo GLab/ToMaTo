@@ -150,8 +150,8 @@ def remove_group(group_id):
 	return False
 
 
-def create_dump(dump, source):
-	return ErrorDump(
+def create_dump(dump, source, group_obj):
+	dump_obj = ErrorDump(
 		source=source.dump_source_name(),
 		dumpId=dump['dump_id'],
 		timestamp=dump['timestamp'],
@@ -159,6 +159,9 @@ def create_dump(dump, source):
 		type=dump['type'],
 		softwareVersion=dump['software_version']
 	)
+	group_obj.dumps.append(dump_obj)
+	group_obj.save()
+	return dump_obj
 
 
 # First part: fetching dumps from all the sources.
@@ -301,10 +304,7 @@ def insert_dump(dump, source):
 		for d in group.dumps:
 			if d.dumpId == dump['dump_id'] and d.source == source_name:
 				return
-		dump_db = create_dump(dump, source)
-
-		# insert the dump.
-	dump_db = create_dump(dump, source)
+		dump_db = create_dump(dump, source, group)
 
 	# if needed, load data
 	if must_fetch_data:
