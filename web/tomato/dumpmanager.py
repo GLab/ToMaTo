@@ -138,29 +138,29 @@ def dump_info(api, request, source, dump_id,data=False):
 	return render(request, "dumpmanager/info.html", {'errordump': errordump})
 
 @wrap_rpc
-def dump_remove(api, request, source, dump_id):
+def dump_remove(api, group_id, request, source, dump_id):
 	if request.method=='POST':
 		form = RemoveConfirmForm(api, request.POST)
 		if form.is_valid():
-			dump = api.errordump_info(source,dump_id,False)
-			api.errordump_remove(source,dump_id)
+			dump = api.errordump_info(group_id, source, dump_id, False)
+			api.errordump_remove(group_id, source, dump_id)
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",kwargs={'group_id':dump['group_id']}))
 	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.dump_remove", kwargs={"source": source, "dump_id":dump_id}))
 	return render(request, "form.html", {"heading": "Remove dump", "message_before": "Are you sure you want to remove the dump '"+dump_id+"' from '"+source+"'?", 'form': form})
 
 
 @wrap_rpc
-def dump_export(api, request, source, dump_id,data=False):
+def dump_export(api, request, group_id, source, dump_id, data=False):
 	if not api.user:
 		raise AuthError()
-	dump = api.errordump_info(source,dump_id,data)
+	dump = api.errordump_info(group_id, source, dump_id,data)
 	filename = re.sub('[^\w\-_\. :]', '_', source.lower() + "__" + dump_id ) + ".errordump.json"
 	response = HttpResponse(json.orig.dumps(dump, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response
 
-def dump_export_with_data(request, source, dump_id):
-	return dump_export(request, source, dump_id, True)
+def dump_export_with_data(request, group_id, source, dump_id):
+	return dump_export(request, group_id, source, dump_id, True)
 
 @wrap_rpc
 def refresh(api,request):

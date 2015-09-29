@@ -42,7 +42,7 @@ def errordump_info(group_id, source, dump_id, include_data=False):
       If include_data is True, it will contain a data field, otherwise a data_available indicator.
     """
     from ..dumpmanager import api_errordump_info
-    return api_errordump_info(source, dump_id, include_data)
+    return api_errordump_info(group_id, source, dump_id, include_data)
 
 def errordump_list(group_id, source=None, data_available=None):
     """

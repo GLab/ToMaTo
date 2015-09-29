@@ -39,6 +39,7 @@ class ErrorDump(EmbeddedDocument):
 	def fetch_data_from_source(self):
 		d = self.getSource().dump_fetch_with_data(self.dumpId, True)
 		self.modify_data(d['data'], True)
+		get_group(d['group_id']).save()
 
 	def info(self, include_data=False):
 		dump = {
@@ -82,7 +83,8 @@ class ErrorGroup(BaseDocument):
 		oldLen = len(self.dumps)
 		if oldLen <= 10:
 			return
-		self.dumps = self.dumps[5:-5]
+		#            first 5          last 5
+		self.dumps = self.dumps[:5] + self.dumps[-5:]
 		self.removedDumps += oldLen - len(self.dumps)
 		self.save()
 
@@ -150,8 +152,8 @@ def remove_group(group_id):
 	return False
 
 
-def create_dump(dump, source):
-	return ErrorDump(
+def create_dump(dump, source, group_obj):
+	dump_obj = ErrorDump(
 		source=source.dump_source_name(),
 		dumpId=dump['dump_id'],
 		timestamp=dump['timestamp'],
@@ -159,6 +161,9 @@ def create_dump(dump, source):
 		type=dump['type'],
 		softwareVersion=dump['software_version']
 	)
+	group_obj.dumps.append(dump_obj)
+	group_obj.save()
+	return dump_obj
 
 
 # First part: fetching dumps from all the sources.
@@ -301,10 +306,7 @@ def insert_dump(dump, source):
 		for d in group.dumps:
 			if d.dumpId == dump['dump_id'] and d.source == source_name:
 				return
-		dump_db = create_dump(dump, source)
-
-		# insert the dump.
-	dump_db = create_dump(dump, source)
+		dump_db = create_dump(dump, source, group)
 
 	# if needed, load data
 	if must_fetch_data:

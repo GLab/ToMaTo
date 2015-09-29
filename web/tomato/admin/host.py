@@ -55,17 +55,8 @@ class HostForm(AddEditForm):
 	create_dict_keys = ['rpcurl', 'address', 'enabled']
 	redirect_after = "tomato.admin.host.info"
 
-	def __init__(self, site_namelist, publickey=None, *args, **kwargs):
+	def __init__(self, site_namelist, *args, **kwargs):
 		super(HostForm, self).__init__(*args, **kwargs)
-		if publickey is not None:
-			self.message_after = \
-				'<div>\
-					<div class="col-lg-4 col-sm-4"></div>\
-					<div class="col-lg-6 col-sm-8">\
-						<label class="control-label">Backend Public Key</label>\
-						<pre>%s</pre>\
-					</div>\
-				</div>' % publickey
 		self.fields["site"].widget = forms.widgets.Select(choices=site_namelist)
 		self.helper.layout = Layout(
 			'name',
@@ -83,8 +74,26 @@ class AddHostForm(HostForm):
 	formaction = "tomato.admin.host.add"
 	formaction_haskeys = False
 
-	def __init__(self, site=None, *args, **kwargs):
+	def __init__(self, site=None, publickey=None, *args, **kwargs):
 		super(AddHostForm, self).__init__(*args, **kwargs)
+		if publickey is not None:
+			self.message_after = \
+				'<div class="row">\
+					<div class="panel-group col-sm-10 col-sm-offset-2 col-lg-8 col-lg-offset-2">\
+						<div class="panel panel-default">\
+							<div class="panel-heading">\
+								<h4 class="panel-title">\
+									<a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">\
+										<span class="glyphicon glyphicon-lock"></span> Backend Public Key <small>(click to expand)</small>\
+									</a>\
+								</h4>\
+							</div>\
+							<div id="collapseOne" class="panel-collapse collapse" style="padding:0.2cm;">\
+								<pre style="border: none; background: transparent;">%s</pre>\
+							</div>\
+						</div>\
+					</div>\
+				</div>' % publickey
 		if site is not None:
 			self.fields['organization'].initial = site
 
