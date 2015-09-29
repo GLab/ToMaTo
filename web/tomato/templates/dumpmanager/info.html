@@ -16,9 +16,9 @@
 <script language="JavaScript" type="text/javascript" src="/js/pretty-json-popup.js"></script>
 
 <script language="JavaScript" type="text/javascript">
-function showDump(source, dump_id, include_data) {
-	var url = include_data ? "{%url 'dumpmanager.dump_export_with_data' '_SOURCE_' '23542.123456' %}" : "{%url 'dumpmanager.dump_export' '_SOURCE_' '23542.123456' %}";
-	url = url.replace("_SOURCE_",source).replace("23542.123456", dump_id);
+function showDump(group_id, source, dump_id, include_data) {
+	var url = include_data ? "{%url 'dumpmanager.dump_export_with_data' '__GROUP__' '_SOURCE_' '23542.123456' %}" : "{%url 'dumpmanager.dump_export' '__GROUP__' '_SOURCE_' '23542.123456' %}";
+	url = url.replace("__GROUP__", group_id).replace("_SOURCE_",source).replace("23542.123456", dump_id);
 	var xmlhttp=new XMLHttpRequest();
 	xmlhttp.open("GET",url,false);
 	xmlhttp.send();
@@ -83,9 +83,9 @@ function showDump(source, dump_id, include_data) {
         <td>{{errordump.timestamp|todate}}</td>
 		<td>
 			<form style="margin:0px;padding:0px;" method="post">
-			<button type="button" class="btn btn-info" onclick="showDump('{{errordump.source}}','{{errordump.dump_id}}',true); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span>&nbsp;</button>
+			<button type="button" class="btn btn-info" onclick="showDump('{{errorgroup.group_id}}', '{{errordump.source}}','{{errordump.dump_id}}',true); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span>&nbsp;</button>
             &nbsp;
-	   		<button type="submit" formaction="{%url "dumpmanager.dump_remove" errordump.source errordump.dump_id %}" class="btn btn-danger">&nbsp;<span class="glyphicon glyphicon-trash"></span>&nbsp;</button>
+	   		<button type="submit" formaction="{%url "dumpmanager.dump_remove" errorgroup.group_id errordump.source errordump.dump_id %}" class="btn btn-danger">&nbsp;<span class="glyphicon glyphicon-trash"></span>&nbsp;</button>
 			</form>
 		</td>
 	</tr>

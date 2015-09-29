@@ -39,6 +39,7 @@ class ErrorDump(EmbeddedDocument):
 	def fetch_data_from_source(self):
 		d = self.getSource().dump_fetch_with_data(self.dumpId, True)
 		self.modify_data(d['data'], True)
+		get_group(d['group_id']).save()
 
 	def info(self, include_data=False):
 		dump = {
@@ -82,7 +83,8 @@ class ErrorGroup(BaseDocument):
 		oldLen = len(self.dumps)
 		if oldLen <= 10:
 			return
-		self.dumps = self.dumps[5:-5]
+		#            first 5          last 5
+		self.dumps = self.dumps[:5] + self.dumps[-5:]
 		self.removedDumps += oldLen - len(self.dumps)
 		self.save()
 
