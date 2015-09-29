@@ -196,7 +196,7 @@ class RPCRequest:
 		try:
 			data = json.loads(json_data)
 		except Exception, exc:
-			raise RPCError(json, RPCError.Category.JSON, "invalid_json",
+			raise RPCError(json_data, RPCError.Category.JSON, "invalid_json",
 						   "Request was invalid JSON: %s" % exc)
 		return cls.decode(data, json_data)
 
@@ -267,7 +267,7 @@ class RPCResponse:
 		try:
 			data = json.loads(json_data)
 		except Exception, exc:
-			raise RPCError(json, RPCError.Category.JSON, "invalid_json",
+			raise RPCError(json_data, RPCError.Category.JSON, "invalid_json",
 						   "Response was invalid JSON: %s" % exc)
 		return cls.decode(data, json_data)
 
