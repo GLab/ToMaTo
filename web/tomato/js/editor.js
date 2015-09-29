@@ -420,7 +420,8 @@ var TemplateElement = FormElement.extend({
 var Window = Class.extend({
 	init: function(options) {
 		this.options = options;
-		this.options.position = options.position || { my: "center-"+options.width/4+" center", at: "center top", of: "#workspace" };
+		this.options.position = options.position || { my: "center center", at: "center center", of: "#editor" };
+		var t = this;
 		this.div = $('<div style="overflow:visible;"/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
@@ -438,12 +439,12 @@ var Window = Class.extend({
 			buttons: options.buttons || {},
 			closeOnEscape: false,
 			open: function(event, ui) { 
-				if (options.closable === false) $(".ui-dialog-titlebar-close").hide(); 
+				if (options.closable === false) $(".ui-dialog-titlebar-close").hide();
+				t.setPosition(options.position);
 			}
 		});
 		if (options.closeOnEscape != undefined)
 			this.div.closeOnEscape = options.closeOnEscape;
-		this.setPosition(options.position);
 		if (options.content) this.div.append($('<div style="min-height: auto;" />').append(options.content));
 		if (options.autoShow) this.show();
 		
@@ -617,7 +618,7 @@ var ajax = function(options) {
 
 var TutorialWindow = Window.extend({
 	init: function(options) {
-			this.pos = {my: "right bottom", at: "right-50 bottom-50", of: window};
+			this.pos = {my: "right bottom", at: "right bottom", of: "#editor"};
 			options.position = this.pos;
 			this._super(options);
 			if (options.hideCloseButton)
@@ -680,7 +681,7 @@ var TutorialWindow = Window.extend({
 		}
 		this.updateText();
 		this.updateStatusToBackend();
-		this.setPosition(this.pos);
+		//this.setPosition(this.pos);
 	},
 	tutorialGoForth: function() {
 		if (this.tutorialState.step + 1 < this.tutorialSteps.length) {
@@ -693,7 +694,7 @@ var TutorialWindow = Window.extend({
 		}
 		this.updateText();
 		this.updateStatusToBackend();
-		this.setPosition(this.pos);
+		//this.setPosition(this.pos);
 	},
 	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.tutorialVisible) { //don't waste cpu time if not needed... trigger function may be complex.
@@ -3110,7 +3111,7 @@ var Element = Component.extend({
 	changeTemplate: function(tmplName,action_callback) {
 		this.action("change_template", {
 			params:{
-				tmplName: tmplName
+				template: tmplName
 				},
 			callback: action_callback
 			}

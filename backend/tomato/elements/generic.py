@@ -31,11 +31,11 @@ ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
 class VMElement(Element):
-	element = ReferenceField(HostElement)
-	site = ReferenceField(Site)
+	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
+	site = ReferenceField(Site, reverse_delete_rule=NULLIFY)
 	name = StringField()
-	profile = ReferenceField(Profile)
-	template = ReferenceField(Template)
+	profile = ReferenceField(Profile, reverse_delete_rule=DENY)
+	template = ReferenceField(Template, reverse_delete_rule=NULLIFY)
 	rextfvLastStarted = FloatField(default=0, db_field='rextfv_last_started')
 	nextSync = FloatField(default=0, db_field='next_sync')
 	lastSync = FloatField(default=0, db_field='last_sync')
@@ -158,8 +158,8 @@ class VMElement(Element):
 				self.element = None
 			self.save()
 			
-	def action_change_template(self, tmplName):
-		self.modify_template(tmplName)
+	def action_change_template(self, template):
+		self.modify_template(template)
 
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
@@ -238,7 +238,7 @@ class VMInterface(Element):
 	:type parent: VMElement
 	"""
 	parent = Element.parent
-	element = ReferenceField(HostElement)
+	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
 	name = StringField(regex="^eth[0-9]+$")
 
 	CAP_CHILDREN = {}
