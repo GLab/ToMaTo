@@ -134,3 +134,14 @@ def errorgroup_hide(group_id):
 		"""
 		from ..dumpmanager import api_errorgroup_hide
 		api_errorgroup_hide(group_id)
+
+def errorgroup_favorite(group_id, is_favorite):
+		"""
+		Add or remove the group to favorites of the current user
+
+		:param group_id: group to add/remove
+		:param is_favorite: True to add, False to remove.
+		:return: None
+		"""
+		from ..dumpmanager import api_errorgroup_favorite
+		api_errorgroup_favorite(group_id, is_favorite)

@@ -6,6 +6,7 @@ import host
 from . import scheduler, config, currentUser
 from .lib.error import InternalError, UserError, Error  # @UnresolvedImport
 
+from auth import User
 
 # Zero-th part: database stuff
 class ErrorDump(EmbeddedDocument):
@@ -68,6 +69,7 @@ class ErrorGroup(BaseDocument):
 	removedDumps = IntField(default=0, db_field='removed_dumps')
 	dumps = ListField(EmbeddedDocumentField(ErrorDump))
 	hidden = BooleanField(default=False)
+	users_favorite = ListField(ReferenceField(User))
 	meta = {
 		'collection': 'error_group',
 		'ordering': ['groupId'],
@@ -75,6 +77,16 @@ class ErrorGroup(BaseDocument):
 			'groupId'
 		]
 	}
+
+	def add_favorite_user(self, user_obj):
+		if user_obj not in self.users_favorite:
+			self.users_favorite.append(user_obj)
+			self.save()
+
+	def remove_favorite_user(self, user_obj):
+		if user_obj in self.users_favorite:
+			self.users_favorite.remove(user_obj)
+			self.save()
 
 	def update_description(self, description):
 		self.description = description
@@ -361,7 +373,9 @@ def api_errorgroup_list(show_empty=False):
 		res = []
 		for grp in getAll_group():
 			if show_empty or (grp.dumps and (not grp.hidden)):
-				res.append(grp.info())
+				info = grp.info()
+				info['user_favorite'] = (currentUser() in grp.users_favorite)
+				res.append(info)
 		return res
 
 
@@ -442,3 +456,11 @@ def api_errorgroup_hide(group_id):
 def api_force_refresh():
 	checkPermissions()
 	return update_all(async=False)
+
+def api_errorgroup_favorite(group_id, is_favorite):
+	group = get_group(group_id)
+	user = currentUser()
+	if is_favorite:
+		group.add_favorite_user(user)
+	else:
+		group.remove_favorite_user(user)

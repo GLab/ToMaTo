@@ -75,8 +75,24 @@ def group_list(api, request, site=None, organization=None):
 				e['frontend_mod']['sources'].append(", ")
 			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
 
-	errorgroups.sort(key=lambda e: e['last_timestamp'], reverse=True)
-	return render(request, "dumpmanager/list.html", {'errorgroup_list': errorgroups})
+	favorite_groups = []
+	other_groups = []
+	for group in errorgroups:
+		if group['user_favorite']:
+			favorite_groups.append(group)
+		else:
+			other_groups.append(group)
+
+	favorite_groups.sort(key=lambda e: e['last_timestamp'], reverse=True)
+	other_groups.sort(key=lambda e: e['last_timestamp'], reverse=True)
+	lists = [(favorite_groups, True), (other_groups, False)]
+
+	if favorite_groups or other_groups:
+		is_empty = False
+	else:
+		is_empty = True
+
+	return render(request, "dumpmanager/list.html", {'errorgroup_lists': lists, 'is_empty': is_empty})
 
 @wrap_rpc
 def group_info(api, request, group_id):
@@ -151,4 +167,14 @@ def dump_export_with_data(request, group_id, source, dump_id):
 @wrap_rpc
 def refresh(api,request):
 	api.errordumps_force_refresh()
+	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+
+@wrap_rpc
+def errorgroup_favorite(api, request, group_id):
+	api.errorgroup_favorite(group_id, True)
+	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+
+@wrap_rpc
+def errorgroup_unfavorite(api, request, group_id):
+	api.errorgroup_favorite(group_id, False)
 	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
