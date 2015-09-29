@@ -168,13 +168,22 @@ class User(BaseDocument):
 		return Topology.objects(permissions__user=self)
 
 	@classmethod	
-	def create(cls, name, organization, **kwargs):
+	def create(cls, name, organization, password, flags, origin, **kwargs):
 		from ..host.organization import Organization
+		from ..accounting import Quota, UsageStatistics
 		orga = Organization.get(organization)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": organization})
-		user = User(name=name, organization=orga)
-		user.attrs = kwargs
+		user = User(name=name, organization=orga, flags=flags, origin=origin)
+		setCurrentUser(user)
+		user.modify(kwargs, save=False)
+		user.storePassword(password)
 		user.lastLogin = time.time()
+		user.quota = Quota()
+		user.quota.init(**config.DEFAULT_QUOTA)
+		stats = UsageStatistics()
+		stats.init()
+		user.totalUsage = stats
+		user.save()
 		return user
 
 	def checkPassword(self, password):
@@ -185,12 +194,11 @@ class User(BaseDocument):
 		salt = "$1$"
 		salt += ''.join([ random.choice(saltchars) for _ in range(8) ])
 		self.password = crypt.crypt(password, salt)
-		self.password_time = time.time()
-		self.save()
-	
+		self.passwordTime = time.time()
+
 	def forgetPassword(self):
 		self.password = None
-		self.password_time = None
+		self.passwordTime = None
 		self.save()		
 		
 	def updateFrom(self, other):
@@ -266,7 +274,7 @@ class User(BaseDocument):
 				return True
 		return False
 
-	def modify(self, attrs):
+	def modify(self, attrs, save=True):
 		logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
 		for key, value in attrs.items():
 			UserError.check(self.can_modify(key, value), code=UserError.DENIED,
@@ -278,7 +286,8 @@ class User(BaseDocument):
 				getattr(self, "modify_%s" % key)(value)
 			else:
 				setattr(self, key, value)
-		self.save()
+		if save:
+			self.save()
 	
 	def info(self, includeInfos):
 		info = {
