@@ -531,10 +531,9 @@ class Host(DumpSource, Entity, BaseDocument):
 			if self.problemAge < time.time() - 6 * 60 * 60:
 				# persistent problem older than 6h
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
+					import time, datetime
 					self.problemMailTime = time.time()
-					from django.template.defaultfilters import timesince
-
-					duration = timesince(datetime.datetime.fromtimestamp(self.problemAge))
+					duration = datetime.timedelta(hours=int(time.time()-self.problemAge)/3600)
 					mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 												   or user.hasFlag(
 						Flags.OrgaHostContact) and user.organization == self.site.organization,
