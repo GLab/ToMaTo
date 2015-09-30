@@ -4048,7 +4048,7 @@ var Template = Class.extend({
 			}
 			
 			if (this.creation_date) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+this.creation_date+'</td></tr>'));
+				desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white; white-space:nowrap !important;">'+new Date(1000*this.creation_date).toDateString()+'</td></tr>'));
 			}
 			
 		} else {
