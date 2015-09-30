@@ -34,7 +34,7 @@ def handleError(error, function, args, kwargs):
 		else:
 			error = InternalError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
 	logging.logException()
-	dump.dumpException()
+	error.dump()
 	return error
 
 def afterCall(*args, **kwargs):

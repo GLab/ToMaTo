@@ -75,8 +75,24 @@ def group_list(api, request, site=None, organization=None):
 				e['frontend_mod']['sources'].append(", ")
 			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
 
-	errorgroups.sort(key=lambda e: e['last_timestamp'], reverse=True)
-	return render(request, "dumpmanager/list.html", {'errorgroup_list': errorgroups})
+	favorite_groups = []
+	other_groups = []
+	for group in errorgroups:
+		if group['user_favorite']:
+			favorite_groups.append(group)
+		else:
+			other_groups.append(group)
+
+	favorite_groups.sort(key=lambda e: e['last_timestamp'], reverse=True)
+	other_groups.sort(key=lambda e: e['last_timestamp'], reverse=True)
+	lists = [(favorite_groups, True), (other_groups, False)]
+
+	if favorite_groups or other_groups:
+		is_empty = False
+	else:
+		is_empty = True
+
+	return render(request, "dumpmanager/list.html", {'errorgroup_lists': lists, 'is_empty': is_empty})
 
 @wrap_rpc
 def group_info(api, request, group_id):
@@ -89,15 +105,13 @@ def group_info(api, request, group_id):
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup})
 
 @wrap_rpc
-def group_clear(api,request,group_id):	
+def group_hide(api,request,group_id):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			errordumps = api.errordump_list(group_id)
-			for dump in errordumps:
-				api.errordump_remove(dump['source'],dump['dump_id'])
-			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",  kwargs={"group_id": group_id}))
-	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_clear", kwargs={"group_id": group_id}))
+			api.errorgroup_hide(group_id)
+			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_hide", kwargs={"group_id": group_id}))
 	group_desc = api.errorgroup_info(group_id, include_dumps=False)['description']
 	return render(request, "form.html", {"heading": "Clear Errorgroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_desc+"' from all dumps?", 'form': form})
 
@@ -138,31 +152,29 @@ def dump_info(api, request, source, dump_id,data=False):
 	return render(request, "dumpmanager/info.html", {'errordump': errordump})
 
 @wrap_rpc
-def dump_remove(api, request, source, dump_id):
-	if request.method=='POST':
-		form = RemoveConfirmForm(api, request.POST)
-		if form.is_valid():
-			dump = api.errordump_info(source,dump_id,False)
-			api.errordump_remove(source,dump_id)
-			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",kwargs={'group_id':dump['group_id']}))
-	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.dump_remove", kwargs={"source": source, "dump_id":dump_id}))
-	return render(request, "form.html", {"heading": "Remove dump", "message_before": "Are you sure you want to remove the dump '"+dump_id+"' from '"+source+"'?", 'form': form})
-
-
-@wrap_rpc
-def dump_export(api, request, source, dump_id,data=False):
+def dump_export(api, request, group_id, source, dump_id, data=False):
 	if not api.user:
 		raise AuthError()
-	dump = api.errordump_info(source,dump_id,data)
+	dump = api.errordump_info(group_id, source, dump_id,data)
 	filename = re.sub('[^\w\-_\. :]', '_', source.lower() + "__" + dump_id ) + ".errordump.json"
 	response = HttpResponse(json.orig.dumps(dump, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response
 
-def dump_export_with_data(request, source, dump_id):
-	return dump_export(request, source, dump_id, True)
+def dump_export_with_data(request, group_id, source, dump_id):
+	return dump_export(request, group_id, source, dump_id, True)
 
 @wrap_rpc
 def refresh(api,request):
 	api.errordumps_force_refresh()
+	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+
+@wrap_rpc
+def errorgroup_favorite(api, request, group_id):
+	api.errorgroup_favorite(group_id, True)
+	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+
+@wrap_rpc
+def errorgroup_unfavorite(api, request, group_id):
+	api.errorgroup_favorite(group_id, False)
 	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))

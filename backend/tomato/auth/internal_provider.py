@@ -44,12 +44,7 @@ class Provider(AuthProvider):
 		pass # password in user record will be changed by auth
 	def register(self, username, password, organization, attrs):
 		UserError.check(self.getUsers(name=username).count()==0, code=UserError.ALREADY_EXISTS, message="Username already exists")
-		user = User.create(name=username, organization=organization, flags=self.default_flags)
-		user.save()
-		setCurrentUser(user)
-		user.storePassword(password)
-		user.modify(attrs)
-		user.save()
+		user = User.create(name=username, organization=organization, flags=self.default_flags, password=password, origin=self.name, **attrs)
 		mailFilteredUsers(lambda u: u.hasFlag(Flags.GlobalAdminContact)
 					or u.hasFlag(Flags.OrgaAdminContact) and user.organization == u.organization,
 		            NEW_USER_ADMIN_INFORM_MESSAGE['subject'], NEW_USER_ADMIN_INFORM_MESSAGE['body'] % username)

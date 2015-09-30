@@ -74,15 +74,18 @@ HOST_UPDATE_INTERVAL = 60
 HOST_AVAILABILITY_HALFTIME = 60.0 * 60 * 24 * 90 # 90 days 
 RESOURCES_SYNC_INTERVAL = 600
 
+EMAIL_SMTP = "localhost"
 EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
 EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
 EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
 
 TOPOLOGY_TIMEOUT_INITIAL = 3600.0
-TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 24 * 3 # 1 day
-TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 30 # 14 days
-TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24 # 24 hours
+TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 24 * 3
+TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 30
+TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24
 TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 24, 3600.0 * 24 * 3, 3600.0 * 24 * 14, 3600.0 * 24 * 30]
+
+HOST_COMPONENT_TIMEOUT = 3600.0 * 24 * 30 * 12
 
 DEFAULT_QUOTA = {
 	"cputime": 5.0 *(60*60*24*30), # 5 cores all the time
@@ -91,13 +94,6 @@ DEFAULT_QUOTA = {
 	"traffic": 5.0e6 /8.0*(60*60*24*30), # 5 Mbit/s all the time
 	"continous_factor": 1.0
 }
-
-# Django mail config
-#EMAIL_HOST = ""
-#EMAIL_PORT =
-#EMAIL_HOST_USER =
-#EMAIL_HOST_PASSWORD =
-#EMAIL_USE_TLS
 
 TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'en-us'

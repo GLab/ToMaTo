@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import resources, firewall
+from .. import resources, firewall, currentUser
 from ..user import User
 
 
@@ -79,7 +79,7 @@ class Network(resources.Resource):
 		return info
 
 def get(kind):
-	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("-preference")[0]
+	return Network.objects.filter((models.Q(kind=kind)|models.Q(kind__startswith=kind+"/"))&models.Q(owner=currentUser())).order_by("-preference")[0]
 
 def getAll():
 	return Network.objects.all()

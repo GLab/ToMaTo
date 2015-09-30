@@ -5,8 +5,8 @@ from . import HostObject
 from .element import HostElement
 
 class HostConnection(HostObject):
-	elementFrom = ReferenceField(HostElement, db_field='element_from', required=True, reverse_delete_rule=DENY)
-	elementTo = ReferenceField(HostElement, db_field='element_to', required=True, reverse_delete_rule=DENY)
+	elementFrom = ReferenceField(HostElement, db_field='element_from', required=True, reverse_delete_rule=NULLIFY)
+	elementTo = ReferenceField(HostElement, db_field='element_to', required=True, reverse_delete_rule=NULLIFY)
 	meta = {
 		'collection': 'host_connection',
 		'indexes': [

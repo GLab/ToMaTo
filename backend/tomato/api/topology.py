@@ -358,10 +358,10 @@ def topology_export(id): #@ReservedAssignment
 					 'host_fileserver_port', 'capture_pid', 'topology', 'state', 'vncpassword', 
 					 'host_info', 'custom_template', 'timeout',
 					 'ipspy_pid', 'last_sync',
-					 'rextfv_supported', 'rextfv_status', 'rextfv_max_size', 'info_sync_date',
+					 'rextfv_supported', 'rextfv_status', 'rextfv_max_size', 'info_last_sync',
 					 'diskspace', 'ram', 'cpus', 'restricted', 'state_max',
 						'_debug_mode', '_initialized']
-		blacklist_elements = ['children', 'connection', 'info_last_sync']
+		blacklist_elements = ['children', 'connection']
 		blacklist_connections = ['type']
 		data = reduceData_rec(data, blacklist)
 		data['elements'] = reduceData_rec(data['elements'], blacklist_elements)

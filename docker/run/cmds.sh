@@ -22,6 +22,10 @@ function tomato-web-start () {
   docker start tomato-web
 }
 
+function tomato-db-sql () {
+  docker run -it --link mongodb:mongo --rm mongo sh -c 'exec mongo "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT/tomato"'
+}
+
 function tomato-db-stop () {
   docker stop mongodb
   docker rm mongodb

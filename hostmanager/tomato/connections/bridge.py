@@ -201,8 +201,14 @@ class Bridge(connections.Connection):
 		ifA, ifB = [el.interfaceName() for el in els]
 		if not ifA or not ifB:
 			return
-		tc.clearLinkEmulation(ifA)
-		tc.clearLinkEmulation(ifB)
+		try:
+			tc.clearLinkEmulation(ifA)
+		except:
+			pass
+		try:
+			tc.clearLinkEmulation(ifB)
+		except:
+			pass
 	
 	def modify_emulation(self, val):
 		if self.emulation == val:

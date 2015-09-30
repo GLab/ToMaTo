@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-
 def errordump_info(group_id, source, dump_id, include_data=False):
     """
     Returns details for the given dump.
@@ -42,7 +41,7 @@ def errordump_info(group_id, source, dump_id, include_data=False):
       If include_data is True, it will contain a data field, otherwise a data_available indicator.
     """
     from ..dumpmanager import api_errordump_info
-    return api_errordump_info(source, dump_id, include_data)
+    return api_errordump_info(group_id, source, dump_id, include_data)
 
 def errordump_list(group_id, source=None, data_available=None):
     """
@@ -124,3 +123,25 @@ def errordumps_force_refresh():
     """
     from ..dumpmanager import api_force_refresh
     return api_force_refresh()
+
+def errorgroup_hide(group_id):
+		"""
+		Hide an errorgroup.
+		It will be shown as soon as a new dump is inserted.
+
+		:param group_id: the group ID
+		:return: None
+		"""
+		from ..dumpmanager import api_errorgroup_hide
+		api_errorgroup_hide(group_id)
+
+def errorgroup_favorite(group_id, is_favorite):
+		"""
+		Add or remove the group to favorites of the current user
+
+		:param group_id: group to add/remove
+		:param is_favorite: True to add, False to remove.
+		:return: None
+		"""
+		from ..dumpmanager import api_errorgroup_favorite
+		api_errorgroup_favorite(group_id, is_favorite)
