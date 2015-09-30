@@ -45,15 +45,15 @@
     {% if with_flag %}
       Showing pending registrations
     {% else %}
-      Showing regular accounts
+      Showing all accounts
     {% endif %}
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
     {% if organization %}
-      <li><a href="{% url "account_list" %}">Show regular accounts</a></li>
+      <li><a href="{% url "account_list" %}">Show all accounts</a></li>
     {% else %}
-      <li><a href="{% url "account_list_all" %}">Show regular accounts</a></li>
+      <li><a href="{% url "account_list_all" %}">Show all accounts</a></li>
     {% endif %}
     {% if 'global_admin' in request.session.user.flags %}
       {% ifequal organization request.session.user.organization %}

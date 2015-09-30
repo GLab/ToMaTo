@@ -949,7 +949,7 @@ var TemplateWindow = Window.extend({
 		this._super(options);
 		this.element = options.element;
 		var windowTitle = "Change Template for "+this.element.data.name;
-		if (editor.options.show_ids) windowTitle = windowTitle + ' (#'+this.element.data.id+')'
+		if (editor.options.show_ids) windowTitle = windowTitle + ' ['+this.element.data.id+']'
 		this.setTitle(windowTitle);
 		if (options.disabled == undefined || options.disabled == null) {
 			this.disabled = false;
@@ -1449,7 +1449,7 @@ var Workspace = Class.extend({
 	
 	updateTopologyTitle: function() {
 		var t = editor.topology;
-		var new_name="Topology '"+t.data.name+"'"+(editor.options.show_ids ? " [#"+t.id+"]" : "");
+		var new_name="Topology '"+t.data.name+"'"+(editor.options.show_ids ? " ["+t.id+"]" : "");
 		$('#topology_name').text(new_name);
 		document.title = new_name+" - G-Lab ToMaTo";
 	}
@@ -2131,7 +2131,7 @@ var createTopologyMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:"<span>"+obj.name()+"<small><br />Topology "+(editor.options.show_ids ? ' #'+obj.id : "")+'</small></span>',
+				html:"<span>"+obj.name()+"<small><br />Topology "+(editor.options.show_ids ? ' ['+obj.id+']' : "")+'</small></span>',
 				type:"html"
 			},
 			"actions": {
@@ -2793,7 +2793,7 @@ var createConnectionMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name_vertical()+"<small><br>Connection"+(editor.options.show_ids ? " #"+obj.id : "")+'</small></span>', type:"html"
+				html:'<span>'+obj.name_vertical()+"<small><br>Connection"+(editor.options.show_ids ? " ["+obj.id+"]" : "")+'</small></span>', type:"html"
 			},
 			"usage": {
 				name:"Resource usage",
@@ -3253,7 +3253,7 @@ var createElementMenu = function(obj) {
 	var header= {
 		html:'<span>'+obj.name()+'<small><br />Element'+
 		(editor.options.show_ids ? 
-				" #"+obj.id : 
+				" ["+obj.id+"]" :
 				"")+
 		(editor.options.show_sites_on_elements && obj.component_type=="element" && obj.data && "site" in obj.data ? "<br />"+
 				(obj.data.host_info && obj.data.host_info.site ?
@@ -4044,7 +4044,7 @@ var Template = Class.extend({
 			}
 			
 			if (this.creation_date) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+this.creation_date+'</td></tr>'));
+				desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white; white-space:nowrap !important;">'+new Date(1000*this.creation_date).toDateString()+'</td></tr>'));
 			}
 			
 		} else {
