@@ -73,6 +73,13 @@ class ExternalNetwork(Element):
 				ch.action("start", {})
 		self.setState(ST_STARTED)
 
+	def _nextName(self, baseName):
+		num = 0
+		names = [ch.name for ch in self.children]
+		while baseName + str(num) in names:
+			num += 1
+		return baseName + str(num)
+
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
 		"name": Attribute(field=name, schema=schema.String(), label="Name"),
@@ -118,7 +125,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
-			self.name = self.TYPE + str(self.id)
+			self.name = self.parent._nextName("port")
 		self.save()
 
 	@property

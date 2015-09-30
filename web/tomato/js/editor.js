@@ -3957,7 +3957,8 @@ var VMConfigurableInterfaceElement = VMInterfaceElement.extend({
 var SwitchPortElement = ChildElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
-		config.ignore = ["peers"];
+		config.order.remove("name");
+		config.ignore += ["name", "kind", "peers"];
 		return config;
 	}	
 });
