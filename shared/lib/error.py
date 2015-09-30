@@ -84,10 +84,8 @@ class Error(Exception):
 		raise exception
 
 	@classmethod
-	def wrap(cls, error, code=UNKNOWN, message=None, *args, **kwargs):
-		exception = cls(code=code, message=message or str(error), *args, **kwargs)
-		exception.dump()
-		return exception
+	def wrap(cls, error, code=UNKNOWN, todump=None, message=None, *args, **kwargs):
+		return cls(code=code, message=message or str(error), todump=todump *args, **kwargs)
 
 	def __str__(self):
 		lines = []
