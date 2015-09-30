@@ -424,6 +424,9 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		if tplPath.endswith(".tar.gz"):
 			tplPath = tplPath[:-len(".tar.gz")]
 		tplPath = os.path.relpath(tplPath, "/var/lib/vz/template/cache") #calculate relative path to trick openvz
+		imgPath = self._imagePath()
+		if path.exists(imgPath):
+			path.remove(imgPath, recursive=True)
 		self._vzctl("create", ["--ostemplate", tplPath, "--config", "default"])
 		self._vzctl("set", ["--devices", "c:10:200:rw", "--capability", "net_admin:on", "--save"])
 		self.setState(ST_PREPARED, True) #must be here or the set commands fail
