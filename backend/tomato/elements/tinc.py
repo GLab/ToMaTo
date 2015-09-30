@@ -275,8 +275,6 @@ class TincEndpoint(ConnectingElement, Element):
 			if self.state == ST_CREATED:
 				if self.element:
 					self.element.remove()
-				for iface in self.children:
-					iface._remove()
 				self.element = None
 			self.save()
 
