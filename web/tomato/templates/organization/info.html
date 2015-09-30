@@ -88,7 +88,7 @@
 		<th>Geolocation:</th>
 		<td>{% if site.geolocation %}
 				Longitude: {{site.geolocation.longitude}}, Latitude: {{site.geolocation.latitude}}
-				<a class="btn btn-default btn-xs" target="_blank" href="http://www.google.com/maps/place/{{site.geolocation.latitude}}N+{{site.geolocation.longitude}}E"><span class="glyphicon glyphicon-share-alt"></span> Google Maps</a>
+				<a class="btn btn-default btn-xs" target="_blank" href="http://www.google.com/maps/place/{{site.geolocation.latitude}}+{{site.geolocation.longitude}}"><span class="glyphicon glyphicon-share-alt"></span> Google Maps</a>
 			{% else %}
 				unknown
 			{% endif %}

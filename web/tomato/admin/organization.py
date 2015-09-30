@@ -111,6 +111,15 @@ def list(api, request):
 def info(api, request, name):
     orga = api.organization_info(name)
     sites = api.site_list(organization=name)
+    for site in sites:
+        if site['geolocation']['longitude'] > 0:
+            site['geolocation']['longitude'] = str(site['geolocation']['longitude']) + 'E'
+        else:
+            site['geolocation']['longitude'] = str(-site['geolocation']['longitude']) + 'W'
+        if site['geolocation']['latitude'] > 0:
+            site['geolocation']['latitude'] = str(site['geolocation']['latitude']) + 'N'
+        else:
+            site['geolocation']['latitude'] = str(-site['geolocation']['latitude']) + 'S'
     return render(request, "organization/info.html", {'organization': orga, 'sites': sites})
 
 @wrap_rpc
