@@ -45,9 +45,9 @@ class Organization(BaseDocument):
 			if key == "label":
 				self.label = value
 			elif key == "homepage_url":
-				self.homepageUrl = value
+				self.homepageUrl = value or None
 			elif key == "image_url":
-				self.imageUrl = value
+				self.imageUrl = value or None
 			elif key == "description":
 				self.description = value
 			else:
