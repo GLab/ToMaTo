@@ -83,7 +83,8 @@ class ServerProxy(object):
 			except xmlrpclib.Fault, e:
 				if e.faultCode == 999:
 					e = Error.parsestr(e.faultString)
-				raise e
+					raise e
+				raise
 
 		return _call
 
