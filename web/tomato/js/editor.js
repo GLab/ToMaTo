@@ -2459,17 +2459,12 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
 		options.helpTarget = help_baseUrl+"/editor:configwindow_connection";
 		this._super(options);
-		
-		this.table.append($('<div class="form-group" />').append($('<ul class="nav nav-tabs" style="margin-bottom: 1pt;">\
-				<li class="active"><a href="#Link_Emulation" data-toggle="tab">Link Emulation</a></li>\
-				  <li><a href="#Packet_capturing" data-toggle="tab">Packet capturing</a></li>\
-				</ul>')));
-		
+
+		var panels = $('<ul class="nav nav-tabs" style="margin-bottom: 1pt;"></ul>');
+		this.table.append($('<div class="form-group" />').append(panels));
+
 		var tab_content = $('<div class="tab-content" />');
 		if (con.attrEnabled("emulation")) {
-			
-			
-			
 			this.emulation_elements = [];
 			var t = this;
 			var el = new CheckboxElement({
@@ -2540,6 +2535,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			
 			tab_content.append(link_emulation);
 			this.table.append(tab_content);
+			panels.append($('<li class="active"><a href="#Link_Emulation" data-toggle="tab">Link Emulation</a></li>'));
 		}
 		if (con.attrEnabled("capturing")) {
 			var t = this;
@@ -2558,8 +2554,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 					.append($('<label class="col-sm-6 control-label">Enabled</label>'))
 					.append($('<div class="col-sm-6" />')
 					.append(el.getElement())));
-		
-			
+
 			var order = ["capture_mode", "capture_filter"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
@@ -2574,10 +2569,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				);
 			}
 			this.updateCapturingStatus(con.data.capturing);
-			
 
 			tab_content.append(packet_capturing);
 			this.table.append(tab_content);
+			panels.append($('<li><a href="#Packet_capturing" data-toggle="tab">Packet capturing</a></li>'));
 		}
 	},
 	updateEmulationStatus: function(enabled) {
