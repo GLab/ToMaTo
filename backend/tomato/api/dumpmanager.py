@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-
-def errordump_info(source, dump_id, include_data=False):
+def errordump_info(group_id, source, dump_id, include_data=False):
     """
     Returns details for the given dump.
-    A dump is identified by its source, and the dump_id on this source.
+    A dump is identified by its group_id, its source, and the dump_id on this source.
     
+    Parameter *group_id*:
+      A string. This is the group id of the dump group.
+
     Parameter *source*:
       A string. This is the source (i.e., a certain host, or the backend) of the dump.
     
@@ -39,14 +41,14 @@ def errordump_info(source, dump_id, include_data=False):
       If include_data is True, it will contain a data field, otherwise a data_available indicator.
     """
     from ..dumpmanager import api_errordump_info
-    return api_errordump_info(source, dump_id, include_data)
+    return api_errordump_info(group_id, source, dump_id, include_data)
 
-def errordump_list(group_id=None, source=None, data_available=None):
+def errordump_list(group_id, source=None, data_available=None):
     """
     Returns a list of dumps.
     
     Parameter *group_id*: 
-      A string. If this is not None, only dumps of this group will be included. 
+      A string. Only dumps of this group will be included.
     
     Parameter *source*:
       A string. If this is not None, only dumps from this source will be included.
@@ -59,19 +61,6 @@ def errordump_list(group_id=None, source=None, data_available=None):
     """
     from ..dumpmanager import api_errordump_list
     return api_errordump_list(group_id, source, data_available)
-
-def errordump_remove(source, dump_id):
-    """
-    Remove a dump.
-    
-    Parameter *source*:
-      A string. This is the source (i.e., a certain host, or the backend) of the dump.
-    
-    Parameter *dump_id*: 
-      The unique identifier of the dump to be removed.
-    """
-    from ..dumpmanager import api_errordump_remove
-    api_errordump_remove(source, dump_id)
 
 def errorgroup_info(group_id, include_dumps=False):
     """
@@ -134,3 +123,25 @@ def errordumps_force_refresh():
     """
     from ..dumpmanager import api_force_refresh
     return api_force_refresh()
+
+def errorgroup_hide(group_id):
+		"""
+		Hide an errorgroup.
+		It will be shown as soon as a new dump is inserted.
+
+		:param group_id: the group ID
+		:return: None
+		"""
+		from ..dumpmanager import api_errorgroup_hide
+		api_errorgroup_hide(group_id)
+
+def errorgroup_favorite(group_id, is_favorite):
+		"""
+		Add or remove the group to favorites of the current user
+
+		:param group_id: group to add/remove
+		:param is_favorite: True to add, False to remove.
+		:return: None
+		"""
+		from ..dumpmanager import api_errorgroup_favorite
+		api_errorgroup_favorite(group_id, is_favorite)

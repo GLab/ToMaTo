@@ -23,13 +23,15 @@ def interpretError(error):
     
     #TODO: insert some magic here. The following two lines is just a workaround / catch-all solution.
     debuginfos_dict = data
-    debuginfos_dict['Module'] = error.module
+    debuginfos_dict['module'] = error.module
     ajaxinfos = data
     
     #now, return everything.
     debuginfos = []
-    for inf in debuginfos_dict.keys():
-        debuginfos.append({'th':inf,'td':debuginfos_dict[inf]})
+    for name, val in debuginfos_dict.items():
+        if '\n' in str(val):
+            val = "<pre>%s</pre>" % val
+        debuginfos.append({'th':name, 'td': val})
     return (typemsg, errormsg, debuginfos, ajaxinfos, responsecode)
 
 

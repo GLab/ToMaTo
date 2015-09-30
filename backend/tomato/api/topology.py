@@ -18,7 +18,6 @@
 from ..auth import permissions
 
 def _getTopology(id_):
-	id_ = int(id_)
 	top = topology.get(id_)
 	UserError.check(top, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"id": id_})
 	return top
@@ -195,11 +194,11 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	if organization:
 		organization = _getOrganization(organization)
-		tops = topology.getAll(permissions__entries__user__organization=organization, permissions__entries__role="owner")		
+		tops = topology.getAll(permissions__user__organization=organization, permissions__role="owner")
 	elif showAll:
 		tops = topology.getAll()
 	else:
-		tops = topology.getAll(permissions__entries__user=currentUser())
+		tops = topology.getAll(permissions__user=currentUser())
 	return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
 
 def topology_permission(id, user, role): #@ReservedAssignment
@@ -238,6 +237,7 @@ def topology_usage(id): #@ReservedAssignment
 	return top.totalUsage.info()	
 	
 def topology_import(data):
+	# this function may change the values of data.
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	UserError.check('file_information' in data, code=UserError.INVALID_VALUE, message="Data lacks field file_information")
 	info = data['file_information']
@@ -246,49 +246,91 @@ def topology_import(data):
 	
 	if version == 3:
 		UserError.check('topology' in data, code=UserError.INVALID_VALUE, message="Data lacks field topology")
-		return topology_import_v3(data["topology"])
+		return _topology_import_v3(data["topology"])
+	elif version == 4:
+		UserError.check('topology' in data, code=UserError.INVALID_VALUE, message="Data lacks field topology")
+		return _topology_import_v4(data['topology'])
 	else:
 		raise UserError(code=UserError.INVALID_VALUE, message="Unsuported topology version", data={"version": version})
-		
-def topology_import_v3(top):
+
+def _topology_import_v3(top):
+	# changes in data model from 3 to 4:
+	# everything which was in the 'attrs' subdict is now directly in the root.
+	# this is for the topology, all elements, and all connections.
+	# thus, v3 topology data can easily be transformed to v4 data, and then the v4 data can be imported:
+
+	for key, value in top['attrs'].iteritems():
+		top[key] = value
+	del top['attrs']
+	for el in top['elements']:
+		for key, value in el['attrs'].iteritems():
+			el[key] = value
+		del el['attrs']
+	for conn in top['connections']:
+		for key, value in conn['attrs'].iteritems():
+			conn[key] = value
+		del conn['attrs']
+
+	return _topology_import_v4(top)
+
+def _topology_import_v4(top):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top_id = None
 	elementIds = {}   
 	connectionIds = {}
 	errors = [] 
 	try:
+		# step 0: create new topology
 		top_id = topology_create()['id']
+
+		# step 1: apply all topology attributes
+		attributes = {key: value for key, value in top.iteritems() if key != "elements" and key != "connections"}
 		try:
-			topology_modify(top_id, top['attrs'])
+			topology_modify(top_id, attributes)
 		except:
-			for key, value in top['attrs'].iteritems():
+			for key, value in attributes.iteritems():
 				try:
 					topology_modify(top_id, {key: value})
 				except Exception, ex:
 					errors.append(("topology", None, key, value, str(ex)))
-		elements = top["elements"]
-		elements.sort(key=lambda el: el['id'])
-		for el in elements:
-			parentId = elementIds.get(el.get('parent'))
-			elId = element_create(top_id, el['type'], parent=parentId)['id']
-			elementIds[el['id']] = elId
-			try:
-				element_modify(elId, el['attrs'])
-			except:
-				for key, value in el['attrs'].iteritems():
-					try:
-						element_modify(elId, {key: value})
-					except Exception, ex:
-						errors.append(("element", el['id'], key, value, str(ex)))
+
+		# step 2: create elements
+		elements = [e for e in top["elements"]]
+		maxRepeats = len(elements) * len(elements)  # assume: one element added per round. takes less than n^2 steps
+		while len(elements) > 0 and maxRepeats > 0:
+			maxRepeats -= 1
+			el = elements.pop(0)
+			if el['parent'] is None or el['parent'] in elementIds:  # the parent of this element exists (or there is no parent needed)
+
+				parentId = elementIds.get(el.get('parent'))
+				elId = element_create(top_id, el['type'], parent=parentId)['id']
+				elementIds[el['id']] = elId
+				attributes = {key: value for key, value in el.iteritems() if key != "parent" and key != "id" and key != "type"}
+				try:
+					element_modify(elId, attributes)
+				except:
+					for key, value in attributes.iteritems():
+						try:
+							element_modify(elId, {key: value})
+						except Exception, ex:
+							errors.append(("element", el['id'], key, value, str(ex)))
+
+			else:  # append at the end of the list if parent isn't there yet
+				elements.append(el)
+		if len(elements) > 0:  # there are elements left where the parent has never been created
+			for el in elements:
+				errors.append(("element", el['id'], 'parent', el['parent'], "parent cannot be created."))
+
 		for con in top["connections"]:
 			el1 = elementIds.get(con["elements"][0])
 			el2 = elementIds.get(con["elements"][1])
 			conId = connection_create(el1, el2)['id']
 			connectionIds[con['id']] = conId
+			attributes = {key: value for key, value in con.iteritems() if key != "elements" and key != "id"}
 			try:
-				connection_modify(conId, con['attrs'])
+				connection_modify(conId, attributes)
 			except:
-				for key, value in con['attrs'].iteritems():
+				for key, value in attributes.iteritems():
 					try:
 						connection_modify(conId, {key: value})
 					except Exception, ex:
@@ -316,21 +358,20 @@ def topology_export(id): #@ReservedAssignment
 					 'host_fileserver_port', 'capture_pid', 'topology', 'state', 'vncpassword', 
 					 'host_info', 'custom_template', 'timeout',
 					 'ipspy_pid', 'last_sync',
-					 'rextfv_supported', 'rextfv_status', 'rextfv_max_size', 'info_sync_date',
-					 'diskspace', 'ram', 'cpus', 'restricted']
+					 'rextfv_supported', 'rextfv_status', 'rextfv_max_size', 'info_last_sync',
+					 'diskspace', 'ram', 'cpus', 'restricted', 'state_max',
+						'_debug_mode', '_initialized']
 		blacklist_elements = ['children', 'connection']
-		blacklist_connections = []
-		blacklist_attrs = ['_initialized']
+		blacklist_connections = ['type']
 		data = reduceData_rec(data, blacklist)
-		data['elements'] = reduceData_rec(data['elements'],blacklist_elements)
-		data['connections'] = reduceData_rec(data['connections'],blacklist_connections)
-		data['attrs'] = reduceData_rec(data['attrs'], blacklist_attrs)
+		data['elements'] = reduceData_rec(data['elements'], blacklist_elements)
+		data['connections'] = reduceData_rec(data['connections'], blacklist_connections)
 		return data
 	
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top_full = topology_info(id, True)
 	top = reduceData(top_full)
-	return {'file_information': {'version': 3}, 'topology': top}
+	return {'file_information': {'version': 4}, 'topology': top}
 		
 from host import _getOrganization
 from account import _getAccount

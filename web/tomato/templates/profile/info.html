@@ -3,7 +3,7 @@
 {% load url from future %}
 
 {% block title %}
-<title>Device profile {{profile.attrs.name}} - G-Lab ToMaTo</title> 
+<title>Device profile {{profile.label}} - G-Lab ToMaTo</title>
 {% endblock %}
 
 {% block content %}
@@ -12,7 +12,7 @@
   <button type="submit" formaction="{%url "profile_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Device Profiles</button>
 </form>
 
-<h1>Device profile {{profile.attrs.name}}</h1>
+<h1>Device profile {{profile.label}}</h1>
 
 <div class="skip-sm"></div>
 
@@ -21,24 +21,24 @@
 <table class="table">
 	<tr>
 		<th>Name:</th>
-		<td>{{profile.attrs.name}}</td>
+		<td>{{profile.name}}</td>
 	</tr>
 	<tr>
 		<th>Label:</th>
-		<td>{{profile.attrs.label}}</td>
+		<td>{{profile.label}}</td>
 	</tr>
 	<tr>
 		<th>Tech:</th>
-		<td><img src="/img/{{profile.attrs.tech}}16.png" /> {{profile.attrs.tech}}</td>
+		<td><img src="/img/{{profile.tech}}16.png" /> {{profile.tech}}</td>
 	</tr>
 	<tr>
 		<th>Preference:</th>
-		<td>{{profile.attrs.preference}}</td>
+		<td>{{profile.preference}}</td>
 	</tr>	
 	<tr>
 		<th>Restricted:</th>
 		<td>
-		{% if profile.attrs.restricted %}
+		{% if profile.restricted %}
 			<img src="/img/lock.png" /> yes
 		{% else %}
 			no
@@ -49,17 +49,17 @@
 		<th>Resources:</th>
 		<td>
 			<dl class="dl-horizontal">
-				{% if profile.attrs.tech != 'repy' %}
-  					<dt>Disk space</dt><dd>{{profile.attrs.diskspace}} MB</dd>
+				{% if profile.tech != 'repy' %}
+  					<dt>Disk space</dt><dd>{{profile.diskspace}} MB</dd>
 				{% endif %}
-				<dt>Memory</dt><dd>{{profile.attrs.ram}} MB</dd>
-				<dt>CPUs</dt><dd>{{profile.attrs.cpus}}</dd>
+				<dt>Memory</dt><dd>{{profile.ram}} MB</dd>
+				<dt>CPUs</dt><dd>{{profile.cpus}}</dd>
 			</dl>		
 	    </td>
 	</tr>
 	<tr>
 		<th>Description:</th>
-		<td>{{profile.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+		<td>{{profile.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 	</tr>
 </table>
 

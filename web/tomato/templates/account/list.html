@@ -21,7 +21,7 @@
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
     <span class="glyphicon glyphicon-filter"></span>
     {% if organization %}
-      Showing all accounts of '{{organization_description}}'
+      Showing all accounts of '{{organization_label}}'
     {% else %}
       Showing all accounts
     {% endif %}
@@ -32,7 +32,7 @@
     <li class="divider"></li>
     <li class="dropdown-header">Organizations</li>
     {% for orga in orgas %}
-      <li><a href="{% url "organization_accounts" organization=orga.name %}">Show all accounts of '{{orga.description}}'</a></li>    
+      <li><a href="{% url "organization_accounts" organization=orga.name %}">Show all accounts of '{{orga.label}}'</a></li>
     {% endfor %}
   </ul>
 </div>

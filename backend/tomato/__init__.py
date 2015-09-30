@@ -17,32 +17,48 @@
 
 import os, sys, signal, time, thread
 
-# tell django to read config from module tomato.config
-os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
 os.environ['TOMATO_MODULE'] = "backend"
 
-
-def db_migrate():
-	"""
-	NOT CALLABLE VIA XML-RPC
-	Migrates the database forward to the current structure using migrations
-	from the package tomato.migrations.
-	"""
-	from django.core.management import call_command
-	call_command('syncdb', verbosity=0)
-	from south.management.commands import migrate
-	cmd = migrate.Command()
-	cmd.handle(app="tomato", verbosity=1)
-
+import monkey
+monkey.patch_all()
 
 import config
+from mongoengine import connect
+connect(config.DATABASE, host=config.DATABASE_HOST)
 
-	
+def db_migrate():
+	def getMigration(version):
+		try:
+			return __import__("tomato.migrations.migration_%04d" % version, {}, {}, 'migration_%04d' % version).migrate
+		except ImportError:
+			return None
+
+	from .db import data
+	version = data.get('db_version', 0)
+	print >>sys.stderr, "Database version: %04d" % version
+	if version > 0 and not getMigration(version):
+		raise Exception("Database is newer than code")
+	if not version and not getMigration(1):
+		raise Exception("Failed to migrate to initial version")
+	while True:
+		version += 1
+		migrate = getMigration(version)
+		if not migrate:
+			break
+		print >>sys.stderr, " - migrating to version %04d..." % version
+		try:
+			migrate()
+		except:
+			import traceback
+			traceback.print_exc()
+			raise
+		data.set('db_version', version)
+
 import threading
 _currentUser = threading.local()
 
 def currentUser():
-	return _currentUser.user if hasattr(_currentUser, "user") else None
+	return _currentUser.user if hasattr(_currentUser, "user") else None  # fixme
 	
 def setCurrentUser(user):
 	_currentUser.user = user
@@ -55,13 +71,14 @@ def login(credentials, sslCert):
 from lib import logging
 def handleError():
 	logging.logException()
+	dump.dumpException()
 
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=25)
 
 starttime = time.time()
 
-from . import resources, host, auth, rpcserver #@UnresolvedImport
+from . import host, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import util, cache #@UnresolvedImport
 
@@ -71,12 +88,12 @@ stopped = threading.Event()
 
 import dump
 import dumpmanager
+import models
 
 def start():
 	logging.openDefault(config.LOG_FILE)
 	db_migrate()
 	auth.init()
-	resources.init()
 	global starttime
 	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
 	bittorrent.startClient(config.TEMPLATE_PATH)

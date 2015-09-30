@@ -1,0 +1,8 @@
+*.tar.gz
+*.qcow2
+*.torrent
+prepare_vm.sh
+*/prepare_vm.sh
+boot/*/i386
+boot/*/amd64
+prepare_vm/nlxtp-guest-modules_*_all.deb

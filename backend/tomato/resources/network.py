@@ -15,115 +15,131 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-from .. import resources, host
-from ..lib import attributes #@UnresolvedImport
+from ..db import *
+from ..generic import *
+from ..host import Host
 from ..lib.error import UserError
 
-class Network(resources.Resource):
-	kind = models.CharField(max_length=50, unique=True)
-	preference = models.IntegerField(default=0)
-	restricted = attributes.attribute("restricted", bool,False)
-	
-	TYPE = "network"
+class Network(Entity, BaseDocument):
+	kind = StringField(required=True, unique=True)
+	preference = IntField(default=0, required=True)
+	restricted = BooleanField(default=False)
+	label = StringField()
+	description = StringField()
+	big_icon = BooleanField(default=False)
+	show_as_common = BooleanField(default=False)
+	meta = {
+		'ordering': ['-preference', 'kind'],
+		'indexes': [
+			('kind', 'preference')
+		]
+	}
+	@property
+	def instances(self):
+		return NetworkInstance.objects(network=self)
 
-	class Meta:
-		db_table = "tomato_network"
-		app_label = 'tomato'
-	
+	def _remove(self):
+		self.delete()
+
+	def _checkRemove(self):
+		UserError.check(not self.instances.count(), code=UserError.NOT_EMPTY, message="Cannot remove network with instances")
+		return True
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=_remove, check=_checkRemove)
+	}
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"kind": Attribute(field=kind, schema=schema.String()),
+		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
+		"restricted": Attribute(field=restricted, schema=schema.Bool()),
+		"big_icon": Attribute(field=big_icon, schema=schema.Bool()),
+		"show_as_common": Attribute(field=show_as_common, schema=schema.Bool()),
+		"label": Attribute(field=label, schema=schema.String()),
+		"description": Attribute(field=description, schema=schema.String())
+	}
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		attrs = args[0]
 		UserError.check("kind" in attrs, code=UserError.INVALID_CONFIGURATION, message="Network needs attribute kind")
-		resources.Resource.init(self, *args, **kwargs)
-				
-	def upcast(self):
-		return self
-	
-	def getBridge(self):
-		return self.bridge
-	
-	def modify_kind(self, val):
-		self.kind = val
-	
-	def modify_preference(self, val):
-		self.preference = val
+		Entity.init(self, attrs)
 
-	def info(self):
-		info = resources.Resource.info(self)
-		info["attrs"]["kind"] = self.kind
-		info["attrs"]["preference"] = self.preference
-		info["attrs"]["restricted"] = self.restricted
-		return info
+	@classmethod
+	def get(cls, kind):
+		for net in cls.objects:
+			if net.kind == kind or net.kind.startswith(kind+"/"):
+				return net
 
+	@classmethod
+	def create(cls, attrs):
+		obj = cls()
+		obj.init(attrs)
+		obj.save()
+		return obj
 
-class NetworkInstance(resources.Resource):
-	network = models.ForeignKey(Network, null=False, related_name="instances")
-	host = models.ForeignKey(host.Host, null=False, related_name="networks")
-	bridge = models.CharField(max_length=20)
-	
-	TYPE = "network_instance"
-	FIELD_NAME = "networkinstance"
+class NetworkInstance(Entity, BaseDocument):
+	"""
+	:type network: Network
+	:type host: Host
+	"""
+	from ..host import Host
+	network = ReferenceField(Network, required=True, reverse_delete_rule=CASCADE)
+	host = ReferenceField(Host, required=True, reverse_delete_rule=CASCADE)
+	bridge = StringField(required=True)
+	meta = {
+		'collection': 'network_instance',
+		'ordering': ['network', 'host', 'bridge'],
+		'indexes': [
+			'network', 'host'
+		]
+	}
 
-	class Meta:
-		db_table = "tomato_network_instance"
-		app_label = 'tomato'
-		unique_together = (("host", "bridge"),)
-	
-	def init(self, *args, **kwargs):
-		self.type = self.TYPE
-		attrs = args[0]
+	def remove(self):
+		self.delete()
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=remove)
+	}
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"network": Attribute(set=lambda obj, val: obj.modify_network(val), get=lambda obj: obj.network.kind),
+		"host": Attribute(set=lambda obj, val: obj.modify_host(val), get=lambda obj: obj.host.name),
+		"bridge": Attribute(field=bridge, schema=schema.Identifier(strict=True))
+	}
+
+	def init(self, attrs):
 		for attr in ["network", "host", "bridge"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Network_Instance needs attribute",
 				data={"attribute": attr})
-		self.network = get(attrs["network"])
-		UserError.check(self.network, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network does not exist",
-			data={"network": attrs["kind"]})
-		self.host = host.get(name=attrs["host"])
-		UserError.check(self.host, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host does not exist",
-			data={"network": attrs["host"]})
-		self.bridge = attrs["bridge"]
-		resources.Resource.init(self, *args, **kwargs)
-				
-	def upcast(self):
-		return self
-	
+		Entity.init(self, attrs)
+
 	def getBridge(self):
 		return self.bridge
-	
+
 	def getKind(self):
 		return self.network.kind
-	
-	def modify_bridge(self, val):
-		self.bridge = val
-	
+
 	def modify_network(self, val):
-		net = get(val)
+		net = Network.get(val)
 		UserError.check(net, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network does not exist", data={"network": val})
 		self.network = net
-	
+
 	def modify_host(self, val):
-		h = host.get(name=val)
+		h = Host.get(name=val)
 		UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host does not exist", data={"host": val})
 		self.host = h
-	
-	def info(self):
-		info = resources.Resource.info(self)
-		info["attrs"]["network"] = self.network.kind
-		info["attrs"]["host"] = self.host.name
-		info["attrs"]["bridge"] = self.bridge
-		return info
 
-def get(kind):
-	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("-preference")[0]
+	@classmethod
+	def get(cls, host, kind):
+		for net in host.networks:
+			k = net.getKind()
+			if k == kind or k.startswith(kind+"/"):
+				return net
+		raise UserError(code=UserError.NO_RESOURCES, message="No network instances found", data={"network": kind, "host": host})
 
-def getInstance(host, kind):
-	instances = NetworkInstance.objects
-	if kind:
-		instances = instances.filter(models.Q(host=host)&(models.Q(network__kind=kind)|models.Q(network__kind__startswith=kind+"/")))
-	UserError.check(instances, code=UserError.NO_RESOURCES, message="No network instances found",
-		data={"network": kind, "host": host})
-	return instances.order_by("network__preference")[0]
-
-resources.TYPES[Network.TYPE] = Network
-resources.TYPES[NetworkInstance.TYPE] = NetworkInstance
+	@classmethod
+	def create(cls, attrs):
+		obj = cls()
+		obj.init(attrs)
+		obj.save()
+		return obj

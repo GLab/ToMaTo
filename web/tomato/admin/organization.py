@@ -37,25 +37,25 @@ from . import add_function, edit_function, remove_function, AddEditForm, RemoveC
 class OrganizationForm(AddEditForm):
     
     name = forms.CharField(max_length=50, help_text="The name of the organization. Must be unique to all organizations. e.g.: ukl")
-    description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    label = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
     homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
     image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
-    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
+    description = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     
     buttons = Buttons.cancel_add
     
     primary_key = "name"
-    create_keys = ['name', 'description']
+    create_keys = ['name', 'label']
     redirect_after = "tomato.admin.organization.info"
     
     def __init__(self, *args, **kwargs):
         super(OrganizationForm, self).__init__(*args, **kwargs)
         self.helper.layout = Layout(
             'name',
-            'description',
+            'label',
             'homepage_url',
             'image_url',
-            'description_text',
+            'description',
             self.buttons
         )
         
@@ -117,7 +117,8 @@ def info(api, request, name):
 def add(api, request):
     return add_function(request,
                         Form=AddOrganizationForm,
-                        create_function=api.organization_create
+                        create_function=api.organization_create,
+                        modify_function=api.organization_modify
                         )
 
 @wrap_rpc

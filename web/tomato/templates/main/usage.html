@@ -9,13 +9,15 @@ var chart;
 var setRange;
 $(function () {
     var data = {{usage|safe}};
+    var ranges = ['5minutes', 'hour', 'day', 'month', 'year'];
     $(document).ready(function() {
     	var offset = new Date().getTimezoneOffset()*60000;
         var traffic = {};
         var memory = {};
         var cputime = {};
         var diskspace = {};
-        for (var range in data) {
+        for (var i=0; i<ranges.length; i++) {
+            var range = ranges[i];
             traffic[range] = [];
             memory[range] = [];
             diskspace[range] = [];
@@ -23,8 +25,8 @@ $(function () {
 		    data[range].sort(function(a, b) {
     			return a.end - b.end;
     		});
-            for (var i=0; i<data[range].length; i++) {
-                var rec = data[range][i];
+            for (var j=0; j<data[range].length; j++) {
+                var rec = data[range][j];
                 traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic / (rec.end-rec.begin)]);
                 memory[range].push([rec.end * 1000 - offset, rec.usage.memory]);
                 cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime / (rec.end-rec.begin)]);

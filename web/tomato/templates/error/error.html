@@ -16,7 +16,7 @@
 	<h2>Error Details</h2>
 	<table><tbody>
 	{% for tr in debuginfos %}
-		<tr><th>{{tr.th}}:</th><td>{{tr.td}}</td></tr>
+		<tr><th>{{tr.th}}:</th><td>{{tr.td|safe}}</td></tr>
 	{% endfor %}
 	</tbody></table>
 {% else %}

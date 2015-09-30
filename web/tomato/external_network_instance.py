@@ -59,10 +59,10 @@ class EditNetworkInstanceForm(NetworkInstanceForm):
 	
 	
 def external_network_list(api):
-	l = api.resource_list('network')
+	l = api.network_list()
 	res = []
 	for netw in l:
-		res.append((netw["attrs"]["kind"],netw["attrs"]["label"] + ' -- ' + netw["attrs"]["kind"] ))
+		res.append((netw["kind"],netw["label"] + ' -- ' + netw["kind"] ))
 	res.sort()
 	return res
 
@@ -76,33 +76,32 @@ def host_list(api):
 
 def network_id(api, kind, networks=None):
 	if not networks:
-		networks = api.resource_list("network")
+		networks = api.network_list()
 	for net in networks:
-		if net["attrs"]["kind"] == kind:
+		if net["kind"] == kind:
 			return net["id"]
 
 @wrap_rpc
 def list(api, request, network=None, host=None, organization=None, site=None):
-	nis = api.resource_list('network_instance')
-	networks = api.resource_list('network')
+	nis = api.network_instance_list()
+	networks = api.network_list()
 	hosts = api.host_list()
 	sites = api.site_list()
 	organizations = api.organization_list()
 	network_kind = None
 	network_label = None
-	organization_description=None
-	site_description=None
+	organization_label=None
+	site_label=None
 	if site:
-		site_description=api.site_info(site)['description']
+		site_label=api.site_info(site)['label']
 	if organization:
-		organization_description = api.organization_info(organization)['description']
+		organization_label = api.organization_info(organization)['label']
 	if network:
-		network = int(network)
 		for net in networks:
 			if net["id"] == network:
-				network_kind = net["attrs"]["kind"]
-				network_label = net["attrs"]["label"]
-	nis = filter(lambda ni: (not network or ni["attrs"]["network"] == network_kind) and (not host or ni["attrs"]["host"] == host), nis)
+				network_kind = net["kind"]
+				network_label = net["label"]
+	nis = filter(lambda ni: (not network or ni["network"] == network_kind) and (not host or ni["host"] == host), nis)
 	
 	if organization or site:
 		nis_new=[]
@@ -110,11 +109,11 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 		for h in hosts:
 			host_dict[h['name']] = h
 		for ni in nis:
-			if (not organization or host_dict[ni['attrs']['host']]['organization'] == organization) and (not site or host_dict[ni['attrs']['host']]['site'] == site):
+			if (not organization or host_dict[ni['host']]['organization'] == organization) and (not site or host_dict[ni['host']]['site'] == site):
 				nis_new.append(ni)
 		nis = nis_new
 	
-	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, 'sites':sites, 'site':site, 'site_description':site_description, 'organization_description': organization_description, 'organizations':organizations, 'organization':organization, "network": network, "network_kind": network_kind, "network_label": network_label})
+	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, 'sites':sites, 'site':site, 'site_label':site_label, 'organization_label': organization_label, 'organizations':organizations, 'organization':organization, "network": network, "network_kind": network_kind, "network_label": network_label})
 
 @wrap_rpc
 def add(api, request, network=None, host=None):
@@ -122,17 +121,14 @@ def add(api, request, network=None, host=None):
 		form = NetworkInstanceForm(api, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			api.resource_create('network_instance',{'host':formData['host'],
-										   'bridge':formData['bridge'],
-										   'network':formData['network'],
-										   'kind':formData['network']})
+			api.network_instance_create(formData['network'], formData['host'], {'bridge':formData['bridge']})
 			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": network_id(api, formData['network'])}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add External Network Instance"})
 	else:
 		form = NetworkInstanceForm(api)
 		if network:
-			network = api.resource_info(network)['attrs']['kind']
+			network = api.network_info(network)['kind']
 			form.fields["network"].initial=network
 		if host:
 			form.fields['host'].initial=host
@@ -143,11 +139,11 @@ def remove(api, request, res_id=None):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			res = api.resource_info(res_id)
-			api.resource_remove(res_id)
-			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": network_id(api, res["attrs"]['network'])}))
+			res = api.network_instance_info(res_id)
+			api.network_instance_remove(res_id)
+			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": network_id(api, res['network'])}))
 	form = RemoveConfirmForm.build(reverse("tomato.external_network_instance.remove", kwargs={"res_id": res_id}))
-	res = api.resource_info(res_id)
+	res = api.network_instance_info(res_id)
 	return render(request, "form.html", {"heading": "Remove External Network Instance", "message_before": "Are you sure you want to remove the external network instance?", 'form': form})	
 	
 
@@ -157,19 +153,16 @@ def edit(api, request, res_id = None):
 		form = EditNetworkInstanceForm(res_id, api, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			UserError.check(api.resource_info(formData['res_id'])['type'] == 'network_instance',UserError.INVALID_PARAMETER,"This resource is not an external network instance", data={'id':formData['res_id']})
-			api.resource_modify(formData["res_id"],{'host':formData['host'],
+			api.network_instance_modify(formData["res_id"],{'host':formData['host'],
 													'bridge':formData['bridge'],
-													'network':formData['network'],
-													'kind':formData['network']}) 
+													'network':formData['network']})
 			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": network_id(api, formData['network'])}))
 		host = request.POST["host"]
 		UserError.check(host, UserError.INVALID_DATA, "Form transmission failed.")
 		return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+host})
 	else:
 		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
-		res_info = api.resource_info(res_id)
-		origData = res_info['attrs']
-		origData['res_id'] = res_id
-		form = EditNetworkInstanceForm(res_id, api, origData)
-		return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+res_info['attrs']['host']})
+		res_info = api.network_instance_info(res_id)
+		res_info['res_id'] = res_id
+		form = EditNetworkInstanceForm(res_id, api, res_info)
+		return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+res_info['host']})

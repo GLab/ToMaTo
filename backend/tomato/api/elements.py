@@ -16,8 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 def _getElement(id_):
-	id_ = int(id_)
-	el = elements.get(id_)
+	el = Element.get(id_)
 	UserError.check(el, code=UserError.ENTITY_DOES_NOT_EXIST, message="Element with that id does not exist", data={"id": id_})
 	return el
 
@@ -65,7 +64,7 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	top = _getTopology(top)
 	if parent:
 		parent = _getElement(parent)
-	el = elements.create(top, type, parent, attrs)
+	el = Element.create(top, type, parent, attrs)
 	return el.info()
 
 def element_modify(id, attrs): #@ReservedAssignment
@@ -299,6 +298,7 @@ def element_usage(id): #@ReservedAssignment
 	el = _getElement(id)
 	return el.totalUsage.info()	
 
-from .. import elements, currentUser
-from topology import _getTopology
+from .. import currentUser
+from ..elements import Element
+from .topology import _getTopology
 from ..lib.error import UserError

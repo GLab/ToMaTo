@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import time, crypt, string, random, sys
-from django.db import models
-from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
+from ..db import *
+from ..lib import logging, util, mail #@UnresolvedImport
 from .. import config, currentUser, setCurrentUser, scheduler, accounting
 from ..lib.error import UserError
 
@@ -134,50 +134,58 @@ orga_tech_flags = [Flags.OrgaHostManager, Flags.OrgaHostContact]
 
 USER_ATTRS = ["realname", "email", "password"]
 
-class User(attributes.Mixin, models.Model):
-	from ..host import Organization
-	name = models.CharField(max_length=255)
-	origin = models.CharField(max_length=50)
-	organization = models.ForeignKey(Organization, related_name="users")
-	attrs = db.JSONField()
-	password = models.CharField(max_length=250, null=True)
-	password_time = models.FloatField(null=True)
-	last_login = models.FloatField(default=time.time())
-	totalUsage = models.OneToOneField(accounting.UsageStatistics, related_name='+', on_delete=models.PROTECT)
-	quota = models.OneToOneField(accounting.Quota, related_name='+', on_delete=models.PROTECT)
-	
-	realname = attributes.attribute("realname", unicode)
-	email = attributes.attribute("email", unicode)
-	flags = attributes.attribute("flags", list, [])
-
-	class Meta:
-		db_table = "tomato_user"
-		app_label = 'tomato'
-		unique_together = (("name", "origin"),)
-		ordering=["name", "origin"]
+class User(BaseDocument):
+	"""
+	:type organization: host.Organization
+	:type totalUsage: accounting.UsageStatistics
+	:type quota: accounting.Quota
+	:type flags: list
+	:type clientData: dict
+	"""
+	from ..host.organization import Organization
+	from ..accounting import Quota, UsageStatistics
+	name = StringField(required=True, unique_with='origin')
+	origin = StringField(required=True)
+	organization = ReferenceField(Organization, required=True, reverse_delete_rule=DENY)
+	password = StringField(required=True)
+	passwordTime = FloatField(db_field='password_time', required=True)
+	lastLogin = FloatField(db_field='last_login', required=True)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
+	quota = EmbeddedDocumentField(Quota, required=True)
+	realname = StringField()
+	email = EmailField()
+	flags = ListField(StringField())
+	clientData = DictField(db_field='client_data')
+	meta = {
+		'ordering': ['name'],
+		'indexes': [
+			'lastLogin', 'passwordTime', 'flags', 'organization', ('name', 'origin')
+		]
+	}
+	@property
+	def topologies(self):
+		from ..topology import Topology
+		return Topology.objects(permissions__user=self)
 
 	@classmethod	
-	def create(cls, name, organization, **kwargs):
-		from ..host import getOrganization
-		orga = getOrganization(organization)
+	def create(cls, name, organization, password, flags, origin, **kwargs):
+		from ..host.organization import Organization
+		from ..accounting import Quota, UsageStatistics
+		orga = Organization.get(organization)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": organization})
-		user = User(name=name,organization=orga)
-		user.attrs = kwargs
-		user.last_login = time.time()
+		user = User(name=name, organization=orga, flags=flags, origin=origin)
+		setCurrentUser(user)
+		user.modify(kwargs, save=False)
+		user.storePassword(password)
+		user.lastLogin = time.time()
+		user.quota = Quota()
+		user.quota.init(**config.DEFAULT_QUOTA)
+		stats = UsageStatistics()
+		stats.init()
+		user.totalUsage = stats
+		user.save()
 		return user
 
-	def save(self, *args, **kwargs):
-		if not hasattr(self, "totalUsage"):
-			self.totalUsage = accounting.UsageStatistics.objects.create()
-		if not hasattr(self, "quota"):
-			quota = accounting.Quota()
-			quota.init(config.DEFAULT_QUOTA["cputime"], config.DEFAULT_QUOTA["memory"], config.DEFAULT_QUOTA["diskspace"], config.DEFAULT_QUOTA["traffic"], config.DEFAULT_QUOTA["continous_factor"])
-			self.quota = quota
-		models.Model.save(self, *args, **kwargs)
-
-	def _saveAttributes(self):
-		pass #disable automatic attribute saving
-	
 	def checkPassword(self, password):
 		return self.password == crypt.crypt(password, self.password)
 
@@ -186,12 +194,11 @@ class User(attributes.Mixin, models.Model):
 		salt = "$1$"
 		salt += ''.join([ random.choice(saltchars) for _ in range(8) ])
 		self.password = crypt.crypt(password, salt)
-		self.password_time = time.time()
-		self.save()
-	
+		self.passwordTime = time.time()
+
 	def forgetPassword(self):
 		self.password = None
-		self.password_time = None
+		self.passwordTime = None
 		self.save()		
 		
 	def updateFrom(self, other):
@@ -203,7 +210,7 @@ class User(attributes.Mixin, models.Model):
 	
 	def loggedIn(self):
 		logging.logMessage("successful login", category="auth", user=self.name, origin=self.origin)
-		self.last_login = time.time()
+		self.lastLogin = time.time()
 		self.save()
 	
 	def hasFlag(self, flag):
@@ -232,8 +239,8 @@ class User(attributes.Mixin, models.Model):
 			self.storePassword(password)
 
 	def modify_organization(self, value):
-		from ..host import getOrganization
-		orga = getOrganization(value)
+		from ..host.organization import Organization
+		orga = Organization.get(value)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": value})
 		self.organization=orga
 		
@@ -267,31 +274,35 @@ class User(attributes.Mixin, models.Model):
 				return True
 		return False
 
-	def modify(self, attrs):
+	def modify(self, attrs, save=True):
 		logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
-		for key, value in attrs.iteritems():
+		for key, value in attrs.items():
 			UserError.check(self.can_modify(key, value), code=UserError.DENIED,
 				message="No permission to change attribute", data={"attribute": key})
 			if key.startswith("_"):
-				self.attrs[key] = value
+				self.clientData[key[1:]] = value
 				continue
 			if hasattr(self, "modify_%s" % key):
 				getattr(self, "modify_%s" % key)(value)
 			else:
-				self.attrs[key] = value
-		self.save()
+				setattr(self, key, value)
+		if save:
+			self.save()
 	
 	def info(self, includeInfos):
 		info = {
 			"name": self.name,
 			"origin": self.origin,
 			"organization": self.organization.name,
-			"id": "%s@%s" % (self.name, self.origin) 
+			"id": "%s@%s" % (self.name, self.origin),
+			"realname": self.realname,
+			"email": self.email,
+			"flags": list(self.flags),
 		}
-		info.update(self.attrs)
+		info.update({"_"+k: v for k, v in self.clientData.items()})
 		if not includeInfos:
-			info["email"] = None
-			info["flags"] = None
+			del info["email"]
+			del info["flags"]
 		else:
 			info["quota"] = self.quota.info()
 		return info
@@ -309,12 +320,12 @@ class User(attributes.Mixin, models.Model):
 		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
 		
 	def updateUsage(self):
-		from .. import topology
 		#FIXME: do something useful with topologies with multiple owners
-		self.totalUsage.updateFrom([top.totalUsage for top in topology.getAll(permissions__entries__user=self, permissions__entries__role="owner")])
+		self.totalUsage.updateFrom([top.totalUsage for top in self.topologies.filter(permissions__role="owner")])
 		
 	def updateQuota(self):
 		self.quota.update(self.totalUsage)
+		self.save()
 		
 	def enforceQuota(self):
 		if not self.hasFlag(Flags.NewAccount):
@@ -356,11 +367,11 @@ class Provider:
 		return User.objects.filter(origin=self.name, **kwargs)
 	def cleanup(self):
 		if self.getPasswordTimeout():
-			for user in self.getUsers(password_time__lte = time.time() - self.getPasswordTimeout()):
+			for user in self.getUsers(passwordTime__lte = time.time() - self.getPasswordTimeout()):
 				logging.logMessage("password cache timeout", category="auth", user=user.name)
 				user.forgetPassword()
 		if self.getAccountTimeout():
-			for user in self.getUsers(last_login__lte = time.time() - self.getAccountTimeout()):
+			for user in self.getUsers(lastLogin__lte = time.time() - self.getAccountTimeout()):
 				logging.logMessage("account timeout", category="auth", user=user.name)
 				user.remove()
 
@@ -454,11 +465,8 @@ def login(username, password):
 	return stored
 
 def remove(user):
-	usage = user.totalUsage
-	quota = user.quota
 	user.delete()
-	usage.remove()
-	quota.remove()
+	user.totalUsage.remove()
 
 def register(username, password, organization, attrs=None, provider=""):
 	if not attrs: attrs = {}

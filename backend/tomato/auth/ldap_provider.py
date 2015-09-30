@@ -54,7 +54,7 @@ class Provider(AuthProvider):
 		self.bind_pw = bind_pw
 		self.identity_base = identity_base
 		self.groups = groups
-		self.organization = getOrganization(organization)
+		self.organization = Organization.get(organization)
 
 	def _ldap_conn(self):
 		ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
@@ -130,4 +130,4 @@ class Provider(AuthProvider):
 def init(**kwargs):
 	return Provider(**kwargs)
 
-from ..host import getOrganization
+from ..host.organization import Organization

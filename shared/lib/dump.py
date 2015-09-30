@@ -23,7 +23,7 @@ dumps_lock = threading.RLock()
 #structure for dumps:
 # { timestamp:time.Time  # time the error was detected
 #   description:dict     # short description about what happened (i.e., for an exception: position in code, exception subject)
-#   type:string        # Teason why the dump was created (i.e., "Exception"). 
+#   type:string          # Reason why the dump was created (i.e., "Exception").
 #   group_id:string      # an id given to what happened. Group ID should be the same iff it happened due to the same reason (same stack trace, same position in code, same exception, etc).
 #   data:any             # anything, depending on what happened. not in RAM due to size, only in the file.
 #   dump_id:string       # ID of the dump. used to address the dump
@@ -33,10 +33,10 @@ dumps_lock = threading.RLock()
 #use envCmds to get the environment data.
 def getEnv():
 	data = {}
-	for name, cmd in envCmds.iteritems():
+	for name, cmd in envCmds.items():
 		try:
 			data[name] = run(cmd).splitlines()
-		except CommandError, err:
+		except CommandError as err:
 			data[name] = str(err)
 	return data
 
@@ -313,20 +313,20 @@ def dumpError(error):
 	try:
 		if not error.todump:
 			return None
-		error.todump=False
+		error.todump = False
 		
 		(type_, value, trace) = sys.exc_info()
 		trace = traceback.extract_tb(trace) if trace else None
 		data = {"exception":{"trace":trace}}
 		
-		description = error.__dict__
+		description = error.raw
 		del description['todump']
 		
 		exception_id = error.group_id()
 		
 		return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
 	except:
-		dumpException(originalError=error)
+		dumpException(originalError=str(error))
 
 import error
 error.dumpError = dumpError

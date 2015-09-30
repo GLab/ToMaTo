@@ -1,0 +1,4 @@
+::sysinit:/init.sh >/dev/stdout 2>/dev/stderr
+::respawn:apache2ctl -D FOREGROUND >/dev/stdout 2>/dev/stderr
+::respawn:tail -f /var/log/apache2/error.log 2>/dev/stderr
+

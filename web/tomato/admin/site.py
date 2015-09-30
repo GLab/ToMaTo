@@ -21,7 +21,7 @@
 
 
 
-#TODO: fix add, edit and remove functions
+# TODO: fix add, edit and remove functions
 
 
 '''
@@ -37,12 +37,12 @@ from django.core.urlresolvers import reverse
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc
-from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, organization_name_list
-
+from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, \
+	organization_name_list
 
 geolocation_script = '<script>\n\
         function fillCoordinates() {\n\
-            var address = document.getElementById("id_description").value;\n\
+            var address = document.getElementById("id_label").value;\n\
             queryAndFillCoordinates(address);\n\
         }\n\
         function queryAndFillCoordinates(address) {\n\
@@ -74,117 +74,123 @@ geolocation_script = '<script>\n\
 
 
 class SiteForm(AddEditForm):
-    name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
-    description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
-    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
-    organization = forms.CharField(max_length=50)
-    location = forms.CharField(max_length=255, help_text="e.g.: Germany")
-    geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",label="Geolocation: Longitude")
-    geolocation_latitude = forms.FloatField(help_text="Float Number. >0 if North, <0 if South",label="Geolocation: Latitude")
+	name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
+	label = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+	description = forms.CharField(widget=forms.Textarea, label="Description", required=False)
+	organization = forms.CharField(max_length=50)
+	location = forms.CharField(max_length=255, help_text="e.g.: Germany")
+	geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",
+											 label="Geolocation: Longitude")
+	geolocation_latitude = forms.FloatField(help_text="Float Number. >0 if North, <0 if South",
+											label="Geolocation: Latitude")
 
-    buttons = Buttons.cancel_add
-    
-    primary_key = "name"
-    create_keys = ['name', 'organization', 'description']
-    redirect_after = "tomato.admin.site.info"
-    
-    message_after = geolocation_script
-    
-    def __init__(self, orga_namelist, *args, **kwargs):
-        super(SiteForm, self).__init__(*args, **kwargs)
-        self.fields["organization"].widget = forms.widgets.Select(choices=orga_namelist)
-        self.helper.layout = Layout(
-	     'name',
-	     'description',
-	     'description_text',
-	     'organization',
-	     'location',
-	     'geolocation_longitude',
-	     'geolocation_latitude',
-	     self.buttons
-         )
-        
-    def get_values(self):
-        formData = super(SiteForm, self).get_values()
-        formData['geolocation'] = {'longitude':formData['geolocation_longitude'],
-                                   'latitude':formData['geolocation_latitude']}
-        del formData['geolocation_longitude']
-        del formData['geolocation_latitude']
-                                              
-        return formData
-    
-    def input_values(self, formData):
-        if formData is not None and 'geolocation' in formData:
-            formData['geolocation_longitude'] = formData['geolocation']['longitude']
-            formData['geolocation_latitude'] = formData['geolocation']['latitude']
-            del formData['geolocation']
-        return formData
-        
-        
+	buttons = Buttons.cancel_add
+
+	primary_key = "name"
+	create_keys = ['name', 'organization', 'label']
+	redirect_after = "tomato.admin.site.info"
+
+	message_after = geolocation_script
+
+	def __init__(self, orga_namelist, *args, **kwargs):
+		super(SiteForm, self).__init__(*args, **kwargs)
+		self.fields["organization"].widget = forms.widgets.Select(choices=orga_namelist)
+		self.helper.layout = Layout(
+			'name',
+			'label',
+			'description',
+			'organization',
+			'location',
+			'geolocation_longitude',
+			'geolocation_latitude',
+			self.buttons
+		)
+
+	def get_values(self):
+		formData = super(SiteForm, self).get_values()
+		formData['geolocation'] = {'longitude': formData['geolocation_longitude'],
+								   'latitude': formData['geolocation_latitude']}
+		del formData['geolocation_longitude']
+		del formData['geolocation_latitude']
+
+		return formData
+
+	def input_values(self, formData):
+		if formData is not None and 'geolocation' in formData and formData['geolocation']:
+			formData['geolocation_longitude'] = formData['geolocation']['longitude']
+			formData['geolocation_latitude'] = formData['geolocation']['latitude']
+			del formData['geolocation']
+		return formData
+
 class AddSiteForm(SiteForm):
-    title = "Add Site"
-    formaction = "tomato.admin.site.add"
-    formaction_haskeys = False
-    def __init__(self, organization=None, *args, **kwargs):
-        super(AddSiteForm, self).__init__(*args, **kwargs)
-        if organization is not None:
-            self.fields['organization'].initial = organization
-        
-    
+	title = "Add Site"
+	formaction = "tomato.admin.site.add"
+	formaction_haskeys = False
+
+	def __init__(self, organization=None, *args, **kwargs):
+		super(AddSiteForm, self).__init__(*args, **kwargs)
+		if organization is not None:
+			self.fields['organization'].initial = organization
+
+
 class EditSiteForm(SiteForm):
-    buttons = Buttons.cancel_save
-    title = "Editing Site '%(name)s'"
-    formaction = "tomato.admin.site.edit"
-    def __init__(self, *args, **kwargs):
-        super(EditSiteForm, self).__init__(*args, **kwargs)
-        self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-        self.fields["name"].help_text=None
-        
-    
+	buttons = Buttons.cancel_save
+	title = "Editing Site '%(name)s'"
+	formaction = "tomato.admin.site.edit"
+
+	def __init__(self, *args, **kwargs):
+		super(EditSiteForm, self).__init__(*args, **kwargs)
+		self.fields["name"].widget = forms.TextInput(attrs={'readonly': 'readonly'})
+		self.fields["name"].help_text = None
+
+
 class RemoveSiteForm(RemoveConfirmForm):
-    redirect_after_useargs = False
-    formaction = "tomato.admin.site.remove"
-    redirect_after = "tomato.admin.site.list"
-    message="Are you sure you want to remove the site '%(name)s'?"
-    title="Remove Site '%(name)s'"
-    primary_key = 'name'
-    
-    
+	redirect_after_useargs = False
+	formaction = "tomato.admin.site.remove"
+	redirect_after = "tomato.admin.site.list"
+	message = "Are you sure you want to remove the site '%(name)s'?"
+	title = "Remove Site '%(name)s'"
+	primary_key = 'name'
+
+
 @wrap_rpc
 def list(api, request):
-    return HttpResponseRedirect(reverse("tomato.admin.organization.list"))
+	return HttpResponseRedirect(reverse("tomato.admin.organization.list"))
+
 
 @wrap_rpc
 def info(api, request, name):
-    orga = api.site_info(name)['organization']
-    return HttpResponseRedirect(reverse("tomato.admin.organization.info", kwargs={'name':orga}))    
-    
+	orga = api.site_info(name)['organization']
+	return HttpResponseRedirect(reverse("tomato.admin.organization.info", kwargs={'name': orga}))
+
 
 @wrap_rpc
 def add(api, request, organization=None):
-    return add_function(request,
-                        Form=AddSiteForm,
-                        create_function=api.site_create,
-                        clean_formkwargs= ({'organization':organization} if organization is not None else {}),
-                        formkwargs = {'orga_namelist':append_empty_choice(organization_name_list(api))}
-                        )
+	return add_function(request,
+						Form=AddSiteForm,
+						create_function=api.site_create,
+						modify_function=api.site_modify,
+						clean_formkwargs=({'organization': organization} if organization is not None else {}),
+						formkwargs={'orga_namelist': append_empty_choice(organization_name_list(api))}
+						)
+
 
 @wrap_rpc
 def edit(api, request, name=None):
-    return edit_function(request,
-                         Form=EditSiteForm,
-                         modify_function=api.site_modify,
-                         primary_value=name,
-                         clean_formargs=[api.site_info(name)],
-                         formargs = [append_empty_choice(organization_name_list(api))]
-                         )
-    
+	return edit_function(request,
+						 Form=EditSiteForm,
+						 modify_function=api.site_modify,
+						 primary_value=name,
+						 clean_formargs=[api.site_info(name)],
+						 formargs=[append_empty_choice(organization_name_list(api))]
+						 )
 
-    
+
 @wrap_rpc
 def remove(api, request, name):
-    return remove_function(request,
-                           Form=RemoveSiteForm,
-                           delete_function=api.site_remove,
-                           primary_value=name
-                           )
+	return remove_function(request,
+						   Form=RemoveSiteForm,
+						   delete_function=api.site_remove,
+						   primary_value=name
+						   )
+

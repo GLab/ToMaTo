@@ -16,20 +16,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import checkauth
-from ..lib.cache import cached #@UnresolvedImport
+from ..lib.cache import cached, invalidates #@UnresolvedImport
 
 def _getOrganization(name):
-	o = host.getOrganization(name)
+	o = Organization.get(name)
 	UserError.check(o, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": name})
 	return o
 
 def _getSite(name):
-	s = host.getSite(name)
+	s = Site.get(name)
 	UserError.check(s, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist", data={"name": name})
 	return s
 
 def _getHost(name):
-	h = host.get(name=name)
+	h = Host.get(name=name)
 	UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"name": name})
 	return h
 
@@ -38,15 +38,15 @@ def organization_list():
 	"""
 	undocumented
 	"""
-	return [o.info() for o in host.getAllOrganizations()]
+	return [o.info() for o in Organization.objects.all()]
 
 @checkauth
-def organization_create(name, description="", attrs={}):
+@invalidates(organization_list)
+def organization_create(name, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	o = host.createOrganization(name, description, attrs)
-	organization_list.invalidate()
+	o = Organization.create(name, label, attrs)
 	return o.info()
 
 def organization_info(name):
@@ -57,23 +57,23 @@ def organization_info(name):
 	return orga.info()
 
 @checkauth
+@invalidates(organization_list)
 def organization_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	orga = _getOrganization(name)
 	orga.modify(attrs)
-	organization_list.invalidate()
 	return orga.info()
 
 @checkauth
+@invalidates(organization_list)
 def organization_remove(name):
 	"""
 	undocumented
 	"""
 	orga = _getOrganization(name)
 	orga.remove()
-	organization_list.invalidate()
 
 @checkauth
 def organization_usage(name): #@ReservedAssignment
@@ -87,18 +87,18 @@ def site_list(organization=None):
 	"""
 	if organization:
 		organization = _getOrganization(organization)
-		sites = host.getAllSites(organization=organization)
+		sites = Site.objects(organization=organization)
 	else:
-		sites = host.getAllSites()
+		sites = Site.objects
 	return [s.info() for s in sites]
 
 @checkauth
-def site_create(name, organization, description="", attrs={}):
+@invalidates(site_list)
+def site_create(name, organization, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	s = host.createSite(name, organization, description, attrs)
-	site_list.invalidate()
+	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
 def site_info(name):
@@ -109,23 +109,23 @@ def site_info(name):
 	return site.info()
 
 @checkauth
+@invalidates(site_list)
 def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	site = _getSite(name)
 	site.modify(attrs)
-	site_list.invalidate()
 	return site.info()
 
 @checkauth
+@invalidates(site_list)
 def site_remove(name):
 	"""
 	undocumented
 	"""
 	site = _getSite(name)
 	site.remove()
-	site_list.invalidate()
 
 @cached(timeout=300, maxSize=1000, autoupdate=True)
 def host_list(site=None, organization=None):
@@ -133,22 +133,22 @@ def host_list(site=None, organization=None):
 	undocumented
 	"""
 	if site:
-		hosts = host.getAll(site__name=site)
+		hosts = Host.objects(site__name=site)
 	elif organization:
-		hosts = host.getAll(site__organization__name=organization)
+		hosts = Host.objects(site__organization__name=organization)
 	else:
-		hosts = host.getAll()
+		hosts = Host.objects
 	return [h.info() for h in hosts]
 
 @checkauth
+@invalidates(host_list)
 def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
 	if not attrs: attrs = {}
 	site = _getSite(site)
-	h = host.create(name, site, attrs)
-	host_list.invalidate()
+	h = Host.create(name, site, attrs)
 	return h.info()
 
 @checkauth
@@ -160,23 +160,23 @@ def host_info(name):
 	return h.info()
 
 @checkauth
+@invalidates(host_list)
 def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	h = _getHost(name)
 	h.modify(attrs)
-	host_list.invalidate()
 	return h.info()
 
 @checkauth
+@invalidates(host_list)
 def host_remove(name):
 	"""
 	undocumented
 	"""
 	h = _getHost(name)
 	h.remove()
-	host_list.invalidate()
 
 @checkauth
 def host_users(name):
@@ -191,5 +191,6 @@ def host_usage(name): #@ReservedAssignment
 	h = _getHost(name)
 	return h.totalUsage.info()	
 
-from .. import host
+from ..host import Host, Site
+from ..host.organization import Organization
 from ..lib.error import UserError

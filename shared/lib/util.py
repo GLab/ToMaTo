@@ -15,17 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import thread, time, datetime, string
+import thread, time, datetime, string, types
 from decorators import xmlRpcSafe
-from django.db import transaction, DatabaseError
 
 def wrap_task(fn):
 	def call(*args, **kwargs):
 		try:
 			return fn(*args, **kwargs)
 		except Exception, exc:
-			if isinstance(exc, DatabaseError):
-				transaction.rollback()
 			from .. import handleError
 			handleError()
 	call.__module__ = fn.__module__
@@ -123,6 +120,21 @@ def calculate_subnet6(ip_with_prefix):
 		ip.insert(0, hex(int(ip_num % (1<<16)))[2:])
 		ip_num = ip_num // (1<<16)
 	return ":".join(ip)+"/"+prefix
+
+def checkApiSafe(value, path=''):
+	if value is None or isinstance(value, (bool, int, long, float)+types.StringTypes):
+		return
+	if type(value) == dict:
+		for key, value in value.items():
+			if not isinstance(key, types.StringTypes):
+				raise TypeError("Invalid key: %s (%s)" % (key, path))
+			checkApiSafe(value, path+'.'+key)
+		return
+	if type(value) in (list, tuple):
+		for num in range(0, len(value)):
+			checkApiSafe(value[num], path+'[%d]' % num)
+		return
+	raise TypeError("Unsupported type: %s (%s)" % (type(value), path))
 
 @xmlRpcSafe
 def xml_rpc_sanitize(s):

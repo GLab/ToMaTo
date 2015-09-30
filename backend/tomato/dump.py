@@ -1,5 +1,5 @@
 from .lib import dump as dump_lib
-import misc
+import misc, traceback, sys
 
 envCmds = { 
   "disks": ["df", "-h"],

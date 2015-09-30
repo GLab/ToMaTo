@@ -16,8 +16,7 @@ docs_build
 *.qcow2
 .idea
 
-web-old
-backend-old
+*old*
 web/tomato/static/newui
 backend/htmlcov
 backend/templates

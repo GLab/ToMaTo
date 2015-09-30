@@ -32,10 +32,10 @@ from lib.error import UserError #@UnresolvedImport
 from tomato.crispy_forms.layout import Layout
 
 class ProfileForm(BootstrapForm):
-	label = forms.CharField(max_length=255, help_text="The displayed label for this template")
+	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
 	ram = forms.IntegerField(label="RAM (MB)")
 	preference = forms.IntegerField(label="Preference", help_text="Sort profiles in the editor (higher preference first). The profile with highest preference will be the default. Must be an integer number.")
-	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
+	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this profile to administrators", required=False)
 	tech = forms.ChoiceField(label="Tech",choices=techs_choices())
 	description = forms.CharField(widget = forms.Textarea, required=False)
 	def __init__(self, *args, **kwargs):
@@ -102,7 +102,7 @@ class EditKVMqmForm(EditProfileForm):
 	
 	
 class AddProfileForm(ProfileForm):
-	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all templates of the same tech. Cannot be changed. Not displayed.")
+	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles of the same tech. Cannot be changed. Not displayed.")
 	diskspace = forms.IntegerField(label="Disk Space (MB)", required = False, help_text="only OpenVZ and KVMqm")
 	cpus = forms.FloatField(label="number of CPUs", help_text="Repy, OpenVZ: float number; KVMqm: integer number")
 	def __init__(self, *args, **kwargs):
@@ -123,25 +123,24 @@ class AddProfileForm(ProfileForm):
 
 @wrap_rpc
 def list(api, request, tech):
-	profile_list = api.resource_list('profile')
+	profile_list = api.profile_list()
+	print profile_list
 	def _cmp(ta, tb):
-		a = ta["attrs"]
-		b = tb["attrs"]
-		c = cmp(a["tech"], b["tech"])
+		c = cmp(ta["tech"], tb["tech"])
 		if c:
 			return c
-		c = -cmp(a["preference"], b["preference"])
+		c = -cmp(ta["preference"], tb["preference"])
 		if c:
 			return c
-		return cmp(a["name"], b["name"])
+		return cmp(ta["name"], tb["name"])
 	profile_list.sort(_cmp)
 	if tech:
-		profile_list = filter(lambda t: t["attrs"]["tech"] == tech, profile_list)
+		profile_list = filter(lambda t: t["tech"] == tech, profile_list)
 	return render(request, "profile/list.html", {'profile_list': profile_list, 'tech': tech, 'techs_dict': techs_dict})
 
 @wrap_rpc
 def info(api, request, res_id):
-	profile = api.resource_info(res_id)
+	profile = api.profile_info(res_id)
 	return render(request, "profile/info.html", {"profile": profile, "techs_dict": techs_dict})
 
 @wrap_rpc
@@ -150,9 +149,7 @@ def add(api, request, tech=None):
 		form = AddProfileForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			data={'tech': formData['tech'],
-				 'name': formData['name'],
-				 'ram':formData['ram'],
+			data={'ram':formData['ram'],
 				 'label':formData['label'],
 				 'preference':formData['preference'],
 				 'description':formData['description']}
@@ -164,7 +161,7 @@ def add(api, request, tech=None):
 				data['restricted'] = formData['restricted']
 			else:
 				data['restricted'] = False
-			res = api.resource_create('profile',data)
+			res = api.profile_create(formData['tech'], formData['name'], data)
 			return HttpResponseRedirect(reverse("tomato.profile.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
@@ -179,11 +176,11 @@ def remove(api, request, res_id=None):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			api.resource_remove(res_id)
+			api.profile_remove(res_id)
 			return HttpResponseRedirect(reverse("profile_list"))
 	form = RemoveConfirmForm.build(reverse("tomato.profile.remove", kwargs={"res_id": res_id}))
-	res = api.resource_info(res_id)
-	return render(request, "form.html", {"heading": "Remove Device Profile", "message_before": "Are you sure you want to remove the device profile '"+res["attrs"]["name"]+"'?", 'form': form})	
+	res = api.profile_info(res_id)
+	return render(request, "form.html", {"heading": "Remove Device Profile", "message_before": "Are you sure you want to remove the device profile '"+res["name"]+"'?", 'form': form})
 	
 @wrap_rpc
 def edit(api, request, res_id=None):
@@ -209,16 +206,15 @@ def edit(api, request, res_id=None):
 			else:
 				data['restricted'] = False
 			
-			UserError.check(api.resource_info(formData['res_id'])['type'] == 'template',UserError.INVALID_PARAMETER,"This resource is not a profile", data={'id':formData['res_id']})
-			api.resource_modify(formData["res_id"],data)
+			api.profile_modify(formData["res_id"],data)
 			return HttpResponseRedirect(reverse("tomato.profile.info", kwargs={"res_id": res_id}))
 		label = request.POST["label"]
 		UserError.check(label, UserError.INVALID_DATA, "Form transmission failed.")
 		return render(request, "form.html", {'form': form, "heading":"Edit Device Profile '"+label+"'"})
 	else:
 		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
-		res_info = api.resource_info(res_id)
-		origData = res_info['attrs']
+		res_info = api.profile_info(res_id)
+		origData = res_info
 		origData['res_id'] = res_id
 		if origData['tech'] == 'repy':
 			form = EditRePyForm(res_id, origData)
@@ -226,4 +222,4 @@ def edit(api, request, res_id=None):
 			form = EditOpenVZForm(res_id, origData)
 		else:
 			form = EditKVMqmForm(res_id, origData)
-		return render(request, "form.html", {'form': form, "heading":"Edit "+res_info['attrs']['tech']+" Device Profile '"+res_info['attrs']['label']+"'"})
+		return render(request, "form.html", {'form': form, "heading":"Edit "+res_info['tech']+" Device Profile '"+res_info['label']+"'"})

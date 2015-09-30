@@ -46,6 +46,7 @@ class QMError(Error):
 	CODE_NO_SUCH_NIC="qm.no_such_nic"
 	CODE_NIC_ALREADY_EXISTS="qm.nix_already_exists"
 	CODE_COMMAND="qm.command"
+	CODE_STILL_RUNNING="qm.still_running"
 
 def _qm(vmid, cmd, params=None):
 	if not params: params = []

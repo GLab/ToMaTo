@@ -34,9 +34,13 @@ class Template(resources.Resource):
 	tech = models.CharField(max_length=20)
 	name = models.CharField(max_length=50)
 	preference = models.IntegerField(default=0)
-	torrent_data = attributes.attribute("torrent_data", str)
+	torrent_data = attributes.attribute("torrent_data", str)  #encoded as base64
 	kblang = attributes.attribute("kblang",str,null=False,default="en-us")
-	
+
+	@property
+	def torrent_data_hash(self):
+		return hashlib.md5(base64.b64decode(self.torrent_data)).hexdigest() if self.torrent_data else None
+
 	TYPE = "template"
 
 	class Meta:
@@ -57,7 +61,7 @@ class Template(resources.Resource):
 		return self
 	
 	def getPath(self):
-		hash = hashlib.md5(self.torrent_data or "").hexdigest()
+		hash = self.torrent_data_hash
 		return os.path.join(config.TEMPLATE_DIR, PATTERNS[self.tech] % hash)
 	
 	def getTorrentPath(self):
@@ -113,10 +117,11 @@ class Template(resources.Resource):
 		if self.torrent_data:
 			del info["attrs"]["torrent_data"]
 		info["attrs"]["ready"] = self.isReady()
+		info["attrs"]["size"] = os.path.getsize(self.getPath()) if os.path.exists(self.getPath()) else 0
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
-		info["attrs"]["torrent_data_hash"] = hashlib.md5(str(self.torrent_data)).hexdigest() if self.torrent_data else None
+		info["attrs"]["torrent_data_hash"] = self.torrent_data_hash
 		info["attrs"]["kblang"] = self.kblang
 		return info
 

@@ -46,7 +46,10 @@ def spawnShell(cmd, stdout=DEVNULL, daemon=True, cwd=None, useExec=True):
     return proc.pid
 
 def run(cmd, **kwargs):
-    error, output = runUnchecked(cmd, **kwargs)
+    try:
+        error, output = runUnchecked(cmd, **kwargs)
+    except Exception, exc:
+        error, output = True, repr(exc)
     if error:
         raise CommandError(" ".join(cmd), error, output)
     return output

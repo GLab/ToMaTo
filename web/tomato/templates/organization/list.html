@@ -24,7 +24,7 @@
 		<div class="col-md-4 col-sm-6 col-xs-12">
 			<div class="organization">
 				<a href="{%url "admin.organization.info" orga.name%}" style="color:black; text-decoration:none;">
-					<div class="page-header"><h3>{{orga.description}}</h3></div>
+					<div class="page-header"><h3>{{orga.label}}</h3></div>
 					
 					{% if orga.image_url %}
 						<p style="margin-top:0.7cm; margin-bottom:0.7cm; min-height:5em;"><img src="{{orga.image_url}}" class="site" /></p>
@@ -35,8 +35,8 @@
 						{% if orga.hosts.count %}(availability: {{orga.hosts.avg_availability|percentage}}, load: {{orga.hosts.avg_load|percentage}}){% endif %}
 					</b></p>
 					
-					{% if orga.description_text %}
-						<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
+					{% if orga.description %}
+						<p>{{orga.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
 					{% endif %}
 					
 				</a>

@@ -12,7 +12,7 @@ class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=None,onscreenmessage=None):
+	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=None, onscreenmessage=None):
 		self.type = type or self.TYPE
 		self.code = code
 		self.message = message
@@ -55,7 +55,7 @@ class Error(Exception):
 		"""
 		creates a dict representation of this error.
 		"""
-		return self.__dict__
+		return dict(self.__dict__)
 
 	@property
 	def rawstr(self):
@@ -84,13 +84,19 @@ class Error(Exception):
 		raise exception
 
 	@classmethod
-	def wrap(cls, error, code=UNKNOWN, message=None, *args, **kwargs):
-		exception = cls(code=code, message=message or str(error), *args, **kwargs)
-		exception.dump()
-		return exception
+	def wrap(cls, error, code=UNKNOWN, todump=None, message=None, *args, **kwargs):
+		return cls(code=code, message=message or str(error), todump=todump *args, **kwargs)
 
 	def __str__(self):
-		return "%s %s error [%s]: %s (%r)" % (self.module, self.type, self.code, self.message or "", self.data)
+		lines = []
+		for k, v in self.data.items():
+			if k == "trace":
+				lines.append("\ttrace=")
+				for l in v.splitlines():
+					lines.append("\t\t" + l)
+			else:
+				lines.append("\t%s=%r" % (k, v))
+		return "%s %s error [%s]: %s\n%s" % (self.module, self.type, self.code, self.message or "", "\n".join(lines))
 
 	def __repr__(self):
 		return "Error(module=%r, type=%r, code=%r, message=%r, data=%r, onscreenmessage=%r)" % (self.module, self.type, self.code, self.message, self.data,self.onscreenmessage)

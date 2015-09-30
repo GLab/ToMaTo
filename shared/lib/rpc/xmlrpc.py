@@ -174,7 +174,12 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		pass
 
 	def send(self, response):
-		res = xmlrpclib.dumps(response, methodresponse=True, allow_none=True)
+		try:
+			res = xmlrpclib.dumps(response, methodresponse=True, allow_none=True)
+		except:
+			import traceback
+			traceback.print_exc()
+			raise
 		length = len(res)
 		self.send_response(200)
 		if length > 1024 and "gzip" in [s.strip() for s in self.headers.get("accept-encoding", "").split(",")]:

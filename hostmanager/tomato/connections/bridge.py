@@ -183,10 +183,12 @@ class Bridge(connections.Connection):
 		elA, elB = [el for el in els]
 		if elA.id > elB.id:
 			#force ordering on connected elements, so from and to have defined meanings
+			#lower number is A, higher number is B, A -> B is FROM, B -> A is TO
 			elA, elB = elB, elA
 		ifA, ifB = elA.interfaceName(), elB.interfaceName()
 		if not ifA or not ifB:
 			return
+		#set attributes in reversed manner as it only applies to traffic being received
 		attrsA = dict([(k.replace("_to", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_to")])
 		attrsB = dict([(k.replace("_from", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_from")])
 		tc.setLinkEmulation(ifA, **attrsA)
@@ -199,8 +201,14 @@ class Bridge(connections.Connection):
 		ifA, ifB = [el.interfaceName() for el in els]
 		if not ifA or not ifB:
 			return
-		tc.clearLinkEmulation(ifA)
-		tc.clearLinkEmulation(ifB)
+		try:
+			tc.clearLinkEmulation(ifA)
+		except:
+			pass
+		try:
+			tc.clearLinkEmulation(ifB)
+		except:
+			pass
 	
 	def modify_emulation(self, val):
 		if self.emulation == val:

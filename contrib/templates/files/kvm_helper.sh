@@ -15,6 +15,9 @@ case "$ISSUE" in
   Debian*7*)
     DISTRO="debian_7"
     ;;
+  Debian*8*)
+    DISTRO="debian_8"
+    ;;
   Ubuntu*10.04*)
     DISTRO="ubuntu_1004"
     ;;
@@ -39,6 +42,18 @@ case "$ISSUE" in
   Ubuntu*13.10*)
     DISTRO="ubuntu_1310"
     ;;
+  Ubuntu*14.04*)
+    DISTRO="ubuntu_1404"
+    ;;
+  Ubuntu*14.10*)
+    DISTRO="ubuntu_1410"
+    ;;
+  Ubuntu*15.04*)
+    DISTRO="ubuntu_1504"
+    ;;
+  Ubuntu*15.10*)
+    DISTRO="ubuntu_1510"
+    ;;
 esac
 
 cp /prepare_vm.sh /target
@@ -60,7 +75,7 @@ shutdown -h now
 EOF
     chmod a+x /target/etc/rc2.d/S15prepare_vm
     ;;
-  debian_6|debian_7)
+  debian_*)
     cat <<EOF >/target/etc/init.d/prepare_vm
 #!/bin/sh
 ### BEGIN INIT INFO

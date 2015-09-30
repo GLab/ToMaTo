@@ -3,7 +3,7 @@
 {% load url from future %}
 
 {% block title %}
-<title>Organization "{{organization.description}}" - G-Lab ToMaTo</title> 
+<title>Organization "{{organization.label}}" - G-Lab ToMaTo</title>
 {% endblock %}
 
 {% block content %}
@@ -12,7 +12,7 @@
   <button type="submit" formaction="{%url "admin.organization.list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> All Organizations</button>
 </form>
 
-<h1>Organization "{{organization.description}}"</h1>
+<h1>Organization "{{organization.label}}"</h1>
 
 <div class="skip-xs"></div>
 
@@ -29,14 +29,16 @@
 	    <td>{{organization.name}}</td>
 	</tr>
 	{% endif %}
+	{% if organization.homepage %}
 	<tr>
 		<th>Homepage:</th>
 		<td><a href="{{organization.homepage_url}}" target="_blank">{{organization.homepage_url}}</a>
 	</tr>
-	{% if organization.description_text %}
+	{% endif %}
+	{% if organization.description %}
 	<tr>
 		<th>Description:</th>
-		<td>{{organization.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
+		<td>{{organization.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
 	</tr>
 	{% endif %}
 </table>
@@ -69,7 +71,7 @@
 <a name="{{site.name}}"></a>
 <div class="skip-sm"><hr/></div>
 
-<h2>Site "{{site.description}}"</h2>
+<h2>Site "{{site.label}}"</h2>
 
 <table class="table">
 	{% if request.session.user and request.session.user|args:organization.name|call:"isHostManager" %}
@@ -92,10 +94,10 @@
 			{% endif %}
 		</td>
 	</tr>
-	{% if site.description_text %}
+	{% if site.description %}
 	<tr>
 		<th>Description:</th>
-	    <td>{{site.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
+	    <td>{{site.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
 	</tr>
 	{% endif %}
 </table>

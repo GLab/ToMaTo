@@ -23,11 +23,6 @@ import math
 
 from lib import wrap_rpc
 
-def get_site_location(site_name,api):
-	geoloc = api.site_info(site_name)['geolocation']
-	return {'longitude':geoloc.get('longitude',0),
-			'latitude':geoloc.get('latitude',0)}
-
 def site_list(api):
 	r = []
 	for i in api.site_list():
@@ -42,13 +37,14 @@ def site_location_list(api):
 	for o in organizations:
 		orgas[o['name']] = o
 	for i in l:
-		r.append({'name':i['name'],
-				  'geolocation':get_site_location(i['name'],api),
-				  'displayName':i['description'],
-				  'location':i['location'],
-				  'organization':orgas[i['organization']],
-				  'description':i['description_text']
-				  })
+		if i['geolocation']:
+			r.append({'name':i['name'],
+				'geolocation': i['geolocation'],
+				'label':i['label'],
+				'location':i['location'],
+				'organization':orgas[i['organization']],
+				'description':i['description']
+			})
 	return r
 
 def site_site_pairs(api,allow_self=True): # allow_self: allow self-referencing pairs like ('ukl','ukl')
@@ -77,11 +73,10 @@ class Site_site_stats:
 		for p in self.cache_site_site_pairs:
 			src = p[0]
 			dst = p[1]
-			stats = api.link_statistics(src,dst,"5minutes")
-			
+			stats = api.link_statistics(src,dst)
 			#find last entry
 			last = {'end':0}
-			for entry in stats:
+			for entry in stats['5minutes']:
 				if entry['end']>last['end']:
 					last = entry
 					

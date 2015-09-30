@@ -16,6 +16,9 @@ VMTYPE=""
 if [ -d /proc/vz ]; then
   VMTYPE="openvz"
 fi
+if fgrep -q docker /proc/1/cgroup; then
+  VMTYPE="openvz"
+fi
 if dmesg | fgrep -q QEMU; then
   VMTYPE="kvm"
 fi
@@ -35,6 +38,9 @@ case "$ISSUE" in
     ;;
   Debian*7*)
     DISTRO="debian_7"
+    ;;
+  Debian*8*)
+    DISTRO="debian_8"
     ;;
   Ubuntu*10.04*)
     DISTRO="ubuntu_1004"
@@ -60,6 +66,18 @@ case "$ISSUE" in
   Ubuntu*13.10*)
     DISTRO="ubuntu_1310"
     ;;
+  Ubuntu*14.04*)
+    DISTRO="ubuntu_1404"
+    ;;
+  Ubuntu*14.10*)
+    DISTRO="ubuntu_1410"
+    ;;
+  Ubuntu*15.04*)
+    DISTRO="ubuntu_1504"
+    ;;
+  Ubuntu*15.10*)
+    DISTRO="ubuntu_1510"
+    ;;
   *)
     fail "Unknown distribution: $ISSUE"
 esac
@@ -82,7 +100,7 @@ esac
 echo "Installing packages..."
 case $DISTRO in
   debian*|ubuntu*)
-    apt-get install -y ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less
+    apt-get install --no-install-recommends -y ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less
     ;;
   *)
     fail "$DISTRO unsupported"
@@ -142,10 +160,11 @@ ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 echo "Auto-login on consoles..."
 case $DISTRO in
   ubuntu*|debian*)
-    apt-get install -y mingetty
-    for file in /etc/inittab /etc/init/tty1.conf; do
+    apt-get install --no-install-recommends -y mingetty
+    for file in /etc/inittab /etc/init/tty1.conf "/etc/systemd/system/getty.target.wants/getty@tty1.service"; do
       if [ -f "$file" ]; then
         sed -i -e 's/\/sbin\/getty\( -8\)\? 38400/\/sbin\/mingetty --autologin root --noclear/g' "$file"
+        sed -i -e 's/ExecStart=-\/sbin\/agetty/ExecStart=-\/sbin\/mingetty --autologin root/g' "$file"
       fi
     done
     ;;
@@ -246,7 +265,7 @@ rm -f \$0
 EOF
     chmod a+x /etc/rc2.d/S15ssh_gen_host_keys
     ;;
-  debian_6|debian_7)
+  debian_*)
     cat <<EOF >/etc/init.d/ssh_gen_host_keys
 #!/bin/sh
 ### BEGIN INIT INFO
@@ -277,8 +296,10 @@ case $DISTRO in
     echo "Ubuntu: Disabling network wait"
     sed -i -e 's/sleep/#sleep/g' /etc/init/failsafe.conf
     echo "Ubuntu: Disabling boot splash"
-    sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="noplymouth"/g' /etc/default/grub
-    update-grub
+    if [ -f /etc/default/grub ]; then
+      sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="noplymouth"/g' /etc/default/grub
+      update-grub
+    fi
     ;;
 esac
 
@@ -387,7 +408,7 @@ fi
 echo "Cleanup..."
 case $DISTRO in
   debian*|ubuntu*)
-    apt-get --purge clean
+    apt-get clean
     ;;
   *)
     fail "$DISTRO unsupported"

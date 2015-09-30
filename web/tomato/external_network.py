@@ -68,7 +68,8 @@ class EditNetworkForm(NetworkForm):
 	
 @wrap_rpc
 def list(api, request):
-	netw_list = api.resource_list('network')
+	netw_list = api.network_list()
+	print netw_list
 	return render(request, "external_networks/list.html", {'netw_list': netw_list})
 
 @wrap_rpc
@@ -77,7 +78,7 @@ def add(api, request):
 		form = NetworkForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			api.resource_create('network',{'kind':formData['kind'],
+			api.network_create(formData['kind'], {
 										   'label':formData['label'],
 										   'preference':formData['preference'],
 										   'description':formData['description'],
@@ -95,11 +96,11 @@ def remove(api, request, res_id=None):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			api.resource_remove(res_id)
+			api.network_remove(res_id)
 			return HttpResponseRedirect(reverse("tomato.external_network.list"))
 	form = RemoveConfirmForm.build(reverse("tomato.external_network.remove", kwargs={"res_id": res_id}))
-	res = api.resource_info(res_id)
-	return render(request, "form.html", {"heading": "Remove External Network", "message_before": "Are you sure you want to remove the external network '"+res["attrs"]["kind"]+"'?", 'form': form})	
+	res = api.network_info(res_id)
+	return render(request, "form.html", {"heading": "Remove External Network", "message_before": "Are you sure you want to remove the external network '"+res["kind"]+"'?", 'form': form})
 	
 
 @wrap_rpc
@@ -108,8 +109,7 @@ def edit(api, request, res_id = None):
 		form = EditNetworkForm(res_id, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			UserError.check(api.resource_info(formData['res_id'])['type'] == 'network',UserError.INVALID_PARAMETER,"This resource is not a template", data={'id':formData['res_id']})
-			api.resource_modify(formData["res_id"],{'label':formData['label'],
+			api.network_modify(formData["res_id"],{'label':formData['label'],
 													'preference':formData['preference'],
 													'description':formData['description'],
 									   				'big_icon':formData['big_icon'],
@@ -120,8 +120,7 @@ def edit(api, request, res_id = None):
 		return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+kind+"'"})
 	else:
 		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
-		res_info = api.resource_info(res_id)
-		origData = res_info['attrs']
-		origData['res_id'] = res_id
-		form = EditNetworkForm(res_id, origData)
-		return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+res_info['attrs']['label']+"'"})
+		res_info = api.network_info(res_id)
+		res_info['res_id'] = res_id
+		form = EditNetworkForm(res_id, res_info)
+		return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+res_info['label']+"'"})
