@@ -26,12 +26,36 @@ from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 
 from lib import getapi, getNews, wrap_rpc
 
-def index(request):
+# to be called by index()
+# assumes that the request has a user logged in.
+def _pending_registrations(api, request):
+	if request.session.user.isAdmin():
+		if request.session.user.isGlobalAdmin():
+			acclist = api.account_list()
+		else:
+			acclist = api.account_list(organization = request.session.user.organization)
+		for acc in acclist:
+			if "new_account" in acc['flags']:
+				return True
+		return False
+	else:
+		# if the user may not see pending registrations, there are none to review.
+		return False
+
+@wrap_rpc
+def index(api, request):
 	try:
 		news = getNews()
 	except:
 		news = {}
-	return render(request, "main/start.html", {"news": news})
+
+	if request.session.user:
+		pending_registrations = _pending_registrations(api, request)
+	else:
+		# not logged in. Thus, nothing to review.
+		pending_registrations = False
+
+	return render(request, "main/start.html", {"news": news, "pending_registrations": pending_registrations})
 
 @wrap_rpc
 def statistics(api, request):
