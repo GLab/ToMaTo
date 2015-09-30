@@ -104,6 +104,9 @@ class Entity(object):
 	def setUnknownAttributes(self, attrs):
 		raise NotImplemented()
 
+	def onError(self):
+		pass
+
 	def modify(self, attrs):
 		ATTRIBUTES = self.ATTRIBUTES
 		for key, value in attrs.items():
@@ -115,6 +118,7 @@ class Entity(object):
 					self.checkUnknownAttribute(key, value)
 			except Error as err:
 				err.data.update(type=self.type, attribute=key, value=value)
+				self.onError(err)
 				raise
 		unknownAttrs = {}
 		for key, value in attrs.items():
@@ -126,6 +130,7 @@ class Entity(object):
 					unknownAttrs[key] = value
 			except Error as err:
 				err.data.update(type=self.type, attribute=key, value=value)
+				self.onError(err)
 				raise
 		if unknownAttrs:
 			self.setUnknownAttributes(unknownAttrs)
@@ -158,6 +163,7 @@ class Entity(object):
 				return self.executeUnknownAction(action, params)
 		except Error as err:
 			err.data.update(type=self.type, action=action)
+			self.onError(err)
 			raise
 		finally:
 			self.save()
