@@ -104,7 +104,7 @@ class Entity(object):
 	def setUnknownAttributes(self, attrs):
 		raise NotImplemented()
 
-	def onError(self):
+	def onError(self, exc):
 		pass
 
 	def modify(self, attrs):

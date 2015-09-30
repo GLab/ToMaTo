@@ -196,15 +196,12 @@ class VMElement(Element):
 		if isinstance(self.element, HostElement):
 			self.element.action("stop")
 		self.setState(ST_PREPARED, True)
-		self.after_stop()
+		for ch in self.children:
+			ch.triggerConnectionStop()
 
 	def after_rextfv_upload_use(self):
 		self.set_rextfv_last_started()
-		
-	def after_stop(self):
-		for ch in self.children:
-			ch.triggerConnectionStop()
-	
+
 	def after_start(self):
 		self.set_rextfv_last_started()
 		for ch in self.children:

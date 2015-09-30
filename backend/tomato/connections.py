@@ -320,6 +320,7 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		self.setState(ST_CREATED)
 
 	def triggerStart(self):
+		self.reload()
 		for el in self.elements:
 			if not el.readyToConnect:
 				return
@@ -333,10 +334,10 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			if self in starting_list:
 				return
 			starting_list.add(self)
-		try: 
+		try:
 			with getLock(self):
-				obj = Connection.objects.get(id=self.id)
-				obj._start()
+				self.reload()
+				self._start()
 		finally:
 			with starting_list_lock:
 				starting_list.remove(self)
@@ -350,8 +351,8 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		try: 
 			with getLock(self):
 				try:
-					obj = Connection.objects.get(id=self.id)
-					obj._stop()
+					self.reload()
+					self._stop()
 				except Connection.DoesNotExist:
 					# Other end of connection deleted the connection, no need to stop it
 					pass
