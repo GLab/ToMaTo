@@ -73,26 +73,33 @@ head.appendChild(style);
 {% endif %}
 
 <div class="container">
+
+		<div style="width:100%; display:block; height:80px;">
+			<div style="width:100%; text-align:right; width:100%; background:url(/img/logo_2.png); height:80px;">
+				<div style="background:white; width:285px; height:80px; float:left;"><img src="/img/logo_1.png"/></div>
+
+				<table style="display:inline;">
+					<tr>
+						<td style="height:28px;"></td>
+					</tr>
+					<tr>
+						<td>
+							<small>
+								{% if request.session.user %}
+								Logged in as {{request.session.user.realname}} (<a href="{%url "main.logout" %}">logout</a>)
+								{% else %}
+								&nbsp;
+								{% endif %}
+							</small>
+						</td>
+					</tr>
+				</table>
+
+
+				<div style="background:white; height:80px; width:13px; float:right;"><img src="/img/logo_3.png"/></div>
+			</div>
+        </div>
 	<div class="masthead">
-		<table style="width:100%">
-		<tr>
-		<td>
-	        <a href="/" class="logobacklink">
-	        	<img src="/style/glablogo.jpg" alt="GermanLab" class="img-rounded">
-	        	<img src="/style/tomato_logo.png" alt="ToMaTo" class="img-rounded">
-	        </a>
-        </td>
-        <td style="text-align: right;vertical-align:bottom;">
-        <small>
-        {% if request.session.user %}
-        Logged in as {{request.session.user.realname}} (<a href="{%url "main.logout" %}">logout</a>)
-        {% else %}
-        &nbsp;
-        {% endif %}
-        </small>
-        </td>
-        </tr>
-        </table>
         <ul class="nav nav-justified">
             {% if not request.session.user %}
 				<li><a href="{%url "account.register"%}">Register</a></li>
