@@ -298,7 +298,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		
 	def _setCpus(self):
 		assert self.state != ST_CREATED
-		self._vzctl("set", ["--cpulimit", "%d%%" % int(self.cpus * 100), "--save"])
+		self._vzctl("set", ["--cpulimit", str(int(self.cpus * 100)), "--cpus", str(int(self.cpus)), "--save"])
 
 	def _setRam(self):
 		assert self.state != ST_CREATED
