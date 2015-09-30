@@ -54,6 +54,7 @@ class ExtDocument(object):
 			return str(dat._DBRef__id) if asString else dat._DBRef__id
 		return str(dat.id) if asString else dat.id
 
+
 class BaseDocument(ExtDocument, Document):
 	meta = {'abstract': True}
 
@@ -65,7 +66,6 @@ class BaseDocument(ExtDocument, Document):
 			if key in self._fields:
 				continue
 			print("Warning: value set on untracked field: %s.%s = %r" % (self.__class__.__name__, key, value), file=sys.stderr)
-
 
 	def __setattr__(self, key, value):
 		if key.startswith('_') or key in ['id'] or hasattr(self, key) or (key.startswith('get_') and key.endswith('_display')):
