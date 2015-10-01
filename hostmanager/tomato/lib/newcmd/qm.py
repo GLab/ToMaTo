@@ -144,7 +144,7 @@ def _configure(vmid, hda=None, fda=None, keyboard="en-us", localtime=False, tabl
 	args = {}
 	args["vnc"] = "unix:/var/run/qemu-server/%d.vnc,password" % vmid
 	if fda:
-		args["fda"] = fda
+		args['drive'] = "file=%s,index=0,if=floppy,cache=writethrough" % fda
 	if hda:
 		args["hda"] = hda
 	if qmVersion < [1, 1]:
