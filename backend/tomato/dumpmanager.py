@@ -338,7 +338,14 @@ def update_source(source):
 	try:
 		new_entries = source.dump_getUpdates()
 		for e in new_entries:
-			insert_dump(e, source)
+			try:
+				insert_dump(e, source)
+			except:
+				try:
+					from dump import dumpException
+					dumpException()
+				except:
+					pass  # better than losing all dumps in next for loop iterations...
 	finally:
 		for group in getAll_group():
 			with lock_db:
