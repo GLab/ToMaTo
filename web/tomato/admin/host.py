@@ -141,6 +141,7 @@ def list(api, request, site=None, organization=None):
 def info(api, request, name):
 	host = api.host_info(name)
 	host['element_types'].sort()
+	host['connection_types'].sort()
 	site = api.site_info(host["site"])
 	organization = api.organization_info(host["organization"])
 	return render(request, "host/info.html", {'host': host, 'organization': organization, 'site': site})
