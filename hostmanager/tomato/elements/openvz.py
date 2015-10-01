@@ -333,14 +333,24 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 					self._execute("ip -4 route del default")
 			except cmd.CommandError:
 				pass
-			self._execute("ip -4 route replace default via %s" % self.gateway4)
+			try:
+				self._execute("ip -4 route replace default via %s" % self.gateway4)
+			except cmd.CommandError as exc:
+				if exc.errorCode == 8:
+					raise UserError(code=UserError.INVALID_VALUE, message="Invalid IPv4 gateway", data={"gateway": self.gateway4})
+				raise
 		if self.gateway6:
 			try:
 				while True:
 					self._execute("ip -6 route del default")
 			except cmd.CommandError:
 				pass
-			self._execute("ip -6 route replace default via %s" % self.gateway6)
+			try:
+				self._execute("ip -6 route replace default via %s" % self.gateway6)
+			except cmd.CommandError as exc:
+				if exc.errorCode == 8:
+					raise UserError(code=UserError.INVALID_VALUE, message="Invalid IPv6 gateway", data={"gateway": self.gateway6})
+				raise
 
 	def _useImage(self, path_):
 		assert self.state != ST_CREATED
