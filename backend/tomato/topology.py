@@ -72,7 +72,7 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		self.timeout = time.time() + config.TOPOLOGY_TIMEOUT_INITIAL
 		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
 		self.save()
-		self.name = "Topology #%s" % self.idStr
+		self.name = "Topology [%s]" % self.idStr
 		self.modify(attrs)
 
 	def isBusy(self):
