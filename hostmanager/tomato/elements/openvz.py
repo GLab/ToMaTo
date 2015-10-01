@@ -319,6 +319,11 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		assert self.state != ST_CREATED
 		if self.hostname:
 			self._vzctl("set", ["--hostname", self.hostname, "--save"])
+			if self.state == ST_STARTED:
+				try:
+					self._execute("hostname '%s'" % self.hostname)
+				except cmd.CommandError:
+					pass
 
 	def _setGateways(self):
 		assert self.state == ST_STARTED
