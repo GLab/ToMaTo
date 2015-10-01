@@ -3,7 +3,7 @@
 {% load url from future %}
 
 {% block title %}
-<title>Device profile {{profile.label}} - G-Lab ToMaTo</title>
+<title>Device profile '{{profile.label}}' - G-Lab ToMaTo</title>
 {% endblock %}
 
 {% block content %}
@@ -12,7 +12,7 @@
   <button type="submit" formaction="{%url "profile_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Device Profiles</button>
 </form>
 
-<h1>Device profile {{profile.label}}</h1>
+<h1>Device profile '{{profile.label}}'</h1>
 
 <div class="skip-sm"></div>
 

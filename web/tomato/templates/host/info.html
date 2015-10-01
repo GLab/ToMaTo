@@ -3,7 +3,7 @@
 {% load url from future %}
 
 {% block title %}
-<title>Host {{host.name}} - G-Lab ToMaTo</title> 
+<title>Host '{{host.name}}' - G-Lab ToMaTo</title>
 {% endblock %}
 
 {% block content %}
@@ -12,7 +12,7 @@
   <button type="submit" formaction="{%url "host_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Hosts</button>
 </form>
 
-<h1>Host {{host.name}}</h1>
+<h1>Host '{{host.name}}'</h1>
 
 <div class="skip-sm"></div>
 
