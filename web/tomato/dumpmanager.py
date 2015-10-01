@@ -43,7 +43,7 @@ class ErrorDumpForm(BootstrapForm):
 		)
 	
 class ErrorGroupForm(BootstrapForm):
-	description = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.")
+	description = forms.CharField(max_length=255,help_text="A description of the error to identify it.")
 	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
 		super(ErrorGroupForm, self).__init__(*args, **kwargs)
@@ -143,7 +143,7 @@ def group_edit(api, request, group_id):
 		UserError.check(group_id, UserError.INVALID_DATA, "No error group specified.")
 		errorgroupinfo=api.errorgroup_info(group_id,False)
 		form = EditErrorGroupForm(api, group_id, errorgroupinfo)
-		return render(request, "form.html", {"heading": "Renaming errorgroup '"+errorgroupinfo['description']+"'", 'form': form})
+		return render(request, "form.html", {"heading": "Renaming Error Group '"+errorgroupinfo['description']+"'", 'form': form})
 
 
 @wrap_rpc
