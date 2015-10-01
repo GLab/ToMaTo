@@ -58,6 +58,8 @@ def searchServer(ifname, maxWait=2.0):
 		start = time.time()
 		while time.time() - start < maxWait:
 			pkg = sock.receive(1518)
+			if not pkg:
+				continue
 			if not pkg[:6] == mac or not pkg[12:14] == "\x08\x00":
 				continue  # not for me or not an ip packet
 			pkg = pkg[14:]  # ip packet
