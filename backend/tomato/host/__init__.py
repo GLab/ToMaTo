@@ -223,7 +223,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				elif desc.get('type') == "float":
 					sch = schema.Number(**params)
 				elif desc.get('type') == "str":
-					sch = schema.String(regex=desc.get("regex"), **params)
+					sch = schema.String(regex=desc.get("regexp"), **params)
 				elif desc.get('type') == "bool":
 					sch = schema.Bool(**params)
 				else:
@@ -452,16 +452,20 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def remove(self, params=None):
 		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		UserError.check(not self.elements.all(), code=UserError.NOT_EMPTY, message="Host still has active elements")
-		UserError.check(not self.connections.all(), code=UserError.NOT_EMPTY, message="Host still has active connections")
+		if self.id:
+			UserError.check(not self.elements.all(), code=UserError.NOT_EMPTY, message="Host still has active elements")
+			UserError.check(not self.connections.all(), code=UserError.NOT_EMPTY, message="Host still has active connections")
 		logging.logMessage("remove", category="host", name=self.name)
-		try:
-			for res in self.getProxy().resource_list():
-				self.getProxy().resource_remove(res["id"])
-		except:
-			pass
-		self.totalUsage.remove()
-		self.delete()
+		if self.id:
+			try:
+				for res in self.getProxy().resource_list():
+					self.getProxy().resource_remove(res["id"])
+			except:
+				pass
+		usage = self.totalUsage
+		if self.id:
+			self.delete()
+		usage.remove()
 
 	def problems(self):
 		problems = []

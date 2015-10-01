@@ -29,15 +29,15 @@ def spawnDaemon(cmd, cwd=None):
 
 
 def run(cmd, ignoreErr=False, input=None, cwd=None):  # @ReservedAssignment
-	stderr = DEVNULL if ignoreErr else subprocess.STDOUT
+	stderr = DEVNULL if ignoreErr else subprocess.PIPE
 	stdin = subprocess.PIPE if input else None
 	proc = subprocess.Popen(cmd, cwd=cwd, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, shell=False,
 		close_fds=True)
-	output = proc.communicate(input)[0]
+	output, err_output = proc.communicate(input)
 	error = proc.returncode
 	if error:
 		raise CommandError(CommandError.CODE_EXECUTE, "Error executing command",
-			{"cmd": cmd, "error": error, "output": output})
+			{"cmd": cmd, "error": error, "stdout": output, "stderr": err_output})
 	return output
 
 
