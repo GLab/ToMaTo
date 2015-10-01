@@ -40,7 +40,7 @@
 
 <script src="/js/loading_popup.js"></script>
 {% block title %}
-<title>G-Lab ToMaTo</title> 
+<title>ToMaTo Testbed</title>
 {% endblock %}
 {% block header %}
 {% endblock %}
@@ -111,22 +111,8 @@ head.appendChild(style);
             {% endif %}
 			{% if request.session.user %}
 				<li><a href="{%url "account.info"%}">My Account</a></li>
-				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Topologies <span class="caret"></span></a>
-			        <ul class="dropdown-menu">
-			        	<li><a href="{%url "topology_list"%}">My Topologies</a></li>
-			        	{% if request.session.user.hasGlobalToplFlags or request.session.user.hasOrgaToplFlags %} 
-						  	<li><a href="{%url "topology_list_all"%}">All Topologies</a></li>
-						{% endif %}
-						{% if not "no_topology_create" in request.session.user.flags %}
-							<li class="divider"></li>
-							<li><a href="{%url "topology.create"%}" onClick="loadbusy(event,'Loading Topology Editor')">Create Topology</a></li>
-							<li><a href="{%url "topology.import_"%}">Import Topology</a></li>
-							<li class="divider"></li>
-							<li><a href="{%url "tutorial.list"%}">Tutorials</a></li>
-						{% endif %}
-					</ul>
-				</li>
+				<li><a href="{%url "topology_list"%}">My Topologies</a></li>
+
 	        	{% if request.session.user.isAdmin %} 
 					<li class="dropdown">
 						<a class="dropdown-toggle" data-toggle="dropdown" href="#">Users <span class="caret"></span></a>
