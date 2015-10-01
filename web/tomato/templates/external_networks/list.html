@@ -4,11 +4,11 @@
 {% load tomato %}
 
 {% block title %}
-<title>External Network list - G-Lab ToMaTo</title> 
+<title>External Networks - G-Lab ToMaTo</title>
 {% endblock %}
 
 {% block content %}
-<h1>External Network list</h1>
+<h1>External Networks</h1>
 
 {% if netw_list|length > 10 and request.session.user.isHostManager %}
 <form>
