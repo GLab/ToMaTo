@@ -531,7 +531,7 @@ class Host(DumpSource, Entity, BaseDocument):
 			if self.problemAge < time.time() - 6 * 60 * 60:
 				# persistent problem older than 6h
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
-					import time, datetime
+					import datetime
 					self.problemMailTime = time.time()
 					duration = datetime.timedelta(hours=int(time.time()-self.problemAge)/3600)
 					mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
