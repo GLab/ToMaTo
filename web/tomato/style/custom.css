@@ -98,10 +98,19 @@ div.organization {
   padding: 1em;
   padding-top:0em;
   padding-bottom:0em;
+  margin: 1em;
+  margin-top: 0px;
   margin-bottom:1.8em;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 4px;
+  background: white;
+}
+div.organization div.image {
+  margin-top:0.7cm;
+  margin-bottom:1.3cm;
+  background: white;
+  height:5em;
 }
 div.organization h3 {
 	margin:0;
