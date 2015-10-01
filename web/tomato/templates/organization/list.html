@@ -4,11 +4,11 @@
 {% load tomato %}
 
 {% block title %}
-<title>Organization list - G-Lab ToMaTo</title> 
+<title>Organizations - G-Lab ToMaTo</title>
 {% endblock %}
 
 {% block content %}
-<h1>Organization list</h1>
+<h1>Organizations</h1>
 
 {% if organizations %}
 
@@ -24,16 +24,18 @@
 		<div class="col-md-4 col-sm-6 col-xs-12">
 			<div class="organization">
 				<a href="{%url "admin.organization.info" orga.name%}" style="color:black; text-decoration:none;">
-					<div class="page-header"><h3>{{orga.label}}</h3></div>
-					
 					{% if orga.image_url %}
-						<p style="margin-top:0.7cm; margin-bottom:0.7cm; min-height:5em;"><img src="{{orga.image_url}}" class="site" /></p>
+						<div class="image">
+							<img src="{{orga.image_url}}" class="site" />
+						</div>
 					{% endif %}
-					
-					<p><b>
-						{{orga.hosts.count}} hosts
-						{% if orga.hosts.count %}(availability: {{orga.hosts.avg_availability|percentage}}, load: {{orga.hosts.avg_load|percentage}}){% endif %}
-					</b></p>
+
+					<div class="page-header"><h3>{{orga.label}}</h3></div>
+
+					<p>
+						<b><big>{{orga.hosts.count}} host{% if orga.hosts.count != 1 %}s{% endif %}</big></b>
+						{% if orga.hosts.count %}<br/>availability: {{orga.hosts.avg_availability|percentage}}<br/>load: {{orga.hosts.avg_load|percentage}}{% endif %}
+					</p>
 					
 					{% if orga.description %}
 						<p>{{orga.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>

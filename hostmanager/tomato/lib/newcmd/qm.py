@@ -217,7 +217,7 @@ def _check():
 	QMError.check(dpkg.isInstalled("pve-qemu-kvm"), QMError.CODE_UNSUPPORTED, "Package pve-qemu-kvm not installed")
 	global qmVersion
 	qmVersion = dpkg.getVersion("pve-qemu-kvm")
-	QMError.check(([0, 15, 0] <= qmVersion < [2, 2]), QMError.CODE_UNSUPPORTED, "Unsupported version of pve-qemu-kvm", {"version": qmVersion})
+	QMError.check(([0, 15, 0] <= qmVersion < [2, 3]), QMError.CODE_UNSUPPORTED, "Unsupported version of pve-qemu-kvm", {"version": qmVersion})
 	brctl.checkSupport()
 	return True
 

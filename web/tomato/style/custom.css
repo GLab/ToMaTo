@@ -98,10 +98,19 @@ div.organization {
   padding: 1em;
   padding-top:0em;
   padding-bottom:0em;
+  margin: 1em;
+  margin-top: 0px;
   margin-bottom:1.8em;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 4px;
+  background: white;
+}
+div.organization div.image {
+  margin-top:0.7cm;
+  margin-bottom:1.3cm;
+  background: white;
+  height:5em;
 }
 div.organization h3 {
 	margin:0;
@@ -412,4 +421,27 @@ td.critical-timeout {
   color: #ffffff;
   background-color: #3276b1;
   border-color: #285e8e;
+}
+
+
+
+
+.nav .caret {
+  border-top-color: #7f1a19;
+  border-bottom-color: #7f1a19;
+}
+.nav a:hover .caret {
+  border-top-color: #c50a09;
+  border-bottom-color: #c50a09;
+}
+.nav .open > a .caret,
+.nav .open > a:hover .caret,
+.nav .open > a:focus .caret {
+  border-top-color: #c50a09;
+  border-bottom-color: #c50a09;
+}
+.nav .open > a,
+.nav .open > a:hover,
+.nav .open > a:focus {
+  border: 0px;
 }
