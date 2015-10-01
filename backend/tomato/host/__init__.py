@@ -223,7 +223,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				elif desc.get('type') == "float":
 					sch = schema.Number(**params)
 				elif desc.get('type') == "str":
-					sch = schema.String(regex=desc.get("regex"), **params)
+					sch = schema.String(regex=desc.get("regexp"), **params)
 				elif desc.get('type') == "bool":
 					sch = schema.Bool(**params)
 				else:
