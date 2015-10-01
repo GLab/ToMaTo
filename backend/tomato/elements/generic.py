@@ -273,7 +273,7 @@ class VMInterface(Element):
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=name, label="Name"),
+		"name": StatefulAttribute(field=name, label="Name", schema=schema.String(regex="^eth[0-9]+$"), writableStates=[ST_PREPARED, ST_CREATED]),
 	})
 
 	ACTIONS = Element.ACTIONS.copy()
