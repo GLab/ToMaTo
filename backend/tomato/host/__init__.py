@@ -462,10 +462,9 @@ class Host(DumpSource, Entity, BaseDocument):
 					self.getProxy().resource_remove(res["id"])
 			except:
 				pass
-		usage = self.totalUsage
 		if self.id:
 			self.delete()
-		usage.remove()
+		self.totalUsage.remove()
 
 	def problems(self):
 		problems = []

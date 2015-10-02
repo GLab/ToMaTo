@@ -166,7 +166,8 @@ class UsageStatistics(BaseDocument):
 		self.save()
 
 	def remove(self):
-		self.delete()
+		if self.id:
+			self.delete()
 
 	def info(self):
 		return {

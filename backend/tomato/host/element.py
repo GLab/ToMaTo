@@ -78,7 +78,8 @@ class HostElement(HostObject):
 		except:
 			self.host.incrementErrors()
 		try:
-			self.delete()
+			if self.id:
+				self.delete()
 		except OperationError:
 			from .connection import HostConnection
 			for hcon in HostConnection.objects(elementFrom=self):
