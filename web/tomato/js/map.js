@@ -78,8 +78,8 @@ var Link = Class.extend({
 	},
 	_infoHtml: function() {
 		var html = '<div id="content"><h4>Link from ' + this.src.name + ' to ' + this.dst.name + '</h4><div id="bodyContent">';
-		html += this.src.name + ': ' + this.src.displayName + ' (' + this.src.location + ')<br/>';
-		html += this.dst.name + ': ' + this.dst.displayName + ' (' + this.dst.location + ')<br/>';
+		html += this.src.name + ': ' + this.src.label + ' (' + this.src.location + ')<br/>';
+		html += this.dst.name + ': ' + this.dst.label + ' (' + this.dst.location + ')<br/>';
 		
 		
 		html += '<br/><a href="Javascript: \
@@ -140,7 +140,7 @@ var Site = Class.extend({
 		this.location = data.location;
 		this.name = data.name;
 		this.description = data.description;
-		this.displayName = data.displayName;
+		this.label = data.label;
 		this.organization = data.organization;
 		this.coords = new google.maps.LatLng(this.geolocation.latitude, this.geolocation.longitude);
 		this.links = [];
@@ -149,7 +149,7 @@ var Site = Class.extend({
 		this.links.push(link);
 	},
 	_infoHtml: function() {
-		var html = '<div id="content"><h4>' + this.displayName + ', ' + this.location + ' (' + this.name + ')</h4><div id="bodyContent">';
+		var html = '<div id="content"><h4>' + this.label + ', ' + this.location + ' (' + this.name + ')</h4><div id="bodyContent">';
 		if (this.description) html += '<p>' + this.description + '</p>';
 		html += '<p>Hosted by: <br/>';
 		if (this.organization.image_url) html += '<img style="max-width:6cm; max-height:4cm;" src="'+this.organization.image_url+'" title="'+this.organization.description+'"/>';

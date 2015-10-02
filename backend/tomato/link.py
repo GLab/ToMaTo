@@ -203,7 +203,10 @@ def getStatistics(siteA, siteB): #@ReservedAssignment
 	siteB = Site.get(siteB)
 	if siteA.id > siteB.id:
 		siteA, siteB = siteB, siteA
-	stats = LinkStatistics.objects.get(siteA=siteA, siteB=siteB)
-	return stats.info()
+	try:
+		stats = LinkStatistics.objects.get(siteA=siteA, siteB=siteB)
+		return stats.info()
+	except LinkStatistics.DoesNotExist:
+		return None
 
 scheduler.scheduleRepeated(60, taskRun) #every minute
