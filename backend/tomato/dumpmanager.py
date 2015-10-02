@@ -319,14 +319,14 @@ def insert_dump(dump, source):
 		if not group:
 			from auth import mailFlaggedUsers, Flags
 			must_fetch_data = True
-			if type(dump['description']) == dict:
+			if isinstance(type(dump['description']), dict):
 				if 'subject' in dump['description'] and 'type' in dump['description']:
 					group_desc = str(dump['description']['type']) + ': ' + str(dump['description']['subject'])
 				else:
 					group_desc = str(dump['description'])
 			else:
 				group_desc = dump['description']
-			group = create_group(dump['group_id'], )
+			group = create_group(dump['group_id'], group_desc)
 			mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
 							 "A new group of error has been found, with ID %s. It has first been observed on %s." % (
 								 dump['group_id'], source.dump_source_name()))
