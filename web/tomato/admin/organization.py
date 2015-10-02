@@ -38,8 +38,8 @@ class OrganizationForm(AddEditForm):
     
     name = forms.CharField(max_length=50, help_text="The name of the organization. Must be unique to all organizations. e.g.: ukl")
     label = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
-    homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
-    image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
+    homepage_url = forms.URLField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
+    image_url = forms.URLField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
     description = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     
     buttons = Buttons.cancel_add
@@ -47,7 +47,13 @@ class OrganizationForm(AddEditForm):
     primary_key = "name"
     create_keys = ['name', 'label']
     redirect_after = "tomato.admin.organization.info"
-    
+
+    def get_values(self):
+        values = AddEditForm.get_values(self)
+        values['homepage_url'] = values.get('homepage_url') or None
+        values['image_url'] = values.get('image_url') or None
+        return values
+
     def __init__(self, *args, **kwargs):
         super(OrganizationForm, self).__init__(*args, **kwargs)
         self.helper.layout = Layout(

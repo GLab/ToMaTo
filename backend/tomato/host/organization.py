@@ -3,8 +3,9 @@ from .. import currentUser
 from ..accounting import UsageStatistics
 from ..lib import logging
 from ..lib.error import UserError
+from ..generic import *
 
-class Organization(BaseDocument):
+class Organization(Entity, BaseDocument):
 	name = StringField(unique=True, required=True)
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	label = StringField(required=True)
@@ -17,10 +18,12 @@ class Organization(BaseDocument):
 			'name'
 		]
 	}
+
 	@property
 	def sites(self):
 		from .site import Site
 		return Site.objects(organization=self)
+
 	@property
 	def users(self):
 		from ..auth import User
@@ -30,7 +33,7 @@ class Organization(BaseDocument):
 		self.totalUsage = UsageStatistics().save()
 		self.modify(attrs)
 
-	def checkPermissions(self):
+	def checkPermissions(self, *args, **kwargs):
 		user = currentUser()
 		if user.hasFlag(Flags.GlobalAdmin):
 			return True
@@ -38,28 +41,13 @@ class Organization(BaseDocument):
 			return True
 		return False
 
-	def modify(self, attrs):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		logging.logMessage("modify", category="organization", name=self.name, attrs=attrs)
-		for key, value in attrs.iteritems():
-			if key == "label":
-				self.label = value
-			elif key == "homepage_url":
-				self.homepageUrl = value or None
-			elif key == "image_url":
-				self.imageUrl = value or None
-			elif key == "description":
-				self.description = value
-			else:
-				raise UserError(code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unknown organization attribute",
-					data={"attribute": key})
-		self.save()
-
-	def remove(self):
+	def _checkRemove(self):
 		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		if self.id:
 			UserError.check(not self.sites, code=UserError.NOT_EMPTY, message="Organization still has sites")
 			UserError.check(not self.users, code=UserError.NOT_EMPTY, message="Organization still has users")
+
+	def _remove(self):
 		logging.logMessage("remove", category="organization", name=self.name)
 		if self.id:
 			self.delete()
@@ -67,15 +55,6 @@ class Organization(BaseDocument):
 
 	def updateUsage(self):
 		self.totalUsage.updateFrom([user.totalUsage for user in self.users])
-
-	def info(self):
-		return {
-			"name": self.name,
-			"label": self.label,
-			"homepage_url": self.homepageUrl,
-			"image_url": self.imageUrl,
-			"description": self.description
-		}
 
 	def __str__(self):
 		return self.name
@@ -91,7 +70,9 @@ class Organization(BaseDocument):
 			return None
 
 	@classmethod
-	def create(cls, name, label="", attrs={}):
+	def create(cls, name, label="", attrs=None):
+		if not attrs:
+			attrs = {}
 		UserError.check(currentUser().hasFlag(Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
 		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Organization name may not include a '/'")
 		logging.logMessage("create", category="site", name=name, label=label)
@@ -103,5 +84,17 @@ class Organization(BaseDocument):
 			organization.remove()
 			raise
 		return organization
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=_remove, check=_checkRemove)
+	}
+	ATTRIBUTES = {
+		"name": Attribute(field=name, check=checkPermissions, schema=schema.Identifier()),
+		"label": Attribute(field=label, check=checkPermissions, schema=schema.String()),
+		"homepage_url": Attribute(field=homepageUrl, check=checkPermissions, schema=schema.URL(null=True)),
+		"image_url": Attribute(field=imageUrl, check=checkPermissions, schema=schema.URL(null=True)),
+		"description": Attribute(field=description, check=checkPermissions, schema=schema.String())
+	}
+
 
 from ..auth import Flags
