@@ -20,6 +20,8 @@ dumps = {}
 #when adding or removing keys to this array, it has to be locked.
 dumps_lock = threading.RLock()
 
+boot_time = 0
+
 #structure for dumps:
 # { timestamp:time.Time  # time the error was detected
 #   description:dict     # short description about what happened (i.e., for an exception: position in code, exception subject)
@@ -249,6 +251,9 @@ def getAll(after=None, list_only=False, include_data=False, compress_data=True):
 			return_list.append(dump)
 	return return_list
 
+def get_recent_dumps():
+	global boot_time
+	return len(getAll(max(boot_time, time.time()-6*60*60), True))
 
 #initialize dump management on server startup.
 def init(env_cmds, tomatoComponent, tomatoVersion):
@@ -257,9 +262,11 @@ def init(env_cmds, tomatoComponent, tomatoVersion):
 		global dumps
 		global tomato_component
 		global tomato_version
+		global boot_time
 		envCmds = env_cmds
 		tomato_component = tomatoComponent
 		tomato_version = tomatoVersion
+		boot_time = time.time()
 
 		if not os.path.exists(config.DUMP_DIR):
 			os.mkdir(config.DUMP_DIR)
