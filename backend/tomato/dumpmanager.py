@@ -145,7 +145,8 @@ class ErrorGroup(BaseDocument):
 		return dump_obj
 
 	def remove(self):
-		self.delete()
+		if self.id:
+			self.delete()
 
 
 def create_group(group_id, description=None):

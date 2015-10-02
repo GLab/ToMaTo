@@ -59,7 +59,8 @@ class Site(BaseDocument):
 
 	def remove(self):
 		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		UserError.check(not self.hosts.all(), code=UserError.NOT_EMPTY, message="Site still has hosts")
+		if self.id:
+			UserError.check(not self.hosts.all(), code=UserError.NOT_EMPTY, message="Site still has hosts")
 		logging.logMessage("remove", category="site", name=self.name)
 		self.delete()
 

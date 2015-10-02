@@ -94,7 +94,8 @@ class Template(Entity, BaseDocument):
 				shutil.rmtree(self.getPath())
 			else:
 				os.remove(self.getPath())
-		self.delete()
+		if self.id:
+			self.delete()
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(fn=remove)

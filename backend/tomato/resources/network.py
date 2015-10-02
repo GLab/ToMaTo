@@ -39,7 +39,8 @@ class Network(Entity, BaseDocument):
 		return NetworkInstance.objects(network=self)
 
 	def _remove(self):
-		self.delete()
+		if self.id:
+			self.delete()
 
 	def _checkRemove(self):
 		UserError.check(not self.instances.count(), code=UserError.NOT_EMPTY, message="Cannot remove network with instances")
@@ -77,6 +78,7 @@ class Network(Entity, BaseDocument):
 		obj.save()
 		return obj
 
+
 class NetworkInstance(Entity, BaseDocument):
 	"""
 	:type network: Network
@@ -95,7 +97,8 @@ class NetworkInstance(Entity, BaseDocument):
 	}
 
 	def remove(self):
-		self.delete()
+		if self.id:
+			self.delete()
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(fn=remove)

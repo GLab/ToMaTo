@@ -57,11 +57,13 @@ class Organization(BaseDocument):
 
 	def remove(self):
 		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
-		UserError.check(not self.sites, code=UserError.NOT_EMPTY, message="Organization still has sites")
-		UserError.check(not self.users, code=UserError.NOT_EMPTY, message="Organization still has users")
+		if self.id:
+			UserError.check(not self.sites, code=UserError.NOT_EMPTY, message="Organization still has sites")
+			UserError.check(not self.users, code=UserError.NOT_EMPTY, message="Organization still has users")
 		logging.logMessage("remove", category="organization", name=self.name)
+		if self.id:
+			self.delete()
 		self.totalUsage.remove()
-		self.delete()
 
 	def updateUsage(self):
 		self.totalUsage.updateFrom([user.totalUsage for user in self.users])

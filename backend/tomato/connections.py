@@ -215,10 +215,27 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		self.triggerStop()
-		for el in self.elements:
-			el.connection = None
-			el.save()
-		self.delete()
+		if self.id:
+			for el in self.elements:
+				el.connection = None
+				el.save()
+			try:
+				self.connectionFrom.remove()
+			except:
+				pass
+			try:
+				self.connectionTo.remove()
+			except:
+				pass
+			try:
+				self.connectionElementFrom.remove()
+			except:
+				pass
+			try:
+				self.connectionElementTo.remove()
+			except:
+				pass
+			self.delete()
 		self.totalUsage.remove()
 
 	def setState(self, state):

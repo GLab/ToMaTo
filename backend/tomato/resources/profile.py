@@ -44,7 +44,8 @@ class Profile(Entity, BaseDocument):
 	}
 
 	def remove(self):
-		self.delete()
+		if self.id:
+			self.delete()
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(fn=remove)
