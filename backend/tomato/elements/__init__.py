@@ -205,11 +205,23 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		if self.parent:
 			self.parent.onChildRemoved(self)
-		for ch in self.children:
-			ch.remove(recurse=True)
+		if self.id:
+			for ch in self.children:
+				ch.remove(recurse=True)
+			for hel in self.hostElements:
+				try:
+					hel.remove()
+				except:
+					pass
+			for hcon in self.hostConnections:
+				try:
+					hcon.remove()
+				except:
+					pass
 		if self.connection:
 			self.connection.remove()
-		self.delete()
+		if self.id:
+			self.delete()
 		self.totalUsage.remove()
 
 	def onChildAdded(self, child):

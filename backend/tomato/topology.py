@@ -161,7 +161,8 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		self.checkRemove(recurse)
 		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.idStr)
-		self.delete()
+		if self.id:
+			self.delete()
 		self.totalUsage.remove()
 
 	def modify_site(self, val):

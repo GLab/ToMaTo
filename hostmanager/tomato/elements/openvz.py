@@ -455,8 +455,10 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		
 	def action_destroy(self):
 		self._checkState()
+		self._vzctl("set", ["--hostname", "workaround", "--save"]) #Workaround for fault in vzctl 4.0-1pve6
 		try:
 			self._vzctl("destroy")
+			self._vzctl("set", ["--hostname", self.hostname, "--save"]) #Workaround for fault in vzctl 4.0-1pve6
 		except cmd.CommandError, exc:
 			if exc.errorCode == 41: # [41] Container is currently mounted (umount first)
 				self._vzctl("umount")
@@ -507,7 +509,9 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		if self.websocket_pid:
 			process.killTree(self.websocket_pid)
 			del self.websocket_pid
+		self._vzctl("set", ["--hostname", "workaround", "--save"]) #Workaround for fault in vzctl 4.0-1pve6
 		self._vzctl("stop")
+		self._vzctl("set", ["--hostname", self.hostname, "--save"]) #Workaround for fault in vzctl 4.0-1pve6
 		self.setState(ST_PREPARED, True)
 
 	def action_upload_grant(self):

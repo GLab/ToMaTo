@@ -61,7 +61,8 @@ class HostConnection(HostObject):
 				self.host.incrementErrors()
 		except:
 			self.host.incrementErrors()
-		self.delete()
+		if self.id:
+			self.delete()
 		self.usageStatistics.delete()
 
 	def getElements(self):
