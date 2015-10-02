@@ -130,6 +130,10 @@ class Identifier(String):
 			regex = kwargs.pop('regex', "[a-zA-Z0-9_\./\-]+")
 		String.__init__(self, regex=regex, minLength=minLength, maxLength=maxLength, **kwargs)
 
+class URL(String):
+	def __init__(self, **kwargs):
+		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$?]+", **kwargs)
+
 class List(Sequence):
 	TYPES = (types.ListType, types.TupleType)
 	TYPE_NAMES = ["list", "tuple"]
