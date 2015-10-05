@@ -146,7 +146,7 @@ class Tinc(elements.Element):
 		return hashlib.md5(pubkey).hexdigest()
 				
 	def modify_mode(self, val):
-		self.connect = val
+		self.mode = val
 
 	def modify_peers(self, val):
 		for peer in val:
