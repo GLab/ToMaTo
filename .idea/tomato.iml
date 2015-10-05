@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/backend/tomato" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cli" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/hostmanager/tomato" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/web/tomato" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
