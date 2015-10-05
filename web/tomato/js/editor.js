@@ -3776,7 +3776,7 @@ var VMElement = IconElement.extend({
 			p.append(desc);
 			d.append(p);
 			
-			prof = profiles[i];
+			var prof = profiles[i];
 			
 			info.append('<img src="/img/info.png" />');
 
@@ -3870,7 +3870,7 @@ var VMElement = IconElement.extend({
 			label: "Performance Profile",
 			name: "profile",
 			info: profileInfo,
-			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
+			choices: createMap(this.editor.profiles.getAllowed(this.data.type), "name", "label"),
 			value: this.data.profile || this.caps.attributes.profile["default"],
 			disabled: !this.attrEnabled("profile"),
 			help_text: profile_helptext
