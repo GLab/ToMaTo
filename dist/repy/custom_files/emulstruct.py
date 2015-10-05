@@ -1,23 +1,23 @@
-import struct
+import struct as orig_struct
 from exception_hierarchy import *
 import namespace
 
 def pack(fmt, fields):
   try:
-    return struct.pack(fmt, *fields)
-  except struct.error, exc:
+    return orig_struct.pack(fmt, *fields)
+  except orig_struct.error, exc:
     raise RepyException(exc)
 
 def unpack(fmt, data):
   try:
-    return list(struct.unpack(fmt, data))
-  except struct.error, exc:
+    return list(orig_struct.unpack(fmt, data))
+  except orig_struct.error, exc:
     raise RepyException(exc)
   
 def calcsize(fmt):
   try:
-    return struct.calcsize(fmt)
-  except struct.error, exc:
+    return orig_struct.calcsize(fmt)
+  except orig_struct.error, exc:
     raise RepyException(exc)
   
 METHODS = {
