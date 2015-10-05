@@ -85,6 +85,7 @@ if __name__ == "__main__":
 		pc.setfilter('%s and (ip or ip6)' % options.direction)
 		
 	stats = Stats()
+	stats.printTo(options.output)
 	lastPrint = 0.0
 	for ts, pkt in pc:
 		try:
