@@ -17,9 +17,7 @@
 				phase: "end",
 				attrs: {
 					type: "kvmqm",
-					attrs: {
-						template: "openvswitch"
-					}
+					template: "openvswitch"
 				},
 			});
 		}
