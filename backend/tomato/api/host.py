@@ -135,7 +135,9 @@ def host_list(site=None, organization=None):
 	if site:
 		hosts = Host.objects(site__name=site)
 	elif organization:
-		hosts = Host.objects(site__organization__name=organization)
+		organization = _getOrganization(organization)
+		sites = Site.objects(organization=organization)
+		hosts = Host.objects(site__in=sites)
 	else:
 		hosts = Host.objects
 	return [h.info() for h in hosts]
