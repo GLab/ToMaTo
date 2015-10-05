@@ -237,11 +237,12 @@ class UsageStatistics(BaseDocument):
 		"""
 		:type sources: list of UsageStatistics
 		"""
-		if not sources:
-			return
 		lists = [source.by5minutes for source in sources]
 		minAll = _toTime(_lastPoint("5minutes", _toPoint(time.time() - 1800)))
-		lastAll = max(minAll, min([l[-1].end if l else minAll for l in lists]))
+		if sources:
+			lastAll = max(minAll, min([l[-1].end if l else minAll for l in lists]))
+		else:
+			lastAll = _toTime(_lastPoint("5minutes", _toPoint(time.time())))
 		myList = self.by5minutes
 		begin = myList[-1].begin if myList else minAll
 		end = _toTime(_nextPoint(_toPoint(begin), "5minutes"))

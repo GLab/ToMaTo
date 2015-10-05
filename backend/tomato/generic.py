@@ -17,7 +17,7 @@ class Action:
 					schema_failed=err.data['schema'])
 				raise
 		if self.checkFn:
-			Error.check(self.checkFn(obj, **params), code=Error.INVALID_STATE, message="Check for action failed")
+			self.checkFn(obj, **params)
 	def __call__(self, obj, **kwargs):
 		self.check(obj, **kwargs)
 		return self.fn(obj, **kwargs)
@@ -48,7 +48,7 @@ class Attribute:
 					schema_failed=err.data.get('schema'))
 				raise
 		if self.checkFn:
-			Error.check(self.checkFn(obj, value), code=Error.INVALID_STATE, message="Check for attribute failed")
+			self.checkFn(obj, value)
 	def set(self, obj, value):
 		self.check(obj, value)
 		if self.setFn:

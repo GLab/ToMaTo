@@ -438,6 +438,11 @@ var Window = Class.extend({
 			modal: options.modal != null ? options.modal : true,
 			buttons: options.buttons || {},
 			closeOnEscape: false,
+			close: function(event, ui) {
+				if (!t.options.close_keep) {
+					t.div.remove();
+				}
+			},
 			open: function(event, ui) { 
 				if (options.closable === false) $(".ui-dialog-titlebar-close").hide();
 				t.setPosition(options.position);
@@ -1049,6 +1054,7 @@ var TemplateWindow = Window.extend({
 var PermissionsWindow = Window.extend({
 	init: function(options) {
 		options.modal = true;
+		options.close_keep = true;
 		
 		var t = this;
 		this.options = options;
