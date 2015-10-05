@@ -202,6 +202,10 @@ class Template(Entity, BaseDocument):
 	@classmethod
 	def create(cls, attrs):
 		obj = cls()
-		obj.init(attrs)
-		obj.save()
-		return obj
+		try:
+			obj.init(attrs)
+			obj.save()
+			return obj
+		except:
+			obj.remove()
+			raise
