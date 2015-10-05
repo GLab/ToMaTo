@@ -34,7 +34,7 @@
 
 					<p>
 						<b><big>{{orga.hosts.count}} host{% if orga.hosts.count != 1 %}s{% endif %}</big></b>
-						{% if orga.hosts.count %}<br/>availability: {{orga.hosts.avg_availability|percentage}}<br/>load: {{orga.hosts.avg_load|percentage}}{% endif %}
+						{% if orga.hosts.count %}<br/>Availability: {{orga.hosts.avg_availability|percentage}}<br/>Load: {{orga.hosts.avg_load|percentage}}{%else%}<br/>&nbsp;<br/>&nbsp;{% endif %}
 					</p>
 					
 					{% if orga.description %}

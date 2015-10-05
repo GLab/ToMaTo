@@ -117,6 +117,8 @@ def list(api, request):
 def info(api, request, name):
     orga = api.organization_info(name)
     sites = api.site_list(organization=name)
+    smap = {}
+    hosts = api.host_list(organization=name)
     for site in sites:
         if site['geolocation']['longitude'] > 0:
             site['geolocation']['longitude'] = str(site['geolocation']['longitude']) + 'E'
@@ -126,6 +128,24 @@ def info(api, request, name):
             site['geolocation']['latitude'] = str(site['geolocation']['latitude']) + 'N'
         else:
             site['geolocation']['latitude'] = str(-site['geolocation']['latitude']) + 'S'
+
+        smap[site['name']] = site
+        site['hosts'] = {"count": 0, "avg_load": 0.0, "avg_availability": 0.0}
+    orga['hosts'] = {"count": 0, "avg_load": 0.0, "avg_availability": 0.0}
+    for h in hosts:
+        s = smap[h['site']]
+        s["hosts"]["count"] += 1
+        s["hosts"]["avg_load"] += h["load"] if "host_info" in h else 0.0
+        s["hosts"]["avg_availability"] += h["availability"] if "host_info" in h else 0.0
+        orga["hosts"]["count"] += 1
+        orga["hosts"]["avg_load"] += h["load"] if "host_info" in h else 0.0
+        orga["hosts"]["avg_availability"] += h["availability"] if "host_info" in h else 0.0
+    for s in sites:
+        s["hosts"]["avg_load"] = (s["hosts"]["avg_load"] / s["hosts"]["count"]) if s["hosts"]["count"] else None
+        s["hosts"]["avg_availability"] = (s["hosts"]["avg_availability"] / s["hosts"]["count"]) if s["hosts"]["count"] else None
+    orga["hosts"]["avg_load"] = (orga["hosts"]["avg_load"] / orga["hosts"]["count"]) if orga["hosts"]["count"] else None
+    orga["hosts"]["avg_availability"] = (orga["hosts"]["avg_availability"] / orga["hosts"]["count"]) if orga["hosts"]["count"] else None
+
     return render(request, "organization/info.html", {'organization': orga, 'sites': sites})
 
 @wrap_rpc
