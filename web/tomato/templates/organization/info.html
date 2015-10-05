@@ -29,6 +29,15 @@
 	    <td>{{organization.name}}</td>
 	</tr>
 	{% endif %}
+	<th>Hosts:</th>
+		<td>
+			<b>{{organization.hosts.count}} host{% if site.hosts.count != 1 %}s{%endif%}</b>
+			{% if organization.hosts.count > 0 %}
+			<br/>
+			Availability: {{organization.hosts.avg_availability|percentage}}<br/>
+			Load: {{organization.hosts.avg_load|percentage}}
+			{% endif %}
+		</td>
 	{% if organization.homepage_url %}
 	<tr>
 		<th>Homepage:</th>
@@ -80,6 +89,17 @@
 	    <td>{{site.name}}</td>
 	</tr>
 	{% endif %}
+	<tr>
+		<th>Hosts:</th>
+		<td>
+			<b>{{site.hosts.count}} host{% if site.hosts.count != 1 %}s{%endif%}</b>
+			{% if site.hosts.count > 0 %}
+			<br/>
+			Availability: {{site.hosts.avg_availability|percentage}}<br/>
+			Load: {{site.hosts.avg_load|percentage}}
+			{% endif %}
+		</td>
+	</tr>
 	<tr>
 		<th>Location:</th>
 		<td>{{site.location}}</td>
