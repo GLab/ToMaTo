@@ -5,6 +5,7 @@ from .lib import anyjson as json
 import host
 from . import scheduler, config, currentUser
 from .lib.error import InternalError, UserError, Error  # @UnresolvedImport
+from .lib.rpc.sslrpc import RPCError
 
 from auth import User
 
@@ -250,8 +251,13 @@ class DumpSource(object):
 				self.dump_set_last_fetch(this_fetch_time)
 			return fetch_results
 		except Exception as exc:
-			InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
-						  data={"source": repr(self)}).dump()
+			to_be_dumped = True
+			if isinstance(exc, RPCError):
+				if exc.category == RPCError.Category.NETWORK:
+					to_be_dumped = False
+			if to_be_dumped:
+				InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
+								data={"source": repr(self), "exception": exc}).dump()
 			return []
 
 
