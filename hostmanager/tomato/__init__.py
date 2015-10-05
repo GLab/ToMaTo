@@ -103,11 +103,11 @@ def _stopHelper():
 	stopped.wait(10)
 	if stopped.isSet() and threading.activeCount() == 1:
 		return
-	print >>sys.stderr, "Stopping takes long, waiting some more time..."
+	print >>sys.stderr, "Stopping takes long. Waiting 20 more seconds"
 	stopped.wait(10)
 	if stopped.isSet() and threading.activeCount() == 1:
 		return
-	print >>sys.stderr, "Ok last chance, killing process in 10 seconds..."
+	print >>sys.stderr, "Killing process in 10 seconds..."
 	stopped.wait(10)
 	if stopped.isSet() and threading.activeCount() == 1:
 		return
