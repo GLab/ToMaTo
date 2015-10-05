@@ -175,20 +175,24 @@ def _insert_template_4_0_0(api, template, overwrite_on_conflict):
 
 
 def read_templates(api, version, include_restricted, template_names):
+	if version not in [(3,0,0), (4,0,0)]:
+		print "unsupported source version: %s" % ".".join(version)
+		return []
+
 	if version[0] == 3:
 		return _read_templates_3_0_0(api, include_restricted, template_names)
 	elif version[0] == 4:
 		return _read_templates_4_0_0(api, include_restricted, template_names)
-	else:
-		print "unsupported source version: %s" % ".".join(version)
 
 def insert_template(api, version, template, overwrite_on_conflict):
+	if version not in [(3,0,0), (4,0,0)]:
+		print "unsupported source version: %s" % ".".join(version)
+		return
+
 	if version[0] == 3:
 		return _insert_template_3_0_0(api, template, overwrite_on_conflict)
 	elif version[0] == 4:
 		return _insert_template_4_0_0(api, template, overwrite_on_conflict)
-	else:
-		print "unsupported destination version: %s" % ".".join(version)
 
 
 
