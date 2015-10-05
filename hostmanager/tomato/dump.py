@@ -23,6 +23,9 @@ def dumpException(**kwargs):
 
 def getCount():
     return dump_lib.getCount()
+
+def getRecentDumpCount():
+    return dump_lib.get_recent_dumps()
     
 def getAll(after=None,list_only=False,include_data=False,compress_data=True):
     return dump_lib.getAll(after=after,list_only=list_only,include_data=include_data,compress_data=compress_data)

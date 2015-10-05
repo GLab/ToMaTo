@@ -24,6 +24,7 @@ from . import run, getDpkgVersionStr
 import net
 from ... import config
 from ..newcmd.util.cache import cached
+from ..dump import get_recent_dumps
 
 
 external_hostname = "tomato-lab.org" # should also be pingable.
@@ -119,6 +120,9 @@ def problems():
 	#try to ping external_ip
 	if not ping_test(external_ip):
 		problems.append("Network: ping test to %s failed" % external_ip)
+
+	if get_recent_dumps() > 30:
+		problems.append("Many recent error dumps")
 	
 	return problems
 

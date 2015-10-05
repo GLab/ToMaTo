@@ -19,3 +19,5 @@ install:
 	install -m 755 update-tomato-client-certs.sh $(DESTDIR)/usr/bin/update-tomato-client-certs
 	install -d $(DESTDIR)/usr/sbin
 	install -m 755 vznetaddbr-tomato $(DESTDIR)/usr/sbin/vznetaddbr
+	install -d $(DESTDIR)/usr/share/tomato-hostmanager/contrib
+	install -m 644 dummy_floppy.raw $(DESTDIR)/usr/share/tomato-hostmanager/contrib/dummy_floppy.raw

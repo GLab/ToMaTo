@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, re
+import os, sys, re, shutil
 from django.db import models
 from .. import connections, elements, resources, config
 from ..resources import template
@@ -281,7 +281,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		if kblang is None:
 			kblang = self._template().kblang
 		qm.configure(self.vmid, cores=self.cpus, memory=self.ram, keyboard=kblang, tablet=self.usbtablet,
-			hda=self._imagePath(), fda=self._nlxtp_device_filename())
+			hda=self._imagePath(), fda=self._nlxtp_floppy_filename(), hdb=self._nlxtp_device_filename())
 
 	def _checkImage(self, path):
 		try:
@@ -397,7 +397,8 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	def action_rextfv_upload_use(self):
 		UserError.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), UserError.NO_DATA_AVAILABLE, "No file has been uploaded")
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
-		
+		shutil.copy(config.DUMMY_FLOPPY, self._nlxtp_floppy_filename())
+
 	def action_download_grant(self):
 		qemu_img.export(self._imagePath(), self._imagePath("download.qcow2"))
 		return fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
@@ -411,22 +412,25 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
-		return self.dataPath(os.path.join("nlxtp","mountpoint",filename))
+		return self.dataPath(os.path.join("nlxtp", "mountpoint", filename))
 		
 	#The nlXTP device
 	def _nlxtp_device_filename(self):
-		return self.dataPath(os.path.join("nlxtp","device"))
+		return self.dataPath(os.path.join("nlxtp", "bigdevice"))
 		
-		
+	#The nlXTP device
+	def _nlxtp_floppy_filename(self):
+		return self.dataPath(os.path.join("nlxtp", "device"))
+
 	def _nlxtp_make_readable(self): #mount device file readonly
 		self._nlxtp_create_device_and_mountpoint()
 		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
-		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), readOnly=True)
+		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), readOnly=True, partition=1)
 	
 	def _nlxtp_make_writeable(self): #mount device file r/w
 		self._nlxtp_create_device_and_mountpoint()
 		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
-		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), sync=True)
+		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), sync=True, partition=1)
 	
 	def _nlxtp_close(self): #unmount device file
 		vfat.unmount(self._nlxtp_path(""))
@@ -434,8 +438,9 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	def _nlxtp_create_device_and_mountpoint(self): #if device file or mount point do not exist: create
 		if not os.path.exists(self._nlxtp_path("")):
 			os.makedirs(self._nlxtp_path(""))
+		shutil.copy(config.DUMMY_FLOPPY, self._nlxtp_floppy_filename())
 		if not os.path.exists(self._nlxtp_device_filename()):
-			vfat.create(self._nlxtp_device_filename(), KVMQM.rextfv_max_size/1024) # size (last argument) depends on nlxtp_max_size
+			vfat.create(self._nlxtp_device_filename(), KVMQM.rextfv_max_size/1024, nested=True) # size (last argument) depends on nlxtp_max_size
 	
 	
 		
