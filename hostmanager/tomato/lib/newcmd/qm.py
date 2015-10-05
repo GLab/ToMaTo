@@ -130,9 +130,10 @@ def _checkImageFolder(vmid):
 	if not os.path.exists(_imageFolder(vmid)):
 		os.mkdir(_imageFolder(vmid))
 
-def _configure(vmid, hda=None, fda=None, keyboard="en-us", localtime=False, tablet=True, highres=False, cores=1, memory=512):
+def _configure(vmid, hda=None, hdb=None, fda=None, keyboard="en-us", localtime=False, tablet=True, highres=False, cores=1, memory=512):
 	vmid = params.convert(vmid, convert=int, gte=1)
 	hda = params.convert(hda, convert=str, null=True, check=qemu_img.check)
+	hdb = params.convert(hdb, convert=str, null=True, check=qemu_img.check)
 	fda = params.convert(fda, convert=str, null=True, check=qemu_img.check)
 	# other parameters will be checked by _set
 	options = {}
@@ -145,6 +146,8 @@ def _configure(vmid, hda=None, fda=None, keyboard="en-us", localtime=False, tabl
 	args["vnc"] = "unix:/var/run/qemu-server/%d.vnc,password" % vmid
 	if fda:
 		args['drive'] = "file=%s,index=0,if=floppy,cache=writethrough" % fda
+	if hdb:
+		args["hdb"] = hdb
 	if hda:
 		args["hda"] = hda
 	if qmVersion < [1, 1]:
