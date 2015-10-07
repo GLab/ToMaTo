@@ -175,8 +175,8 @@ def _insert_template_4_0_0(api, template, overwrite_on_conflict):
 
 
 def read_templates(api, version, include_restricted, template_names):
-	if version not in [(3,0,0), (4,0,0)]:
-		print "unsupported source version: %s" % ".".join(version)
+	if version not in [[3, 0, 0], [4, 0, 0]]:
+		print "unsupported source version: %s.%s.%s" % (version[0], version[1], version[2])
 		return []
 
 	if version[0] == 3:
@@ -185,8 +185,8 @@ def read_templates(api, version, include_restricted, template_names):
 		return _read_templates_4_0_0(api, include_restricted, template_names)
 
 def insert_template(api, version, template, overwrite_on_conflict):
-	if version not in [(3,0,0), (4,0,0)]:
-		print "unsupported source version: %s" % ".".join(version)
+	if version not in [[3, 0, 0], [4, 0, 0]]:
+		print "unsupported destination version: %s.%s.%s" % (version[0], version[1], version[2])
 		return
 
 	if version[0] == 3:
@@ -213,8 +213,8 @@ else:
 	url_destination = createUrl(options.protocol_destination, options.hostname_destination, options.port_destination, options.username_destination, options.password_destination)
 api_destination = getConnection(url_destination, options.client_cert_destination)
 
-source_version = api_source.server_info().get('api_version', (3, 0, 0))
-target_version = api_destination.server_info().get('api_version', (3, 0, 0))
+source_version = api_source.server_info().get('api_version', [3, 0, 0])
+target_version = api_destination.server_info().get('api_version', [3, 0, 0])
 
 print "fetching source templates"
 source_templates = read_templates(api_source, source_version, options.include_restricted, options.templates)
