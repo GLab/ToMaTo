@@ -136,9 +136,7 @@ The simulation will create some output on your console and also create data in a
 					phase: "end",
 					object: {
 						data: {
-							attrs: {
-								kind: "internet",
-							}
+							kind: "internet"
 						}
 					},
 				}); 

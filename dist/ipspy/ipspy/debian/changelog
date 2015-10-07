@@ -1,3 +1,9 @@
+ipspy (0.3.1) stable; urgency=medium
+
+  * Fixed problem with status file not existing until first packet
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 05 Oct 2015 14:51:52 +0200
+
 ipspy (0.3) stable; urgency=medium
 
   * Added timeout after which entries are forgotten

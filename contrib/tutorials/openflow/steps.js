@@ -164,9 +164,7 @@
 				phase: "end",
 				attrs: {
 					type: "openvz",
-					attrs: {
-						template: "floodlight"
-					}
+					template: "floodlight"
 				},
 			});
 		}
