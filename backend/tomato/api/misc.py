@@ -28,7 +28,7 @@ def server_info():
 		'external_urls': misc.getExternalURLs(),
 		'public_key': misc.getPublicKey(),
 		'version': misc.getVersion(),
-		'api_version': (4, 0, 0),
+		'api_version': [4, 0, 0],
 		'topology_timeout': {
 			'initial': config.TOPOLOGY_TIMEOUT_INITIAL,
 			'maximum': config.TOPOLOGY_TIMEOUT_MAX,
