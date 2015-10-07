@@ -11,14 +11,14 @@ function tomato-db-start () {
 
 function tomato-backend-start () {
   mkdir -p "$DIR"/backend/{config,data,logs}
-  docker run -d -v "$TOMATODIR"/backend:/code -v "$TOMATODIR"/shared:/shared -v "$DIR"/backend/config:/config -v "$DIR"/backend/data:/data -v "$DIR"/backend/logs:/logs --link mongodb:db -p 8006:8006 -p 8000:8000 -p 8001:8001 -p 8002:8002 --name tomato-backend tomato-backend
+  docker run -d -v "$TOMATODIR"/backend:/code -v "$TOMATODIR"/shared:/shared -v "$DIR"/backend/config:/config -v "$DIR"/backend/data:/data -v "$DIR"/backend/logs:/logs --link mongodb:db -p 8006:8006 -p 8000:8000 -p 8001:8001 -p 8002:8002 --dns 131.246.9.116 --name tomato-backend tomato-backend
   docker start tomato-backend
 }
 
 function tomato-web-start () {
   mkdir -p "$DIR"/web/config
   SECRET_KEY=$(cat /dev/urandom | tr -cd 'a-zA-Z0-9' | head -c 32)
-  docker run -d -v "$TOMATODIR"/web:/code -v "$TOMATODIR"/shared:/shared -v "$DIR"/web/config:/config --link tomato-backend:backend -p 8080:80 --name tomato-web -e "SECRET_KEY=$SECRET_KEY" tomato-web
+  docker run -d -v "$TOMATODIR"/web:/code -v "$TOMATODIR"/shared:/shared -v "$DIR"/web/config:/config --link tomato-backend:backend -p 8080:80 --dns 131.246.9.116 --name tomato-web -e "SECRET_KEY=$SECRET_KEY" tomato-web
   docker start tomato-web
 }
 

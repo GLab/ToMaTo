@@ -143,6 +143,7 @@
 			text:	'<p class="tutorialExplanation">\
 						Using the connection\'s right-click menu, you can now download the capture, or directly view it in cloudshark.<br />\
 						The downloaded file can be viewed by any application which supports pcap viewing, like Wireshark.</p>\
+						<p class="tutorialExplanation">If you decide to use CloudShark, you may need to sign in on their webpage.</p>\
 <p class="tutorialCommand">Please download the captur using the connection\'s right-click menu.</p>',
 			skip_button:	"Continue",
 			help_page: 'packetcapturing'

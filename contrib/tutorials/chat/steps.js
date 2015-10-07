@@ -496,6 +496,7 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 	},
 	{
 		text: '<p class="tutorialExplanation">Make sure that some chat messages go over that link and then we can have a look at them. To view them, we will use an online service called <i>Cloudshark</i>. Right click on the link and choose <i>View capture in Cloudshark</i>.</p>\
+<p class="tutorialExplanation">You may need to sign in to Cloudshark in order for this to work. You can just use their OAuth authentication buttons.</p>\
 <p class="tutorialCommand">Open the captured packets in Cloudshark</p>',
 		trigger: function(event) {
 			return compareToMask(event, {
