@@ -436,14 +436,14 @@ class Host(DumpSource, Entity, BaseDocument):
 																			 self.connections.all()]:
 			data = {"type": type_, "onhost_id": obj.num, "element_id": None, "connection_id": None, "topology_id": None,
 					"state": obj.state}
-			if obj.topology_element:
-				tel = obj.topology_element
-				data["element_id"] = tel.id
-				data["topology_id"] = tel.topology_id
-			if obj.topology_connection:
-				tcon = obj.topology_connection
-				data["connection_id"] = tcon.id
-				data["topology_id"] = tcon.topology_id
+			if obj.topologyElement:
+				tel = obj.topologyElement
+				data["element_id"] = tel.idStr
+				data["topology_id"] = tel.topologyId
+			if obj.topologyConnection:
+				tcon = obj.topologyConnection
+				data["connection_id"] = tcon.idStr
+				data["topology_id"] = tcon.topologyId
 			res.append(data)
 		return res
 

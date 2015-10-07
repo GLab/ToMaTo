@@ -36,5 +36,5 @@ def element(api, request, id):
 
 @wrap_rpc
 def connection(api, request, id):
-	data = api.conection_info(id)
+	data = api.connection_info(id)
 	return render(request, "debug/json.html", {'title': "Information on connection #%s" % id, 'data': data})
