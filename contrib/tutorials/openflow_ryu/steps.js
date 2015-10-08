@@ -19,9 +19,7 @@
 				phase: "end",
 				attrs: {
 					type: "kvmqm",
-					attrs: {
-						template: "openvswitch"
-					}
+					template: "openvswitch"
 				},
 			});
 		}
@@ -183,9 +181,7 @@
 				phase: "end",
 				attrs: {
 					type: "openvz",
-					attrs: {
-						template: "ryu"
-					}
+					template: "ryu"
 				},
 			});
 		}

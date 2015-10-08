@@ -57,7 +57,7 @@ def parseArgs():
 	parser.add_argument("--password_destination", "-dP", help="the password to use for login on destination server")
 
 	parser.add_argument("--include_restricted", default=False, help="whether to include restricted templates")
-	parser.add_argument("--template", "-t", default=None, help="only migrate templates with this name")
+	parser.add_argument("--templates", "-t", metavar='T', nargs="+", default=None, help="only migrate templates with this name")
 	parser.add_argument("--overwrite_on_conflict", default=False, action="store_true", help="in case of conflict, overwrite the template (default: ignore)")
 
 	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
@@ -81,12 +81,12 @@ def parseArgs():
 
 
 
-def _read_templates_3_0_0(api, include_restricted, name):
+def _read_templates_3_0_0(api, include_restricted, template_names):
 	results = []
 	templates = api.resource_list('template')
 	for t in templates:
 		if include_restricted or not t['attrs'].get('restricted', False):
-			if name is None or t['attrs']['name'] == name:
+			if template_names is None or t['attrs']['name'] in template_names:
 				templ = api.resource_info(t['id'], include_torrent_data=True)
 				res_entry = {
 					'name': templ['attrs']['name'],
@@ -104,12 +104,12 @@ def _read_templates_3_0_0(api, include_restricted, name):
 	return results
 
 
-def _read_templates_4_0_0(api, include_restricted, name):
+def _read_templates_4_0_0(api, include_restricted, template_names):
 	results = []
 	templates = api.template_list()
 	for t in templates:
 		if include_restricted or not t.get('restricted', False):
-			if name is None or t['name'] == name:
+			if template_names is None or t['name'] in template_names:
 				templ = api.resource_info(t['id'])
 				res_entry = {
 					'name': templ['name'],
@@ -174,21 +174,25 @@ def _insert_template_4_0_0(api, template, overwrite_on_conflict):
 
 
 
-def read_templates(api, version, include_restricted, name):
-	if version[0] == 3:
-		return _read_templates_3_0_0(api, include_restricted, name)
-	elif version[0] == 4:
-		return _read_templates_4_0_0(api, include_restricted, name)
-	else:
+def read_templates(api, version, include_restricted, template_names):
+	if version not in [(3,0,0), (4,0,0)]:
 		print "unsupported source version: %s" % ".".join(version)
+		return []
+
+	if version[0] == 3:
+		return _read_templates_3_0_0(api, include_restricted, template_names)
+	elif version[0] == 4:
+		return _read_templates_4_0_0(api, include_restricted, template_names)
 
 def insert_template(api, version, template, overwrite_on_conflict):
+	if version not in [(3,0,0), (4,0,0)]:
+		print "unsupported source version: %s" % ".".join(version)
+		return
+
 	if version[0] == 3:
 		return _insert_template_3_0_0(api, template, overwrite_on_conflict)
 	elif version[0] == 4:
 		return _insert_template_4_0_0(api, template, overwrite_on_conflict)
-	else:
-		print "unsupported destination version: %s" % ".".join(version)
 
 
 
@@ -213,7 +217,7 @@ source_version = api_source.server_info().get('api_version', (3, 0, 0))
 target_version = api_destination.server_info().get('api_version', (3, 0, 0))
 
 print "fetching source templates"
-source_templates = read_templates(api_source, source_version, options.include_restricted, options.template)
+source_templates = read_templates(api_source, source_version, options.include_restricted, options.templates)
 print "  done"
 for template in source_templates:
 	print ""
