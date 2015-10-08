@@ -1,3 +1,9 @@
+tomato-repy (0.8) unstable; urgency=medium
+
+  * Fixed struct error
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 06 Oct 2015 10:57:40 +0200
+
 tomato-repy (0.7) unstable; urgency=low
 
   * Fixed struct error
