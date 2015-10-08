@@ -15,6 +15,11 @@ function tomato-backend-start () {
   docker start tomato-backend
 }
 
+function tomato-backend-shell () {
+  mkdir -p "$DIR"/backend/{config,data,logs}
+  docker run -it --rm -v "$TOMATODIR"/backend:/code -v "$TOMATODIR"/shared:/shared -v "$DIR"/backend/config:/config -v "$DIR"/backend/data:/data -v "$DIR"/backend/logs:/logs --link mongodb:db -p 8006:8006 -p 8000:8000 -p 8001:8001 -p 8002:8002 --dns 131.246.9.116 tomato-backend /bin/bash
+}
+
 function tomato-web-start () {
   mkdir -p "$DIR"/web/config
   SECRET_KEY=$(cat /dev/urandom | tr -cd 'a-zA-Z0-9' | head -c 32)

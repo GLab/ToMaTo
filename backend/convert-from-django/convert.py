@@ -30,7 +30,8 @@ def convertData(data):
 			del dat['attrs']
 		dat['id'] = pk
 		table[pk] = dat
-	del db['south.migrationhistory']
+	if 'south.migrationhistory' in db:
+		del db['south.migrationhistory']
 	return db
 
 def fixKeys(data):
@@ -91,11 +92,11 @@ def cleanup():
 	ErrorGroup.objects.delete()
 	NetworkInstance.objects.delete()
 	Network.objects.delete()
-	Profile.objects.delete()
 	Template.objects.delete()
 	KVMQM_Interface.objects.delete()
 	OpenVZ_Interface.objects.delete()
 	VMElement.objects.delete()
+	Profile.objects.delete()
 	ExternalNetwork.objects.delete()
 	Element.objects.delete()
 	Topology.objects.delete()
