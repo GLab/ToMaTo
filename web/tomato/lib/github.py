@@ -8,8 +8,13 @@ class GithubError(Error):
 	TYPE="github"
 	NOT_CONFIGURED = "not configured"
 
-def connect():
+def is_enabled():
 	if not github_access_token:
+		return False
+	return True
+
+def connect():
+	if not is_enabled():
 		raise GithubError(type=GithubError.NOT_CONFIGURED, message="GitHub Access Token is not set in webfrontend settings")
 	return github3.login(token=github_access_token)
 

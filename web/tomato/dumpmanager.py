@@ -29,7 +29,7 @@ from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
 from lib.error import UserError #@UnresolvedImport
-from lib.github import create_issue as create_github_issue
+from lib.github import create_issue as create_github_issue, is_enabled as github_enabled
 
 class ErrorDumpForm(BootstrapForm):
 	source = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.", widget=forms.HiddenInput())
@@ -104,7 +104,7 @@ def group_info(api, request, group_id):
 			errordump['source___link'] = errordump['source'].replace('host:', '')
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	errorgroup['github_url'] = errorgroup.get('_github_url', False)
-	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup})
+	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup, 'github_enabled': github_enabled()})
 
 @wrap_rpc
 def group_hide(api,request,group_id):

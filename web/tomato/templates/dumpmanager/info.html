@@ -115,7 +115,9 @@ This group is empty.
 <form>
   <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id %}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit errorgroup</button>
   <button type="submit" formaction="{%url "dumpmanager.group_hide" errorgroup.group_id %}" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> clear errorgroup</button>
-  <button type="button" class="btn btn-info" onclick="openGithub('{{errorgroup.group_id}}'); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-new-window"></span> {% if errorgroup.github_url %}View Issue on GitHub{%else%}Open new issue on GitHub{%endif%}</button>
+  {% if github_enabled %}
+	<button type="button" class="btn btn-info" onclick="openGithub('{{errorgroup.group_id}}'); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-new-window"></span> {% if errorgroup.github_url %}View Issue on GitHub{%else%}Open new issue on GitHub{%endif%}</button>
+  {% endif %}
   <button type="submit" formaction="{%url "dumpmanager.group_remove" errorgroup.group_id %}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove errorgroup</button>
 </form>
 {%endif%}
