@@ -346,3 +346,10 @@ div.windowHelp {
 #permwindow-add-button {
 	float:left;
 }
+
+
+
+div.hoverdescription div.hiddenbox th {
+    padding-right: 0.3cm;
+    background: white;
+}
