@@ -141,7 +141,7 @@ class wrap_json:
 			data = json.loads(request.REQUEST["data"]) if request.REQUEST.has_key("data") else {}
 			data.update(kwargs)
 			try:
-				res = self.fun(api, *args, **data)
+				res = self.fun(api, request, *args, **data)
 				return HttpResponse(json.dumps({"success": True, "result": res}))
 			except Exception, e:
 				return ajaxFault(e)
