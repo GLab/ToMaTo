@@ -1577,7 +1577,7 @@ var Topology = Class.extend({
 					var values = t.configWindow.getValues();
 					for (var name in values) {
 						if (values[name] === t.data[name]) delete values[name];
-						// Tread "" like null
+						// Treat "" like null
 						if (values[name] === "" && t.data[name] === null) delete values[name];
 					}
 					t.modify(values);
