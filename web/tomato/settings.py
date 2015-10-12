@@ -129,6 +129,7 @@ except:
 	traceback.print_exc()
 
 # access tokens can be created via GitHub settings -> My Personal Access Tokens
+# The token needs the scope 'repo' or 'public_repo' (depending on whether the repository is private or not)
 github_access_token = ""
 github_repository_owner = "GLab"
 github_repository_name = "ToMaTo"
