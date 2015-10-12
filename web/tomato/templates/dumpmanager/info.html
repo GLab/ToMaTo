@@ -32,6 +32,23 @@ function showDump(group_id, source, dump_id, include_data) {
         alert('Failed to retrieve dump');
     }
 }
+
+function openGithub(group_id) {
+	var url = "{%url 'dumpmanager.errorgroup_github' '__GROUP__' %}".replace('__GROUP__', group_id)
+	var xmlhttp=new XMLHttpRequest();
+	xmlhttp.open("GET", url, false);
+	xmlhttp.send();
+	try {
+	    res = JSON.parse(xmlhttp.responseText);
+	    if (res.success) {
+			window.open(res.result, '_blank');
+		} else {
+			alert('Failed to open issue: '+res.error.typemsg+': '+res.error.errormsg);
+		}
+   } catch(ex) {
+        alert('Failed to open issue');
+    }
+}
 </script>
 {% endblock %}
 
@@ -98,6 +115,7 @@ This group is empty.
 <form>
   <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id %}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit errorgroup</button>
   <button type="submit" formaction="{%url "dumpmanager.group_hide" errorgroup.group_id %}" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> clear errorgroup</button>
+  <button type="button" class="btn btn-info" onclick="openGithub('{{errorgroup.group_id}}'); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-new-window"></span> {% if errorgroup.github_url %}View Issue on GitHub{%else%}Open new issue on GitHub{%endif%}</button>
   <button type="submit" formaction="{%url "dumpmanager.group_remove" errorgroup.group_id %}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove errorgroup</button>
 </form>
 {%endif%}
