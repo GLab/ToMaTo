@@ -5,7 +5,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-instal
   python python-pip build-essential python-dev \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install mongoengine
+RUN pip install mongoengine github3.py
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-install-recommends -y \
   python-openssl python-django apache2 libapache2-mod-wsgi busybox \

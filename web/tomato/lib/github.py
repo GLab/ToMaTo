@@ -1,6 +1,6 @@
 __author__ = 't-gerhard'
 
-import github3
+import github3  # https://github.com/sigmavirus24/github3.py
 from ..settings import github_access_token, github_repository_owner, github_repository_name
 from .error import Error
 
