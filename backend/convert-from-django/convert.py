@@ -86,9 +86,6 @@ def cleanup():
 	print "cleaning up..."
 	Connection.objects.delete()
 	ExternalNetworkEndpoint.objects.delete()
-	Host.objects.delete()
-	Site.objects.delete()
-	User.objects.delete()
 	ErrorGroup.objects.delete()
 	NetworkInstance.objects.delete()
 	Network.objects.delete()
@@ -104,6 +101,9 @@ def cleanup():
 	HostConnection.objects.delete()
 	HostElement.objects(parent__ne=None).delete()
 	HostElement.objects.delete()
+	Host.objects.delete()
+	Site.objects.delete()
+	User.objects.delete()
 	Organization.objects().delete()
 	UsageStatistics.objects.delete()
 	rebuildIndexes(LinkStatistics)
@@ -116,14 +116,17 @@ def importData(data):
 	for key, entry in data['usage'].items():
 		entry = modifyDict(entry, remove=['id'])
 		usages[key] = Usage(**entry)
+	del data['usage']
 	print "\tUsage statistics..."
 	usagestatistics = {}
+	usagestatistics_used = {}
 	for key, entry in data['usagestatistics'].items():
 		obj = UsageStatistics()
 		obj.save()
 		usagestatistics[key] = obj
+		usagestatistics_used[key] = False
+	del data['usagestatistics']
 	print "\tUsage records..."
-	usagerecords = {}
 	for key, entry in data['usagerecord'].items():
 		stats = usagestatistics.get(entry['statistics'])
 		if not stats:
@@ -136,7 +139,6 @@ def importData(data):
 		type_ = entry['type']
 		entry = modifyDict(entry, remove=['id', 'usage', 'statistics', 'type'])
 		obj = UsageRecord(usage=usage, **entry)
-		usagerecords[key] = obj
 		if type_ == "5minutes":
 			stats.by5minutes.append(obj)
 		elif type_ == "hour":
@@ -149,8 +151,9 @@ def importData(data):
 			stats.byYear.append(obj)
 		else:
 			print "\t\tInvalid record type: UsageRecord[%d]: %s" % (key, type_)
+	del data['usagerecord']
 	for stats in usagestatistics.values():
-		stats.save()
+		stats.housekeep()
 	print "\tQuotas..."
 	quotas = {}
 	for key, entry in data['quota'].items():
@@ -164,10 +167,13 @@ def importData(data):
 			remove=['id', 'used', 'monthly'])
 		obj = Quota(monthly=monthly, used=used, **entry)
 		quotas[key] = obj
+	usages = None
+	del data['quota']
 	print "\tOrganizations..."
 	organizations = {}
 	for key, entry in data['organization'].items():
 		totalUsage = usagestatistics.get(entry['totalUsage'])
+		usagestatistics_used[entry['totalUsage']] = True
 		if not totalUsage:
 			print "\t\tInvalid reference: Organization[%d] -> UsageStatistics[%d]" % (key, entry['totalUsage'])
 		entry = modifyDict(entry, rename=(('description', 'label'), ('description_text', 'description'),
@@ -175,6 +181,7 @@ def importData(data):
 		obj = Organization(totalUsage=totalUsage, **entry)
 		obj.save()
 		organizations[key] = obj
+	del data['organization']
 	print "\tSites..."
 	sites = {}
 	for key, entry in data['site'].items():
@@ -187,6 +194,7 @@ def importData(data):
 		site = Site(organization=orga, **entry)
 		site.save()
 		sites[key] = site
+	del data['site']
 	print "\tUsers..."
 	users = {}
 	for key, entry in data['user'].items():
@@ -194,6 +202,7 @@ def importData(data):
 		if not orga:
 			print "\t\tInvalid reference: User[%d] -> Organization[%d]" % (key, entry['organization'])
 		totalUsage = usagestatistics.get(entry['totalUsage'])
+		usagestatistics_used[entry['totalUsage']] = True
 		if not totalUsage:
 			print "\t\tInvalid reference: User[%d] -> UsageStatistics[%d]" % (key, entry['totalUsage'])
 		quota = quotas.get(entry['quota'])
@@ -204,6 +213,7 @@ def importData(data):
 		obj = User(organization=orga, totalUsage=totalUsage, quota=quota, **entry)
 		obj.save()
 		users[key] = obj
+	del data['user']
 	print "\tPermissions..."
 	permissions = {}
 	for key, entry in data['permissions'].items():
@@ -220,6 +230,7 @@ def importData(data):
 		entry = modifyDict(entry, remove=['id', 'user', 'set'])
 		obj = Permission(user=user, **entry)
 		permission.append(obj)
+	del data['permissions']
 	print "\tErrorgroups..."
 	errorgroups = {}
 	for key, entry in data['errorgroup'].items():
@@ -227,6 +238,7 @@ def importData(data):
 		obj = ErrorGroup(**entry)
 		obj.save()
 		errorgroups[key] = obj
+	del data['errorgroup']
 	print "\tErrordumps..."
 	import ujson as json
 	for key, entry in data['errordump'].items():
@@ -239,12 +251,14 @@ def importData(data):
 			'software_version': 'softwareVersion', 'origin': 'type'}, remove=['group'])
 		obj = ErrorDump(**entry)
 		group.dumps.append(obj)
+	del data['errordump']
 	for obj in errorgroups.values():
 		obj.save()
 	print "\tHosts..."
 	hosts = {}
 	for key, entry in data['host'].items():
 		totalUsage = usagestatistics.get(entry['totalUsage'])
+		usagestatistics_used[entry['totalUsage']] = True
 		if not totalUsage:
 			print "\t\tInvalid reference: Host[%d] -> UsageStatistics[%d]" % (key, entry['totalUsage'])
 		site = sites.get(entry['site'])
@@ -259,7 +273,12 @@ def importData(data):
 			remove=['id', 'site', 'totalUsage', 'templates', 'networks'])
 		obj = Host(site=site, totalUsage=totalUsage, **entry)
 		obj.save()
+		caps = obj._convertCapabilities({"elements": obj.elementTypes, "connections": obj.connectionTypes})
+		obj.elementTypes = caps["elements"]
+		obj.connectionTypes = caps["connections"]
+		obj.save()
 		hosts[key] = obj
+	del data['host']
 	print "\tNetworks..."
 	networks = {}
 	for key, entry in data['network'].items():
@@ -273,6 +292,7 @@ def importData(data):
 		obj = Network(**entry)
 		obj.save()
 		networks[key] = obj
+	del data['network']
 	print "\tNetwork instances..."
 	networkinstances = {}
 	for key, entry in data['networkinstance'].items():
@@ -294,6 +314,7 @@ def importData(data):
 		obj = NetworkInstance(host=host, network=network, **entry)
 		obj.save()
 		networkinstances[key] = obj
+	del data['networkinstance']
 	print "\tProfiles..."
 	profiles = {}
 	for key, entry in data['profile'].items():
@@ -313,6 +334,7 @@ def importData(data):
 			profiles[key] = obj
 		except:
 			print "\t\tDuplicate object: %r" % entry
+	del data['profile']
 	print "\tTemplates..."
 	templates = {}
 	templates_index = {}
@@ -337,6 +359,7 @@ def importData(data):
 		obj.save()
 		templates[key] = obj
 		templates_index[(obj.tech, obj.name)] = obj
+	del data['template']
 	print "\tTemplates on hosts..."
 	for key, entry in data['templateonhost'].items():
 		host = hosts.get(entry['host'])
@@ -350,6 +373,7 @@ def importData(data):
 		host.templates.append(template)
 	for obj in hosts.values():
 		obj.save()
+	del data['templateonhost']
 	print "\tTopologies..."
 	topologies = {}
 	for key, entry in data['topology'].items():
@@ -357,6 +381,7 @@ def importData(data):
 		if perms is None:
 			print "\t\tInvalid reference: Topology[%d] -> Permissions[%d]" % (key, entry['permissions'])
 		totalUsage = usagestatistics.get(entry['totalUsage'])
+		usagestatistics_used[entry['totalUsage']] = True
 		if not totalUsage:
 			print "\t\tInvalid reference: Topology[%d] -> UsageStatistics[%d]" % (key, entry['totalUsage'])
 		site = sites.get(entry['site'])
@@ -372,6 +397,7 @@ def importData(data):
 		obj = Topology(permissions=perms, totalUsage=totalUsage, site=site, **entry)
 		obj.save()
 		topologies[key] = obj
+	del data['topology']
 	print "\tLink measurements..."
 	linkStats = {}
 	for key, entry in data['linkmeasurement'].items():
@@ -407,6 +433,9 @@ def importData(data):
 			print "\t\tInvalid measurement type: LinkMeasurement[%d], %s" % (key, entry['type'])
 			continue
 		stats.save()
+	for obj in linkStats.values():
+		obj.housekeep()
+	del data['linkmeasurement']
 	print "\tHost elements..."
 	hostelements = {}
 	hostelements_index = {}
@@ -416,6 +445,7 @@ def importData(data):
 			print "\t\tInvalid reference: HostElement[%d] -> Host[%d]" % (key, entry['host'])
 			continue
 		usageStatistics = usagestatistics.get(entry['usageStatistics'])
+		usagestatistics_used[entry['usageStatistics']] = True
 		if not usageStatistics:
 			print "\t\tInvalid reference: HostElement[%d] -> UsageStatistics[%d]" % (key, entry['usageStatistics'])
 		parent = hostelements_index.get((host.name, entry['parent']))
@@ -427,6 +457,7 @@ def importData(data):
 		obj.save()
 		hostelements[key] = obj
 		hostelements_index[(host.name, obj.num)] = obj
+	del data['hostelement']
 	print "\tHost connections..."
 	hostconnections = {}
 	for key, entry in data['hostconnection'].items():
@@ -435,6 +466,7 @@ def importData(data):
 			print "\t\tInvalid reference: HostConnection[%d] -> Host[%d]" % (key, entry['host'])
 			continue
 		usageStatistics = usagestatistics.get(entry['usageStatistics'])
+		usagestatistics_used[entry['usageStatistics']] = True
 		if not usageStatistics:
 			print "\t\tInvalid reference: HostConnection[%d] -> UsageStatistics[%d]" % (key, entry['usageStatistics'])
 		elems = sorted(entry['elements'])
@@ -456,6 +488,7 @@ def importData(data):
 		hel1.save()
 		hel2.connection = obj
 		hel2.save()
+	del data['hostconnection']
 	print "\tElements..."
 	Element.objects.delete()
 	elements = {}
@@ -484,6 +517,7 @@ def importData(data):
 		if perms is None:
 			print "\t\tInvalid reference: Element[%d] -> Permission[%d]" % (entry['id'], entry['permissions'])
 		totalUsage = usagestatistics.get(entry['totalUsage'])
+		usagestatistics_used[entry['totalUsage']] = True
 		if not totalUsage:
 			print "\t\tInvalid reference: Element[%d] -> UsageStatistics[%d]" % (entry['id'], entry['totalUsage'])
 		entry.update(topology=topology, parent=parent, permissions=perms, totalUsage=totalUsage)
@@ -655,6 +689,7 @@ def importData(data):
 		if perms is None:
 			print "\t\tInvalid reference: Connection[%d] -> Permissions[%d]" % (key, entry['permissions'])
 		totalUsage = usagestatistics.get(entry['totalUsage'])
+		usagestatistics_used[entry['totalUsage']] = True
 		if not totalUsage:
 			print "\t\tInvalid reference: Connection[%d] -> UsageStatistics[%d]" % (key, entry['totalUsage'])
 		topology = topologies.get(entry['topology'])
@@ -708,6 +743,11 @@ def importData(data):
 		if hcon2:
 			hcon2.topologyConnection = obj
 			hcon2.save()
+	print "\tRemoving unused UsageStatistics..."
+	for key, used in usagestatistics_used.items():
+		if used:
+			continue
+		usagestatistics[key].remove()
 	print "done."
 	
 if __name__ == "__main__":

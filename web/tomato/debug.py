@@ -38,3 +38,8 @@ def element(api, request, id):
 def connection(api, request, id):
 	data = api.connection_info(id)
 	return render(request, "debug/json.html", {'title': "Information on connection #%s" % id, 'data': data})
+
+@wrap_rpc
+def stats(api, request):
+	stats = api.debug_stats()
+	return render(request, "debug/stats.html", {'stats': stats})

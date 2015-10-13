@@ -21,12 +21,17 @@ class Task:
 		self.kwargs = kwargs
 		self.next = time.time() + (0 if immediate else timeout) 
 		self.busy = False
+		self.last = None
+		self.duration = None
 	def execute(self):
+		start = time.time()
 		try:
 			self.fn(*self.args, **self.kwargs)
 		except Exception:
 			import traceback
 			traceback.print_exc()
+		self.duration = time.time()-start
+		self.last = self.next
 		if self.repeated:
 			self.next = time.time() + self.timeout
 		else:
@@ -35,9 +40,13 @@ class Task:
 		return {
 			"method": self.fn.__module__+"."+self.fn.__name__,
 			"busy": self.busy,
+			"args": [str(arg) for arg in self.args],
+			"kwargs": {name: str(value) for name, value in self.kwargs.items()},
 			"repeated": self.repeated,
 			"timeout": self.timeout,
-			"next": self.next
+			"next": self.next,
+			"last": self.last,
+			"duration": self.duration
 		}
 
 class TaskScheduler(threading.Thread):
@@ -150,4 +159,11 @@ class TaskScheduler(threading.Thread):
 				info = t.info()
 				info["id"] = id_
 				tasks.append(info)
-		return tasks
+		info = {
+			"tasks": tasks,
+			"max_late_time": self.maxLateTime,
+			"max_workers": self.maxWorkers,
+			"min_workers": self.minWorkers,
+			"workers": self.workers
+		}
+		return info

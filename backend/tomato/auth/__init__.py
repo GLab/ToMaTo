@@ -324,7 +324,7 @@ class User(BaseDocument):
 		self.totalUsage.updateFrom([top.totalUsage for top in self.topologies.filter(permissions__role="owner")])
 		
 	def updateQuota(self):
-		self.quota.update(self.totalUsage)
+		self.quota.updateUsage(self.totalUsage)
 		self.save()
 		
 	def enforceQuota(self):

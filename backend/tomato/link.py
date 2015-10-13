@@ -17,10 +17,11 @@
 
 from .db import *
 from . import scheduler
+from datetime import timedelta
 from .host.site import Site
 from lib import util, logging #@UnresolvedImport
 from .accounting import _lastPoint, _nextPoint, _prevPoint, _toPoint, _toTime, _avg
-import time, random
+import time, random, bisect
 
 TYPES = ["single", "5minutes", "hour", "day", "month", "year"]
 KEEP_RECORDS = {
@@ -30,6 +31,14 @@ KEEP_RECORDS = {
 	"day": 30,
 	"month": 12,
 	"year": 5,
+}
+MAX_AGE = {
+	"single": timedelta(minutes=2*KEEP_RECORDS["single"]),
+	"5minutes": timedelta(minutes=2*5*KEEP_RECORDS["5minutes"]),
+	"hour": timedelta(hours=2*KEEP_RECORDS["hour"]),
+	"day": timedelta(days=2*KEEP_RECORDS["day"]),
+	"month": timedelta(days=2*30*KEEP_RECORDS["month"]),
+	"year": timedelta(days=2*365*KEEP_RECORDS["year"])
 }
 
 def _combine(records):
@@ -46,12 +55,12 @@ def _combine(records):
 	return combined
 
 class LinkMeasurement(ExtDocument, EmbeddedDocument):
-	begin = FloatField(required=True)
-	end = FloatField(required=True)
-	measurements = IntField(required=True)
-	loss = FloatField(required=True)
-	delayAvg = FloatField(db_field='delay_avg', required=True)
-	delayStddev = FloatField(db_field='delay_stddev', required=True)
+	begin = FloatField(required=True, db_field="b")
+	end = FloatField(required=True, db_field="e")
+	measurements = IntField(required=True, db_field="m")
+	loss = FloatField(required=True, db_field="l")
+	delayAvg = FloatField(db_field='da', required=True)
+	delayStddev = FloatField(db_field='ds', required=True)
 
 	def info(self):
 		return {
@@ -126,10 +135,11 @@ class LinkStatistics(BaseDocument):
 	def removeOld(self):
 		for type_ in TYPES:
 			list_ = self._getList(type_)
-			list_[:] = list_[-KEEP_RECORDS[type_]:]
+			list_[:] = filter(lambda e: e.end > _toTime(_toPoint(time.time()) - MAX_AGE[type_]), list_[-KEEP_RECORDS[type_]:])
 		self.save()
 
-	def update(self):
+	def housekeep(self):
+		self.removeOld()
 		self.combine()
 		self.removeOld()
 
@@ -143,9 +153,21 @@ class LinkStatistics(BaseDocument):
 			else:
 				begin = _toTime(_prevPoint(_lastPoint(type_, _toPoint(now)), type_))
 			end = _toTime(_nextPoint(_toPoint(begin), type_))
+			if end > now:
+				continue
+			records = sorted(lastList, key=lambda rec: rec.end)
+			i = 0
+			while i < len(records) and records[i].begin < begin:
+				i += 1
+			records = records[i:]
 			while end <= now:
-				records = filter(lambda rec: rec.begin >= begin and rec.end <= end, lastList)
-				combined = _combine(records)
+				i = 0
+				if not records:
+					break
+				while i < len(records) and records[i].end <= end:
+					i += 1
+				combined = _combine(records[:i])
+				records = records[i:]
 				combined.begin = begin
 				combined.end = end
 				list_.append(combined)
@@ -196,7 +218,7 @@ def _measure():
 def taskRun():
 	_measure()
 	for ls in LinkStatistics.objects:
-		ls.update()
+		ls.housekeep()
 
 def getStatistics(siteA, siteB): #@ReservedAssignment
 	siteA = Site.get(siteA)

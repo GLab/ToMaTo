@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.cache import cached #@UnresolvedImport
-import time
+import time, sys, traceback
 
 @cached(timeout=3600, autoupdate=True)
 def server_info():
@@ -93,18 +93,27 @@ def statistics():
 	
 	usage['users'] = auth.User.objects.count()
 	usage['users_active_30days'] = auth.User.objects.filter(lastLogin__gte = time.time() - 30*24*60*60).count()
-	
-	
 	return stats
 
 def task_list():
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	return scheduler.info()
+	return scheduler.info()["tasks"]
 
 def task_execute(id):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	UserError.check(currentUser().hasFlag(auth.Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
 	return scheduler.executeTask(id, force=True)
+
+def debug_stats():
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check(currentUser().hasFlag(auth.Flags.Debug), code=UserError.DENIED, message="Not enough permissions")
+	from .. import database_obj
+	stats = {}
+	stats["db"] = database_obj.command("dbstats")
+	stats["db"]["collections"] = {name: database_obj.command("collstats", name) for name in database_obj.collection_names()}
+	stats["scheduler"] = scheduler.info()
+	stats["threads"] = map(traceback.extract_stack, sys._current_frames().values())
+	return stats
 
 from .. import misc, config, link, currentUser, topology, auth, elements, connections, scheduler
 from ..host import Host

@@ -24,7 +24,8 @@ monkey.patch_all()
 
 import config
 from mongoengine import connect
-connect(config.DATABASE, host=config.DATABASE_HOST)
+database_connnection = connect(config.DATABASE, host=config.DATABASE_HOST)
+database_obj = getattr(database_connnection, config.DATABASE)
 
 def db_migrate():
 	def getMigration(version):

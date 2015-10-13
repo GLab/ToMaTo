@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+
+{% block title %}
+<title>Debug Statistics - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+
+<h1>Debug Statistics</h1>
+
+<div class="skip-sm"></div>
+
+
+<h2>Database</h2>
+
+{% load tomato %}
+
+<table class="table table-striped">
+	<tr>
+		<th>Total size</th>
+		<th>Data size</th>
+		<th>Objects</th>
+	</tr>
+	<tr>
+		<td>{{stats.db.storageSize|filesizeformat}}</td>
+		<td>{{stats.db.dataSize|filesizeformat}}</td>
+		<td>{{stats.db.objects}}</td>
+	</tr>
+</table>
+
+<script src="/js/enhancetable.js"></script>	
+<table class="sortable,filterable, table table-striped">
+	<tr>
+		<th>Collection</th>
+		<th>Entries</th>
+		<th>Storage Size</th>
+		<th>Index Size</th>
+		<th>Data Size</th>
+	</tr>
+	{% for name, col in stats.db.collections.items %}
+	<tr>
+		<td>{{name}}</td>
+		<td>{{col.count}}</td>
+		<td enhancetable_customkey="{{col.storageSize}}">{{col.storageSize|filesizeformat}}</td>
+		<td enhancetable_customkey="{{col.totalIndexSize}}">{{col.totalIndexSize|filesizeformat}}</td>
+		<td enhancetable_customkey="{{col.size}}">{{col.size|filesizeformat}}</td>
+	</tr>
+	{% endfor %}
+</table>
+
+
+<div class="skip-sm"></div>
+
+<h2>Tasks</h2>
+
+<table class="table table-striped">
+	<tr>
+		<th>Workers</th>
+		<th>Max late time</th>
+	</tr>
+	<tr>
+		<td>{{stats.scheduler.workers}} (min: {{stats.scheduler.min_workers}}, max: {{stats.scheduler.max_workers}})</td>
+		<td>{{stats.scheduler.max_late_time}}</td>
+	</tr>
+</table>
+
+<table class="sortable,filterable, table table-striped">
+	<tr>
+		<th>Id</th>
+		<th>Method</th>
+		<th>Busy</th>
+		<th>Repeated</th>
+		<th>Last</th>
+		<th>Next</th>
+		<th>Duration</th>
+		<th>Args</th>
+		<th>Kwargs</th>
+	</tr>
+	{% for t in stats.scheduler.tasks %}
+	<tr>
+		<td>{{t.id}}</td>
+		<td>{{t.method}}</td>
+		<td>{{t.busy}}</td>
+		<td>{{t.repeated}} ({{t.timeout|toduration}})</td>
+		<td enhancetable_customkey="{{t.last}}">{{t.last|todate}}</td>
+		<td enhancetable_customkey="{{t.next}}">{{t.next|todate}}</td>
+		<td>{{t.duration|toduration}}</td>
+		<td>{{t.args|jsonify}}</td>
+		<td>{{t.kwargs|jsonify}}</td>
+	</tr>
+	{% endfor %}
+</table>
+
+<div class="skip-sm"></div>
+
+
+<h2>Threads</h2>
+
+{% for thread in stats.threads %}
+	<tt><small>
+	{% for filename, lineno, name, line in thread %}
+		File: {{filename}}, line {{lineno}}, in {{name}}<br/>
+		{% if line %}<span style="margin-left:3em"></span>{{line}}{% endif %}<br/>
+	{% endfor %}
+	</small></tt>
+	<div class="skip-sm"></div>
+{% endfor %}
+
+<div class="skip-sm"></div>
+
+{% endblock %}

@@ -33,6 +33,13 @@ KEEP_RECORDS = {
 	"month": 12,
 	"year": 5,
 }
+MAX_AGE = {
+	"5minutes": timedelta(minutes=2*5*KEEP_RECORDS["5minutes"]),
+	"hour": timedelta(hours=2*KEEP_RECORDS["hour"]),
+	"day": timedelta(days=2*KEEP_RECORDS["day"]),
+	"month": timedelta(days=2*30*KEEP_RECORDS["month"]),
+	"year": timedelta(days=2*365*KEEP_RECORDS["year"])
+}
 
 def _avg(data, weightSum):
 	return sum([k * v for (k, v) in data]) / weightSum
@@ -98,10 +105,10 @@ def _combine(records):
 	return (combined, measurements)
 
 class Usage(EmbeddedDocument):
-	memory = FloatField(default=0.0) #unit: bytes
-	diskspace = FloatField(default=0.0) #unit: bytes
-	traffic = FloatField(default=0.0) #unit: bytes
-	cputime = FloatField(default=0.0) #unit: cpu seconds
+	memory = FloatField(default=0.0, db_field="m") #unit: bytes
+	diskspace = FloatField(default=0.0, db_field="d") #unit: bytes
+	traffic = FloatField(default=0.0, db_field="t") #unit: bytes
+	cputime = FloatField(default=0.0, db_field="c") #unit: cpu seconds
 
 	def init(self, cputime, diskspace, memory, traffic):
 		self.cputime = cputime
@@ -118,10 +125,10 @@ class Usage(EmbeddedDocument):
 		}
 
 class UsageRecord(EmbeddedDocument):
-	begin = FloatField(required=True)
-	end = FloatField(required=True)
-	measurements = IntField(default=0)
-	usage = EmbeddedDocumentField(Usage, required=True)
+	begin = FloatField(required=True, db_field="b")
+	end = FloatField(required=True, db_field="e")
+	measurements = IntField(default=0, db_field="m")
+	usage = EmbeddedDocumentField(Usage, required=True, db_field="u")
 	meta = {
 		'collection': 'usage_record',
 		'ordering': ['type', 'end'],
@@ -153,11 +160,11 @@ class UsageStatistics(BaseDocument):
 	:type byMonth: list of UsageRecord
 	:type byYear: list of UsageRecord
 	"""
-	by5minutes = ListField(EmbeddedDocumentField(UsageRecord), db_field='5minutes')
-	byHour = ListField(EmbeddedDocumentField(UsageRecord), db_field='hour')
-	byDay = ListField(EmbeddedDocumentField(UsageRecord), db_field='day')
-	byMonth = ListField(EmbeddedDocumentField(UsageRecord), db_field='month')
-	byYear = ListField(EmbeddedDocumentField(UsageRecord), db_field='year')
+	by5minutes = ListField(EmbeddedDocumentField(UsageRecord), db_field='5m')
+	byHour = ListField(EmbeddedDocumentField(UsageRecord), db_field='h')
+	byDay = ListField(EmbeddedDocumentField(UsageRecord), db_field='d')
+	byMonth = ListField(EmbeddedDocumentField(UsageRecord), db_field='m')
+	byYear = ListField(EmbeddedDocumentField(UsageRecord), db_field='y')
 	meta = {
 		'collection': 'usage_statistics',
 	}
@@ -204,17 +211,13 @@ class UsageStatistics(BaseDocument):
 			list_.append(record)
 		self.save()
 
-	def removeOld(self):
+	def _removeOld(self):
 		for type_ in TYPES:
 			list_ = self._getList(type_)
-			list_[:] = list_[-KEEP_RECORDS[type_]:]
-		self.save()
+			end = _toTime(_toPoint(time.time()) - MAX_AGE[type_])
+			list_[:] = filter(lambda e: e.end > end, list_[-KEEP_RECORDS[type_]:])
 
-	def update(self):
-		self.combine()
-		self.removeOld()
-
-	def combine(self):
+	def _combine(self):
 		lastList = self._getList(TYPES[0])
 		now = time.time()
 		for type_ in TYPES[1:]:
@@ -224,13 +227,30 @@ class UsageStatistics(BaseDocument):
 			else:
 				begin = _toTime(_prevPoint(_lastPoint(type_, _toPoint(now)), type_))
 			end = _toTime(_nextPoint(_toPoint(begin), type_))
+			if end > now:
+				continue
+			records = sorted(lastList, key=lambda rec: rec.end)
+			i = 0
+			while i < len(records) and records[i].begin < begin:
+				i += 1
+			records = records[i:]
 			while end <= now:
-				records = filter(lambda rec: rec.begin >= begin and rec.end <= end, lastList)
-				usage, measurements = _combine(records)
+				i = 0
+				if not records:
+					break
+				while i < len(records) and records[i].end <= end:
+					i += 1
+				usage, measurements = _combine(records[:i])
+				records = records[i:]
 				list_.append(UsageRecord(begin=begin, end=end, usage=usage, measurements=measurements))
 				begin = end
 				end = _toTime(_nextPoint(_toPoint(end), type_))
 			lastList = list_
+
+	def housekeep(self):
+		self._removeOld()
+		self._combine()
+		self._removeOld()
 		self.save()
 
 	def updateFrom(self, sources):
@@ -262,7 +282,6 @@ class UsageStatistics(BaseDocument):
 			begin = end
 			end = _toTime(_nextPoint(_toPoint(end), "5minutes"))
 		self.save()
-		self.update()
 
 	@property
 	def latest(self):
@@ -289,7 +308,7 @@ class Quota(EmbeddedDocument):
 				self.used.diskspace/self.monthly.diskspace,
 				self.used.traffic/self.monthly.traffic)
 
-	def update(self, usageStats):
+	def updateUsage(self, usageStats):
 		"""
 		:type usageStats: UsageStatistics
 		"""
@@ -367,11 +386,23 @@ def aggregate():
 			h.updateUsage()
 
 @util.wrap_task
+def housekeep():
+	print >>sys.stderr, "Beginning..."
+	try:
+		for stats in UsageStatistics.objects():
+			stats.housekeep()
+	except:
+		import traceback
+		traceback.print_exc()
+
+
+@util.wrap_task
 def updateQuota():
 	from . import auth
 	for user in auth.User.objects():
 		user.updateQuota()
 		user.enforceQuota()
 
+scheduler.scheduleRepeated(60, housekeep) #every minute @UndefinedVariable
 scheduler.scheduleRepeated(60, aggregate) #every minute @UndefinedVariable
 scheduler.scheduleRepeated(60, updateQuota) #every minute @UndefinedVariable
