@@ -422,15 +422,16 @@ var Window = Class.extend({
 		this.options = options;
 		this.options.position = options.position || { my: "center center", at: "center center", of: "#editor" };
 		var t = this;
-		this.div = $('<div style="overflow:visible;"/>').dialog({
+		dialogOptions = {
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
 			resizable: options.resizable != null ? options.resizable : true,
-			height: options.height || "auto",
 			width: options.width || "",
+			height: options.height || "auto",
 			maxHeight:600,
 			maxWidth:800,
-			title: options.title,
+			title: options.title,     
+			autoResize: true,
 			show: "slide",
 			hide: "slide",
 			minHeight:50,
@@ -447,11 +448,16 @@ var Window = Class.extend({
 				if (options.closable === false) $(".ui-dialog-titlebar-close").hide();
 				t.setPosition(options.position);
 			}
-		});
+		};
+		if(options.height != null) {
+			dialogOptions.add({});
+		}
+
+		this.div = $('<div style="overflow:visible;"/>').dialog(dialogOptions);
 		if (options.closeOnEscape != undefined)
 			this.div.closeOnEscape = options.closeOnEscape;
 		if (options.content) this.div.append($('<div style="min-height: auto;" />').append(options.content));
-		if (options.autoShow) this.show();
+
 		
 
 		
@@ -475,6 +481,8 @@ var Window = Class.extend({
 		} else {
 			this.helpLinkTarget = options.helpTarget;
 		}
+		
+		if (options.autoShow) this.show();
 		
 	},
 	setTitle: function(title) {
@@ -639,7 +647,7 @@ var TutorialWindow = Window.extend({
 			//create UI
 			var t = this
 			this.text = $("<div>.</div>");
-			this.buttons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
+			this.buttons = $("<div style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></div>");
 			this.backButton = $('<button class="btn btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Back</button>');
 			this.buttons.append(this.backButton);
 			this.backButton.click(function() {t.tutorialGoBack(); });
@@ -780,6 +788,8 @@ var TutorialWindow = Window.extend({
 			$(this.skipButton[0]).removeClass('btn-info btn-success');
 			$(this.skipButton[0]).addClass('btn-default');
 		}
+		
+		this.div.dialog("option","height","auto");
 
 	},
 	getData: function() {
