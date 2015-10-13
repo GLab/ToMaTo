@@ -71,6 +71,7 @@ class ErrorGroup(BaseDocument):
 	dumps = ListField(EmbeddedDocumentField(ErrorDump))
 	hidden = BooleanField(default=False)
 	users_favorite = ListField(ReferenceField(User))
+	clientData = DictField(db_field='client_data')
 	meta = {
 		'collection': 'error_group',
 		'ordering': ['groupId'],
@@ -89,8 +90,15 @@ class ErrorGroup(BaseDocument):
 			self.users_favorite.remove(user_obj)
 			self.save()
 
-	def update_description(self, description):
-		self.description = description
+	def modify(self, attrs):
+		for k, v in attrs.iteritems():
+			if k == "description":
+				self.description = v
+			elif k.startswith("_"):
+				self.clientData[k[1:]] = v
+			else:
+				raise UserError(code=UserError.UNSUPPORTED_ATTRIBUTE,
+											message="Unsupported attribute for error group", data={'key': k, 'value': v})
 		self.save()
 
 	def shrink(self):
@@ -125,6 +133,10 @@ class ErrorGroup(BaseDocument):
 			for val in select_unique_values:
 				if not dump[val] in res['dump_contents'][val]:
 					res['dump_contents'][val].append(getattr(dump, val))
+
+		for k, v in self.clientData.iteritems():
+			res['_'+k] = v
+
 		return res
 
 	def hide(self):
@@ -403,13 +415,11 @@ def api_errorgroup_list(show_empty=False):
 def api_errorgroup_modify(group_id, attrs):
 	checkPermissions()
 	with lock_db:
-		for i in attrs.keys():
-			UserError.check(i == "description", code=UserError.UNSUPPORTED_ATTRIBUTE,
-							message="Unsupported attribute for error group", data={"attribute": i})
 		grp = get_group(group_id)
 		UserError.check(grp is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 						data={"group_id": group_id})
-		grp.update_description(attrs['description'])
+		grp.modify(attrs)
+		return grp.info()
 
 
 def api_errorgroup_info(group_id, include_dumps=False):

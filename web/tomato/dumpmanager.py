@@ -20,7 +20,7 @@ import re
 
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, AuthError
+from lib import wrap_rpc, AuthError, wrap_json
 from .lib import anyjson as json
 from django.http import HttpResponseRedirect, HttpResponse
 
@@ -29,6 +29,7 @@ from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
 from lib.error import UserError #@UnresolvedImport
+from lib.github import create_issue as create_github_issue, is_enabled as github_enabled
 
 class ErrorDumpForm(BootstrapForm):
 	source = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errorgroup list.", widget=forms.HiddenInput())
@@ -102,7 +103,8 @@ def group_info(api, request, group_id):
 		if errordump['source'].startswith('host:'):
 			errordump['source___link'] = errordump['source'].replace('host:', '')
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
-	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup})
+	errorgroup['github_url'] = errorgroup.get('_github_url', False)
+	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup, 'github_enabled': github_enabled()})
 
 @wrap_rpc
 def group_hide(api,request,group_id):
@@ -178,3 +180,62 @@ def errorgroup_favorite(api, request, group_id):
 def errorgroup_unfavorite(api, request, group_id):
 	api.errorgroup_favorite(group_id, False)
 	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+
+@wrap_json
+def errorgroup_github(api, request, group_id):
+	info = api.errorgroup_info(group_id, include_dumps=False)
+	if "_github_url" not in info:
+
+		info = api.errorgroup_info(group_id, include_dumps=True)
+		dump_tofetch = info['dumps'][0]
+		for dump in info['dumps']:
+			if dump['data_available']:
+				dump_tofetch = dump
+		dump_info = api.errordump_info(group_id, dump_tofetch['source'], dump_tofetch['dump_id'], include_data=True)
+
+		backend_dump = False
+		host_dump = 0
+		for source in info['dump_contents']['source']:
+			if source == "backend":
+				backend_dump = True
+			elif source.startswith('host'):
+				host_dump += 1
+		source_str = []
+		source_str_short = []
+		if backend_dump:
+			source_str.append('Backend')
+			if host_dump:
+				source_str.append(' and ')
+		if host_dump:
+			source_str.append('%s Hostmanager%s' % (str(host_dump), "s" if host_dump>1 else ""))
+
+		issue_title = info['description']
+		trace = []
+		for filename, line, function, body in dump_info['data'].get("exception", {}).get("trace", []):
+			trace.append("""%s, line %s, in %s
+ %s""" % (filename, line, function, body))
+		trace_str = """
+
+""".join(trace)
+		body_info = ("".join(source_str),
+							request.build_absolute_uri(reverse(group_info, kwargs={'group_id': group_id})),
+							dump_info['description'],
+							trace_str)
+		issue_body = """Happened on %s
+
+[View in Dump Manager](%s)
+
+Description:
+```
+%s
+```
+Trace:
+```
+%s
+```""" % body_info
+
+		issue = create_github_issue(issue_title, issue_body)
+
+		info = api.errorgroup_modify(group_id, {'_github_url': issue.html_url})
+
+	return info['_github_url']

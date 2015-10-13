@@ -85,7 +85,7 @@ While waiting for the account activation you can create and design topologies bu
 {% for top in top_list %}
   <tr>
     <td>{% if top.state_max == "started" %}<img src="/img/started.png" title="has started elements"/>{%else%}{% if top.state_max == "prepared" %}<img src="/img/prepared.png" title="has prepared elements, no started elements"/>{%endif%}{%endif%}</td>
-    <td>{% if top.attrs.tutorial_enabled %}<img src="/img/tutorial.png" title="Tutorial in progress"/>{% endif %}</td>
+    <td>{% if top.tutorial_enabled %}<img src="/img/tutorial.png" title="Tutorial in progress"/>{% endif %}</td>
     <td><a href="{% url "topology.info" top.id %}" onclick="loadbusy(event,'Loading Topology Editor');">{{top.name}}</a></td>
     <td>
     	{% for user, role in top.permissions.items %}

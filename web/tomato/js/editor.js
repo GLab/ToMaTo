@@ -422,15 +422,16 @@ var Window = Class.extend({
 		this.options = options;
 		this.options.position = options.position || { my: "center center", at: "center center", of: "#editor" };
 		var t = this;
-		this.div = $('<div style="overflow:visible;"/>').dialog({
+		dialogOptions = {
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
 			resizable: options.resizable != null ? options.resizable : true,
-			height: options.height || "auto",
 			width: options.width || "",
+			height: options.height || "auto",
 			maxHeight:600,
 			maxWidth:800,
-			title: options.title,
+			title: options.title,     
+			autoResize: true,
 			show: "slide",
 			hide: "slide",
 			minHeight:50,
@@ -447,11 +448,16 @@ var Window = Class.extend({
 				if (options.closable === false) $(".ui-dialog-titlebar-close").hide();
 				t.setPosition(options.position);
 			}
-		});
+		};
+		if(options.height != null) {
+			dialogOptions.add({});
+		}
+
+		this.div = $('<div style="overflow:visible;"/>').dialog(dialogOptions);
 		if (options.closeOnEscape != undefined)
 			this.div.closeOnEscape = options.closeOnEscape;
 		if (options.content) this.div.append($('<div style="min-height: auto;" />').append(options.content));
-		if (options.autoShow) this.show();
+
 		
 
 		
@@ -475,6 +481,8 @@ var Window = Class.extend({
 		} else {
 			this.helpLinkTarget = options.helpTarget;
 		}
+		
+		if (options.autoShow) this.show();
 		
 	},
 	setTitle: function(title) {
@@ -639,7 +647,7 @@ var TutorialWindow = Window.extend({
 			//create UI
 			var t = this
 			this.text = $("<div>.</div>");
-			this.buttons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
+			this.buttons = $("<div style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></div>");
 			this.backButton = $('<button class="btn btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Back</button>');
 			this.buttons.append(this.backButton);
 			this.backButton.click(function() {t.tutorialGoBack(); });
@@ -780,6 +788,8 @@ var TutorialWindow = Window.extend({
 			$(this.skipButton[0]).removeClass('btn-info btn-success');
 			$(this.skipButton[0]).addClass('btn-default');
 		}
+		
+		this.div.dialog("option","height","auto");
 
 	},
 	getData: function() {
@@ -1577,7 +1587,7 @@ var Topology = Class.extend({
 					var values = t.configWindow.getValues();
 					for (var name in values) {
 						if (values[name] === t.data[name]) delete values[name];
-						// Tread "" like null
+						// Treat "" like null
 						if (values[name] === "" && t.data[name] === null) delete values[name];
 					}
 					t.modify(values);
@@ -3787,24 +3797,24 @@ var VMElement = IconElement.extend({
 			info.append('<img src="/img/info.png" />');
 
 			if (prof.description) {
-				desc.append($('<tr><td style="background:white;"></td><td style="background:white;">'+prof.description+'</td></tr>'));
+				desc.append($('<tr><th><img src="/img/info.png" /></th><td style="background:white; white-space:pre !important; padding-bottom:0.3cm;">'+prof.description+'</td></tr>'));
 			}
 			
 			if (prof.cpus) {
-				desc.append($('<tr><td style="background:white;">CPUs</td><td style="background:white;">'+prof.cpus+'</td></tr>'));
+				desc.append($('<tr><th>CPUs</th><td style="background:white; white-space:nowrap !important;">'+prof.cpus+'</td></tr>'));
 			}
 			
 			if (prof.ram) {
-				desc.append($('<tr><td style="background:white;">RAM</td><td style="background:white;">'+prof.ram+' MB</td></tr>'));
+				desc.append($('<tr><th>RAM</th><td style="background:white; white-space:nowrap !important;">'+prof.ram+' MB</td></tr>'));
 			}
 			
 			if (prof.diskspace) {
-				desc.append($('<tr><td style="background:white;">Disk</td><td style="background:white;">'+prof.diskspace+' MB</td></tr>'));
+				desc.append($('<tr><th>Disk</th><td style="background:white; white-space:nowrap !important;">'+prof.diskspace+' MB</td></tr>'));
 			}
 			
 			if (prof.restricted) {
 				info.append('<img src="/img/lock_open.png" />');
-				desc.append($('<tr><td style="background:white;"><img src="/img/lock_open.png" /></td><td>This profile is restricted; you have access to restricted profiles.</td></tr>'));
+				desc.append($('<tr><th><img src="/img/lock_open.png" /></th><td style="min-width:4.8cm; padding-top:0.3cm;">This profile is restricted; you have access to restricted profiles.</td></tr>'));
 			}
 			
 			info.append(d);
@@ -3829,14 +3839,14 @@ var VMElement = IconElement.extend({
 			
 			if (this.data.host_info && this.data.host_info.site && this.data.site == null) {
 				info.append('<img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
-				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
+				desc.append($('<tr><th><img src="/img/automatic.png" /></th><td>This site has been automatically selected by the backend.</td></tr>'))
 			}
 
 			if (site.description) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+site.description+'</td></tr>'));
+				desc.append($('<tr><th><img src="/img/info.png" /></th><td style="background:white;">'+site.description+'</td></tr>'));
 			}
 			
-			var hostinfo_l = '<tr><td style="background:white;"><img src="/img/server.png" /></td><td style="background:white;"><h3>Hosted By:</h3>';
+			var hostinfo_l = '<tr><th><img src="/img/server.png" /></th><td style="background:white;"><h3>Hosted By:</h3>';
 			var hostinfo_r = '</td></tr>';
 			if (site.organization.homepage_url) {
 				hostinfo_l = hostinfo_l + '<a href="' + site.organization.homepage_url + '">';
@@ -4034,9 +4044,9 @@ var Template = Class.extend({
 			restricted_text = "This template is restricted. Contact an administrator if you want to get access to restricted templates.";
 		}
 		
-		var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+		var info = $('<div class="hoverdescription" style="display: inline; white-space:nowrap;"></div>');
 		var d = $('<div class="hiddenbox"></div>');
-		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black; min-width:8.5cm;"></p>');
 		var desc = $('<table></table>');
 		p.append(desc);
 		d.append(p);
@@ -4046,11 +4056,11 @@ var Template = Class.extend({
 			info.append('<img src="/img/info.png" />');
 		
 			if (this.description) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.description+'</td></tr>'));	
+				desc.append($('<tr><th><img src="/img/info.png" /></th><td style="background:white; white-space:pre !important;">'+this.description+'</td></tr>'));
 			}
 			
 			if (this.creation_date) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white; white-space:nowrap !important;">'+new Date(1000*this.creation_date).toDateString()+'</td></tr>'));
+				desc.append($('<tr><th><img src="/img/calendar.png" /></th><td style="background:white; white-space:nowrap !important;">'+new Date(1000*this.creation_date).toDateString()+'</td></tr>'));
 			}
 			
 		} else {
@@ -4058,14 +4068,14 @@ var Template = Class.extend({
 		}
 		
 		if (!this.nlXTP_installed) {
-			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="'+help_baseUrl+'/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+			desc.append($('<tr><th><img src="/img/warning16.png" /></th><td style="background:white; padding-top:0.5cm; padding-bottom:0.5cm;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="'+help_baseUrl+'/ExecutableArchives#guest-modules" target="_help">More Info</a></td></tr>'));
 			info.append('<img src="/img/warning16.png" />');
 		} else {
 			info.append('<img src="/img/invisible16.png" />');
 		}
 		
 		if (this.restricted) {
-			desc.append($('<tr><td style="background:white;"><img src="'+restricted_icon+'" /></td><td style="background:white;">'+restricted_text+'</td></tr>'));
+			desc.append($('<tr><th><img src="'+restricted_icon+'" /></th><td style="background:white;">'+restricted_text+'</td></tr>'));
 			info.append('<img src="'+restricted_icon+'" />');
 		} else {
 			info.append('<img src="/img/invisible16.png" />');

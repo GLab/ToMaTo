@@ -59,6 +59,9 @@ def list(api, request, show_all=False, organization=None):
 												   '_tutorial_state')  # new tutorials
 										   )
 		"""
+		top["tutorial_enabled"] = top.has_key('_tutorial_state') and \
+															top['_tutorial_state'].get('enabled', False)
+
 		top['processed'] = {
 		'timeout_critical': top['timeout'] - time.time() < serverInfo()['topology_timeout']['warning']}
 	return render(request, "topology/list.html",
