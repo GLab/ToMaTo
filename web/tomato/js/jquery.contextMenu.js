@@ -204,6 +204,10 @@ var // currently active contextMenu trigger
     handle = {
         // abort anything
         abortevent: function(e){
+        	var $this = $(this);
+        	if($this.hasClass("context-menu-html")) {
+        		return;
+        	}
             e.preventDefault();
             e.stopImmediatePropagation();
         },
@@ -1298,7 +1302,7 @@ $.contextMenu = function(operation, options) {
                         'contextmenu:hide.contextMenu': handle.hideMenu,
                         'prevcommand.contextMenu': handle.prevItem,
                         'nextcommand.contextMenu': handle.nextItem,
-                        'contextmenu.contextMenu': handle.abortevent,
+                        //'contextmenu.contextMenu': handle.abortevent,
                         'mouseenter.contextMenu': handle.menuMouseenter,
                         'mouseleave.contextMenu': handle.menuMouseleave
                     }, '.context-menu-list')
