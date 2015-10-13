@@ -1096,7 +1096,7 @@ var // currently active contextMenu trigger
                     // browsers support user-select: none, 
                     // IE has a special event for text-selection
                     // browsers supporting neither will not be preventing text-selection
-                    $t.on('selectstart.disableTextSelect', handle.abortevent);
+                   // $t.on('selectstart.disableTextSelect', handle.abortevent);
                 }
             });
             // attach contextMenu to <body> (to bypass any possible overflow:hidden issues on parents of the trigger element)
