@@ -174,13 +174,21 @@ class AccountChangeForm(AccountForm):
 				'password',
 				'password2'
 			) +
-			(() if is_self else ('organization',)) +
+
+			(() if is_self else (
+				'organization',
+			)) +
+
 			(
 				'realname',
 				'email',
 				'flags'
 			) +
-			(() if is_self else ('send_mail',)) +
+
+			(() if is_self else (
+				'send_mail',
+			)) +
+
 			(
 				Buttons.cancel_save,
 			)
