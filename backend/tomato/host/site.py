@@ -103,7 +103,10 @@ class Site(Entity, BaseDocument):
 		logging.logMessage("create", category="site", name=name, label=label)
 		site = Site(name=name, organization=orga, label=label)
 		try:
-			site.init(attrs)
+			attrs_ = {k: v for k, v in attrs.iteritems()}
+			attrs_['name'] = name
+			attrs_['label'] = label
+			site.init(attrs_)
 			site.save()
 		except:
 			site.remove()

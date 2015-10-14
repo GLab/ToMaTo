@@ -619,7 +619,9 @@ class Host(DumpSource, Entity, BaseDocument):
 			UserError.check(attr in attrs.keys(), code=UserError.INVALID_CONFIGURATION, message="Missing attribute for host: %s" % attr)
 		host = Host(name=name, site=site)
 		try:
-			host.init(attrs)
+			attrs_ = {k: v for k, v in attrs.iteritems()}
+			attrs_['name'] = name
+			host.init(attrs_)
 			host.save()
 			logging.logMessage("create", category="host", info=host.info())
 		except:
