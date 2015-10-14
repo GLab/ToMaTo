@@ -4406,10 +4406,17 @@ var Editor = Class.extend({
 				t.options.onready();
 			}
 		});
-
-		//Add context menus to workspace 
-		//We want to initialize this hear, to allow differentation for events
 		
+		this.setWorkspaceContentMenu();
+		
+		setInterval(function(){t.rextfv_status_updater.updateSome(t.rextfv_status_updater)}, 1200);
+	},
+	triggerEvent: function(event) {
+		log(event); //keep this logging
+		for (var i = 0; i < this.listeners.length; i++) this.listeners[i](event);
+	},
+	setWorkspaceContentMenu: function() {
+		var t = this;
 		$('.tomato.workspace').on('contextmenu',function(e) {
 			if(t.mode == Mode.connect || t.mode == Mode.connectOnce) {
 				e.preventDefault();
@@ -4435,12 +4442,8 @@ var Editor = Class.extend({
 				});	
 			});
 		
-		setInterval(function(){t.rextfv_status_updater.updateSome(t.rextfv_status_updater)}, 1200);
 	},
-	triggerEvent: function(event) {
-		log(event); //keep this logging
-		for (var i = 0; i < this.listeners.length; i++) this.listeners[i](event);
-	},
+	
 	setOption: function(name, value) {
 		this.options[name] = value;
 		this.optionCheckboxes[name].setChecked(value);
