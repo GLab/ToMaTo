@@ -116,6 +116,12 @@ if DJANGO_VERSION < (1, 4):
 	)
 	SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
+# access tokens can be created via GitHub settings -> My Personal Access Tokens
+# The token needs the scope 'repo' or 'public_repo' (depending on whether the repository is private or not)
+github_access_token = ""
+github_repository_owner = "GLab"
+github_repository_name = "ToMaTo"
+
 try:
 	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):
@@ -127,9 +133,3 @@ try:
 except:
 	import traceback
 	traceback.print_exc()
-
-# access tokens can be created via GitHub settings -> My Personal Access Tokens
-# The token needs the scope 'repo' or 'public_repo' (depending on whether the repository is private or not)
-github_access_token = ""
-github_repository_owner = "GLab"
-github_repository_name = "ToMaTo"
