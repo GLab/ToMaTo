@@ -160,11 +160,11 @@ class UsageStatistics(BaseDocument):
 	:type byMonth: list of UsageRecord
 	:type byYear: list of UsageRecord
 	"""
-	by5minutes = ListField(EmbeddedDocumentField(UsageRecord), db_field='5m')
-	byHour = ListField(EmbeddedDocumentField(UsageRecord), db_field='h')
-	byDay = ListField(EmbeddedDocumentField(UsageRecord), db_field='d')
-	byMonth = ListField(EmbeddedDocumentField(UsageRecord), db_field='m')
-	byYear = ListField(EmbeddedDocumentField(UsageRecord), db_field='y')
+	by5minutes = ListField(EmbeddedDocumentField(UsageRecord), db_field='5minutes')
+	byHour = ListField(EmbeddedDocumentField(UsageRecord), db_field='hour')
+	byDay = ListField(EmbeddedDocumentField(UsageRecord), db_field='day')
+	byMonth = ListField(EmbeddedDocumentField(UsageRecord), db_field='month')
+	byYear = ListField(EmbeddedDocumentField(UsageRecord), db_field='year')
 	meta = {
 		'collection': 'usage_statistics',
 	}
@@ -248,7 +248,6 @@ class UsageStatistics(BaseDocument):
 			lastList = list_
 
 	def housekeep(self):
-		self._removeOld()
 		self._combine()
 		self._removeOld()
 		self.save()
@@ -387,7 +386,6 @@ def aggregate():
 
 @util.wrap_task
 def housekeep():
-	print >>sys.stderr, "Beginning..."
 	try:
 		for stats in UsageStatistics.objects():
 			stats.housekeep()
