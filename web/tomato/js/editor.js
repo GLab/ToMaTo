@@ -4424,6 +4424,34 @@ var Editor = Class.extend({
 		log(event); //keep this logging
 		for (var i = 0; i < this.listeners.length; i++) this.listeners[i](event);
 	},
+	setWorkspaceContentMenu: function() {
+		var t = this;
+		$('.tomato.workspace').on('contextmenu',function(e) {
+			if(t.mode == Mode.connect || t.mode == Mode.connectOnce) {
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				
+				t.setMode(Mode.select);
+				t.workspace.connectPath.hide();
+				
+				$("#Modes_SelectandMove").addClass("ui-state-highlight");
+				$("#Modes_Connect").removeClass("ui-state-highlight");
+				
+			}
+		});
+		
+		['right', 'longclick'].forEach(
+				function(trigger) {
+					$.contextMenu({
+						selector: '.tomato.workspace',
+						trigger: trigger,
+						build: function(trigger, e) {
+							return createTopologyMenu(trigger[0].obj);
+						}
+				});	
+			});
+		
+	},
 	setOption: function(name, value) {
 		this.options[name] = value;
 		this.optionCheckboxes[name].setChecked(value);
@@ -4542,6 +4570,7 @@ var Editor = Class.extend({
 		var group = tab.addGroup("Modes");
 		this.selectBtn = Menu.button({
 			label: "Select & Move",
+			name: "Modes_SelectandMove",
 			icon: "img/select32.png",
 			toggle: true,
 			toggleGroup: toggleGroup,
@@ -4553,6 +4582,7 @@ var Editor = Class.extend({
 		group.addStackedElements([
 			Menu.button({
 				label: "Connect",
+				name: "Modes_Connect",
 				icon: "img/connect16.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
@@ -4561,7 +4591,7 @@ var Editor = Class.extend({
 			}),
 			Menu.button({
 				label: "Delete",
-				name: "mode-remove",
+				name: "Modes_Delete",
 				icon: "img/eraser16.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
