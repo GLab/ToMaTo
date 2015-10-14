@@ -39,10 +39,7 @@
     padding: 2px 2px 2px 24px;
     background-color: #EEE;
     position: relative;
-    -webkit-user-select: none;
-       -moz-user-select: -moz-none;
-        -ms-user-select: none;
-            user-select: none;
+
 }
 
 .context-menu-separator {

@@ -204,6 +204,10 @@ var // currently active contextMenu trigger
     handle = {
         // abort anything
         abortevent: function(e){
+        	var $this = $(this);
+        	if($this.hasClass("context-menu-html")) {
+        		return;
+        	}
             e.preventDefault();
             e.stopImmediatePropagation();
         },
@@ -1092,7 +1096,7 @@ var // currently active contextMenu trigger
                     // browsers support user-select: none, 
                     // IE has a special event for text-selection
                     // browsers supporting neither will not be preventing text-selection
-                    $t.on('selectstart.disableTextSelect', handle.abortevent);
+                   // $t.on('selectstart.disableTextSelect', handle.abortevent);
                 }
             });
             // attach contextMenu to <body> (to bypass any possible overflow:hidden issues on parents of the trigger element)
@@ -1298,7 +1302,7 @@ $.contextMenu = function(operation, options) {
                         'contextmenu:hide.contextMenu': handle.hideMenu,
                         'prevcommand.contextMenu': handle.prevItem,
                         'nextcommand.contextMenu': handle.nextItem,
-                        'contextmenu.contextMenu': handle.abortevent,
+                        //'contextmenu.contextMenu': handle.abortevent,
                         'mouseenter.contextMenu': handle.menuMouseenter,
                         'mouseleave.contextMenu': handle.menuMouseleave
                     }, '.context-menu-list')
