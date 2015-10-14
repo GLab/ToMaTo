@@ -125,14 +125,14 @@ class Identifier(String):
 		minLength = kwargs.pop('minLength', 3)
 		maxLength = kwargs.pop('maxLength', 100)
 		if strict:
-			regex = kwargs.pop('regex', "^[a-zA-Z_][a-zA-Z0-9_]*$")
+			regex = kwargs.pop('regex', "[a-zA-Z_][a-zA-Z0-9_]*")
 		else:
-			regex = kwargs.pop('regex', "^[a-zA-Z0-9_\./\-]+$")
+			regex = kwargs.pop('regex', "[a-zA-Z0-9_\./\-]+")
 		String.__init__(self, regex=regex, minLength=minLength, maxLength=maxLength, **kwargs)
 
 class URL(String):
 	def __init__(self, **kwargs):
-		String.__init__(self, regex="^[a-z]+:[A-Za-z0-9_:/.$?]+$", **kwargs)
+		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$?]+", **kwargs)
 
 class List(Sequence):
 	TYPES = (types.ListType, types.TupleType)
