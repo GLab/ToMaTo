@@ -4421,12 +4421,12 @@ var Editor = Class.extend({
 			if(t.mode == Mode.connect || t.mode == Mode.connectOnce) {
 				e.preventDefault();
 				e.stopImmediatePropagation();
+				
 				t.setMode(Mode.select);
-				t.topology.onUpdate();t
 				t.workspace.connectPath.hide();
-				//var selectbtn = t.menu.getTab("Home").getGroup("Modes").panel.find("#Select\ \&\ Move");
-				$("#Modes\\.SelectandMove").addClass("ui-state-highlight");
-				$("#Modes\\.Connect").removeClass("ui-state-highlight");
+				
+				$("#Modes_SelectandMove").addClass("ui-state-highlight");
+				$("#Modes_Connect").removeClass("ui-state-highlight");
 				
 			}
 		});
@@ -4562,7 +4562,7 @@ var Editor = Class.extend({
 		var group = tab.addGroup("Modes");
 		this.selectBtn = Menu.button({
 			label: "Select & Move",
-			name: "Modes.SelectandMove",
+			name: "Modes_SelectandMove",
 			icon: "img/select32.png",
 			toggle: true,
 			toggleGroup: toggleGroup,
@@ -4574,7 +4574,7 @@ var Editor = Class.extend({
 		group.addStackedElements([
 			Menu.button({
 				label: "Connect",
-				name: "Modes.Connect",
+				name: "Modes_Connect",
 				icon: "img/connect16.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
@@ -4583,7 +4583,7 @@ var Editor = Class.extend({
 			}),
 			Menu.button({
 				label: "Delete",
-				name: "Mode.Delete",
+				name: "Modes_Delete",
 				icon: "img/eraser16.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
