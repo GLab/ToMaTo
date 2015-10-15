@@ -78,7 +78,7 @@ class Organization(Entity, BaseDocument):
 		logging.logMessage("create", category="site", name=name, label=label)
 		organization = Organization(name=name, label=label)
 		try:
-			attrs_ = {k: v for k, v in attrs.iteritems()}
+			attrs_ = attrs.copy()
 			attrs_['name'] = name
 			attrs_['label'] = label
 			organization.init(attrs_)

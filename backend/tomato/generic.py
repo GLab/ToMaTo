@@ -166,7 +166,8 @@ class Entity(object):
 			self.onError(err)
 			raise
 		finally:
-			self.save()
+			if action != self.REMOVE_ACTION:
+				self.save()
 
 	def remove(self, params=None):
 		self.action(self.REMOVE_ACTION, params)
