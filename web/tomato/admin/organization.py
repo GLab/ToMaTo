@@ -120,14 +120,15 @@ def info(api, request, name):
     smap = {}
     hosts = api.host_list(organization=name)
     for site in sites:
-        if site['geolocation']['longitude'] > 0:
-            site['geolocation']['longitude'] = str(site['geolocation']['longitude']) + 'E'
-        else:
-            site['geolocation']['longitude'] = str(-site['geolocation']['longitude']) + 'W'
-        if site['geolocation']['latitude'] > 0:
-            site['geolocation']['latitude'] = str(site['geolocation']['latitude']) + 'N'
-        else:
-            site['geolocation']['latitude'] = str(-site['geolocation']['latitude']) + 'S'
+        if site.get('geolocation', None):
+            if site['geolocation']['longitude'] > 0:
+                site['geolocation']['longitude'] = str(site['geolocation']['longitude']) + 'E'
+            else:
+                site['geolocation']['longitude'] = str(-site['geolocation']['longitude']) + 'W'
+            if site['geolocation']['latitude'] > 0:
+                site['geolocation']['latitude'] = str(site['geolocation']['latitude']) + 'N'
+            else:
+                site['geolocation']['latitude'] = str(-site['geolocation']['latitude']) + 'S'
 
         smap[site['name']] = site
         site['hosts'] = {"count": 0, "avg_load": 0.0, "avg_availability": 0.0}
