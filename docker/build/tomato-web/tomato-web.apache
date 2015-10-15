@@ -7,6 +7,37 @@
 
     DocumentRoot /code/tomato
 
+    RewriteEngine On
+    RewriteCond %{ENV:REDIRECT_STATUS} !=503
+    RewriteCond "/config/web.maintenance" -f
+    RewriteRule ^(.*)$ /$1 [R=503,L]
+    
+    Alias /icons /code/tomato/icons
+    Alias /static /code/tomato/static
+    Alias /style /code/tomato/style
+    Alias /img /code/tomato/img
+    Alias /js /code/tomato/js
+    Alias /fonts /code/tomato/fonts
+    Alias /editor_tutorial /code/tomato/editor_tutorial
+    
+    WSGIScriptAlias / /code/django.wsgi
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerAdmin webmaster@localhost
+
+    SSLEngine on
+    SSLCertificateFile    /config/web.pem
+    SSLCertificateKeyFile /config/web.pem
+    
+    DocumentRoot /code/tomato
+
+    RewriteEngine On
+    RewriteCond %{ENV:REDIRECT_STATUS} !=503
+    RewriteCond "/config/web.maintenance" -f
+    RewriteRule ^(.*)$ /$1 [R=503,L]
+    
+    Alias /icons /code/tomato/icons
     Alias /static /code/tomato/static
     Alias /style /code/tomato/style
     Alias /img /code/tomato/img
