@@ -53,7 +53,8 @@ class Site(Entity, BaseDocument):
 
 	def _remove(self):
 		logging.logMessage("remove", category="site", name=self.name)
-		self.delete()
+		if self.id:
+			self.delete()
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(fn=_remove, check=_checkRemove)
@@ -103,7 +104,10 @@ class Site(Entity, BaseDocument):
 		logging.logMessage("create", category="site", name=name, label=label)
 		site = Site(name=name, organization=orga, label=label)
 		try:
-			site.init(attrs)
+			attrs_ = attrs.copy()
+			attrs_['name'] = name
+			attrs_['label'] = label
+			site.init(attrs_)
 			site.save()
 		except:
 			site.remove()

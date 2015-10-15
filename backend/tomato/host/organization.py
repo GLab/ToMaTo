@@ -78,7 +78,10 @@ class Organization(Entity, BaseDocument):
 		logging.logMessage("create", category="site", name=name, label=label)
 		organization = Organization(name=name, label=label)
 		try:
-			organization.init(attrs)
+			attrs_ = attrs.copy()
+			attrs_['name'] = name
+			attrs_['label'] = label
+			organization.init(attrs_)
 			organization.save()
 		except:
 			organization.remove()
