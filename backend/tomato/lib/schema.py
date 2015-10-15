@@ -132,7 +132,7 @@ class Identifier(String):
 
 class URL(String):
 	def __init__(self, **kwargs):
-		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$?]+", **kwargs)
+		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$\-?]+", **kwargs)
 
 class List(Sequence):
 	TYPES = (types.ListType, types.TupleType)
