@@ -78,7 +78,7 @@ def contact_form(api, request, subject=None, message=None, global_contact=False,
                 formData['global_contact'] = True
             else:
                 formData['global_contact'] = False
-            api.mailAdmins(formData["subject"],
+            api.notifyAdmins(formData["subject"],
                            formData['message'],
                            global_contact = formData['global_contact'],
                            issue=formData['issue'])

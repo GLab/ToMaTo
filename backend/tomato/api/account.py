@@ -67,6 +67,14 @@ def account_info(name=None):
 	acc = _getAccount(name)
 	return acc.info(currentUser() == acc or currentUser().isAdminOf(acc))
 
+def account_notifications(include_unread=False):
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	return currentUser().list_notifications(include_unread)
+
+def account_notification_set_read(notification_id, read):
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	currentUser().set_notification_read(notification_id, read)
+
 def account_list(organization=None):
 	"""
 	Retrieves information about all accounts. 
@@ -189,15 +197,15 @@ def account_flag_configuration():
 		'flags': flags,
 		'categories': categories
 		}
-		
-def account_mail(name, subject, message, from_support=False):
+
+def account_send_notification(name, subject, message, from_support=False):
 	"""
 	Sends an email to the account
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
-	acc.sendMail(subject, message, None if from_support else currentUser())
+	acc.sendNotification(subject, message, None if from_support else currentUser())
 	
 def account_usage(name): #@ReservedAssignment
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")

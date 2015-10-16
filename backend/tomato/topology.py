@@ -176,10 +176,10 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		logging.logMessage("permission", category="topology", id=self.idStr, user=user.name, role=role)
 		self.setRole(user, role)
 			
-	def sendMail(self, role=Role.manager, **kwargs):
+	def sendNotification(self, role=Role.manager, **kwargs):
 		for permission in self.permissions:
 			if Role.RANKING.index(permission.role) >= Role.RANKING.index(role):
-				permission.user.sendMail(**kwargs)
+				permission.user.sendNotification(ref=['topology', self.id], **kwargs)
 
 	@property
 	def maxState(self):
@@ -277,7 +277,7 @@ def timeout_task():
 	setCurrentUser(True) #we are a global admin
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.INITIAL, timeout__lte=now+config.TOPOLOGY_TIMEOUT_WARNING):
 		logging.logMessage("timeout warning", category="topology", id=top.idStr)
-		top.sendMail(subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
+		top.sendNotification(subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
 		top.timeoutStep = TimeoutStep.WARNED
 		top.save()
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.WARNED, timeout__lte=now):

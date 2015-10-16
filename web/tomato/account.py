@@ -272,7 +272,7 @@ def accept(api, request, id):
 		if flag in flags:
 			flags.remove(flag)
 	api.account_modify(id, attrs={"flags": flags})
-	api.account_mail(id, subject="Account activated", message="Your account has been activated by an administrator. Now you are ready to start your first topology. Please see the tutorials to learn how to use ToMaTo.", from_support=True)
+	api.account_send_notification(id, subject="Account activated", message="Your account has been activated by an administrator. Now you are ready to start your first topology. Please see the tutorials to learn how to use ToMaTo.", from_support=True)
 	return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 
 @wrap_rpc
@@ -296,7 +296,7 @@ def edit(api, request, id):
 				del data["send_mail"]
 			api.account_modify(id, attrs=data)
 			if send_mail:
-				api.account_mail(id, subject="Account modified", message="Your account has been modified by an administrator. Please check your account details for the changes.", from_support=True)
+				api.account_send_notification(id, subject="Account modified", message="Your account has been modified by an administrator. Please check your account details for the changes.", from_support=True)
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
 		data = user.copy()
@@ -324,7 +324,7 @@ def register(api, request):
 			try:
 				account = api.account_create(username, password=password, organization=organization, attrs=data)
 				if api.user:
-					api.account_mail(username, 
+					api.account_send_notification(username,
 						subject="Account creation", 
 						message="A new ToMaTo account has been created for you by an administrator with the username\n\n\t%s\n\n and the password\n\n\t%s\n\nPlease login using that username and password and change it to something you can remember." % (username, password),
 						from_support=True)
@@ -351,7 +351,7 @@ def reset_password(api, request, id):
 		if form.is_valid():
 			passwd = ''.join(random.choice(2 * string.ascii_lowercase + string.ascii_uppercase + 2 * string.digits) for x in range(12))
 			api.account_modify(id, {"password": passwd})
-			api.account_mail(id, subject="Password reset", message="Your password has been reset by an administrator to\n\n\t%s\n\nPlease login using that password and change it to something you can remember." % passwd, from_support=True)
+			api.account_send_notification(id, subject="Password reset", message="Your password has been reset by an administrator to\n\n\t%s\n\nPlease login using that password and change it to something you can remember." % passwd, from_support=True)
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	form = ConfirmForm.build(reverse("tomato.account.reset_password", kwargs={"id": id}))
 	return render(request, "form.html", {"heading": "Reset Password", "message_before": "Are you sure you want to reset the password of the account '"+id+"'?", 'form': form})	
