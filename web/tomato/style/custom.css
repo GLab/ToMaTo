@@ -119,6 +119,37 @@ div.organization div.page-header {
 	margin-top:1em;
 }
 
+div.notification {
+  box-shadow: 0.1em 0.1em 0.1em grey;
+  border: 1px solid #dddddd;
+  padding: 2em;
+  margin-top: 0px;
+  margin-bottom:1.8em;
+  margin-left: auto;
+  margin-right:auto;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 4px;
+  background: white;
+  max-width: 20cm;
+}
+div.notification div.date {
+  float: right;
+}
+div.notification h3 {
+  margin:0;
+  border-bottom: 1px solid #dddddd;
+}
+div.notification div.sender {
+
+}
+div.notification div.message {
+  margin-top: 0.7cm;
+  margin-bottom: 0.6cm;
+  margin-left: 0.25cm;
+  margin-right: 0.25cm;
+}
+
 table th {
   font-size: 12px;
 }

@@ -366,3 +366,45 @@ def remove(api, request, id=None):
 	form = RemoveConfirmForm.build(reverse("tomato.account.remove", kwargs={"id": id}))
 	return render(request, "form.html", {"heading": "Remove Account", "message_before": "Are you sure you want to remove the account '"+id+"'?", 'form': form})
 
+@wrap_rpc
+def _own_notifications(api, request, show_read=False):
+	#notifications = api.account_notifications(show_read)
+	notifications = [{
+			'id': "1",
+			'timestamp': 1445001834.629098,
+			'title': "First Notification",
+			'message': "This is a notification regarding a topology",
+			'read': False,
+			'ref': ["topology", '5620fac61d649000089aabca'],
+			'sender': None
+		},{
+			'id': "2",
+			'timestamp': 1445005452.524408,
+			'title': "Second Notification",
+			'message': "This is a notification regarding a host",
+			'read': False,
+			'ref': ["host", "glab050"],
+			'sender': "admin"
+		}]  # fixme: this is just testing data.
+
+	for notification in notifications:
+
+		if notification["ref"][0] == "topology":
+			notification["ref_link"] = reverse("tomato.topology.info", kwargs={"id": notification["ref"][1]})
+			try:
+				topology_info = api.topology_info(notification["ref"][1])
+				notification["ref_text"] = "View Topology '%s'" % topology_info["name"]
+			except:
+				notification["ref_text"] = "View Topology [%s]" % notification["ref"][1]
+
+		if notification["ref"][0] == "host":
+			notification["ref_link"] = reverse("tomato.admin.host.info", kwargs={"name": notification["ref"][1]})
+			notification["ref_text"] = "View Host '%s'" % notification["ref"][1]
+
+	return render(request, "account/notifications.html", {"notifications": notifications})
+
+def unread_notifications(request):
+	return _own_notifications(request, False)
+
+def all_notifications(request):
+	return _own_notifications(request, True)

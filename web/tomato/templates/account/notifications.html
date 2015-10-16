@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>User Notifications - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+
+{% load url from future %}
+{% load tomato %}
+
+{% for notification in notifications %}
+<div class="notification {% if notification.read %}notification-read{% else %}notification-unread{% endif %}">
+
+	<div class="date">{{notification.timestamp|todate}}</div>
+	<h3>{{notification.title}}</h3>
+
+	{% if notification.sender %}
+		<div class="sender">
+			from <a href="{% url "tomato.account.info" notification.sender %}">{{notification.sender}}</a>
+		</div>
+	{% endif %}
+
+	<div class="message">{{notification.message}}</div>
+
+	{% if notification.ref_link %}
+		<div class="external-reference-resolved"><a href="{{notification.ref_link}}">{{notification.ref_text}}</a></div>
+	{% else %}
+		<div class="external-reference-unresolved">Reference object: {% for r in notification.ref %}{{r}} {% endfor %}</div>
+	{% endif %}
+
+</div>
+{% endfor %}
+
+{% endblock %}
