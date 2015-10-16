@@ -5,7 +5,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-instal
   python python-pip build-essential python-dev \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install mongoengine\>=0.10,\<0.11 pymongo\>=3.0,\<3.1
+RUN pip install mongoengine\>=0.10,\<0.11 pymongo\>=3.0,\<3.1 ujson\>=1,\<2
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-install-recommends -y \
   python-openssl bittorrent busybox \
