@@ -67,9 +67,9 @@ def account_info(name=None):
 	acc = _getAccount(name)
 	return acc.info(currentUser() == acc or currentUser().isAdminOf(acc))
 
-def account_notifications(include_unread=False):
+def account_notifications(include_read=False):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	return currentUser().list_notifications(include_unread)
+	return currentUser().list_notifications(include_read)
 
 def account_notification_set_read(notification_id, read):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")

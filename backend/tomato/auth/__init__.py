@@ -364,8 +364,8 @@ class User(BaseDocument):
 		if save:
 			self.save()
 
-	def list_notifications(self, include_unread=False):
-		return [n.info() for n in self.notifications if (include_unread or not n.read)]
+	def list_notifications(self, include_read=False):
+		return [n.info() for n in self.notifications if (include_read or not n.read)]
 
 	def get_notification(self, notification_id):
 		return self._get_notification(notification_id).info()
