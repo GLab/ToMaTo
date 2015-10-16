@@ -813,5 +813,6 @@ def synchronizeComponents():
 from ..auth import Flags, mailFilteredUsers
 from .site import Site
 
-#scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize)  # @UndefinedVariable
-#scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
+scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize)  # @UndefinedVariable
+scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
+
