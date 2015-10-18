@@ -107,7 +107,7 @@ head.appendChild(style);
 
 				<table style="display:inline;">
 					<tr>
-						<td style="height:28px;"></td>
+						<td style="height:28px;"></td><td></td>
 					</tr>
 					<tr>
 						<td>
@@ -118,6 +118,13 @@ head.appendChild(style);
 								&nbsp;
 								{% endif %}
 							</small>
+						</td>
+						<td style="padding-left: 1cm;">
+							{% if request.session.user %}
+							<small>
+								<a href="{% url 'tomato.account.unread_notifications'%}">{{request.session.user.notification_count}} Notifications</a>
+							</small>
+							{% endif %}
 						</td>
 					</tr>
 				</table>
