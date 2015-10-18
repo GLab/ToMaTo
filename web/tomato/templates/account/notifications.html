@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-<title>User Notifications - ToMaTo Testbed</title>
+<title>Notifications - ToMaTo Testbed</title>
 {% endblock %}
 
 {% block content %}
@@ -9,27 +9,87 @@
 {% load url from future %}
 {% load tomato %}
 
-{% for notification in notifications %}
-<div class="notification {% if notification.read %}notification-read{% else %}notification-unread{% endif %}">
+<script>
+	function notification_mark_read(notification_id, read) {
+		var url;
+		if(read){
+			url = "{% url 'notification_mark_read' '__NOTIFICATIONID__'%}".replace('__NOTIFICATIONID__', notification_id);
+		} else {
+			url = "{% url 'notification_mark_unread' '__NOTIFICATIONID__'%}".replace('__NOTIFICATIONID__', notification_id);
+		}
 
-	<div class="date">{{notification.timestamp|todate}}</div>
-	<h3>{{notification.title}}</h3>
+		var xmlhttp=new XMLHttpRequest();
+		xmlhttp.open("GET",url,false);
+		xmlhttp.send();
+		try {
+			res = JSON.parse(xmlhttp.responseText);
+		} catch(ex) {
+			alert('Failed to mark notifification');
+		}
 
-	{% if notification.sender %}
-		<div class="sender">
-			from <a href="{% url "tomato.account.info" notification.sender %}">{{notification.sender}}</a>
-		</div>
-	{% endif %}
+		window.reload();
+	}
+</script>
 
-	<div class="message">{{notification.message}}</div>
+<div class="row">
+  <div class="col-md-8 col-md-offset-2">
 
-	{% if notification.ref_link %}
-		<div class="external-reference-resolved"><a href="{{notification.ref_link}}">{{notification.ref_text}}</a></div>
+<form>
+	{% if include_read %}
+  <button type="submit" formaction="{%url 'tomato.account.unread_notifications' %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> Show Unread Notifications</button>
 	{% else %}
-		<div class="external-reference-unresolved">Reference object: {% for r in notification.ref %}{{r}} {% endfor %}</div>
+	<button type="submit" formaction="{%url 'tomato.account.all_notifications' %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> Show All Notifications</button>
 	{% endif %}
+</form>
 
-</div>
+<h1>Notifications</h1>
+<div class="skip-sm"></div>
+{% if notifications %}
+{% for notification in notifications %}
+
+	<div class="notification {% if notification.read %}notification-read{% else %}notification-unread{% endif %}">
+
+		<div class="date">{{notification.timestamp|todate}}</div>
+		<h3>{{notification.title}}</h3>
+
+		{% if notification.sender %}
+			<div class="sender">
+				<small>from:</small> <a href="{% url "tomato.account.info" notification.sender %}">{{notification.sender}}</a>
+			</div>
+		{% endif %}
+
+		<div class="message">{{notification.message}}</div>
+
+		<div class="bottom">
+			{% if notification.ref_link %}
+				<span class="glyphicon glyphicon-arrow-right"></span> <a href="{{notification.ref_link}}">{{notification.ref_text}}</a>
+			{% else %}
+				Reference object: {% for r in notification.ref %}{{r}} {% endfor %}
+			{% endif %}
+
+			{% if notification.read %}
+			  <a class="mark-read-button" onclick="notification_mark_read({{notification.id}}, false)">
+				<span class="glyphicon glyphicon-remove-circle"></span> mark as unread
+			  </a>
+			{% else %}
+			  <a class="mark-read-button" onclick="notification_mark_read({{notification.id}}, true)">
+				<span class="glyphicon glyphicon-ok-circle"></span> mark as read
+			  </a>
+			{% endif %}
+			</a>
+	  	</div>
+
+	</div>
+
 {% endfor %}
+
+	  {% else %}
+
+	  <h2>No Notifications!</h2>
+
+	  {% endif %}
+
+  </div>
+</div>
 
 {% endblock %}

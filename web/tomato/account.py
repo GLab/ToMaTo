@@ -28,7 +28,7 @@ from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django.utils.html import conditional_escape
 
-from lib import wrap_rpc, getapi, AuthError, serverInfo
+from lib import wrap_rpc, getapi, AuthError, serverInfo, wrap_json
 
 from lib.error import UserError #@UnresolvedImport
 
@@ -367,25 +367,8 @@ def remove(api, request, id=None):
 	return render(request, "form.html", {"heading": "Remove Account", "message_before": "Are you sure you want to remove the account '"+id+"'?", 'form': form})
 
 @wrap_rpc
-def _own_notifications(api, request, show_read=False):
-	#notifications = api.account_notifications(show_read)
-	notifications = [{
-			'id': "1",
-			'timestamp': 1445001834.629098,
-			'title': "First Notification",
-			'message': "This is a notification regarding a topology",
-			'read': False,
-			'ref': ["topology", '5620fac61d649000089aabca'],
-			'sender': None
-		},{
-			'id': "2",
-			'timestamp': 1445005452.524408,
-			'title': "Second Notification",
-			'message': "This is a notification regarding a host",
-			'read': False,
-			'ref': ["host", "glab050"],
-			'sender': "admin"
-		}]  # fixme: this is just testing data.
+def _own_notifications(api, request, show_read):
+	notifications = api.account_notifications(show_read)
 
 	for notification in notifications:
 
@@ -401,10 +384,15 @@ def _own_notifications(api, request, show_read=False):
 			notification["ref_link"] = reverse("tomato.admin.host.info", kwargs={"name": notification["ref"][1]})
 			notification["ref_text"] = "View Host '%s'" % notification["ref"][1]
 
-	return render(request, "account/notifications.html", {"notifications": notifications})
+	return render(request, "account/notifications.html", {"notifications": notifications, "include_read": show_read})
 
 def unread_notifications(request):
 	return _own_notifications(request, False)
 
 def all_notifications(request):
 	return _own_notifications(request, True)
+
+@wrap_json
+def notification_mark_read(api, request, notification_id, read):
+	api.account_notification_set_read(notification_id, read)
+	return True
