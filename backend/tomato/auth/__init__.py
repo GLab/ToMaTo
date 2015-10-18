@@ -244,7 +244,9 @@ class User(BaseDocument):
 				return n
 
 	def set_notification_read(self, notification_id, read):
-		self._get_notification(notification_id).set_read(read)
+		notf = self._get_notification(notification_id)
+		UserError.check(notf, code=UserError.INVALID_VALUE, message="Notification does not exist", todump=False, data={'notification_id': notification_id})
+		notf.set_read(read)
 		self.save()
 
 	def clean_up_notifications(self):
