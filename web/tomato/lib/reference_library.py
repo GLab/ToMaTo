@@ -74,7 +74,7 @@ def resolve_reference(api, ref):
 		ref_link = reverse("tomato.account.info", kwargs={"id": obj_id})
 		try:
 			account_info = api.account_info(obj_id)
-			return ref_link, "View Account '%s'" % account_info['realname']
+			return ref_link, "View User Account '%s'" % account_info['realname']
 		except:
 			return ref_link, "View User Account '%s'" % obj_id
 
