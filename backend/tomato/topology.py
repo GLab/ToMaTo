@@ -179,7 +179,7 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 	def sendNotification(self, role=Role.manager, **kwargs):
 		for permission in self.permissions:
 			if Role.RANKING.index(permission.role) >= Role.RANKING.index(role):
-				permission.user.sendNotification(ref=['topology', self.id], **kwargs)
+				permission.user.sendNotification(ref=['topology', self.idStr], **kwargs)
 
 	@property
 	def maxState(self):
