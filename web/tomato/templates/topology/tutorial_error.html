@@ -1,0 +1,95 @@
+{% extends "topology/base.html" %}
+
+{% load url from future %}
+{% load tomato %}
+
+{% block title %}
+<title>Tutorials - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+<h1>Tutorials</h1>
+
+
+<script src="/js/jquery.js"></script>
+
+
+<ul>
+    {% for tut in tutorials %}
+        <li style="margin-top:1cm; list-style: none;">
+            <table>
+                <tr>
+                    <td rowspan="3" style="vertical-align: text-top; width:45px;">
+                        <img src="{{tut.icon}}"/>
+                    </td>
+                    <td colspan="2">
+                        <strong>{{tut.name}}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:0.5cm;"/>
+                    <td style="padding-top:0.1cm;">
+                        {{tut.desc}}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:0.5cm;"/>
+                    <td style="padding-top:0.1cm;">
+
+                            {% if tut.url %}
+                                <button type="buton" onclick=" loadbusy(event,'Loading Topology Editor'); window.location = '{%url "tutorial.start" %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}';" class="btn btn-success"><span class="glyphicon glyphicon-user"></span>Load in Editor</button>
+                            {% endif %}
+                            {% if tut.url and tut.screencast_url %}
+                                &nbsp;
+                            {% endif %}
+                            {% if tut.screencast_url %}
+                                <button type="button" onclick="window.location = '{{tut.screencast_url}}';" class="btn btn-info"><span class="glyphicon glyphicon-play"></span> Watch Screencast</button>
+                            {% endif %}
+
+                    </td>
+                </tr>
+            </table>
+        </li>
+    {% endfor %}
+</ul>
+
+
+
+
+<link href="/style/jquery-ui.css" rel="stylesheet">
+<script src="/js/jquery.js"></script>
+<script src="/js/jquery-ui.js"></script>
+<script language="JavaScript" type="text/javascript">
+	function customTutorial() {
+		var dialog = $("<div/>");
+		var ta = $('<input type="text" name="tutorial_url" style="width: 100%" />');
+		dialog.append(ta);
+		var t = this;
+		dialog.dialog({
+			autoOpen: true,
+			draggable: true,
+			resizable: false,
+			height: "auto",
+			width: 400,
+			title: "Tutorial URL",
+			show: "slide",
+			hide: "slide",
+			modal: true,
+			buttons: {
+				Open: function() {
+		        	dialog.dialog("close");
+			      	window.location = "{%url "tutorial.start" %}?url="+ta.val();
+			    },
+		        Cancel: function() {
+		        	dialog.dialog("close");
+		        }				
+			},
+		});
+	}
+</script>
+
+<form style="margin-top: 1.3cm;">
+  <button type="button" onclick="customTutorial()" class="btn btn-primary">Load Own Editor Tutorial from URL</button>
+</form>
+
+{% endblock %}

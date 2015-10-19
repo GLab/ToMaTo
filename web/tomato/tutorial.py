@@ -26,6 +26,7 @@ import uuid
 import urllib2, urllib
 from urlparse import urljoin
 from settings import tutorial_list_url
+from lib.error import UserError #@UnresolvedImport
 
 
 
@@ -67,6 +68,16 @@ def start(api, request):
 	return redirect("tomato.topology.info", id=top_id)
 
 def loadTutorial(url):
+	from django.core.validators import URLValidator
+	from django.core.exceptions import ValidationError
+	
+	val = URLValidator()
+	
+	try: 
+		val(url)
+	except ValidationError:
+		raise UserError.wrap(UserError.INVALID_DATA,message="The URL does not exist.", data={'url':url,'module': 'webfrontend'})
+	
 	data = json.load(urllib2.urlopen(url))
 	steps_str = None
 	tut_data = {}
@@ -89,4 +100,6 @@ def loadTutorial(url):
 	if 'initial_data' in data:
 		tut_data = data['initial_data']
 	data["base_url"] = urljoin(url, data.get("base_url", "."))
+
+		
 	return (data, steps_str, top_dict, tut_data, initscript_str)
