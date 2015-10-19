@@ -401,6 +401,12 @@ def _own_notifications(api, request, show_read):
 	for notification in notifications:
 		if notification.get("ref", None):
 			notification['ref_link'], notification['ref_text'] = resolve_reference(api, notification['ref'])
+			if notification.get("sender", None):
+				try:
+					acc_inf = api.account_info(notification["sender"])
+					notification['sender_realname'] = acc_inf["realname"]
+				except:
+					notification['sender_realname'] = notification["sender"]
 
 	notifications = sorted(notifications, key=lambda n: n['timestamp'], reverse=True)
 

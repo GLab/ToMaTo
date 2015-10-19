@@ -54,7 +54,7 @@
 
 		{% if notification.sender %}
 			<div class="sender">
-				<small>from:</small> <a href="{% url "tomato.account.info" notification.sender %}">{{notification.sender}}</a>
+				<small>from:</small> <a href="{% url "tomato.account.info" notification.sender %}">{{notification.sender_realname}}</a>
 			</div>
 		{% endif %}
 
