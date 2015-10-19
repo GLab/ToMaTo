@@ -73,6 +73,7 @@ class BaseDocument(ExtDocument, Document):
 		else:
 			print("Warning: value set on untracked field: %s.%s = %r" % (self.__class__.__name__, key, value), file=sys.stderr)
 
+
 class DataEntry(BaseDocument):
 	key = StringField(unique=True)
 	value = DynamicField()

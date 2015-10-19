@@ -13,5 +13,4 @@ Step 3: Dump the database
 
 Step 4: Convert the database
 # tomato-backend-shell
-# pip install ujson
 # /code/convert-from-django/convert.sh /code/tomato.json
