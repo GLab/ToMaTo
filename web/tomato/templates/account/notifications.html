@@ -42,7 +42,7 @@
 	{% endif %}
 </form>
 
-<h1>Notifications</h1>
+<h1>{% if include_read %}All {%endif%}Notifications</h1>
 <div class="skip-sm"></div>
 {% if notifications %}
 {% for notification in notifications %}
@@ -85,7 +85,7 @@
 
 	  {% else %}
 
-	  <h2>No Notifications!</h2>
+	  <h2>No {% if not include_read %}unread {%endif%}notifications!</h2>
 
 	  {% endif %}
 
