@@ -93,14 +93,20 @@ import models
 
 def start():
 	logging.openDefault(config.LOG_FILE)
-	db_migrate()
+	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
+		db_migrate()
+	else:
+		print >>sys.stderr, "Skipping migrations"
 	auth.init()
 	global starttime
 	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
 	bittorrent.startClient(config.TEMPLATE_PATH)
 	rpcserver.start()
 	starttime = time.time()
-	scheduler.start()
+	if not os.environ.has_key("TOMATO_NO_TASKS"):
+		scheduler.start()
+	else:
+		print >>sys.stderr, "Running without tasks"
 	dump.init()
 	dumpmanager.init()# important: must be called after dump.init()
 	cache.init()# this does not depend on anything (except the scheduler variable being initialized), and nothing depends on this. No need to hurry this.

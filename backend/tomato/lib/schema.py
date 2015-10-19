@@ -112,7 +112,7 @@ class String(Sequence):
 		Sequence.check(self, value)
 		if value is None or self.regex is None:
 			return
-		if not re.match(self.regex, value):
+		if not re.match("^%s$" % self.regex, value):
 			self._error("String must match regular experession", value)
 	def describe(self):
 		desc = Sequence.describe(self)
@@ -132,7 +132,7 @@ class Identifier(String):
 
 class URL(String):
 	def __init__(self, **kwargs):
-		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$?]+", **kwargs)
+		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$\-?]+", **kwargs)
 
 class List(Sequence):
 	TYPES = (types.ListType, types.TupleType)

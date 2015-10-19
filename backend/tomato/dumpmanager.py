@@ -337,7 +337,7 @@ def insert_dump(dump, source):
 		if not group:
 			from auth import mailFlaggedUsers, Flags
 			must_fetch_data = True
-			if isinstance(type(dump['description']), dict):
+			if isinstance(dump['description'], dict):
 				if 'subject' in dump['description'] and 'type' in dump['description']:
 					group_desc = str(dump['description']['type']) + ': ' + str(dump['description']['subject'])
 				else:
