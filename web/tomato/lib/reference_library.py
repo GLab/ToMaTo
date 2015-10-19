@@ -41,25 +41,25 @@ def resolve_reference(api, ref):
 		ref_link = reverse("tomato.admin.site.info", kwargs={"name": obj_id})
 		try:
 			site_info = api.site_info(obj_id)
-			return ref_link, "View Site '%s" % site_info['label']
+			return ref_link, "View Site '%s'" % site_info['label']
 		except:
-			return ref_link, "View Site '%s" % obj_id
+			return ref_link, "View Site '%s'" % obj_id
 
 	if obj_type == "organization":
 		ref_link = reverse("tomato.admin.organization.info", kwargs={"name": obj_id})
 		try:
 			organization_info = api.organization_info(obj_id)
-			return ref_link, "View Organization '%s" % organization_info['label']
+			return ref_link, "View Organization '%s'" % organization_info['label']
 		except:
-			return ref_link, "View Organization '%s" % obj_id
+			return ref_link, "View Organization '%s'" % obj_id
 
 	if obj_type == "account":
 		ref_link = reverse("tomato.account.info", kwargs={"id": obj_id})
 		try:
 			account_info = api.account_info(obj_id)
-			return ref_link, "View Account '%s" % account_info['realname']
+			return ref_link, "View Account '%s'" % account_info['realname']
 		except:
-			return ref_link, "View Account '%s" % obj_id
+			return ref_link, "View Account '%s'" % obj_id
 
 	if obj_type == "profile":
 		ref_link = reverse("tomato.profile.info", kwargs={"res_id": obj_id})
