@@ -232,6 +232,7 @@ class AnnouncementForm(BootstrapForm):
 	message = forms.CharField(widget=forms.Textarea, required=True)
 	ref_type = forms.CharField(required=False, label="Include Reference to:")
 	ref_id = forms.CharField(required=False, label="Referenced Object ID", help_text="Usually ID or name of the entity to be referenced.")
+	show_sender = forms.BooleanField(required=False, initial=False, help_text="Show your name as sender in the notification")
 	def __init__(self, *args, **kwargs):
 		super(AnnouncementForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(announcement_form)
@@ -241,6 +242,7 @@ class AnnouncementForm(BootstrapForm):
 		self.helper.layout = Layout(
 			'title',
 			'message',
+			'show_sender',
 			'ref_type',
 			'ref_id',
 			FormActions(
@@ -400,13 +402,16 @@ def _own_notifications(api, request, show_read):
 
 	for notification in notifications:
 		if notification.get("ref", None):
+
 			notification['ref_link'], notification['ref_text'] = resolve_reference(api, notification['ref'])
-			if notification.get("sender", None):
-				try:
-					acc_inf = api.account_info(notification["sender"])
-					notification['sender_realname'] = acc_inf["realname"]
-				except:
-					notification['sender_realname'] = notification["sender"]
+
+		if notification.get("sender", None):
+			try:
+				acc_inf = api.account_info(notification["sender"])
+				notification['sender_realname'] = acc_inf["realname"]
+				print notification
+			except:
+				notification['sender_realname'] = notification["sender"]
 
 	notifications = sorted(notifications, key=lambda n: n['timestamp'], reverse=True)
 
@@ -433,7 +438,7 @@ def announcement_form(api, request):
 				ref = [formData["ref_type"], formData["ref_id"]]
 			else:
 				ref = None
-			api.broadcast_announcement(formData['title'], formData['message'], ref)
+			api.broadcast_announcement(formData['title'], formData['message'], ref, formData["show_sender"])
 			return HttpResponseRedirect(reverse("tomato.account.unread_notifications"))
 	form = AnnouncementForm()
 	return render(request, "form.html", {'form': form, "heading": "Broadcast Announcement"})

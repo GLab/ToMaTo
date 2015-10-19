@@ -571,7 +571,7 @@ def _may_broadcast(account):
 	return False
 
 
-def send_announcement(sender, title, message, ref=None):
+def send_announcement(sender, title, message, ref=None, show_sender=True):
 	UserError.check(_may_broadcast(sender), code=UserError.DENIED, message="Not enough permissions to send announcements")
 	if (Flags.GlobalAdmin in sender.flags) or (Flags.GlobalHostManager in sender.flags):
 		receivers = getAllUsers()
@@ -581,7 +581,7 @@ def send_announcement(sender, title, message, ref=None):
 		receivers = []
 
 	for acc in receivers:
-		acc.sendNotification(title, message, ref, sender, send_email=False)
+		acc.sendNotification(title, message, ref, sender if show_sender else None, send_email=False)
 
 
 

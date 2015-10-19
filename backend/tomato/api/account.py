@@ -220,10 +220,10 @@ def account_send_notification(name, subject, message, ref=None, from_support=Fal
 	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
 	acc.sendNotification(subject, message, ref=None, fromUser=(None if from_support else currentUser()))
 
-def broadcast_announcement(title, message, ref=None):
+def broadcast_announcement(title, message, ref=None, show_sender=True):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	sender = currentUser()
-	send_announcement(sender, title, message, ref)
+	send_announcement(sender, title, message, ref, show_sender)
 
 	
 def account_usage(name): #@ReservedAssignment
