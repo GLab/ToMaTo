@@ -5,6 +5,7 @@ from django import template
 from ..lib import getVersion, serverInfo, security_token
 from django.utils.safestring import mark_safe
 from ..lib import anyjson as json
+from ..lib.reference_library import tech_to_label as lib_tech_to_label
 
 
 
@@ -21,6 +22,10 @@ def jsonify(o, pretty=False):
 @register.filter
 def externalurl(name):
 	return serverInfo()['external_urls'].get(name, "")
+
+@register.filter
+def tech_to_label(value):
+	return lib_tech_to_label(value)
 	
 @register.simple_tag
 def backend_version():

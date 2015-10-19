@@ -34,6 +34,8 @@ from lib import wrap_rpc, getapi, AuthError, serverInfo, wrap_json
 
 from lib.error import UserError #@UnresolvedImport
 
+from lib.reference_library import resolve_reference
+
 from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
@@ -384,24 +386,14 @@ def remove(api, request, id=None):
 	form = RemoveConfirmForm.build(reverse("tomato.account.remove", kwargs={"id": id}))
 	return render(request, "form.html", {"heading": "Remove Account", "message_before": "Are you sure you want to remove the account '"+id+"'?", 'form': form})
 
+
 @wrap_rpc
 def _own_notifications(api, request, show_read):
 	notifications = api.account_notifications(show_read)
 
 	for notification in notifications:
-
 		if notification.get("ref", None):
-			if notification["ref"][0] == "topology":
-				notification["ref_link"] = reverse("tomato.topology.info", kwargs={"id": notification["ref"][1]})
-				try:
-					topology_info = api.topology_info(notification["ref"][1])
-					notification["ref_text"] = "View Topology '%s'" % topology_info["name"]
-				except:
-					notification["ref_text"] = "View Topology [%s]" % notification["ref"][1]
-
-			if notification["ref"][0] == "host":
-				notification["ref_link"] = reverse("tomato.admin.host.info", kwargs={"name": notification["ref"][1]})
-				notification["ref_text"] = "View Host '%s'" % notification["ref"][1]
+			notification['ref_link'], notification['ref_text'] = resolve_reference(api, notification['ref'])
 
 	notifications = sorted(notifications, key=lambda n: n['timestamp'], reverse=True)
 

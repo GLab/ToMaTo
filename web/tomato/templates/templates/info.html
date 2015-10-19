@@ -11,6 +11,7 @@
 {% endblock %}
 
 {% block content %}
+{% load tomato %}
 
 <form>
   <button type="submit" formaction="{%url "template_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Templates</button>
@@ -33,7 +34,7 @@
 	</tr>
 	<tr>
 		<th>Tech:</th>
-		<td><img src="/img/{{template.tech}}16.png" /> {{template.tech}}</td>
+		<td><img src="/img/{{template.tech}}16.png" /> {{template.tech|tech_to_label}} <small>({{template.tech}})</small></td>
 	</tr>
 	<tr>
 		<th>Subtype:</th>
