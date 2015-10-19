@@ -122,7 +122,7 @@ head.appendChild(style);
 						<td style="padding-left: 1cm;">
 							{% if request.session.user %}
 							<small>
-								<a href="{% url 'tomato.account.unread_notifications'%}">{{request.session.user.notification_count}} Notifications</a>
+								<a href="{% url 'tomato.account.unread_notifications'%}">{{request.session.user.notification_count}} Notification{% if request.session.user.notification_count != 1 %}s{% endif %}</a>
 							</small>
 							{% endif %}
 						</td>
