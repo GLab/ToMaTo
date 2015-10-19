@@ -91,19 +91,6 @@ def _prevPoint(point, type_):
 def _toTime(point):
 	return util.utcDatetimeToTimestamp(point)
 
-def _combine(records):
-	#calculate coverage
-	measurements = sum([r.measurements for r in records])
-	#combine attributes
-	combined = Usage()
-	if not measurements:
-		return (combined, 0)
-	combined.cputime = _sum([(r.usage.cputime, r.measurements) for r in records], measurements)
-	combined.diskspace = _avg([(r.usage.diskspace, r.measurements) for r in records], measurements)
-	combined.memory = _avg([(r.usage.memory, r.measurements) for r in records], measurements)
-	combined.traffic = _sum([(r.usage.traffic, r.measurements) for r in records], measurements)
-	return (combined, measurements)
-
 class Usage(EmbeddedDocument):
 	memory = FloatField(default=0.0, db_field="m") #unit: bytes
 	diskspace = FloatField(default=0.0, db_field="d") #unit: bytes
@@ -209,47 +196,6 @@ class UsageStatistics(BaseDocument):
 				diskspace=rec["usage"]["diskspace"], traffic=rec["usage"]["traffic"])
 			record = UsageRecord(begin=rec["begin"], end=rec["end"], measurements=rec["measurements"], usage=usage)
 			list_.append(record)
-		self.save()
-
-	def _removeOld(self):
-		for type_ in TYPES:
-			list_ = self._getList(type_)
-			end = _toTime(_toPoint(time.time()) - MAX_AGE[type_])
-			list_[:] = filter(lambda e: e.end > end, list_[-KEEP_RECORDS[type_]:])
-
-	def _combine(self):
-		lastList = self._getList(TYPES[0])
-		now = time.time()
-		for type_ in TYPES[1:]:
-			list_ = self._getList(type_)
-			if list_:
-				begin = list_[-1].end
-			else:
-				begin = _toTime(_prevPoint(_lastPoint(type_, _toPoint(now)), type_))
-			end = _toTime(_nextPoint(_toPoint(begin), type_))
-			if end > now:
-				continue
-			records = sorted(lastList, key=lambda rec: rec.end)
-			i = 0
-			while i < len(records) and records[i].begin < begin:
-				i += 1
-			records = records[i:]
-			while end <= now:
-				i = 0
-				if not records:
-					break
-				while i < len(records) and records[i].end <= end:
-					i += 1
-				usage, measurements = _combine(records[:i])
-				records = records[i:]
-				list_.append(UsageRecord(begin=begin, end=end, usage=usage, measurements=measurements))
-				begin = end
-				end = _toTime(_nextPoint(_toPoint(end), type_))
-			lastList = list_
-
-	def housekeep(self):
-		self._combine()
-		self._removeOld()
 		self.save()
 
 	def updateFrom(self, sources):
@@ -384,11 +330,161 @@ def aggregate():
 		if h.enabled:
 			h.updateUsage()
 
+housekeep_code = """
+function() {
+  var now = options.now;
+  var types = options.types;
+  var keep_records = options.keep_records;
+  var max_age = options.max_age;
+
+  var combineRecords = function(records) {
+    var measurements = 0;
+    var usage = {m: 0, d: 0, t: 0, c: 0};
+    for (var i=0; i < records.length; i++) {
+      var r = records[i];
+      measurements += r.m;
+      usage.m += r.u.m * r.m;
+      usage.d += r.u.d * r.m;
+      usage.t += r.u.t;
+      usage.c += r.u.c;
+    }
+    if (measurements > 0) {
+      usage.d /= measurements;
+      usage.m /= measurements;
+    }
+    return [usage, measurements];
+  };
+
+  var prevPoint = function(point, type) {
+    var date = new Date(point*1000);
+    switch (type) {
+      case "5minutes":
+        date.setUTCMinutes(date.getUTCMinutes()-5);
+        break;
+      case "hour":
+        date.setUTCHours(date.getUTCHours()-1);
+        break;
+      case "day":
+        date.setUTCDate(date.getUTCDate()-1);
+        break;
+      case "month":
+        date.setUTCMonth(date.getUTCMonth()-1);
+        break;
+      case "year":
+        date.setUTCFullYear(date.getUTCFullYear()-1);
+        break;
+    }
+    return date.getTime()/1000;
+  };
+
+  var nextPoint = function(point, type) {
+    var date = new Date(point*1000);
+    switch (type) {
+      case "5minutes":
+        date.setUTCMinutes(date.getUTCMinutes()+5);
+        break;
+      case "hour":
+        date.setUTCHours(date.getUTCHours()+1);
+        break;
+      case "day":
+        date.setUTCDate(date.getUTCDate()+1);
+        break;
+      case "month":
+        date.setUTCMonth(date.getUTCMonth()+1);
+        break;
+      case "year":
+        date.setUTCFullYear(date.getUTCFullYear()+1);
+        break;
+    }
+    return date.getTime()/1000;
+  };
+
+  var lastPoint = function(type) {
+    var date = new Date(now*1000);
+    date.setUTCMilliseconds(0);
+    date.setUTCSeconds(0);
+    switch (type) {
+      case "5minutes":
+        date.setUTCMinutes(Math.floor(date.getUTCMinutes()/5)*5);
+        break;
+      case "year":
+        date.setUTCMonth(1);
+      case "month":
+        date.setUTCDate(1);
+      case "day":
+        date.setUTCHours(0);
+      case "hour":
+        date.setUTCMinutes(0);
+    }
+    return date.getTime()/1000;
+  };
+
+  var removeOld = function(obj) {
+    var changed = false;
+    for (var type in keep_records) {
+      var count = keep_records[type];
+      if (!obj[type]) continue;
+      if (obj[type].length > count) {
+        obj[type].splice(0, obj[type].length-count);
+        changed = true;
+      }
+      for (var i=0; i<obj[type].length; i++) {
+        if (obj[type][i].e > now + max_age[type]) {
+          obj[type].splice(i, 1);
+          i-=1;
+          changed = true;
+        }
+      }
+    }
+    return changed;
+  };
+
+  var combine = function(obj) {
+    var changed = false;
+    var lastList = obj[types[0]];
+    if (! lastList) lastList=[];
+    for (var i = 1; i<types.length; i++) {
+      var type = types[i];
+      var list = obj[type];
+      if (! list) list=[];
+      var begin = list.length > 0 ? list[list.length-1].e : prevPoint(lastPoint(type), type);
+      var end = nextPoint(begin, type);
+      if (end > now) continue;
+      var s = 0;
+      for (; s < lastList.length && lastList[s].b < begin; s++);
+      while (end <= now) {
+        var e = s;
+        for (; e < lastList.length && lastList[e].e <= end; e++);
+        if (e == lastList.length) break;
+        var records = lastList.slice(s, e);
+        var t = combineRecords(records);
+        var usage = t[0];
+        var measurements = t[1];
+        list.push({b: begin, e: end, m: measurements, u: usage});
+        changed = true;
+        begin = end;
+        end = nextPoint(end, type);
+      }
+      obj[type] = list;
+    }
+    return changed;
+  };
+
+  var count = 0;
+  db.usage_statistics.find().forEach(function(obj) {
+    if (combine(obj) | removeOld(obj)) {
+      db.usage_statistics.save(obj);
+      count +=1;
+    }
+  });
+  return count;
+}
+"""
+
 @util.wrap_task
 def housekeep():
 	try:
-		for stats in UsageStatistics.objects():
-			stats.housekeep()
+		UsageStatistics.objects.exec_js(housekeep_code, now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
 	except:
 		import traceback
 		traceback.print_exc()
