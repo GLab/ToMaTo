@@ -162,7 +162,7 @@ div.notification div.bottom {
   color: #777777;
 }
 div.notification div.bottom a {
-  color: #777777;
+  color: #444444;
   padding-left: 1mm;
   text-decoration: underline;
   cursor: pointer;
@@ -172,15 +172,15 @@ div.notification div.bottom a.mark-read-button {
 }
 div.notification h3,
 div.notification div.bottom {
-  background-color: #e0e0e0;
+  background-color: #d0d0d0;
 }
 div.notification-read h3,
 div.notification-read div.bottom {
-  background-color: #e9e9e9;
+  background-color: #ebebeb;
   color: #777777;
 }
-div.notification-read div.bottom a.mark-read-button {
-  color: #444444;
+div.notification-read div.bottom a {
+  color: #777777;
 }
 
 table th {

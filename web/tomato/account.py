@@ -372,17 +372,20 @@ def _own_notifications(api, request, show_read):
 
 	for notification in notifications:
 
-		if notification["ref"][0] == "topology":
-			notification["ref_link"] = reverse("tomato.topology.info", kwargs={"id": notification["ref"][1]})
-			try:
-				topology_info = api.topology_info(notification["ref"][1])
-				notification["ref_text"] = "View Topology '%s'" % topology_info["name"]
-			except:
-				notification["ref_text"] = "View Topology [%s]" % notification["ref"][1]
+		if notification.get("ref", None):
+			if notification["ref"][0] == "topology":
+				notification["ref_link"] = reverse("tomato.topology.info", kwargs={"id": notification["ref"][1]})
+				try:
+					topology_info = api.topology_info(notification["ref"][1])
+					notification["ref_text"] = "View Topology '%s'" % topology_info["name"]
+				except:
+					notification["ref_text"] = "View Topology [%s]" % notification["ref"][1]
 
-		if notification["ref"][0] == "host":
-			notification["ref_link"] = reverse("tomato.admin.host.info", kwargs={"name": notification["ref"][1]})
-			notification["ref_text"] = "View Host '%s'" % notification["ref"][1]
+			if notification["ref"][0] == "host":
+				notification["ref_link"] = reverse("tomato.admin.host.info", kwargs={"name": notification["ref"][1]})
+				notification["ref_text"] = "View Host '%s'" % notification["ref"][1]
+
+	notifications = sorted(notifications, key=lambda n: n['timestamp'], reverse=True)
 
 	return render(request, "account/notifications.html", {"notifications": notifications, "include_read": show_read})
 

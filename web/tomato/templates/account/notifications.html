@@ -27,7 +27,7 @@
 			alert('Failed to mark notifification');
 		}
 
-		window.reload();
+		location.reload();
 	}
 </script>
 
@@ -64,7 +64,7 @@
 			{% if notification.ref_link %}
 				<span class="glyphicon glyphicon-arrow-right"></span> <a href="{{notification.ref_link}}">{{notification.ref_text}}</a>
 			{% else %}
-				Reference object: {% for r in notification.ref %}{{r}} {% endfor %}
+				{% if notification.ref %}Reference object: {% for r in notification.ref %}{{r}} {% endfor %}{% endif %}&nbsp;
 			{% endif %}
 
 			{% if notification.read %}
