@@ -383,7 +383,7 @@ class User(BaseDocument):
 			"realname": self.realname,
 			"email": self.email,
 			"flags": list(self.flags),
-			"notification_count": len(self.notifications)
+			"notification_count": len(filter(lambda n: not n.read, self.notifications))
 		}
 		info.update({"_"+k: v for k, v in self.clientData.items()})
 		if not includeInfos:
