@@ -28,6 +28,8 @@ from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django.utils.html import conditional_escape
 
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+
 from lib import wrap_rpc, getapi, AuthError, serverInfo, wrap_json
 
 from lib.error import UserError #@UnresolvedImport
@@ -223,6 +225,22 @@ class AdminAccountRegisterForm(AccountForm):
 			Buttons.cancel_save
 		)
 
+class AnnouncementForm(BootstrapForm):
+	title = forms.CharField(required=True)
+	message = forms.CharField(widget=forms.Textarea, required=True)
+	def __init__(self, *args, **kwargs):
+		super(AnnouncementForm, self).__init__(*args, **kwargs)
+		self.helper.form_action = reverse(announcement_form)
+		self.helper.layout = Layout(
+			'title',
+			'message',
+			FormActions(
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-default backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-send"></span> Publish', css_class='btn-primary', type="submit"),
+				css_class="col-sm-offset-4"
+			)
+		)
+
 @wrap_rpc
 def list(api, request, with_flag=None, organization=True):
 	if not api.user:
@@ -399,3 +417,14 @@ def all_notifications(request):
 def notification_mark_read(api, request, notification_id, read):
 	api.account_notification_set_read(notification_id, read)
 	return True
+
+@wrap_rpc
+def announcement_form(api, request):
+	if request.method == 'POST':
+		form = AnnouncementForm(request.POST)
+		if form.is_valid():
+			formData = form.cleaned_data
+			api.broadcast_announcement(formData['title'], formData['message'])
+			return HttpResponseRedirect(reverse("tomato.account.unread_notifications"))
+	form = AnnouncementForm()
+	return render(request, "form.html", {'form': form, "heading": "Broadcast Announcement"})
