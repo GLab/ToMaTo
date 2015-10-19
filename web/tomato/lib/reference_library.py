@@ -11,6 +11,23 @@ def tech_to_label(tech):
 		return "Repy"
 	return tech
 
+def entity_to_label(entity):
+	if entity == 'topology':
+		return "Topology"
+	if entity == 'host':
+		return "Host"
+	if entity == 'site':
+		return "Site"
+	if entity == 'organization':
+		return "Organization"
+	if entity == 'account':
+		return "User Account"
+	if entity == 'template':
+		return "Template"
+	if entity == 'profile':
+		return "Device Profile"
+
+
 def reference_config():
 	return {
 		'topology': ('id'),
@@ -59,15 +76,15 @@ def resolve_reference(api, ref):
 			account_info = api.account_info(obj_id)
 			return ref_link, "View Account '%s'" % account_info['realname']
 		except:
-			return ref_link, "View Account '%s'" % obj_id
+			return ref_link, "View User Account '%s'" % obj_id
 
 	if obj_type == "profile":
 		ref_link = reverse("tomato.profile.info", kwargs={"res_id": obj_id})
 		try:
 			profile_info = api.profile_info(obj_id)
-			return ref_link, "View %s Profile '%s'" % (tech_to_label(profile_info['tech']), profile_info['label'])
+			return ref_link, "View %s Device Profile '%s'" % (tech_to_label(profile_info['tech']), profile_info['label'])
 		except:
-			return ref_link, "View Profile '%s'" % obj_id
+			return ref_link, "View Device Profile '%s'" % obj_id
 
 	if obj_type == "template":
 		ref_link = reverse("tomato.template.info", kwargs={"res_id": obj_id})

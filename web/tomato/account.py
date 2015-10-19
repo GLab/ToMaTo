@@ -34,7 +34,7 @@ from lib import wrap_rpc, getapi, AuthError, serverInfo, wrap_json
 
 from lib.error import UserError #@UnresolvedImport
 
-from lib.reference_library import resolve_reference
+from lib.reference_library import resolve_reference, reference_config, entity_to_label
 
 from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
@@ -230,12 +230,19 @@ class AdminAccountRegisterForm(AccountForm):
 class AnnouncementForm(BootstrapForm):
 	title = forms.CharField(required=True)
 	message = forms.CharField(widget=forms.Textarea, required=True)
+	ref_type = forms.CharField(required=False, label="Include Reference to:")
+	ref_id = forms.CharField(required=False, label="Referenced Object ID", help_text="Usually ID or name of the entity to be referenced.")
 	def __init__(self, *args, **kwargs):
 		super(AnnouncementForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(announcement_form)
+		ref_conf = [(k, entity_to_label(k)) for k in reference_config().iterkeys()]
+		ref_conf.insert(0, ("", "--No Reference--"))
+		self.fields['ref_type'].widget = forms.widgets.Select(choices=ref_conf)
 		self.helper.layout = Layout(
 			'title',
 			'message',
+			'ref_type',
+			'ref_id',
 			FormActions(
 				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-default backbutton'),
 				StrictButton('<span class="glyphicon glyphicon-send"></span> Publish', css_class='btn-primary', type="submit"),
@@ -416,7 +423,11 @@ def announcement_form(api, request):
 		form = AnnouncementForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			api.broadcast_announcement(formData['title'], formData['message'])
+			if formData["ref_type"]:
+				ref = [formData["ref_type"], formData["ref_id"]]
+			else:
+				ref = None
+			api.broadcast_announcement(formData['title'], formData['message'], ref)
 			return HttpResponseRedirect(reverse("tomato.account.unread_notifications"))
 	form = AnnouncementForm()
 	return render(request, "form.html", {'form': form, "heading": "Broadcast Announcement"})
