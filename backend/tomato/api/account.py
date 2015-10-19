@@ -68,10 +68,23 @@ def account_info(name=None):
 	return acc.info(currentUser() == acc or currentUser().isAdminOf(acc))
 
 def account_notifications(include_read=False):
+	"""
+	List notifications for the currently logged in user.
+
+	:param bool include_read: include read notifications. if False, only return unread ones.
+	:return: list of Notification
+	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	return currentUser().list_notifications(include_read)
 
 def account_notification_set_read(notification_id, read):
+	"""
+	Modify the read status of a notification
+
+	:param str notification_id: ID of the notification to modify
+	:param bool read: new read status of the notification
+	:return: None
+	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	currentUser().set_notification_read(notification_id, read)
 
@@ -198,14 +211,20 @@ def account_flag_configuration():
 		'categories': categories
 		}
 
-def account_send_notification(name, subject, message, from_support=False):
+def account_send_notification(name, subject, message, ref=None, from_support=False):
 	"""
 	Sends an email to the account
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
-	acc.sendNotification(subject, message, fromUser=(None if from_support else currentUser()))
+	acc.sendNotification(subject, message, ref=None, fromUser=(None if from_support else currentUser()))
+
+def broadcast_announcement(title, message, ref=None):
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	sender = currentUser()
+	send_announcement(sender, title, message, ref)
+
 	
 def account_usage(name): #@ReservedAssignment
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
@@ -215,4 +234,4 @@ def account_usage(name): #@ReservedAssignment
 from host import _getOrganization
 from .. import currentUser
 from ..lib.error import UserError
-from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags
+from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags, send_announcement

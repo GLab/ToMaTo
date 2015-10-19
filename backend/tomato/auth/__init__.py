@@ -216,9 +216,10 @@ class User(BaseDocument):
 		user.save()
 		return user
 
-	def sendNotification(self, subject, message, ref=None, fromUser=None):
+	def sendNotification(self, subject, message, ref=None, fromUser=None, send_email=True):
 		self._addNotification(subject, message, ref, fromUser)
-		self._sendMail(subject, message, fromUser)
+		if send_email:
+			self._sendMail(subject, message, fromUser)
 
 	def _addNotification(self, title, message, ref, fromUser):
 		now = time.time()
@@ -556,6 +557,31 @@ def register(username, password, organization, attrs=None, provider=""):
 providers = []
 
 scheduler.scheduleRepeated(300, cleanup) #every 5 minutes @UndefinedVariable
+
+
+def _may_broadcast(account):
+	if Flags.GlobalAdmin in account.flags:
+		return True
+	if Flags.OrgaAdmin in account.flags:
+		return True
+	if Flags.GlobalHostManager in account.flags:
+		return True
+	if Flags.OrgaHostManager in account.flags:
+		return True
+	return False
+
+
+def send_announcement(sender, title, message, ref=None):
+	UserError.check(_may_broadcast(sender), code=UserError.DENIED, message="Not enough permissions to send announcements")
+	if (Flags.GlobalAdmin in sender.flags) or (Flags.GlobalHostManager in sender.flags):
+		receivers = getAllUsers()
+	elif (Flags.OrgaAdmin in sender.flags) or (Flags.OrgaHostManager in sender.flags):
+		receivers = getAllUsers(organization=sender.organization)
+	else:
+		receivers = []
+
+	for acc in receivers:
+		acc.sendNotification(title, message, ref, sender, send_email=False)
 
 
 
