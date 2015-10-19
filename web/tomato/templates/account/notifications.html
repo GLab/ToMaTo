@@ -58,7 +58,7 @@
 			</div>
 		{% endif %}
 
-		<div class="message">{{notification.message}}</div>
+		<div class="message" style="">{{notification.message|safe|linebreaks}}</div>
 
 		<div class="bottom">
 			{% if notification.ref_link %}
