@@ -140,11 +140,12 @@ class Notification(EmbeddedDocument):
 	title = StringField(required=True)
 	message = StringField(required=True)
 	read = BooleanField(default=False)
-	ref = ListField(StringField())
+	ref_obj = ListField(StringField())
 	sender = StringField()
 
 	def init(self, ref, sender):
-		self.ref = ref
+		self.ref_obj = ref if ref else []
+		print self.ref_obj
 		self.sender = sender.name if sender else None
 
 	def info(self):
@@ -154,7 +155,7 @@ class Notification(EmbeddedDocument):
 			'title': self.title,
 			'message': self.message,
 			'read': self.read,
-			'ref': self.ref,
+			'ref': self.ref_obj if self.ref_obj else None,
 			'sender': self.sender
 		}
 
@@ -215,9 +216,9 @@ class User(BaseDocument):
 		user.save()
 		return user
 
-	def sendNotification(self, title, message, ref=None, fromUser=None):
-		self._addNotification(title, message, ref, fromUser)
-		self._sendMail(title, message, fromUser)
+	def sendNotification(self, subject, message, ref=None, fromUser=None):
+		self._addNotification(subject, message, ref, fromUser)
+		self._sendMail(subject, message, fromUser)
 
 	def _addNotification(self, title, message, ref, fromUser):
 		now = time.time()
