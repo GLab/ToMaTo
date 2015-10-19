@@ -41,6 +41,13 @@ class VMElement(Element):
 	lastSync = FloatField(default=0, db_field='last_sync')
 	customTemplate = BooleanField(default=False, db_field='custom_template')
 
+	meta = {
+		'allow_inheritance': True,
+		'indexes': [
+			'nextSync'
+		]
+	}
+
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout", "template"]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
