@@ -127,7 +127,8 @@ class ServerProxy(object):
 				res = call_proxy(args, kwargs)
 				after = time.time()
 				# print "%f, %s(%s, %s) -> %s" % (after-before, name, args, kwargs, res)
-				log_api_duration(name, after-before, args, kwargs)
+				if enable_duration_log:
+					log_api_duration(name, after-before, args, kwargs)
 				return res
 			except xmlrpclib.Fault, e:
 				if e.faultCode == 999:
