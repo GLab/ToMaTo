@@ -23,6 +23,7 @@ import os
 from .. import settings
 from .error import Error  # @UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault
+from thread import start_new_thread
 
 from ..settings import duration_log_location, enable_duration_log, duration_log_size
 
@@ -123,12 +124,14 @@ class ServerProxy(object):
 			import time
 			try:
 				before = time.time()
-				# print "%s(%s, %s)" % (name, args, kwargs)
 				res = call_proxy(args, kwargs)
 				after = time.time()
-				# print "%f, %s(%s, %s) -> %s" % (after-before, name, args, kwargs, res)
 				if enable_duration_log:
-					log_api_duration(name, after-before, args, kwargs)
+					start_new_thread(
+						log_api_duration,
+						(),
+						{'name': name, 'duration': after-before, 'args': args, 'kwargs': kwargs}
+					)
 				return res
 			except xmlrpclib.Fault, e:
 				if e.faultCode == 999:
