@@ -121,7 +121,7 @@ head.appendChild(style);
 									<li><a href="{%url "main.logout" %}">Log Out</a></li>
 								</ul>
 							</div>
-							<button type="button" class="btn {%if request.session.user.notification_count%}btn-primary{%else%}btn-default{%endif%}" onclick="location.href='{% url 'tomato.account.unread_notifications'%}';">
+							<button type="button" class="btn {%if request.session.user.notification_count%}btn-info{%else%}btn-default{%endif%}" onclick="location.href='{% url 'tomato.account.unread_notifications'%}';">
 								<span class="glyphicon glyphicon-bell"></span>&nbsp;<span class="badge">{{request.session.user.notification_count}}</span>
 							</button>
 						{% else %}
