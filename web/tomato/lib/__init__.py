@@ -24,7 +24,7 @@ from .. import settings
 from .error import Error  # @UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault
 
-enable_duration_log = False
+from settings import duration_log_location, enable_duration_log
 
 
 def getauth(request):
@@ -107,7 +107,7 @@ class APIDurationLog:
 
 
 def api_duration_log():
-	return APIDurationLog(enable_duration_log, '/tmp/tomato-web-api_duration_log.json')  # fixme: allow to configure this. the file should be located in tmpfs or similar.
+	return APIDurationLog(enable_duration_log, duration_log_location)  # fixme: allow to configure this. the file should be located in tmpfs or similar.
 
 def log_api_duration(name, duration, args, kwargs):
 	api_duration_log().log_call(name, duration, args, kwargs)
