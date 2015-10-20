@@ -24,7 +24,7 @@ from .. import settings
 from .error import Error  # @UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault
 
-from settings import duration_log_location, enable_duration_log
+from settings import duration_log_location, enable_duration_log, duration_log_size
 
 
 def getauth(request):
@@ -66,7 +66,7 @@ class AuthError(Exception):
 	pass
 
 class APIDurationLog:
-	entry_count = 100
+	entry_count = duration_log_size
 	def __init__(self, enabled=True, filename=None):
 		self.enabled = enabled
 		self.filename = filename
