@@ -47,39 +47,48 @@
 {% if notifications %}
 {% for notification in notifications %}
 
-	<div class="notification {% if notification.read %}notification-read{% else %}notification-unread{% endif %}">
+	<div class="panel notification {% if notification.read %}panel-default{% else %}panel-info{% endif %}">
 
-		<div class="date">{{notification.timestamp|todate}}</div>
-		<h3>{{notification.title}}</h3>
+	  <div class="panel-heading">
+		  <div class="date">{{notification.timestamp|todate}}</div>
+		<h3 class="panel-title">{{notification.title|safe}}</h3>
+	  </div>
 
-		{% if notification.sender %}
-			<div class="sender">
+	  <div class="panel-body">
+		  {% if notification.sender %}
+			<p style="margin-bottom: 0.5cm;">
 				<small>from:</small> <a href="{% url "tomato.account.info" notification.sender %}">{{notification.sender_realname}}</a>
-			</div>
-		{% endif %}
+			</p>
+		  {% endif %}
+		{{notification.message|safe|linebreaks}}
+	  </div>
 
-		<div class="message" style="">{{notification.message|safe|linebreaks}}</div>
+	  <div class="panel-footer">
+		  <div class="row">
+			  <div class="col-sm-6" style="margin-top: 0.2cm;">
+			  {% if notification.ref_link %}
+					<span class="glyphicon glyphicon-arrow-right"></span> <a href="{{notification.ref_link}}">{{notification.ref_text}}</a>
+				{% else %}
+					{% if notification.ref %}Reference object: {% for r in notification.ref %}{{r}} {% endfor %}{% endif %}&nbsp;
+				{% endif %}
+				</div>
 
-		<div class="bottom">
-			{% if notification.ref_link %}
-				<span class="glyphicon glyphicon-arrow-right"></span> <a href="{{notification.ref_link}}">{{notification.ref_text}}</a>
-			{% else %}
-				{% if notification.ref %}Reference object: {% for r in notification.ref %}{{r}} {% endfor %}{% endif %}&nbsp;
-			{% endif %}
+				<div class="col-sm-6" style="text-align: right;">
+				{% if notification.read %}
+				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read({{notification.id}}, false)">
+					<span class="glyphicon glyphicon-remove-circle"></span> mark as unread
+				  </button>
+				{% else %}
+				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read({{notification.id}}, true)">
+					<span class="glyphicon glyphicon-ok-circle"></span> mark as read
+				  </button>
 
-			{% if notification.read %}
-			  <a class="mark-read-button" onclick="notification_mark_read({{notification.id}}, false)">
-				<span class="glyphicon glyphicon-remove-circle"></span> mark as unread
-			  </a>
-			{% else %}
-			  <a class="mark-read-button" onclick="notification_mark_read({{notification.id}}, true)">
-				<span class="glyphicon glyphicon-ok-circle"></span> mark as read
-			  </a>
-			{% endif %}
-			</a>
-	  	</div>
-
+					{% endif %}
+					</div>
+		  </div>
+	  </div>
 	</div>
+
 
 {% endfor %}
 

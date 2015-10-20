@@ -119,68 +119,30 @@ div.organization div.page-header {
 	margin-top:1em;
 }
 
-div.notification {
-  box-shadow: 0.1em 0.1em 0.1em grey;
-  border: 1px solid #dddddd;
-  padding: 0;
-  margin-top: 0px;
-  margin-bottom:1.8em;
-  margin-left: auto;
-  margin-right:auto;
-  -webkit-border-radius: 5px;
-  -moz-border-radius: 5px;
-  border-radius: 4px;
-  background: white;
-}
-div.notification div.date {
-  float: right;
-  padding-right: 0.8em;
-  padding-top: 1em;
-  color: #555555;
-}
-div.notification h3 {
-  margin:0;
-  border-bottom: 1px solid #dddddd;
-  padding-left: 0.8em;
-  padding-top: 0.7em;
-  padding-bottom: 0.5em;
-}
-div.notification div.sender {
-  padding-left: 2em;
-}
-div.notification div.message {
-  margin-top: 0.7cm;
-  margin-bottom: 0.6cm;
-  margin-left: 0.25cm;
-  margin-right: 0.25cm;
+div.panel-info div.panel-footer {
+  background-color: #d9edf7;
 }
 
-div.notification div.bottom {
-  border-top: 1px dotted #dddddd;
-  padding: 0.5em;
-  padding-left: 0.8em;
-  color: #777777;
+div.notification div.panel-footer {
+  padding-bottom: 0.15cm;
+  padding-top: 0.1cm;
 }
-div.notification div.bottom a {
-  color: #444444;
-  padding-left: 1mm;
-  text-decoration: underline;
-  cursor: pointer;
+
+div.notification div.panel-heading h3 {
+  font-size: 15pt;
+  color: #333
 }
-div.notification div.bottom a.mark-read-button {
+
+div.notification div.date {
   float: right;
 }
-div.notification h3,
-div.notification div.bottom {
-  background-color: #d0d0d0;
-}
-div.notification-read h3,
-div.notification-read div.bottom {
-  background-color: #ebebeb;
+div.notification.panel-default div.date {
   color: #777777;
 }
-div.notification-read div.bottom a {
-  color: #777777;
+
+div.notification div.panel-footer,
+div.notification div.panel-footer a {
+  color: #444;
 }
 
 table th {
