@@ -14,7 +14,6 @@
 <script src="/js/jquery.js"></script>
 
 
-<ul>
 <script languange="JavaScript">
 	function submit() {
 		var ta = $('#tutorialURL');
@@ -25,59 +24,15 @@
 		window.location= "{%url "tomato.tutorial.list" %}";
 	}
 </script>
-        <li style="margin-top:1cm; list-style: none;">
-           <p>An error occurred! Please check the URL and make sure it leads to the right direction.</p>
-        	<input type="text" id="tutorialURL" name="tutorial_url" value="{{url}}" style="width: 100%" />
-       		<button type="button" onclick="submit();" class="btn btn-info"><span class="glyphicon glyphicon-play"></span> Start Tutorial</button>
-             <button type="button" onclick="submit();" class="btn btn-info"><span class="glyphicon glyphicon-play"></span> Watch Screencast</button>
-                   createButtons(back_icon="remove", back_label="Cancel", back_class="btn-danger backbutton", icon="ok", label="Save",
-		class_="btn-success"):
-	return FormActions(
-		StrictButton('<span class="glyphicon glyphicon-%s"></span> %s' % (back_icon, back_label), css_class=back_class),
-		StrictButton('<span class="glyphicon glyphicon-%s"></span> %s' % (icon, label), css_class=class_,
-			type="submit"),
-		css_class="col-sm-offset-4"
-	)        
-        </li>
-</ul>
+An error occurred! Please check the URL and make sure it leads to the right direction.
 
+<div class="skip-xs"></div>
+<input type="text" id="tutorialURL" name="tutorial_url" value="{{url}}"  autofocus style="width: 100%" />
+<div class="skip-xs"></div>
+<div class="col-sm-offset-4">
+	<button type="button" onclick="cancel();" class="btn btn-danger backbutton"><span class="glyphicon glyphicon-remove"></span> Cancel</button>
+	<button type="button" onclick="submit();" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> Start Tutorial</button>   
+</div>
 
-
-
-<link href="/style/jquery-ui.css" rel="stylesheet">
-<script src="/js/jquery.js"></script>
-<script src="/js/jquery-ui.js"></script>
-<script language="JavaScript" type="text/javascript">
-	function customTutorial() {
-		var dialog = $("<div/>");
-		var ta = $('<input type="text" name="tutorial_url" style="width: 100%" />');
-		dialog.append(ta);
-		var t = this;
-		dialog.dialog({
-			autoOpen: true,
-			draggable: true,
-			resizable: false,
-			height: "auto",
-			width: 400,
-			title: "Tutorial URL",
-			show: "slide",
-			hide: "slide",
-			modal: true,
-			buttons: {
-				Open: function() {
-		        	dialog.dialog("close");
-			      	window.location = "{%url "tutorial.start" %}?url="+ta.val();
-			    },
-		        Cancel: function() {
-		        	dialog.dialog("close");
-		        }				
-			},
-		});
-	}
-</script>
-
-<form style="margin-top: 1.3cm;">
-  <button type="button" onclick="customTutorial()" class="btn btn-primary">Load Own Editor Tutorial from URL</button>
-</form>
 
 {% endblock %}

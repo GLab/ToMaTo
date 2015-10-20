@@ -77,9 +77,13 @@
 			modal: true,
 			buttons: {
 				Open: function() {
-		        	dialog.dialog("close");
-			      	window.location = "{%url "tutorial.start" %}?url="+ta.val();
-			    },
+					if(ta.val() == "") {
+						alert("The URL is empty.");
+					} else {
+						dialog.dialog("close");
+						window.location = "{%url "tutorial.start" %}?url="+ta.val();
+					}
+				},
 		        Cancel: function() {
 		        	dialog.dialog("close");
 		        }				
