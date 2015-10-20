@@ -8,49 +8,37 @@
 {% endblock %}
 
 {% block content %}
-<h1>Tutorials</h1>
+<h1>Error loading custom tutorial</h1>
 
 
 <script src="/js/jquery.js"></script>
 
 
 <ul>
-    {% for tut in tutorials %}
+<script languange="JavaScript">
+	function submit() {
+		var ta = $('#tutorialURL');
+		window.location = "{%url "tutorial.start" %}?url="+ta.val();
+	}
+	
+	function cancel() {
+		window.location= "{%url "tomato.tutorial.list" %}";
+	}
+</script>
         <li style="margin-top:1cm; list-style: none;">
-            <table>
-                <tr>
-                    <td rowspan="3" style="vertical-align: text-top; width:45px;">
-                        <img src="{{tut.icon}}"/>
-                    </td>
-                    <td colspan="2">
-                        <strong>{{tut.name}}</strong>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="width:0.5cm;"/>
-                    <td style="padding-top:0.1cm;">
-                        {{tut.desc}}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="width:0.5cm;"/>
-                    <td style="padding-top:0.1cm;">
-
-                            {% if tut.url %}
-                                <button type="buton" onclick=" loadbusy(event,'Loading Topology Editor'); window.location = '{%url "tutorial.start" %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}';" class="btn btn-success"><span class="glyphicon glyphicon-user"></span>Load in Editor</button>
-                            {% endif %}
-                            {% if tut.url and tut.screencast_url %}
-                                &nbsp;
-                            {% endif %}
-                            {% if tut.screencast_url %}
-                                <button type="button" onclick="window.location = '{{tut.screencast_url}}';" class="btn btn-info"><span class="glyphicon glyphicon-play"></span> Watch Screencast</button>
-                            {% endif %}
-
-                    </td>
-                </tr>
-            </table>
+           <p>An error occurred! Please check the URL and make sure it leads to the right direction.</p>
+        	<input type="text" id="tutorialURL" name="tutorial_url" value="{{url}}" style="width: 100%" />
+       		<button type="button" onclick="submit();" class="btn btn-info"><span class="glyphicon glyphicon-play"></span> Start Tutorial</button>
+             <button type="button" onclick="submit();" class="btn btn-info"><span class="glyphicon glyphicon-play"></span> Watch Screencast</button>
+                   createButtons(back_icon="remove", back_label="Cancel", back_class="btn-danger backbutton", icon="ok", label="Save",
+		class_="btn-success"):
+	return FormActions(
+		StrictButton('<span class="glyphicon glyphicon-%s"></span> %s' % (back_icon, back_label), css_class=back_class),
+		StrictButton('<span class="glyphicon glyphicon-%s"></span> %s' % (icon, label), css_class=class_,
+			type="submit"),
+		css_class="col-sm-offset-4"
+	)        
         </li>
-    {% endfor %}
 </ul>
 
 

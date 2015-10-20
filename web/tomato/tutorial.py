@@ -75,10 +75,14 @@ def loadTutorial(url):
 	
 	try: 
 		val(url)
+		data = json.load(urllib2.urlopen(url))
 	except ValidationError:
-		raise UserError.wrap(UserError.INVALID_DATA,message="The URL does not exist.", data={'url':url,'module': 'webfrontend'})
+		return redirect("tomato.topology.tutoria_error",{"error_typ":"invalidurl", "error_msg":"Invalid url"})
+	except ValueError:
+		return redirect("tomato.topology.tutoria_error",{"error_typ":"invalidurl", "error_msg":"Invalid url"})
 	
-	data = json.load(urllib2.urlopen(url))
+
+		
 	steps_str = None
 	tut_data = {}
 	initscript_str = ""
