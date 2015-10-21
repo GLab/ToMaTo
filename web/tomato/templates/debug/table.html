@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{title}}</h1>
+
+<div class="skip-sm"></div>
+
+<script src="/js/enhancetable.js"></script>
+<table class="sortable,filterable, table table-striped"><tbody>
+
+{% if table_headings %}
+    <tr>
+        {% for th in table_headings %}
+            <th>{{th}}</th>
+        {% endfor %}
+    </tr>
+{% endif %}
+
+{% for tr in data %}
+    <tr>
+        {% for td in tr %}
+            <td>{{td}}</td>
+        {% endfor %}
+    </tr>
+{% endfor %}
+
+</tbody></table>
+
+<div class="skip-sm"></div>
+
+{% endblock %}
