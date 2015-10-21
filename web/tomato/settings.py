@@ -122,6 +122,18 @@ github_access_token = ""
 github_repository_owner = "GLab"
 github_repository_name = "ToMaTo"
 
+# enable API duration log.
+# this slows down the webfrontend due to disk read/write operations after each API call.
+# in exchange, it accurately logs the average duration of each API call.
+enable_duration_log = False
+# for better performance, the log should be placed on a fast disk (or even tmpfs or similar).
+# there is no reason for this log to be persistent.
+duration_log_location = "/tmp/webfrontend_api_duration_log.json"
+# the log saves the last n durations. A higher n means more protection against deviations.
+# however, when actively debugging, this means that it takes longer for changes to become visible.
+# this problem can be skipped by clearing the log file before testing a new change.
+duration_log_size = 25
+
 try:
 	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):

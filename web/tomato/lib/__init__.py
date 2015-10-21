@@ -19,9 +19,13 @@
 from django.http import HttpResponse
 import xmlrpclib, urllib, hashlib
 from . import anyjson as json
+import os
 from .. import settings
 from .error import Error  # @UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault
+from thread import start_new_thread
+
+from ..settings import duration_log_location, enable_duration_log, duration_log_size
 
 
 def getauth(request):
@@ -62,6 +66,52 @@ def cached(timeout):
 class AuthError(Exception):
 	pass
 
+class APIDurationLog:
+	entry_count = duration_log_size
+	def __init__(self, enabled=True, filename=None):
+		self.enabled = enabled
+		self.filename = filename
+		if enabled:
+			if filename and os.path.exists(filename):
+				try:
+					with open(filename) as f:
+						data = json.loads(f.read())
+						self.durations = data['durations']
+				except:
+					self.durations = {}
+			else:
+				self.durations = {}
+
+	def _save(self):
+		if self.filename:
+			with open(self.filename, 'w+') as f:
+				f.write(json.dumps({
+					'durations': self.durations
+				}))
+
+	def log_call(self, name, duration, args, kwargs):  # fixme: create args/kwargs depending logs
+		if self.enabled:
+			try:
+				drs = self.durations[name]
+			except KeyError:
+				drs = []
+				self.durations[name] = drs
+			drs.append(duration)
+			if len(drs) > APIDurationLog.entry_count:
+				drs.pop(0)
+			self._save()
+
+	def get_api_durations(self):
+		if self.enabled:
+			return {k: {'duration': reduce(lambda x, y: x + y, l) / len(l)} for k, l in self.durations.iteritems()}
+		return {}
+
+
+def api_duration_log():
+	return APIDurationLog(enable_duration_log, duration_log_location)
+
+def log_api_duration(name, duration, args, kwargs):
+	api_duration_log().log_call(name, duration, args, kwargs)
 
 class ServerProxy(object):
 	def __init__(self, url, **kwargs):
@@ -72,13 +122,16 @@ class ServerProxy(object):
 
 		def _call(*args, **kwargs):
 			import time
-			before = time.time()
 			try:
-				# print "%s(%s, %s)" % (name, args, kwargs)
+				before = time.time()
 				res = call_proxy(args, kwargs)
 				after = time.time()
-				# print "%f, %s(%s, %s) -> %s" % (after-before, name, args, kwargs, res)
-				print "%f, %s(%s, %s)" % (after - before, name, args, kwargs)
+				if enable_duration_log:
+					start_new_thread(
+						log_api_duration,
+						(),
+						{'name': name, 'duration': after-before, 'args': args, 'kwargs': kwargs}
+					)
 				return res
 			except xmlrpclib.Fault, e:
 				if e.faultCode == 999:
