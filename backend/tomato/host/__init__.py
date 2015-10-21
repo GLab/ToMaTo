@@ -293,6 +293,10 @@ class Host(DumpSource, Entity, BaseDocument):
 		return self.elements.get(num=num)
 
 	def createConnection(self, hel1, hel2, type_=None, attrs=None, ownerElement=None, ownerConnection=None):
+		"""
+		:type ownerElement: elements.Element
+		:type ownerConnection: backend.tomato.connections.Connection
+		"""
 		if not attrs:
 			attrs = {}
 		assert hel1.host == self
@@ -399,7 +403,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name,
 							   records=data["elements"][str(el.num)], object=("element", el.idStr))
-			el.updateAccountingData(data["elements"][str(el.num)])
+			el.usageStatistics.importRecords(data["elements"][str(el.num)])
 		for con in self.connections.all():
 			if not con.usageStatistics:
 				con.usageStatistics = UsageStatistics.objects.create()
@@ -409,7 +413,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name,
 							   records=data["connections"][str(con.num)], object=("connection", con.idStr))
-			con.updateAccountingData(data["connections"][str(con.num)])
+			con.usageStatistics.importRecords(data["connections"][str(con.num)])
 		self.accountingTimestamp = time.time()
 		self.save()
 		logging.logMessage("accounting_sync end", category="host", name=self.name)

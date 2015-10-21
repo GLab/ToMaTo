@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import re
+import re, time
 
 from django.shortcuts import render
 from django import forms
@@ -170,6 +170,32 @@ def dump_export_with_data(request, group_id, source, dump_id):
 def refresh(api,request):
 	api.errordumps_force_refresh()
 	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+
+@wrap_rpc
+def _remove_old_errors(api, request, delete):
+	if request.method == 'POST':
+		form = RemoveConfirmForm(request.POST)
+		if form.is_valid():
+			border = time.time() - 60*60*24*60
+			errorgroups = api.errorgroup_list()
+			for group in errorgroups:
+				if group['last_timestamp'] < border:
+					if delete:
+						api.errorgroup_remove(group['group_id'])
+					else:
+						api.errorgroup_hide(group['group_id'])
+			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+	reverse_target = "tomato.dumpmanager.remove_old_errorgroups" if delete else "tomato.dumpmanager.hide_old_errorgroups"
+	heading = "%s Old Error Groups" % ("Remove" if delete else "Clear")
+	message_before = "Are you sure you want to %s all error groups with no dumps younger than 60 days?" % ("remove" if delete else "clear")
+	form = RemoveConfirmForm.build(reverse(reverse_target))
+	return render(request, "form.html", {"form": form, "heading": heading, "message_before": message_before})
+
+def remove_old_errorgroups(request):
+	return _remove_old_errors(request, True)
+
+def hide_old_errorgroups(request):
+	return _remove_old_errors(request, False)
 
 @wrap_rpc
 def errorgroup_favorite(api, request, group_id):

@@ -66,6 +66,9 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 	DOC = ""
 
 	def init(self, owner, attrs=None):
+		"""
+		:type owner: auth.User
+		"""
 		if not attrs: attrs = {}
 		self.setRole(owner, Role.owner)
 		self.totalUsage = UsageStatistics.objects.create()

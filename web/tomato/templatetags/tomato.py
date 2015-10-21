@@ -64,8 +64,8 @@ def percentage(value, maxval=1.0):
 
 @register.filter
 def toduration(value):
-	date = datetime.datetime.now() - datetime.timedelta(seconds=float(value or "0.0")) 
-	return timesince(date)
+	delta = datetime.timedelta(seconds=float(value or "0.0"))
+	return timesince(datetime.datetime.now() - delta) if delta.total_seconds() > 120 else "%.1f seconds" % delta.total_seconds()
 	
 @register.filter
 def todate(value):

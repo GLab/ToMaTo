@@ -95,16 +95,6 @@ DEFAULT_QUOTA = {
 	"continous_factor": 1.0
 }
 
-TIME_ZONE = 'Europe/Berlin'
-LANGUAGE_CODE = 'en-us'
-
-INSTALLED_APPS = ('tomato', 'south')
-SECRET_KEY = 'not needed'
-
-DISABLE_TRANSACTION_MANAGEMENT = True
-
-MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
-
 DUMP_DIR = "/var/log/tomato/dumps_backend"
 """
 The location of the dump files that are created when unexpected errors occur.
@@ -135,6 +125,24 @@ _socket.close()
 
 socket.setdefaulttimeout(1800)
 
+# E-Mail sent to new users after registering
+NEW_USER_WELCOME_MESSAGE = {
+'subject': "Registration at ToMaTo-Lab",
+'body': "Dear %s,\n\n\
+Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our administrators shortly. Until then, you can create a topology (but not start it).\n\
+You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.\n\n\
+Best Wishes,\nThe ToMaTo Testbed"
+}
+
+# E-Mail sent to administrators when a new user registers
+NEW_USER_ADMIN_INFORM_MESSAGE = {
+'subject': "User Registration",
+'body': "Dear ToMaTo administrator,\n\n\
+A new user, %s, has just registered at the ToMaTo testbed.\n\
+You can review all pending user registrations at https://master.tomato-lab.org/account/registrations\n\n\
+Best Wishes,\nThe ToMaTo Testbed"
+}
+
 try:
 	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
@@ -152,22 +160,3 @@ if not isinstance(SERVER, list):
 	
 import math
 HOST_AVAILABILITY_FACTOR = math.pow(0.5, HOST_UPDATE_INTERVAL/HOST_AVAILABILITY_HALFTIME)
-
-
-# E-Mail sent to new users after registering
-NEW_USER_WELCOME_MESSAGE = {
-'subject': "Registration at ToMaTo-Lab",
-'body': "Dear %s,\n\n\
-Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our administrators shortly. Until then, you can create a topology (but not start it).\n\
-You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.\n\n\
-Best Wishes,\nThe ToMaTo Testbed"
-}
-
-# E-Mail sent to administrators when a new user registers
-NEW_USER_ADMIN_INFORM_MESSAGE = {
-'subject': "User Registration",
-'body': "Dear ToMaTo administrator,\n\n\
-A new user, %s, has just registered at the ToMaTo testbed.\n\
-You can review all pending user registrations at https://master.tomato-lab.org/account/registrations\n\n\
-Best Wishes,\nThe ToMaTo Testbed"								
-}

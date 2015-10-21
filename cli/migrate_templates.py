@@ -110,13 +110,13 @@ def _read_templates_4_0_0(api, include_restricted, template_names):
 	for t in templates:
 		if include_restricted or not t.get('restricted', False):
 			if template_names is None or t['name'] in template_names:
-				templ = api.resource_info(t['id'])
+				templ = api.template_info(t['id'], True)
 				res_entry = {
 					'name': templ['name'],
 					'tech': templ['tech'],
 					'torrent_data': templ['torrent_data'],
 					'attrs': {k: v for k, v in templ.iteritems()
-									  if k not in ['name', 'tech', 'torrent_data', 'torrent_data_hash', 'ready']}
+									  if k not in ['name', 'tech', 'torrent_data', 'torrent_data_hash', 'ready', 'size', 'id']}
 				}
 				results.append(res_entry)
 	return results
