@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from lib import getConnection, createUrl
+from lib.error import TransportError
 import argparse, getpass, datetime, time
 
 def parseArgs():
@@ -219,11 +220,15 @@ try:
 	api_source = getConnection(url_source, options.client_cert_source)
 	source_version = api_source.server_info().get('api_version', [3, 0, 0])
 	print " Success"
+except TransportError as e:
+	print " ERROR:", e.message
+	exit(1)
 except:
 	print " ERROR"
 	print ""
 	raise
 
+print ""
 print "testing connection to destination backend..."
 try:
 	if options.url_destination:
@@ -233,6 +238,9 @@ try:
 	api_destination = getConnection(url_destination, options.client_cert_destination)
 	target_version = api_destination.server_info().get('api_version', [3, 0, 0])
 	print " Success"
+except TransportError as e:
+	print " ERROR:", e.message
+	exit(1)
 except:
 	print " ERROR"
 	print ""
