@@ -51,9 +51,9 @@ class OpenVZ_Interface(VMInterface):
 def syncRexTFV():
 	for e in OpenVZ.objects.filter(nextSync__gt=0.0, nextSync__lte=time.time()):
 		with e:
-			e.reload().updateInfo()
+			e.updateInfo()
 
 scheduler.scheduleRepeated(1, syncRexTFV)
-	
+
 elements.TYPES[OpenVZ.TYPE] = OpenVZ
 elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface

@@ -314,6 +314,6 @@ class ConnectingElement(object):
 			if ch.connection:
 				els.update(ch.connectedElement.getLocationData(maxDepth=maxDepth-1))
 		return els
-	
+
 from .. import currentUser
 from ..auth import Flags
