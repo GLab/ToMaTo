@@ -88,6 +88,7 @@ head.appendChild(style);
 
 
 {% block page %}
+{% load tomato %}
 
 {% if not request.session.user %}
 <form id="loginnavbarform" method="post" action="{%url "main.login"%}" style="display:none;">
@@ -166,6 +167,10 @@ head.appendChild(style);
 						{% if request.session.user.hasDebugFlag %}
 						<li class="divider"></li>
 						<li><a href="{%url "dumpmanager.group_list"%}">Dump Manager</a></li>
+						<li><a href="{%url "tomato.debug.stats"%}">Backend Threads</a></li>
+						{% duration_log_enabled as show_duration_log_link %}
+						{% if show_duration_log_link %}
+							<li><a href="{%url "tomato.debug.api_call_stats"%}">API Call Durations</a></li>
 						{% endif %}
 					</ul>
 				</li>
