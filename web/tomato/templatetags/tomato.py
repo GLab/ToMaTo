@@ -7,6 +7,7 @@ from django.utils.safestring import mark_safe
 from ..lib import anyjson as json
 from ..lib.reference_library import tech_to_label as lib_tech_to_label
 
+from ..settings import enable_duration_log
 
 
 register = template.Library()
@@ -34,6 +35,10 @@ def backend_version():
 @register.simple_tag
 def frontend_version():
 	return getVersion()
+
+@register.assignment_tag()
+def duration_log_enabled():
+	return enable_duration_log
 
 @register.simple_tag
 def button(style='default', icon=None, title=""):
