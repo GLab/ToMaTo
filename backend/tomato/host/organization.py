@@ -64,6 +64,9 @@ class Organization(Entity, BaseDocument):
 
 	@classmethod
 	def get(cls, name, **kwargs):
+		"""
+		:rtype : Organization
+		"""
 		try:
 			return Organization.objects.get(name=name, **kwargs)
 		except Organization.DoesNotExist:
