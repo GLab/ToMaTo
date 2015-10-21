@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Notifications - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+
+{% load url from future %}
+{% load tomato %}
+
+<script>
+	function notification_mark_read(notification_id, read) {
+		var url;
+		if(read){
+			url = "{% url 'notification_mark_read' '__NOTIFICATIONID__'%}".replace('__NOTIFICATIONID__', notification_id);
+		} else {
+			url = "{% url 'notification_mark_unread' '__NOTIFICATIONID__'%}".replace('__NOTIFICATIONID__', notification_id);
+		}
+
+		var xmlhttp=new XMLHttpRequest();
+		xmlhttp.open("GET",url,false);
+		xmlhttp.send();
+		try {
+			res = JSON.parse(xmlhttp.responseText);
+		} catch(ex) {
+			alert('Failed to mark notifification');
+		}
+
+		location.reload();
+	}
+</script>
+
+<div class="row">
+  <div class="col-md-8 col-md-offset-2">
+
+<form>
+	{% if include_read %}
+  <button type="submit" formaction="{%url 'tomato.account.unread_notifications' %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> Show Unread Notifications</button>
+	{% else %}
+	<button type="submit" formaction="{%url 'tomato.account.all_notifications' %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> Show All Notifications</button>
+	{% endif %}
+</form>
+
+<h1>{% if include_read %}All {%endif%}Notifications</h1>
+<div class="skip-sm"></div>
+{% if notifications %}
+{% for notification in notifications %}
+
+	<div class="panel notification {% if notification.read %}panel-default{% else %}panel-info{% endif %}">
+
+	  <div class="panel-heading">
+		  <div class="date">{{notification.timestamp|todate}}</div>
+		<h3 class="panel-title">{{notification.title|safe}}</h3>
+	  </div>
+
+	  <div class="panel-body">
+		  {% if notification.sender %}
+			<p style="margin-bottom: 0.5cm;">
+				<small>from:</small> <a href="{% url "tomato.account.info" notification.sender %}">{{notification.sender_realname}}</a>
+			</p>
+		  {% endif %}
+		{{notification.message|safe|linebreaks}}
+	  </div>
+
+	  <div class="panel-footer">
+		  <div class="row">
+			  <div class="col-sm-6" style="margin-top: 0.2cm;">
+			  {% if notification.ref_link %}
+					<span class="glyphicon glyphicon-arrow-right"></span> <a href="{{notification.ref_link}}">{{notification.ref_text}}</a>
+				{% else %}
+					{% if notification.ref %}Reference object: {% for r in notification.ref %}{{r}} {% endfor %}{% endif %}&nbsp;
+				{% endif %}
+				</div>
+
+				<div class="col-sm-6" style="text-align: right;">
+				{% if notification.read %}
+				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read({{notification.id}}, false)">
+					<span class="glyphicon glyphicon-remove-circle"></span> mark as unread
+				  </button>
+				{% else %}
+				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read({{notification.id}}, true)">
+					<span class="glyphicon glyphicon-ok-circle"></span> mark as read
+				  </button>
+
+					{% endif %}
+					</div>
+		  </div>
+	  </div>
+	</div>
+
+
+{% endfor %}
+
+	  {% else %}
+
+	  <h2>No {% if not include_read %}unread {%endif%}notifications!</h2>
+
+	  {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

@@ -119,6 +119,32 @@ div.organization div.page-header {
 	margin-top:1em;
 }
 
+div.panel-info div.panel-footer {
+  background-color: #d9edf7;
+}
+
+div.notification div.panel-footer {
+  padding-bottom: 0.15cm;
+  padding-top: 0.1cm;
+}
+
+div.notification div.panel-heading h3 {
+  font-size: 15pt;
+  color: #333
+}
+
+div.notification div.date {
+  float: right;
+}
+div.notification.panel-default div.date {
+  color: #777777;
+}
+
+div.notification div.panel-footer,
+div.notification div.panel-footer a {
+  color: #444;
+}
+
 table th {
   font-size: 12px;
 }

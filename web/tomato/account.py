@@ -28,9 +28,13 @@ from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django.utils.html import conditional_escape
 
-from lib import wrap_rpc, getapi, AuthError, serverInfo
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+
+from lib import wrap_rpc, getapi, AuthError, serverInfo, wrap_json
 
 from lib.error import UserError #@UnresolvedImport
+
+from lib.reference_library import resolve_reference, reference_config, entity_to_label
 
 from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
@@ -223,6 +227,31 @@ class AdminAccountRegisterForm(AccountForm):
 			Buttons.cancel_save
 		)
 
+class AnnouncementForm(BootstrapForm):
+	title = forms.CharField(required=True)
+	message = forms.CharField(widget=forms.Textarea, required=True)
+	ref_type = forms.CharField(required=False, label="Include Reference to:")
+	ref_id = forms.CharField(required=False, label="Referenced Object ID", help_text="Usually ID or name of the entity to be referenced.")
+	show_sender = forms.BooleanField(required=False, initial=False, help_text="Show your name as sender in the notification")
+	def __init__(self, *args, **kwargs):
+		super(AnnouncementForm, self).__init__(*args, **kwargs)
+		self.helper.form_action = reverse(announcement_form)
+		ref_conf = [(k, entity_to_label(k)) for k in reference_config().iterkeys()]
+		ref_conf.insert(0, ("", "--No Reference--"))
+		self.fields['ref_type'].widget = forms.widgets.Select(choices=ref_conf)
+		self.helper.layout = Layout(
+			'title',
+			'message',
+			'show_sender',
+			'ref_type',
+			'ref_id',
+			FormActions(
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-default backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-send"></span> Publish', css_class='btn-primary', type="submit"),
+				css_class="col-sm-offset-4"
+			)
+		)
+
 @wrap_rpc
 def list(api, request, with_flag=None, organization=True):
 	if not api.user:
@@ -272,7 +301,7 @@ def accept(api, request, id):
 		if flag in flags:
 			flags.remove(flag)
 	api.account_modify(id, attrs={"flags": flags})
-	api.account_mail(id, subject="Account activated", message="Your account has been activated by an administrator. Now you are ready to start your first topology. Please see the tutorials to learn how to use ToMaTo.", from_support=True)
+	api.account_send_notification(id, subject="Account activated", message="Your account has been activated by an administrator. Now you are ready to start your first topology. Please see the tutorials to learn how to use ToMaTo.", from_support=True)
 	return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 
 @wrap_rpc
@@ -296,7 +325,7 @@ def edit(api, request, id):
 				del data["send_mail"]
 			api.account_modify(id, attrs=data)
 			if send_mail:
-				api.account_mail(id, subject="Account modified", message="Your account has been modified by an administrator. Please check your account details for the changes.", from_support=True)
+				api.account_send_notification(id, subject="Account modified", message="Your account has been modified by an administrator. Please check your account details for the changes.", from_support=True)
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
 		data = user.copy()
@@ -324,7 +353,7 @@ def register(api, request):
 			try:
 				account = api.account_create(username, password=password, organization=organization, attrs=data)
 				if api.user:
-					api.account_mail(username, 
+					api.account_send_notification(username,
 						subject="Account creation", 
 						message="A new ToMaTo account has been created for you by an administrator with the username\n\n\t%s\n\n and the password\n\n\t%s\n\nPlease login using that username and password and change it to something you can remember." % (username, password),
 						from_support=True)
@@ -351,7 +380,7 @@ def reset_password(api, request, id):
 		if form.is_valid():
 			passwd = ''.join(random.choice(2 * string.ascii_lowercase + string.ascii_uppercase + 2 * string.digits) for x in range(12))
 			api.account_modify(id, {"password": passwd})
-			api.account_mail(id, subject="Password reset", message="Your password has been reset by an administrator to\n\n\t%s\n\nPlease login using that password and change it to something you can remember." % passwd, from_support=True)
+			api.account_send_notification(id, subject="Password reset", message="Your password has been reset by an administrator to\n\n\t%s\n\nPlease login using that password and change it to something you can remember." % passwd, from_support=True)
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	form = ConfirmForm.build(reverse("tomato.account.reset_password", kwargs={"id": id}))
 	return render(request, "form.html", {"heading": "Reset Password", "message_before": "Are you sure you want to reset the password of the account '"+id+"'?", 'form': form})	
@@ -366,3 +395,50 @@ def remove(api, request, id=None):
 	form = RemoveConfirmForm.build(reverse("tomato.account.remove", kwargs={"id": id}))
 	return render(request, "form.html", {"heading": "Remove Account", "message_before": "Are you sure you want to remove the account '"+id+"'?", 'form': form})
 
+
+@wrap_rpc
+def _own_notifications(api, request, show_read):
+	notifications = api.account_notifications(show_read)
+
+	for notification in notifications:
+		if notification.get("ref", None):
+
+			notification['ref_link'], notification['ref_text'] = resolve_reference(api, notification['ref'])
+
+		if notification.get("sender", None):
+			try:
+				acc_inf = api.account_info(notification["sender"])
+				notification['sender_realname'] = acc_inf["realname"]
+				print notification
+			except:
+				notification['sender_realname'] = notification["sender"]
+
+	notifications = sorted(notifications, key=lambda n: n['timestamp'], reverse=True)
+
+	return render(request, "account/notifications.html", {"notifications": notifications, "include_read": show_read})
+
+def unread_notifications(request):
+	return _own_notifications(request, False)
+
+def all_notifications(request):
+	return _own_notifications(request, True)
+
+@wrap_json
+def notification_mark_read(api, request, notification_id, read):
+	api.account_notification_set_read(notification_id, read)
+	return True
+
+@wrap_rpc
+def announcement_form(api, request):
+	if request.method == 'POST':
+		form = AnnouncementForm(request.POST)
+		if form.is_valid():
+			formData = form.cleaned_data
+			if formData["ref_type"]:
+				ref = [formData["ref_type"], formData["ref_id"]]
+			else:
+				ref = None
+			api.broadcast_announcement(formData['title'], formData['message'], ref, formData["show_sender"])
+			return HttpResponseRedirect(reverse("tomato.account.unread_notifications"))
+	form = AnnouncementForm()
+	return render(request, "form.html", {'form': form, "heading": "Broadcast Announcement"})

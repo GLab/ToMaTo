@@ -282,6 +282,7 @@ class UserObj:
 		self.organization = self.data["organization"]
 		self.realname = self.data["realname"]
 		self.id = self.data["id"]
+		self.notification_count = self.data['notification_count']
 
 	def hasGlobalToplFlags(self):
 		for flag in ["global_topl_owner", "global_topl_manager", "global_topl_user"]:

@@ -134,6 +134,34 @@ orga_tech_flags = [Flags.OrgaHostManager, Flags.OrgaHostContact]
 
 USER_ATTRS = ["realname", "email", "password"]
 
+class Notification(EmbeddedDocument):
+	id = StringField(required=True, unique=True)
+	timestamp = FloatField(required=True)
+	title = StringField(required=True)
+	message = StringField(required=True)
+	read = BooleanField(default=False)
+	ref_obj = ListField(StringField())
+	sender = StringField()
+
+	def init(self, ref, sender):
+		self.ref_obj = ref if ref else []
+		print self.ref_obj
+		self.sender = sender.name if sender else None
+
+	def info(self):
+		return {
+			'id': self.id,
+			'timestamp': self.timestamp,
+			'title': self.title,
+			'message': self.message,
+			'read': self.read,
+			'ref': self.ref_obj if self.ref_obj else None,
+			'sender': self.sender
+		}
+
+	def set_read(self, read):
+		self.read = read
+
 class User(BaseDocument):
 	"""
 	:type organization: host.Organization
@@ -141,6 +169,7 @@ class User(BaseDocument):
 	:type quota: accounting.Quota
 	:type flags: list
 	:type clientData: dict
+	:type notifications: list of Notification
 	"""
 	from ..host.organization import Organization
 	from ..accounting import Quota, UsageStatistics
@@ -155,6 +184,7 @@ class User(BaseDocument):
 	realname = StringField()
 	email = EmailField()
 	flags = ListField(StringField())
+	notifications = ListField(EmbeddedDocumentField(Notification))
 	clientData = DictField(db_field='client_data')
 	meta = {
 		'ordering': ['name'],
@@ -185,6 +215,55 @@ class User(BaseDocument):
 		user.totalUsage = stats
 		user.save()
 		return user
+
+	def sendNotification(self, subject, message, ref=None, fromUser=None, send_email=True):
+		self._addNotification(subject, message, ref, fromUser)
+		if send_email:
+			self._sendMail(subject, message, fromUser)
+
+	def _addNotification(self, title, message, ref, fromUser):
+		now = time.time()
+		notf = Notification(title=title, message=message, timestamp=now, id=str(now))
+		notf.init(ref, fromUser)
+		self.notifications.append(notf)
+		self.save()
+
+	def _sendMail(self, subject, message, fromUser=None):
+		if not self.email or self.hasFlag(Flags.NoMails):
+			logging.logMessage("failed to send mail", category="user", subject=subject)
+			return
+		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
+		subject = config.EMAIL_SUBJECT_TEMPLATE % data
+		message = config.EMAIL_MESSAGE_TEMPLATE % data
+		from_ = None
+		if fromUser:
+			from_ = "%s <%s>" % (fromUser.realname or fromUser.name, fromUser.email)
+		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
+
+	def _get_notification(self, notification_id):
+		for n in self.notifications:
+			if n.id == notification_id:
+				return n
+
+	def set_notification_read(self, notification_id, read):
+		notf = self._get_notification(notification_id)
+		UserError.check(notf, code=UserError.INVALID_VALUE, message="Notification does not exist", todump=False, data={'notification_id': notification_id})
+		notf.set_read(read)
+		self.save()
+
+	def clean_up_notifications(self):
+		"""
+		This removes old notifications.
+		read notifications older than 30 days
+		unread notifications older than 180 days
+		:return:
+		"""
+		border_read = time.time() - 60*60*24*30
+		border_unread = time.time() - 60*60*24*180
+		for n in list(self.notifications):
+			if n.timestamp < (border_read if n.read else border_unread):
+				self.notifications.remove(n)
+		self.save()
 
 	def checkPassword(self, password):
 		return self.password == crypt.crypt(password, self.password)
@@ -288,6 +367,12 @@ class User(BaseDocument):
 				setattr(self, key, value)
 		if save:
 			self.save()
+
+	def list_notifications(self, include_read=False):
+		return [n.info() for n in self.notifications if (include_read or not n.read)]
+
+	def get_notification(self, notification_id):
+		return self._get_notification(notification_id).info()
 	
 	def info(self, includeInfos):
 		info = {
@@ -298,26 +383,16 @@ class User(BaseDocument):
 			"realname": self.realname,
 			"email": self.email,
 			"flags": list(self.flags),
+			"notification_count": len(filter(lambda n: not n.read, self.notifications))
 		}
 		info.update({"_"+k: v for k, v in self.clientData.items()})
 		if not includeInfos:
 			del info["email"]
 			del info["flags"]
+			del info["notification_count"]
 		else:
 			info["quota"] = self.quota.info()
 		return info
-		
-	def sendMail(self, subject, message, fromUser=None):
-		if not self.email or self.hasFlag(Flags.NoMails):
-			logging.logMessage("failed to send mail", category="user", subject=subject)
-			return
-		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
-		subject = config.EMAIL_SUBJECT_TEMPLATE % data
-		message = config.EMAIL_MESSAGE_TEMPLATE % data
-		from_ = None
-		if fromUser:
-			from_ = "%s <%s>" % (fromUser.realname or fromUser.name, fromUser.email) 
-		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
 		
 	def updateUsage(self):
 		#FIXME: do something useful with topologies with multiple owners
@@ -396,14 +471,14 @@ def getFilteredUsers(filterfn, organization = None):
 def getFlaggedUsers(flag):
 	return getFilteredUsers(lambda user: user.hasFlag(flag))
 
-def mailFilteredUsers(filterfn, subject, message, organization = None):
+def notifyFilteredUsers(filterfn, subject, message, organization = None, ref=None):
 	for user in getFilteredUsers(filterfn, organization):
-		user.sendMail(subject, message)
+		user.sendNotification(subject, message, ref=ref)
 
-def mailFlaggedUsers(flag, subject, message, organization=None):
-	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization)
+def notifyFlaggedUsers(flag, subject, message, organization=None, ref=None):
+	notifyFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization, ref)
 	
-def mailAdmins(subject, text, global_contact = True, issue="admin"):
+def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 	user = currentUser()
 	flag = None
 	
@@ -419,13 +494,13 @@ def mailAdmins(subject, text, global_contact = True, issue="admin"):
 			flag = Flags.OrgaHostContact
 	UserError.check(flag, code=UserError.INVALID_VALUE, message="Issue does not exist", data={"issue": issue})
 	
-	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
+	notifyFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization, ref=None)
 	
-def mailUser(user, subject, text):
+def sendMessage(user, subject, text):
 	from_ = currentUser()
 	to = getUser(user)
 	UserError.check(to, code=UserError.ENTITY_DOES_NOT_EXIST, message="User not found")
-	to.sendMail("Message from %s: %s" % (from_.name, subject), "The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text))
+	to.sendNotification(title="Message from %s: %s" % (from_.name, subject), message="The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text), fromUser=from_)
 
 def getAllUsers(organization = None):
 	if organization is None:
@@ -483,6 +558,39 @@ providers = []
 
 scheduler.scheduleRepeated(300, cleanup) #every 5 minutes @UndefinedVariable
 
+
+def _may_broadcast(account):
+	if Flags.GlobalAdmin in account.flags:
+		return True
+	if Flags.OrgaAdmin in account.flags:
+		return True
+	if Flags.GlobalHostManager in account.flags:
+		return True
+	if Flags.OrgaHostManager in account.flags:
+		return True
+	return False
+
+
+def send_announcement(sender, title, message, ref=None, show_sender=True):
+	UserError.check(_may_broadcast(sender), code=UserError.DENIED, message="Not enough permissions to send announcements")
+	if (Flags.GlobalAdmin in sender.flags) or (Flags.GlobalHostManager in sender.flags):
+		receivers = getAllUsers()
+	elif (Flags.OrgaAdmin in sender.flags) or (Flags.OrgaHostManager in sender.flags):
+		receivers = getAllUsers(organization=sender.organization)
+	else:
+		receivers = []
+
+	for acc in receivers:
+		acc.sendNotification(title, message, ref, sender if show_sender else None, send_email=False)
+
+
+
+
+
+def clean_up_all_notifications():
+	for acc in User.objects.all():
+		acc.clean_up_notifications()
+
 def init():
 	print >>sys.stderr, "Loading auth modules..."
 	for conf in config.AUTH:
@@ -493,3 +601,4 @@ def init():
 		print >>sys.stderr, " - %s (%s)" % (conf["name"], conf["provider"])
 	if not providers:
 		print >>sys.stderr, "Warning: No authentication modules configured."
+	scheduler.scheduleRepeated(60*60*24, clean_up_all_notifications, immediate=True)
