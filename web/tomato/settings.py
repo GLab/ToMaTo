@@ -134,6 +134,12 @@ duration_log_location = "/tmp/webfrontend_api_duration_log.json"
 # this problem can be skipped by clearing the log file before testing a new change.
 duration_log_size = 25
 
+# specify how often user information is updated (seconds between updates).
+# a longer interval improves performance for webfrontend and backend,
+# but it means that it takes some time for user account changes to be applied.
+# updates are only done when the user opens a page which uses the API.
+account_info_update_time = 120
+
 try:
 	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):

@@ -326,6 +326,7 @@ def edit(api, request, id):
 			api.account_modify(id, attrs=data)
 			if send_mail:
 				api.account_send_notification(id, subject="Account modified", message="Your account has been modified by an administrator. Please check your account details for the changes.", from_support=True)
+			request.session["user"].updateData(api)
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
 		data = user.copy()
@@ -409,7 +410,6 @@ def _own_notifications(api, request, show_read):
 			try:
 				acc_inf = api.account_info(notification["sender"])
 				notification['sender_realname'] = acc_inf["realname"]
-				print notification
 			except:
 				notification['sender_realname'] = notification["sender"]
 
@@ -426,6 +426,7 @@ def all_notifications(request):
 @wrap_json
 def notification_mark_read(api, request, notification_id, read):
 	api.account_notification_set_read(notification_id, read)
+	request.session["user"].updateData(api)
 	return True
 
 @wrap_rpc
@@ -439,6 +440,7 @@ def announcement_form(api, request):
 			else:
 				ref = None
 			api.broadcast_announcement(formData['title'], formData['message'], ref, formData["show_sender"])
+			request.session["user"].updateData(api)
 			return HttpResponseRedirect(reverse("tomato.account.unread_notifications"))
 	form = AnnouncementForm()
 	return render(request, "form.html", {'form': form, "heading": "Broadcast Announcement"})
