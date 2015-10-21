@@ -449,9 +449,6 @@ var Window = Class.extend({
 				t.setPosition(options.position);
 			}
 		};
-		if(options.height != null) {
-			dialogOptions.add({});
-		}
 
 		this.div = $('<div style="overflow:visible;"/>').dialog(dialogOptions);
 		if (options.closeOnEscape != undefined)
@@ -2230,15 +2227,7 @@ var createTopologyMenu = function(obj) {
 	return menu;
 };
 
-['right', 'longclick'].forEach(function(trigger) {
-	$.contextMenu({
-		selector: '.tomato.workspace',
-		trigger: trigger,
-		build: function(trigger, e) {
-			return createTopologyMenu(trigger[0].obj);
-		}
-	});	
-});
+
 
 var Component = Class.extend({
 	init: function(topology, data, canvas) {
@@ -4417,7 +4406,9 @@ var Editor = Class.extend({
 				t.options.onready();
 			}
 		});
-
+		
+		this.setWorkspaceContentMenu();
+		
 		setInterval(function(){t.rextfv_status_updater.updateSome(t.rextfv_status_updater)}, 1200);
 	},
 	triggerEvent: function(event) {
