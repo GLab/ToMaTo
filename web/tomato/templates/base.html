@@ -185,7 +185,7 @@ head.appendChild(style);
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Debug <span class="caret"></span></a>
 					<ul class="dropdown-menu">
 						<li><a href="{%url "dumpmanager.group_list"%}">Dump Manager</a></li>
-						<li><a href="{%url "tomato.debug.stats"%}">Backend Threads</a></li>
+						<li><a href="{%url "tomato.debug.stats"%}">Backend Statistics</a></li>
 						{% duration_log_enabled as show_duration_log_link %}
 						{% if show_duration_log_link %}
 							<li><a href="{%url "tomato.debug.api_call_stats"%}">API Call Durations</a></li>

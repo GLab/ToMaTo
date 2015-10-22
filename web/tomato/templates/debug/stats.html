@@ -59,10 +59,12 @@
 	<tr>
 		<th>Workers</th>
 		<th>Max late time</th>
+		<th>Waiting fraction</th>
 	</tr>
 	<tr>
 		<td>{{stats.scheduler.workers}} (min: {{stats.scheduler.min_workers}}, max: {{stats.scheduler.max_workers}})</td>
 		<td>{{stats.scheduler.max_late_time}}</td>
+		<td>{{stats.scheduler.wait_frac|percentage}}</td>
 	</tr>
 </table>
 
