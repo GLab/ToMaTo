@@ -61,7 +61,7 @@ except: #python <2.6
 from .. import util #@UnresolvedImport
 from ... import config
 
-import urllib2
+import urllib
 
 ACTION_UPLOAD = "upload"
 ACTION_DOWNLOAD = "download"
@@ -215,11 +215,13 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.error(403, "Invalid grant")
             return
         filename = grant.path
-        with open(filename, "wb") as file_:
-            form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':self.command, 'CONTENT_TYPE':self.headers['Content-Type']})
-            url = form["url"].value
-            response = urllib2.urlopen(url)
-            file_.write(response.read())
+        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':self.command, 'CONTENT_TYPE':self.headers['Content-Type']})
+        url = form["url"].value
+        try:
+            urllib.urlretrieve(url, filename)
+        except:
+            self.error(422, "Error retrieving file from URL")
+            return
         grant.trigger()
         if redirect:
             self.html("success, redirecting...", redirect=base64.b64decode(redirect))
