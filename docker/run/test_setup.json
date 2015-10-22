@@ -1,0 +1,34 @@
+{
+  "templates__example": [
+    "debian-7.0_x86_64",
+    "debian-7.0_x86",
+    "debian-8.0_x86_64",
+    "debian-8.0_x86",
+    "openvswitch",
+    "ryu",
+    "floodlight",
+    "pingable_node"
+  ],
+  "templates": [],
+  "template_source": {
+    "port": "8000",
+    "host": "master.tomato-lab.org"
+  },
+  "site": {
+    "name": "ukl",
+    "label": "Test Hosts (TU Kaiserslautern)",
+    "location": "Kaiserslautern",
+    "geolocation": {
+      "latitude": 49.4400657,
+      "longitude": 7.7491265
+    }
+  },
+  "hosts": [],
+  "hosts__example": [
+    {
+      "name": "test_1",
+      "rpcurl": "ssl+jsonrpc://192.168.2.104:8000",
+      "address": "192.168.2.104"
+    }
+  ]
+}
