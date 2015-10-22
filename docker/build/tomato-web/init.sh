@@ -7,3 +7,6 @@ fi
 if ! [ -f /etc/tomato/web.pem ]; then
   openssl req -new -x509 -days 1000 -nodes -out /etc/tomato/web.pem -keyout /etc/tomato/web.pem -subj /CN=`hostname`/ -batch
 fi
+
+echo "$TIMEZONE" > /etc/timezone
+cp "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
