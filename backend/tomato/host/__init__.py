@@ -795,13 +795,15 @@ def synchronizeHost(host):
 		with checkingHostsLock:
 			checkingHosts.remove(host)
 
-
 @util.wrap_task
-def synchronize():
-	for host in Host.getAll():
-		if host.enabled:
-			scheduler.scheduleOnce(0, synchronizeHost, host)  # @UndefinedVariable
-
+def scheduleHostChecks():
+	toSync = set((h for h in Host.getAll() if h.enabled))
+	syncTasks = {t.args[0]: tid for tid, t in scheduler.tasks.items() if t.fn == synchronizeHost}
+	syncing = set(syncTasks.keys())
+	for h in toSync - syncing:
+		scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronizeHost, h)
+	for h in syncing - toSync:
+		scheduler.cancelTask(syncTasks[h])
 
 @util.wrap_task
 def synchronizeComponents():
@@ -816,5 +818,5 @@ def synchronizeComponents():
 from ..auth import Flags, notifyFilteredUsers
 from .site import Site
 
-scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize)  # @UndefinedVariable
+scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, scheduleHostChecks)  # @UndefinedVariable
 scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
