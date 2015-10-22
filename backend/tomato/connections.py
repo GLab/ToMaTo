@@ -473,11 +473,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		"host_info": Attribute(field=host_info, readOnly=True)
 	}
 		
-	def updateUsage(self):
-		self.totalUsage.updateFrom([el.usageStatistics for el in self.hostElements]
-								 + [con.usageStatistics for con in self.hostConnections])
-		
-
 	@classmethod
 	def get(cls, id_, **kwargs):
 		try:

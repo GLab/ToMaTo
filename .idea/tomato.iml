@@ -6,6 +6,12 @@
       <sourceFolder url="file://$MODULE_DIR$/cli" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/hostmanager/tomato" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/web/tomato" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/.sphinx/backend" />
+      <excludeFolder url="file://$MODULE_DIR$/.sphinx/cli" />
+      <excludeFolder url="file://$MODULE_DIR$/.sphinx/hostmanager" />
+      <excludeFolder url="file://$MODULE_DIR$/.sphinx/web" />
+      <excludeFolder url="file://$MODULE_DIR$/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/docker" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

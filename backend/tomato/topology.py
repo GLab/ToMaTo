@@ -225,10 +225,6 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 			info["_"+key] = val
 		return info
 
-	def updateUsage(self):
-		self.totalUsage.updateFrom([el.totalUsage for el in self.elements]
-								 + [con.totalUsage for con in self.connections])
-
 	def __str__(self):
 		return "%s [#%s]" % (self.name, self.id)
 

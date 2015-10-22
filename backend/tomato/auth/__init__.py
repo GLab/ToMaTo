@@ -394,10 +394,6 @@ class User(BaseDocument):
 			info["quota"] = self.quota.info()
 		return info
 		
-	def updateUsage(self):
-		#FIXME: do something useful with topologies with multiple owners
-		self.totalUsage.updateFrom([top.totalUsage for top in self.topologies.filter(permissions__role="owner")])
-		
 	def updateQuota(self):
 		self.quota.updateUsage(self.totalUsage)
 		self.save()
