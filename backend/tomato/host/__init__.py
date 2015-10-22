@@ -386,11 +386,6 @@ class Host(DumpSource, Entity, BaseDocument):
 		self.lastResourcesSync = time.time()
 		self.save()
 
-	def updateUsage(self):
-		self.totalUsage.updateFrom(
-			[hel.usageStatistics for hel in self.elements.all()] + [hcon.usageStatistics for hcon in
-																	self.connections.all()])
-
 	def updateAccountingData(self):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)
 		data = self.getProxy().accounting_statistics(type="5minutes", after=self.accountingTimestamp - 900)

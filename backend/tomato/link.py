@@ -20,8 +20,7 @@ from . import scheduler
 from datetime import timedelta
 from .host.site import Site
 from lib import util, logging #@UnresolvedImport
-from .accounting import _lastPoint, _nextPoint, _prevPoint, _toPoint, _toTime, _avg
-import time, random, bisect
+import time, random, threading
 
 TYPES = ["single", "5minutes", "hour", "day", "month", "year"]
 KEEP_RECORDS = {
@@ -40,19 +39,6 @@ MAX_AGE = {
 	"month": timedelta(days=2*30*KEEP_RECORDS["month"]),
 	"year": timedelta(days=2*365*KEEP_RECORDS["year"])
 }
-
-def _combine(records):
-	combined = LinkMeasurement()
-	combined.measurements = sum([r.measurements for r in records])
-	if not combined.measurements:
-		combined.loss = 0
-		combined.delayAvg = 0
-		combined.delayStddev = 0
-		return combined
-	combined.loss = _avg([(r.loss, r.measurements) for r in records], combined.measurements)
-	combined.delayAvg = _avg([(r.delayAvg, r.measurements) for r in records], combined.measurements)
-	combined.delayStddev = _avg([(r.delayStddev, r.measurements) for r in records], combined.measurements)
-	return combined
 
 class LinkMeasurement(ExtDocument, EmbeddedDocument):
 	begin = FloatField(required=True, db_field="b")
@@ -132,93 +118,62 @@ class LinkStatistics(BaseDocument):
 		self.single.append(measurement)
 		self.save()
 
-	def removeOld(self):
-		for type_ in TYPES:
-			list_ = self._getList(type_)
-			list_[:] = filter(lambda e: e.end > _toTime(_toPoint(time.time()) - MAX_AGE[type_]), list_[-KEEP_RECORDS[type_]:])
-		self.save()
 
-	def housekeep(self):
-		self.removeOld()
-		self.combine()
-		self.removeOld()
+pingingLock = threading.RLock()
+pinging = set()
 
-	def combine(self):
-		lastList = self._getList(TYPES[0])
-		now = time.time()
-		for type_ in TYPES[1:]:
-			list_ = self._getList(type_)
-			if list_:
-				begin = list_[-1].end
-			else:
-				begin = _toTime(_prevPoint(_lastPoint(type_, _toPoint(now)), type_))
-			end = _toTime(_nextPoint(_toPoint(begin), type_))
-			if end > now:
-				continue
-			records = sorted(lastList, key=lambda rec: rec.end)
-			i = 0
-			while i < len(records) and records[i].begin < begin:
-				i += 1
-			records = records[i:]
-			while end <= now:
-				i = 0
-				if not records:
-					break
-				while i < len(records) and records[i].end <= end:
-					i += 1
-				combined = _combine(records[:i])
-				records = records[i:]
-				combined.begin = begin
-				combined.end = end
-				list_.append(combined)
-				begin = end
-				end = _toTime(_nextPoint(_toPoint(end), type_))
-			lastList = list_
-		self.save()
+@util.wrap_task
+def ping(siteA, siteB):
+	key = (siteA.name, siteB.name)
+	with pingingLock:
+		if key in pinging:
+			return
+		pinging.add(key)
+	try:
+		try:
+			stats = LinkStatistics.objects.get(siteA=siteA, siteB=siteB)
+		except LinkStatistics.DoesNotExist:
+			stats = LinkStatistics(siteA=siteA, siteB=siteB).save()
+		choices = list(siteA.hosts.all())
+		hostA = None
+		while choices and not hostA:
+			hostA = random.choice(choices)
+			if hostA.problems():
+				choices.remove(hostA)
+				hostA = None
+		if not hostA:
+			return
+		choices = list(siteB.hosts.all())
+		if hostA in choices:
+			choices.remove(hostA)
+		hostB = None
+		while choices and not hostB:
+			hostB = random.choice(choices)
+			if hostB.problems():
+				choices.remove(hostB)
+				hostB = None
+		if not hostB:
+			return
+		begin = time.time()
+		res = hostA.getProxy().host_ping(hostB.address)
+		end = time.time()
+		logging.logMessage("link measurement", category="link", siteA=siteA.name, siteB=siteB.name, hostA=hostA.name, hostB=hostB.name, result=res)
+		stats.add(LinkMeasurement(begin=begin, end=end, loss=res['loss'], delayAvg=res.get("rtt_avg", 0.0)/2.0, delayStddev=res.get("rtt_mdev", 0.0)/2.0, measurements=res["transmitted"]))
+	finally:
+		with pingingLock:
+			pinging.remove(key)
 
 
-def _measure():
+@util.wrap_task
+def pingSites():
 	for siteA in Site.objects.all():
 		if not siteA.hosts.count():
 			continue
 		for siteB in Site.objects.all():
 			if siteA.id > siteB.id:
 				continue
-			try:
-				stats = LinkStatistics.objects.get(siteA=siteA, siteB=siteB)
-			except LinkStatistics.DoesNotExist:
-				stats = LinkStatistics(siteA=siteA, siteB=siteB).save()
-			choices = list(siteA.hosts.all())
-			hostA = None
-			while choices and not hostA:
-				hostA = random.choice(choices)
-				if hostA.problems():
-					choices.remove(hostA)
-					hostA = None
-			if not hostA:
-				continue
-			choices = list(siteB.hosts.all())
-			if hostA in choices:
-				choices.remove(hostA)
-			hostB = None
-			while choices and not hostB:
-				hostB = random.choice(choices)
-				if hostB.problems():
-					choices.remove(hostB)
-					hostB = None
-			if not hostB:
-				continue
-			begin = time.time()
-			res = hostA.getProxy().host_ping(hostB.address)
-			end = time.time()
-			logging.logMessage("link measurement", category="link", siteA=siteA.name, siteB=siteB.name, hostA=hostA.name, hostB=hostB.name, result=res)
-			stats.add(LinkMeasurement(begin=begin, end=end, loss=res['loss'], delayAvg=res.get("rtt_avg", 0.0)/2.0, delayStddev=res.get("rtt_mdev", 0.0)/2.0, measurements=res["transmitted"]))
-	
-@util.wrap_task
-def taskRun():
-	_measure()
-	for ls in LinkStatistics.objects:
-		ls.housekeep()
+		scheduler.scheduleOnce(0, ping, siteA, siteB)
+	exec_js(js_code("link_housekeep"), now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
 
 def getStatistics(siteA, siteB): #@ReservedAssignment
 	siteA = Site.get(siteA)
@@ -231,4 +186,4 @@ def getStatistics(siteA, siteB): #@ReservedAssignment
 	except LinkStatistics.DoesNotExist:
 		return None
 
-scheduler.scheduleRepeated(60, taskRun) #every minute
+scheduler.scheduleRepeated(60, pingSites) #every minute

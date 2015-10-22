@@ -53,9 +53,6 @@ class Organization(Entity, BaseDocument):
 			self.delete()
 		self.totalUsage.remove()
 
-	def updateUsage(self):
-		self.totalUsage.updateFrom([user.totalUsage for user in self.users])
-
 	def __str__(self):
 		return self.name
 

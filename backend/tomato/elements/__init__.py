@@ -352,10 +352,6 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		if self.mainElement:
 			self.mainElement.updateInfo()
 
-	def updateUsage(self):
-		self.totalUsage.updateFrom([el.usageStatistics for el in self.hostElements]
-								 + [con.usageStatistics for con in self.hostConnections])
-
 	def __str__(self):
 		return "%s_%s" % (self.type, self.id)
 		

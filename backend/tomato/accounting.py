@@ -41,56 +41,6 @@ MAX_AGE = {
 	"year": timedelta(days=2*365*KEEP_RECORDS["year"])
 }
 
-def _avg(data, weightSum):
-	return sum([k * v for (k, v) in data]) / weightSum
-		
-def _sum(data, weightSum):
-	return sum(v for (v, _) in  data)
-
-def _toPoint(time_=None):
-	if not time_:
-		time_ = time.time()
-	return datetime.utcfromtimestamp(time_)
-
-def _lastPoint(type_, point):
-	if type_ == "5minutes":
-		return point.replace(second=0, microsecond=0, minute=(point.minute / 5)*5)
-	elif type_ == "hour":
-		return point.replace(second=0, microsecond=0, minute=0)
-	elif type_ == "day":
-		return point.replace(second=0, microsecond=0, minute=0, hour=0)
-	elif type_ == "month":
-		return point.replace(second=0, microsecond=0, minute=0, hour=0, day=1)
-	elif type_ == "year":
-		return point.replace(second=0, microsecond=0, minute=0, hour=0, day=1, month=1)
-
-def _nextPoint(point, type_):
-	if type_ == "5minutes":
-		return point + timedelta(minutes=5)
-	elif type_ == "hour":
-		return point + timedelta(hours=1)
-	elif type_ == "day":
-		return point + timedelta(days=1)
-	elif type_ == "month":
-		return datetime(point.year if point.month < 12 else point.year +1, point.month +1 if point.month < 12 else 1, 1)
-	elif type_ == "year":
-		return datetime(point.year +1, 1, 1)
-
-def _prevPoint(point, type_):
-	if type_ == "5minutes":
-		return point - timedelta(minutes=5)
-	elif type_ == "hour":
-		return point - timedelta(hours=1)
-	elif type_ == "day":
-		return point - timedelta(days=1)
-	elif type_ == "month":
-		return datetime(point.year if point.month > 1 else point.year -1, point.month -1 if point.month > 1 else 12, 1)
-	elif type_ == "year":
-		return datetime(point.year -1, 1, 1)
-
-def _toTime(point):
-	return util.utcDatetimeToTimestamp(point)
-
 class Usage(EmbeddedDocument):
 	memory = FloatField(default=0.0, db_field="m") #unit: bytes
 	diskspace = FloatField(default=0.0, db_field="d") #unit: bytes
@@ -196,36 +146,6 @@ class UsageStatistics(BaseDocument):
 				diskspace=rec["usage"]["diskspace"], traffic=rec["usage"]["traffic"])
 			record = UsageRecord(begin=rec["begin"], end=rec["end"], measurements=rec["measurements"], usage=usage)
 			list_.append(record)
-		self.save()
-
-	def updateFrom(self, sources):
-		"""
-		:type sources: list of UsageStatistics
-		"""
-		lists = [source.by5minutes for source in sources]
-		minAll = _toTime(_lastPoint("5minutes", _toPoint(time.time() - 1800)))
-		if sources:
-			lastAll = max(minAll, min([l[-1].end if l else minAll for l in lists]))
-		else:
-			lastAll = _toTime(_lastPoint("5minutes", _toPoint(time.time())))
-		myList = self.by5minutes
-		begin = myList[-1].begin if myList else minAll
-		end = _toTime(_nextPoint(_toPoint(begin), "5minutes"))
-		while end <= lastAll:
-			usage = Usage()
-			record = UsageRecord(usage=usage, begin=begin, end=end)
-			for l in lists:
-				for rec in l:
-					if rec.end == end:
-						record.measurements += rec.measurements
-						record.usage.cputime += rec.usage.cputime
-						record.usage.traffic += rec.usage.traffic
-						record.usage.memory += rec.usage.memory * (rec.end - rec.begin) / (end-begin)
-						record.usage.diskspace += rec.usage.diskspace * (rec.end - rec.begin) / (end-begin)
-						break
-			myList.append(record)
-			begin = end
-			end = _toTime(_nextPoint(_toPoint(end), "5minutes"))
 		self.save()
 
 	@property
