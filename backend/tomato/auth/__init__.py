@@ -135,7 +135,7 @@ orga_tech_flags = [Flags.OrgaHostManager, Flags.OrgaHostContact]
 USER_ATTRS = ["realname", "email", "password"]
 
 class Notification(EmbeddedDocument):
-	id = StringField(required=True, unique=True)
+	id = StringField(required=True)
 	timestamp = FloatField(required=True)
 	title = StringField(required=True)
 	message = StringField(required=True)
