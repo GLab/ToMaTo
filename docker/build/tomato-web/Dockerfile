@@ -22,6 +22,7 @@ ADD tomato-web.apache /etc/apache2/sites-available/tomato-web.conf
 RUN a2ensite tomato-web; a2dissite 000-default; a2dismod mpm_event; a2enmod mpm_worker; a2enmod ssl; a2enmod rewrite
 
 ENV PYTHONUNBUFFERED 0
+ENV TIMEZONE UTC
 
 VOLUME ["/config", "/code", "/var/log/apache2"]
 EXPOSE 80 443

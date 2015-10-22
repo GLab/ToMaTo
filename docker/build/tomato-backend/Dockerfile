@@ -21,6 +21,7 @@ ADD init.sh /init.sh
 ADD inittab /etc/inittab
 
 ENV PYTHONUNBUFFERED 0
+ENV TIMEZONE UTC
 
 VOLUME ["/config", "/logs", "/code", "/data"]
 EXPOSE 8000 8001 8002 8010 8011 8012 8013 8014 8015 8016 8017 8018 8019 8020

@@ -11,3 +11,6 @@ fi
 if ! [ -d /data/templates ]; then
   mkdir -p /data/templates
 fi
+
+echo "$TIMEZONE" > /etc/timezone
+cp "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
