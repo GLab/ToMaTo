@@ -610,7 +610,7 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	@classmethod
 	def getAll(cls, **kwargs):
-		return list(Host.objects.filter(**kwargs))
+		return Host.objects.filter(**kwargs)
 
 	@classmethod
 	def create(cls, name, site, attrs=None):
@@ -675,7 +675,7 @@ class HostObject(BaseDocument):
 		return ret
 
 
-def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None):
+def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None, best=True):
 	# STEP 1: limit host choices to what is possible
 	if not sitePrefs: sitePrefs = {}
 	if not hostPrefs: hostPrefs = {}
@@ -687,12 +687,14 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 	for host in all_:
 		if host.problems():
 			continue
-		if set(elementTypes) - set(host.elementTypes.keys()):
+		if elementTypes and set(elementTypes) - set(host.elementTypes.keys()):
 			continue
-		if set(connectionTypes) - set(host.connectionTypes.keys()):
+		if connectionTypes and set(connectionTypes) - set(host.connectionTypes.keys()):
 			continue
-		if set(networkKinds) - set(host.getNetworkKinds()):
+		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
 			continue
+		if not best:
+			return host
 		hosts.append(host)
 	UserError.check(hosts, code=UserError.INVALID_CONFIGURATION, message="No hosts found for requirements", data={
 		'site': site, 'element_types': elementTypes, 'connection_types': connectionTypes, 'network_kinds': networkKinds

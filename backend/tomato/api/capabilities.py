@@ -33,11 +33,19 @@ def capabilities_connection(type, host=None): #@ReservedAssignment
 
 @cached(timeout=24*3600)
 def capabilities():
-	return {
-		"element": dict((t, capabilities_element(t)) for t in elements.TYPES),
-		"connection": dict((t, capabilities_connection(t)) for t in ["bridge", "fixed_bridge"]),
-	}
+	res = {"element": {}, "connection": {}}
+	host = None
+	for t in elements.TYPES:
+		typeClass = elements.TYPES.get(t)
+		host = typeClass.selectCapabilitiesHost(host)
+		res["element"][t] = typeClass.getCapabilities(host)
+	for t in ["bridge", "fixed_bridge"]:
+		if not host or not t in host.connectionTypes:
+			host = select(connectionTypes=[t], best=False)
+		res["connection"][t] = connections.Connection.getCapabilities(t, host)
+	return res
+
 
 from .. import elements, connections
-from ..host import Host
+from ..host import Host, select
 from ..lib.error import UserError
