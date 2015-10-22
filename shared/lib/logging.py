@@ -72,14 +72,20 @@ def closeDefault():
 
 
 def logException(**kwargs):
+	if not _default:
+		return
 	_default.logException(**kwargs)
 
 
 def logMessage(message, **kwargs):
+	if not _default:
+		return
 	_default.logMessage(message, **kwargs)
 
 
 def log(**kwargs):
+	if not _default:
+		return
 	_default.log(**kwargs)
 
 
