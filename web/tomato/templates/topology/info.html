@@ -2,7 +2,6 @@
 
 {% load url from future %}
 {% load tomato %}
-
 {% block header %}
 <base href="/"/>
 <link type="text/css" href="style/jquery-ui.css" rel="stylesheet" />
@@ -17,15 +16,64 @@
 <script language="JavaScript" type="text/javascript" src="js/util.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/browser_issues.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/dynimg.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/editor/main.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/editor/form_elements.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/editor/components.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/editor/menu.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/editor/windows.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/editor/stores.js"></script>
 <script language="JavaScript" type="text/javascript" src="/js/underscore-min.js"></script>
 <script language="JavaScript" type="text/javascript" src="/js/backbone-min.js"></script>
 <script language="JavaScript" type="text/javascript" src="/js/pretty-json-min.js"></script>
+
+<!--  Editor setup -->
+<script language="JavaScript" type="text/javascript" src="js/editor/settings.js"></script>
+
+<script language="JavaScript" type="text/javascript" src="js/editor/ajax.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/form_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/form_elements/checkbox_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/form_elements/choice_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/form_elements/template_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/form_elements/textarea_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/form_elements/text_element.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/menu.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/menus/menu_group.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/menus/menu_tab.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/menus/menus/component_menu.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/menus/menus/connection_menu.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/menus/menus/element_menu.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/menus/menus/topology_menu.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/profile.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/template.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/dummy_custom_template.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/window.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/windows/attribute_window.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/windows/connection_attribute_window.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/windows/error_window.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/windows/input_window.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/windows/permissions_window.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/windows/template_window.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/component.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/connection.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/elements/child_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/elements/child_elements/switch_port_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/elements/child_elements/vm_interface_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/elements/hidden_child_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/elements/icon_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/elements/icon_elements/external_network.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/elements/icon_elements/vm_element.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/components/elements/icon_elements/vpn_element.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/stores/network_store.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/stores/profile_store.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/stores/template_store.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/rextfv_status_updater.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/workspace.js"></script>
+	
+<script language="JavaScript" type="text/javascript" src="js/editor/editor.js"></script>
 
 
 {% if tutorial_info.state.enabled %}
@@ -58,58 +106,59 @@
 
 <script language="JavaScript" type="text/javascript"> 
 
-
-  $(window).resize(function() {
-    var margin = ( $(this).width() > 1600 ) ? "{{editor.size.marginleft}}px" : "0px"
-	$("#topology_name").css("margin-left", margin);
-	$("#menu").css("margin-left", margin);
-	$("#workspace").css("margin-left", margin);
-  });
-  $(window).trigger('resize');
-
-  display_issues($("#browser_issues"));
-  help_baseUrl = "{%externalurl 'help' %}";
-  {% if tutorial_info.state.enabled %}
-  var tutorial_base_url = "{{tutorial_info.data.base_url}}";
-  var tutorial_steps = {{tutorial_info.steps|safe}};
-  {% endif %}
-  
-  var editor = new Editor({
-  	menu_container: $('#menu'),
-  	workspace_container: $('#workspace'),
-  	{% if tutorial_info.state.enabled %}
-  		tutorial_show: true,
-		tutorial_state: {{tutorial_info.state|jsonify}},
-  	{% else %}
-  		tutorial_show:false,
-  	{% endif %}
-  	
-  	safe_mode: true,
-  	timeout_settings: {{timeout_settings|jsonify}},
-  	sites: {{sites_json|safe}},
-  	resources: {{res_json|safe}},
-  	capabilities: {{caps_json|safe}}, 
-  	topology: "{{top.id}}",
-  	user: {{request.session.user.data|jsonify}},
-  	isGlobalOwner: "{{user.flags.global_owner}}",
-  	isDebugUser: {{request.session.user.hasDebugFlag|jsonify}},
-  	permission_list: {{permission_list|safe}},
-  	error_message_appendix: 'If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}" style="color: blue;" target="_blank">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" style="color: blue;" target="_help">file a bug report</a>.',
+	$(window).resize(function() {
+		var margin = ( $(this).width() > 1600 ) ? "{{editor.size.marginleft}}px" : "0px"
+	
+		$("#topology_name").css("margin-left", margin);
+		$("#menu").css("margin-left", margin);
+		$("#workspace").css("margin-left", margin);
+	
+	});
+	
+	$(window).trigger('resize');
+	
+	display_issues($("#browser_issues"));
+	help_baseUrl = "{%externalurl 'help' %}";
+	{% if tutorial_info.state.enabled %}
+	var tutorial_base_url = "{{tutorial_info.data.base_url}}";
+	var tutorial_steps = {{tutorial_info.steps|safe}};
+	{% endif %}
+	
+	var editor = new Editor({
+		menu_container: $('#menu'),
+		workspace_container: $('#workspace'),
+		{% if tutorial_info.state.enabled %}
+			tutorial_show: true,
+			tutorial_state: {{tutorial_info.state|jsonify}},
+		{% else %}
+			tutorial_show:false,
+		{% endif %}
+		
+		safe_mode: true,
+		timeout_settings: {{timeout_settings|jsonify}},
+		sites: {{sites_json|safe}},
+		resources: {{res_json|safe}},
+		capabilities: {{caps_json|safe}}, 
+		topology: "{{top.id}}",
+		user: {{request.session.user.data|jsonify}},
+		isGlobalOwner: "{{user.flags.global_owner}}",
+		isDebugUser: {{request.session.user.hasDebugFlag|jsonify}},
+		permission_list: {{permission_list|safe}},
+		error_message_appendix: 'If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}" style="color: blue;" target="_blank">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" style="color: blue;" target="_help">file a bug report</a>.',
 	onready: function(){
 		{% if tutorial_info.state.enabled %}
 		{{tutorial_info.initscript|safe}}
 		{%endif%}
 	}
-  	
-  });
-  
-  scroll_target = $("#topology_name").offset().top;
-  $('html, body').animate({
-      scrollTop: scroll_target
-  }, 800);
-  
-  
-  
+		
+	});
+	
+	scroll_target = $("#topology_name").offset().top;
+	$('html, body').animate({
+		scrollTop: scroll_target
+	}, 800);
+	
+	
 </script>
 
 {% endblock %}
