@@ -2,6 +2,8 @@
     Require all granted
 </Directory>
 
+WSGIPythonOptimize 1
+
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
 

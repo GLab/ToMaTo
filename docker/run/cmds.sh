@@ -22,7 +22,7 @@ function tomato-db-dump () {
     ARCHIVE="$DIR/mongodb-dump-$(date +%F).tar.gz"
   fi
   docker run -it --link mongodb:mongo -v "$BACKUP_DIR":/backup --rm mongo sh \
-             -c 'exec mongodump -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" -d tomato --out /backup'
+             -c 'mongodump -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" -d tomato --out /backup; chmod -R ogu+rwX /backup'
   tar -czf "$ARCHIVE" -C "$BACKUP_DIR" .
   rm -rf "$BACKUP_DIR"
 }
