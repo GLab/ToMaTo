@@ -117,10 +117,6 @@ class HostElement(HostObject):
 	def capabilities(self):
 		return self.host.getElementCapabilities(self.type)
 
-	def updateAccountingData(self, data):
-		self.usageStatistics.importRecords(data)
-		self.usageStatistics.removeOld()
-
 	def synchronize(self):
 		try:
 			if not self.topologyElement and not self.topologyConnection:

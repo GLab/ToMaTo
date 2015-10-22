@@ -91,19 +91,6 @@ def _prevPoint(point, type_):
 def _toTime(point):
 	return util.utcDatetimeToTimestamp(point)
 
-def _combine(records):
-	#calculate coverage
-	measurements = sum([r.measurements for r in records])
-	#combine attributes
-	combined = Usage()
-	if not measurements:
-		return (combined, 0)
-	combined.cputime = _sum([(r.usage.cputime, r.measurements) for r in records], measurements)
-	combined.diskspace = _avg([(r.usage.diskspace, r.measurements) for r in records], measurements)
-	combined.memory = _avg([(r.usage.memory, r.measurements) for r in records], measurements)
-	combined.traffic = _sum([(r.usage.traffic, r.measurements) for r in records], measurements)
-	return (combined, measurements)
-
 class Usage(EmbeddedDocument):
 	memory = FloatField(default=0.0, db_field="m") #unit: bytes
 	diskspace = FloatField(default=0.0, db_field="d") #unit: bytes
@@ -209,47 +196,6 @@ class UsageStatistics(BaseDocument):
 				diskspace=rec["usage"]["diskspace"], traffic=rec["usage"]["traffic"])
 			record = UsageRecord(begin=rec["begin"], end=rec["end"], measurements=rec["measurements"], usage=usage)
 			list_.append(record)
-		self.save()
-
-	def _removeOld(self):
-		for type_ in TYPES:
-			list_ = self._getList(type_)
-			end = _toTime(_toPoint(time.time()) - MAX_AGE[type_])
-			list_[:] = filter(lambda e: e.end > end, list_[-KEEP_RECORDS[type_]:])
-
-	def _combine(self):
-		lastList = self._getList(TYPES[0])
-		now = time.time()
-		for type_ in TYPES[1:]:
-			list_ = self._getList(type_)
-			if list_:
-				begin = list_[-1].end
-			else:
-				begin = _toTime(_prevPoint(_lastPoint(type_, _toPoint(now)), type_))
-			end = _toTime(_nextPoint(_toPoint(begin), type_))
-			if end > now:
-				continue
-			records = sorted(lastList, key=lambda rec: rec.end)
-			i = 0
-			while i < len(records) and records[i].begin < begin:
-				i += 1
-			records = records[i:]
-			while end <= now:
-				i = 0
-				if not records:
-					break
-				while i < len(records) and records[i].end <= end:
-					i += 1
-				usage, measurements = _combine(records[:i])
-				records = records[i:]
-				list_.append(UsageRecord(begin=begin, end=end, usage=usage, measurements=measurements))
-				begin = end
-				end = _toTime(_nextPoint(_toPoint(end), type_))
-			lastList = list_
-
-	def housekeep(self):
-		self._combine()
-		self._removeOld()
 		self.save()
 
 	def updateFrom(self, sources):
@@ -367,28 +313,18 @@ class Quota(EmbeddedDocument):
 		}
 
 @util.wrap_task
-def aggregate():
-	from . import host, elements, connections, topology, auth
-	from .host import organization
-	for el in elements.Element.objects():
-		el.updateUsage()
-	for con in connections.Connection.objects():
-		con.updateUsage()
-	for top in topology.Topology.objects():
-		top.updateUsage()
-	for user in auth.User.objects():
-		user.updateUsage()
-	for orga in organization.Organization.objects():
-		orga.updateUsage()
-	for h in host.Host.objects():
-		if h.enabled:
-			h.updateUsage()
-
-@util.wrap_task
 def housekeep():
 	try:
-		for stats in UsageStatistics.objects():
-			stats.housekeep()
+		exec_js(js_code("accounting_housekeep"), now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
+	except:
+		import traceback
+		traceback.print_exc()
+
+
+@util.wrap_task
+def aggregate():
+	try:
+		exec_js(js_code("accounting_aggregate"), now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
 	except:
 		import traceback
 		traceback.print_exc()

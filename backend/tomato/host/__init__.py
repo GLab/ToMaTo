@@ -293,6 +293,10 @@ class Host(DumpSource, Entity, BaseDocument):
 		return self.elements.get(num=num)
 
 	def createConnection(self, hel1, hel2, type_=None, attrs=None, ownerElement=None, ownerConnection=None):
+		"""
+		:type ownerElement: elements.Element
+		:type ownerConnection: backend.tomato.connections.Connection
+		"""
 		if not attrs:
 			attrs = {}
 		assert hel1.host == self
@@ -399,7 +403,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name,
 							   records=data["elements"][str(el.num)], object=("element", el.idStr))
-			el.updateAccountingData(data["elements"][str(el.num)])
+			el.usageStatistics.importRecords(data["elements"][str(el.num)])
 		for con in self.connections.all():
 			if not con.usageStatistics:
 				con.usageStatistics = UsageStatistics.objects.create()
@@ -409,7 +413,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name,
 							   records=data["connections"][str(con.num)], object=("connection", con.idStr))
-			con.updateAccountingData(data["connections"][str(con.num)])
+			con.usageStatistics.importRecords(data["connections"][str(con.num)])
 		self.accountingTimestamp = time.time()
 		self.save()
 		logging.logMessage("accounting_sync end", category="host", name=self.name)
@@ -471,11 +475,11 @@ class Host(DumpSource, Entity, BaseDocument):
 		if not self.enabled:
 			problems.append("Manually disabled")
 		hi = self.hostInfo
-		if time.time() - max(self.hostInfoTimestamp, starttime) > 2 * config.HOST_UPDATE_INTERVAL + 300:
+		if time.time() - self.hostInfoTimestamp > 2 * config.HOST_UPDATE_INTERVAL + 300:
 			problems.append("Host unreachable")
 		if problems:
 			return problems
-		if time.time() - max(self.lastResourcesSync, starttime) > 2 * config.RESOURCES_SYNC_INTERVAL + 300:
+		if time.time() - self.lastResourcesSync > 2 * config.RESOURCES_SYNC_INTERVAL + 300:
 			problems.append("Host is not synchronized")
 		if not hi:
 			problems.append("Node info is missing")
@@ -510,6 +514,8 @@ class Host(DumpSource, Entity, BaseDocument):
 		return problems
 
 	def checkProblems(self):
+		if time.time() - starttime < 600:
+			return
 		problems = self.problems()
 		if problems and not self.problemAge:
 			# a brand new problem, wait until it is stable
@@ -517,32 +523,32 @@ class Host(DumpSource, Entity, BaseDocument):
 		if self.problemAge and not problems:
 			if self.problemMailTime >= self.problemAge:
 				# problem is resolved and mail has been sent for this problem
-				mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
+				notifyFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 											   or user.hasFlag(
 					Flags.OrgaHostContact) and user.organization == self.site.organization,
-								  "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self)
+								  "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self, ref=['host', self.name])
 			self.problemAge = 0
 		if problems and (self.problemAge < time.time() - 300):
 			if self.problemMailTime < self.problemAge:
 				# problem exists and no mail has been sent so far
 				self.problemMailTime = time.time()
-				mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
+				notifyFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 											   or user.hasFlag(
 					Flags.OrgaHostContact) and user.organization == self.site.organization,
 								  "Host %s: Problems" % self,
-								  "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)))
+								  "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)), ref=['host', self.name])
 			if self.problemAge < time.time() - 6 * 60 * 60:
 				# persistent problem older than 6h
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
 					import datetime
 					self.problemMailTime = time.time()
 					duration = datetime.timedelta(hours=int(time.time()-self.problemAge)/3600)
-					mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
+					notifyFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 												   or user.hasFlag(
 						Flags.OrgaHostContact) and user.organization == self.site.organization,
 									  "Host %s: Problems persist" % self,
 									  "Host %s has the following problems since %s:\n\n%s" % (
-										  self, duration, ", ".join(problems)))
+										  self, duration, ", ".join(problems)), ref=['host', self.name])
 
 		self.save()
 
@@ -606,7 +612,7 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	@classmethod
 	def getAll(cls, **kwargs):
-		return list(Host.objects.filter(**kwargs))
+		return Host.objects.filter(**kwargs)
 
 	@classmethod
 	def create(cls, name, site, attrs=None):
@@ -671,7 +677,7 @@ class HostObject(BaseDocument):
 		return ret
 
 
-def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None):
+def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None, best=True):
 	# STEP 1: limit host choices to what is possible
 	if not sitePrefs: sitePrefs = {}
 	if not hostPrefs: hostPrefs = {}
@@ -683,12 +689,14 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 	for host in all_:
 		if host.problems():
 			continue
-		if set(elementTypes) - set(host.elementTypes.keys()):
+		if elementTypes and set(elementTypes) - set(host.elementTypes.keys()):
 			continue
-		if set(connectionTypes) - set(host.connectionTypes.keys()):
+		if connectionTypes and set(connectionTypes) - set(host.connectionTypes.keys()):
 			continue
-		if set(networkKinds) - set(host.getNetworkKinds()):
+		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
 			continue
+		if not best:
+			return host
 		hosts.append(host)
 	UserError.check(hosts, code=UserError.INVALID_CONFIGURATION, message="No hosts found for requirements", data={
 		'site': site, 'element_types': elementTypes, 'connection_types': connectionTypes, 'network_kinds': networkKinds
@@ -810,7 +818,7 @@ def synchronizeComponents():
 		hcon.synchronize()
 
 
-from ..auth import Flags, mailFilteredUsers
+from ..auth import Flags, notifyFilteredUsers
 from .site import Site
 
 scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize)  # @UndefinedVariable

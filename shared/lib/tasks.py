@@ -24,13 +24,13 @@ class Task:
 		self.last = None
 		self.duration = None
 	def execute(self):
-		start = time.time()
+		self.last = time.time()
 		try:
 			self.fn(*self.args, **self.kwargs)
 		except Exception:
 			import traceback
 			traceback.print_exc()
-		self.duration = time.time()-start
+		self.duration = time.time()-self.last
 		self.last = self.next
 		if self.repeated:
 			self.next = time.time() + self.timeout
@@ -76,21 +76,24 @@ class TaskScheduler(threading.Thread):
 			_, nextTask = self._nextTask()
 			return min(nextTask.next - time.time(), MAX_WAIT) if nextTask else MAX_WAIT
 	def _adaptWorkers(self, wait, mainThread):
+		startThread = False
 		with self.workersLock:
-			self.waitFrac *= 0.9
-			self.waitFrac += 0.1 if wait > 0.0 else 0.0
+			self.waitFrac *= 0.99
+			self.waitFrac += 0.01 if wait > 0.0 else 0.0
 			if wait < -self.maxLateTime or self.waitFrac < 0.1:
 				if self.workers < self.maxWorkers:
 					self.workers += 1
 					self.waitFrac = 0.5
-					threading.Thread(target=self._workerLoop).start()
+					startThread = True
 			if wait >= MAX_WAIT or self.waitFrac > 0.9:
 				if self.workers > self.minWorkers and not mainThread:
 					return False
 			if self.workers < self.minWorkers:
 				self.workers += 1
 				self.waitFrac = 0.5
-				threading.Thread(target=self._workerLoop).start()
+				startThread = True
+		if startThread:
+			threading.Thread(target=self._workerLoop).start()
 		return True #continue running
 	def _workerLoop(self, mainThread=False):
 		while not self.stopped:
@@ -164,6 +167,7 @@ class TaskScheduler(threading.Thread):
 			"max_late_time": self.maxLateTime,
 			"max_workers": self.maxWorkers,
 			"min_workers": self.minWorkers,
-			"workers": self.workers
+			"workers": self.workers,
+			"wait_frac": self.waitFrac
 		}
 		return info

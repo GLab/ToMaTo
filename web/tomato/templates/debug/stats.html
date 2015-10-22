@@ -59,10 +59,12 @@
 	<tr>
 		<th>Workers</th>
 		<th>Max late time</th>
+		<th>Waiting fraction</th>
 	</tr>
 	<tr>
 		<td>{{stats.scheduler.workers}} (min: {{stats.scheduler.min_workers}}, max: {{stats.scheduler.max_workers}})</td>
 		<td>{{stats.scheduler.max_late_time}}</td>
+		<td>{{stats.scheduler.wait_frac|percentage}}</td>
 	</tr>
 </table>
 
@@ -86,7 +88,7 @@
 		<td>{{t.repeated}} ({{t.timeout|toduration}})</td>
 		<td enhancetable_customkey="{{t.last}}">{{t.last|todate}}</td>
 		<td enhancetable_customkey="{{t.next}}">{{t.next|todate}}</td>
-		<td>{{t.duration|toduration}}</td>
+		<td enhancetable_customkey="{{t.duration}}">{{t.duration|toduration}}</td>
 		<td>{{t.args|jsonify}}</td>
 		<td>{{t.kwargs|jsonify}}</td>
 	</tr>

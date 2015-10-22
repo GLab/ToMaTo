@@ -25,7 +25,7 @@ from django.core.urlresolvers import reverse
 
 from lib import wrap_rpc
 from admin_common import RemoveConfirmForm, BootstrapForm, Buttons
-from template import techs_dict,techs_choices
+from template import techs_dict, techs_choices
 
 from lib.error import UserError #@UnresolvedImport
 

@@ -5,7 +5,9 @@ from django import template
 from ..lib import getVersion, serverInfo, security_token
 from django.utils.safestring import mark_safe
 from ..lib import anyjson as json
+from ..lib.reference_library import tech_to_label as lib_tech_to_label
 
+from ..settings import enable_duration_log
 
 
 register = template.Library()
@@ -21,6 +23,10 @@ def jsonify(o, pretty=False):
 @register.filter
 def externalurl(name):
 	return serverInfo()['external_urls'].get(name, "")
+
+@register.filter
+def tech_to_label(value):
+	return lib_tech_to_label(value)
 	
 @register.simple_tag
 def backend_version():
@@ -29,6 +35,10 @@ def backend_version():
 @register.simple_tag
 def frontend_version():
 	return getVersion()
+
+@register.assignment_tag()
+def duration_log_enabled():
+	return enable_duration_log
 
 @register.simple_tag
 def button(style='default', icon=None, title=""):
@@ -59,8 +69,8 @@ def percentage(value, maxval=1.0):
 
 @register.filter
 def toduration(value):
-	date = datetime.datetime.now() - datetime.timedelta(seconds=float(value or "0.0")) 
-	return timesince(date)
+	delta = datetime.timedelta(seconds=float(value or "0.0"))
+	return timesince(datetime.datetime.now() - delta) if delta.total_seconds() > 120 else "%.1f seconds" % delta.total_seconds()
 	
 @register.filter
 def todate(value):

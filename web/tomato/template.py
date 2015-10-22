@@ -25,28 +25,28 @@ import base64, re
 from lib import wrap_rpc, serverInfo
 from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons, append_empty_choice
 import datetime
+from lib.reference_library import tech_to_label
 
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
 from lib.error import UserError #@UnresolvedImport
 
-techs=[
-		{"name": "kvmqm", "label": "KVM"},
-		{"name": "openvz", "label": "OpenVZ"},
-		{"name": "repy", "label": "Repy"}
-	  ]
-techs_dict=dict([(t["name"], t["label"]) for t in techs])
-def techs_choices():
-	tdict = [(t["name"], t["label"]) for t in techs]
-	return append_empty_choice(tdict)
+techs = [{"name": t, "label": tech_to_label(t)} for t in ["kvmqm", "openvz", "repy"]]
 
-kblang_options = [("en-us", "English (US)"), 
-					("en-gb", "English (GB)"), 
-					("de", "German"), 
-					("fr", "French"), 
-					("ja", "Japanese")
-					]
+techs_dict = dict([(t["name"], t["label"]) for t in techs])
+
+def techs_choices():
+	tlist = [(t["name"], t["label"]) for t in techs]
+	return append_empty_choice(tlist)
+
+kblang_options = [
+	("en-us", "English (US)"),
+	("en-gb", "English (GB)"),
+	("de", "German"),
+	("fr", "French"),
+	("ja", "Japanese")
+]
 
 def dateToTimestamp(date):
 	td = date - datetime.date(1970, 1, 1)

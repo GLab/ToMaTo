@@ -1,7 +1,7 @@
 from __future__ import print_function
 from mongoengine import *
 from mongoengine.base.fields import BaseField
-import bson, sys
+import bson, sys, os
 
 # noinspection PyUnresolvedReferences
 
@@ -103,3 +103,10 @@ class DataHub:
 		self.set(key, value)
 
 data = DataHub()
+
+def js_code(name):
+	path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "%s.js" % name)
+	return open(path).read()
+
+def exec_js(code, *args, **options):
+	return DataEntry.objects.exec_js(code, *args, **options)

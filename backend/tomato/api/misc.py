@@ -41,13 +41,13 @@ def server_info():
 def link_statistics(siteA, siteB):
 	return link.getStatistics(siteA, siteB)
 
-def mailAdmins(subject, text, global_contact = True, issue="admin"):
+def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	auth.mailAdmins(subject, text, global_contact, issue)
+	auth.notifyAdmins(subject, text, global_contact, issue)
 	
 def mailUser(user, subject, text):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	auth.mailUser(user, subject, text)
+	auth.sendMessage(user, subject, text)
 
 @cached(timeout=3600)
 def statistics():
