@@ -23,6 +23,13 @@ function pretty_json_popup(obj,title,filename) {
 		data: obj,
 		el: div
 	});
+	
+	
+	var download = $('<a href="#" download="'+filename+'" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only"><span class="ui-button-text">Download</span></a>');
+	download.click(function(e) {
+		 this.href = 'data:text/plain,'+JSON.stringify(obj);
+	});
+	
 	div.dialog({autoOpen: true,
 				draggable: false,
 				resizable: false,
@@ -34,13 +41,12 @@ function pretty_json_popup(obj,title,filename) {
 				           {
 				        	text: 'Close', 
 				        	click: function(){div.remove();}
-				           },
-				           {
-				        	text: 'Download', 
-				        	click: function(){
-				        		window.open('data:text/plain,'+JSON.stringify(obj))
-				        		}
 				           }
 					]
-				});
+				})
+			.parent()
+		    .find('.ui-dialog-buttonset')
+		    .append(download);
+
+	
 }
