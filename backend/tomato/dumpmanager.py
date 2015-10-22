@@ -335,7 +335,7 @@ def insert_dump(dump, source):
 		# remember to fetch dump data in the end, and email developer users
 		group = get_group(dump['group_id'])
 		if not group:
-			from auth import mailFlaggedUsers, Flags
+			from auth import notifyFlaggedUsers, Flags
 			must_fetch_data = True
 			if isinstance(dump['description'], dict):
 				if 'subject' in dump['description'] and 'type' in dump['description']:
@@ -345,9 +345,9 @@ def insert_dump(dump, source):
 			else:
 				group_desc = dump['description']
 			group = create_group(dump['group_id'], group_desc)
-			mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
+			notifyFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
 							 "A new group of error has been found, with ID %s. It has first been observed on %s." % (
-								 dump['group_id'], source.dump_source_name()))
+								 dump['group_id'], source.dump_source_name()), ref=['errorgroup', dump['group_id']])
 
 			# insert the dump.
 		for d in group.dumps:

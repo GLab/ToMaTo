@@ -293,13 +293,21 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 
 	def onError(self, exc):
 		pass
-		
+
+	@classmethod
+	def selectCapabilitiesHost(cls, host_):
+		if not (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
+			return host_
+		type_ = cls.HOST_TYPE or cls.TYPE
+		if not host_ or not type_ in host_.elementTypes:
+			host_ = host.select(elementTypes=[type_], best=False)
+		return host_
+
 	@classmethod
 	@cached(timeout=3600, maxSize=None)
 	def getCapabilities(cls, host_):
 		caps = cls.capabilities()
-		if not host_ and (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
-			host_ = host.select(elementTypes=[cls.HOST_TYPE or cls.TYPE])
+		host_ = cls.selectCapabilitiesHost(host_)
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
 			host_cap = host_.getElementCapabilities(cls.HOST_TYPE or cls.TYPE)
 		if cls.DIRECT_ACTIONS:

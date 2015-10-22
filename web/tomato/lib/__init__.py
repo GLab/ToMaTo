@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.http import HttpResponse
-import xmlrpclib, urllib, hashlib
+import xmlrpclib, urllib, hashlib, time
 from . import anyjson as json
 import os
 from .. import settings
@@ -25,7 +25,7 @@ from .error import Error  # @UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault
 from thread import start_new_thread
 
-from ..settings import duration_log_location, enable_duration_log, duration_log_size
+from ..settings import duration_log_location, enable_duration_log, duration_log_size, account_info_update_time
 
 
 def getauth(request):
@@ -179,6 +179,8 @@ class wrap_rpc:
 	def __call__(self, request, *args, **kwargs):
 		try:
 			api = getapi(request)
+			if 'user' in request.session:
+				request.session['user'].checkUpdate(api)
 			return self.fun(api, request, *args, **kwargs)
 		except Exception, e:
 			return renderFault(request, e)
@@ -275,6 +277,13 @@ def security_token(data, session=""):
 
 class UserObj:
 	def __init__(self, api):
+		self.updateData(api)
+
+	def checkUpdate(self, api):
+		if time.time() - self.data_time > account_info_update_time:
+			self.updateData(api)
+
+	def updateData(self, api):
 		self.data = api.account_info()
 		self.name = self.data["name"]
 		self.flags = self.data["flags"]
@@ -282,6 +291,8 @@ class UserObj:
 		self.organization = self.data["organization"]
 		self.realname = self.data["realname"]
 		self.id = self.data["id"]
+		self.notification_count = self.data['notification_count']
+		self.data_time = time.time()
 
 	def hasGlobalToplFlags(self):
 		for flag in ["global_topl_owner", "global_topl_manager", "global_topl_user"]:

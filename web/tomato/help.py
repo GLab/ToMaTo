@@ -64,21 +64,23 @@ class HelpForm(BootstrapForm):
             'message',
             FormActions(
                 StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-default backbutton'),
-                StrictButton('<span class="glyphicon glyphicon-send"></span> Send e-mail', css_class='btn-primary', type="submit")
+                StrictButton('<span class="glyphicon glyphicon-send"></span> Send e-mail', css_class='btn-primary', type="submit"),
+                css_class="col-sm-offset-4"
             )
         )
+
 
 @wrap_rpc
 def contact_form(api, request, subject=None, message=None, global_contact=False, issue=None):
     if request.method == 'POST':
-        form = HelpForm( request.POST)
+        form = HelpForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             if formData['admin_class'] == 'global':
                 formData['global_contact'] = True
             else:
                 formData['global_contact'] = False
-            api.mailAdmins(formData["subject"],
+            api.notifyAdmins(formData["subject"],
                            formData['message'],
                            global_contact = formData['global_contact'],
                            issue=formData['issue'])

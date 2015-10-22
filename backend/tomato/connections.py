@@ -382,7 +382,7 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	def getCapabilities(cls, type_, host_):
 		caps = cls.capabilities()
 		if not host_ and (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
-			host_ = select(connectionTypes=[type_])
+			host_ = select(connectionTypes=[type_], best=False)
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
 			host_cap = host_.getConnectionCapabilities(type_)
 		if cls.DIRECT_ACTIONS:
