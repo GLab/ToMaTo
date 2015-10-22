@@ -275,7 +275,11 @@ def init(env_cmds, tomatoComponent, tomatoVersion):
 			for d in dump_file_list:
 				if d.endswith('.meta.json'):
 					dump_id = re.sub('\.meta\.json', '', d)
-					dump = load_dump(dump_id, push_to_dumps=True, load_data=False, load_from_file=True, dump_on_error=True)
+					try:
+						dump = load_dump(dump_id, push_to_dumps=True, load_data=False, load_from_file=True, dump_on_error=True)
+					except:
+						import traceback
+						traceback.print_exc()
 	scheduler.scheduleRepeated(60 * 60 * 24, auto_cleanup, immediate=True)
 
 
