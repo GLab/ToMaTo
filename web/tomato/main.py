@@ -31,12 +31,11 @@ from lib import getapi, getNews, wrap_rpc
 def _pending_registrations(api, request):
 	if request.session.user.isAdmin():
 		if request.session.user.isGlobalAdmin():
-			acclist = api.account_list()
+			acclist = api.account_list(with_flag="new_account")
 		else:
-			acclist = api.account_list(organization = request.session.user.organization)
-		for acc in acclist:
-			if "new_account" in acc['flags']:
-				return True
+			acclist = api.account_list(organization=request.session.user.organization, with_flag="new_account")
+		if acclist:
+			return True
 		return False
 	else:
 		# if the user may not see pending registrations, there are none to review.

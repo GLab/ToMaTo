@@ -261,15 +261,9 @@ def list(api, request, with_flag=None, organization=True):
 		organization = api.user.organization
 	if organization:
 		organization_label = api.organization_info(organization)['label']
-	accs = api.account_list(organization=organization)
+	accs = api.account_list(organization=organization, with_flag=with_flag)
 	orgas = api.organization_list()
 	flag_config = api.account_flag_configuration()
-	if with_flag:
-		acclist_new = []
-		for acc in accs:
-			if with_flag in acc['flags']:
-				acclist_new.append(acc)
-		accs = acclist_new
 	for acc in accs:
 		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,acc['flags'], flag_config=flag_config)))
 	return render(request, "account/list.html", {'accounts': accs, 'orgas': orgas, 'with_flag': with_flag, 'organization':organization, 'organization_label':organization_label})
