@@ -165,14 +165,24 @@ def ping(siteA, siteB):
 
 
 @util.wrap_task
-def pingSites():
+def schedulePings():
+	toSync = set()
 	for siteA in Site.objects.all():
 		if not siteA.hosts.count():
 			continue
 		for siteB in Site.objects.all():
 			if siteA.id > siteB.id:
 				continue
-		scheduler.scheduleOnce(0, ping, siteA, siteB)
+		toSync.add((siteA, siteB))
+	syncTasks = {(t.args[0], t.args[1]): tid for tid, t in scheduler.tasks.items() if t.fn == ping}
+	syncing = set(syncTasks.keys())
+	for siteA, siteB in toSync - syncing:
+		scheduler.scheduleRepeated(60, ping, siteA, siteB)
+	for siteA, siteB in syncing - toSync:
+		scheduler.cancelTask(syncTasks[(siteA, siteB)])
+
+@util.wrap_task
+def housekeep():
 	exec_js(js_code("link_housekeep"), now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
 
 def getStatistics(siteA, siteB): #@ReservedAssignment
@@ -186,4 +196,5 @@ def getStatistics(siteA, siteB): #@ReservedAssignment
 	except LinkStatistics.DoesNotExist:
 		return None
 
-scheduler.scheduleRepeated(60, pingSites) #every minute
+scheduler.scheduleRepeated(60, schedulePings) #every minute
+scheduler.scheduleRepeated(60, housekeep) #every minute
