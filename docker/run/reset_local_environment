@@ -108,8 +108,10 @@ migrate_template_params = [
 		"-dp", "8000",
 		"-dU", "admin",
 		"-dP", "changeme",
-		"-t"
 	]
+if config['template_source']['restricted_templates']:
+	migrate_template_params.append('--include_restricted')
+migrate_template_params.append("-t")
 for t in config['templates']:
 	migrate_template_params.append(t)
 p = subprocess.Popen(migrate_template_params,	cwd="../../cli")
