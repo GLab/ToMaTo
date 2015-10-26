@@ -23,6 +23,7 @@ from accounting import UsageStatistics
 from .auth.permissions import PermissionMixin, Role
 from . import scheduler
 from .lib.error import UserError #@UnresolvedImport
+from .lib import util
 
 class TimeoutStep:
 	INITIAL = 0
@@ -270,7 +271,7 @@ def create(attrs=None):
 	logging.logMessage("info", category="topology", id=top.idStr, info=top.info())
 	return top
 	
-	
+@util.wrap_task
 def timeout_task():
 	now = time.time()
 	setCurrentUser(True) #we are a global admin

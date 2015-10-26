@@ -6,6 +6,7 @@ import host
 from . import scheduler, config, currentUser
 from .lib.error import InternalError, UserError, Error  # @UnresolvedImport
 from .lib.rpc.sslrpc import RPCError
+from .lib import util
 
 from auth import User
 
@@ -377,7 +378,7 @@ def update_source(source):
 			with lock_db:
 				group.shrink()
 
-
+@util.wrap_task
 def update_all(async=True):
 	for s in getDumpSources():
 		if async:
