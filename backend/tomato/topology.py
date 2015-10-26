@@ -300,6 +300,10 @@ def timeout_task():
 		top.action_destroy()
 		top.timeoutStep = TimeoutStep.DESTROYED
 		top.save()
+	for top in Topology.objects.filter(timeoutStep=TimeoutStep.DESTROYED, timeout__lte=now-config.TOPOLOGY_TIMEOUT_REMOVE):
+		logging.logMessage("timeout remove", category="topology", id=top.idStr)
+		top.remove()
+
 
 scheduler.scheduleRepeated(600, timeout_task)
 
