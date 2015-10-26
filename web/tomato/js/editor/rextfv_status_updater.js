@@ -39,42 +39,15 @@ var RexTFV_status_updater = Class.extend({
 	updateSome: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
 		                      //update only the first five elements of the array. This boundary is to avoid server overload.
         var max_tries = t.elements.length; // number of tries until whole list is cycled
-        var count = Math.min(max_tries, 5) // maximum number of requests to do per second
+        var to_update = 1 // maximum number of requests to do per second. fixme: maxe this configurable.
+        var count = Math.min(max_tries, to_update) // maximum number of requests to do per second
         while (max_tries>0 && count>0) {
         	max_tries = max_tries - 1;
         	if (t.updateFirst(t)) {
         		count = count - 1;
         	}
         }
-	},
-	updateAll: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
-		toRemove = [];
-		//iterate through all entries, update them, and then update their retry-count according to the refreshed data.
-		//do not remove elements while iterating. instead, put to-be-removed entries in the toRemove array.
-		for (var i=0; i<t.elements.length; i++) {
-			entry = t.elements[i];
-			success = true;
-			if (entry.element in editor.topology.elements) {
-				editor.topology.elements[entry.element].update(undefined, undefined, true); //hide errors.
-			} else {
-				success = false;
-			}
-			if (success && 
-				editor.topology.elements[entry.element].rextfvStatusSupport() &&
-				editor.topology.elements[entry.element].data.rextfv_run_status.running) {
-					entry.tries = 1;
-			} else {
-				entry.tries--;
-				if (entry.tries < 0) {
-					toRemove.push(entry)
-				}
-			}
-		}
-		//remove entries marked as to-remove.
-		for (var i=0; i<toRemove.length; i++) {
-			t.remove(toRemove[i]);
-		}
-	},
+	}
 	addIfNeeded: function(el) {
 		if (editor.topology.elements[entry.element].rextfvStatusSupport() &&
 			editor.topology.elements[entry.element].data.rextfv_run_status.running) {
