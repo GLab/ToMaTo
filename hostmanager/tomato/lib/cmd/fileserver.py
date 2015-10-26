@@ -61,6 +61,8 @@ except: #python <2.6
 from .. import util #@UnresolvedImport
 from ... import config
 
+import urllib
+
 ACTION_UPLOAD = "upload"
 ACTION_DOWNLOAD = "download"
 
@@ -204,6 +206,28 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.html("success, redirecting...", redirect=base64.b64decode(redirect))
         else:
             self.html("upload successful")
+    def _handle_from_url_form(self, grant, **params):
+        params = urllib.urlencode(params)
+        return self.html('<form method="POST" enctype="multipart/form-data" action="/%s/from_url?%s"><input type="text" name="url"><input type="submit"></form>' % (grant, params))
+    def _handle_from_url(self, grant, redirect=None, **params):
+        grant = getGrant(grant)
+        if not (grant and grant.check(ACTION_UPLOAD)):
+            self.error(403, "Invalid grant")
+            return
+        filename = grant.path
+        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':self.command, 'CONTENT_TYPE':self.headers['Content-Type']})
+        url = form["url"].value
+        try:
+            urllib.urlretrieve(url, filename)
+        except:
+            self.error(422, "Error retrieving file from URL")
+            return
+        grant.trigger()
+        if redirect:
+            self.html("success, redirecting...", redirect=base64.b64decode(redirect))
+        else:
+            self.html("fetch from URL successful")
+
     def log_message(self, format, *args): #@ReservedAssignment
         return
         
