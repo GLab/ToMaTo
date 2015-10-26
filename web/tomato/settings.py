@@ -125,7 +125,7 @@ github_repository_name = "ToMaTo"
 # enable API duration log.
 # this slows down the webfrontend due to disk read/write operations after each API call.
 # in exchange, it accurately logs the average duration of each API call.
-enable_duration_log = False
+enable_duration_log = True
 # for better performance, the log should be placed on a fast disk (or even tmpfs or similar).
 # there is no reason for this log to be persistent.
 duration_log_location = "/tmp/webfrontend_api_duration_log.json"
