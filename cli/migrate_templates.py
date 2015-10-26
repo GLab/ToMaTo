@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from lib import getConnection, createUrl
+from lib.error import TransportError
 import argparse, getpass, datetime, time
 
 def parseArgs():
@@ -63,17 +64,27 @@ def parseArgs():
 	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
 	options = parser.parse_args()
 
-	if not options.username_source and not options.client_cert_source:
-		options.username_source=raw_input("Username for %s: " % options.hostname_source)
-	if not options.password_source and not options.client_cert_source:
-		options.password_source= getpass.getpass("Password for %s: " % options.hostname_source)
+	need_source_username = not options.username_source and not options.client_cert_source
+	need_source_password = not options.password_source and not options.client_cert_source
+	need_destination_username = not options.username_destination and not options.client_cert_destination
+	need_destination_password = not options.password_destination and not options.client_cert_destination
+
+	if need_source_username or need_source_password:
+		print "Login data to source backend"
+	if need_source_username:
+		options.username_source=raw_input(" Username for %s: " % options.hostname_source)
+	if need_source_password:
+		options.password_source= getpass.getpass(" Password for %s: " % options.hostname_source)
 	if options.ssl_source and options.protocol_source == "http+xmlrpc":
 		options.protocol_source = "https+xmlrpc"
 
-	if not options.username_destination and not options.client_cert_destination:
-		options.username_destination=raw_input("Username for %s: " % options.hostname_destination)
-	if not options.password_destination and not options.client_cert_destination:
-		options.password_destination= getpass.getpass("Password for %s: " % options.hostname_destination)
+	if need_destination_username or need_destination_password:
+		print ""
+		print "Login data to destination backend"
+	if need_destination_username:
+		options.username_destination=raw_input(" Username for %s: " % options.hostname_destination)
+	if need_destination_password:
+		options.password_destination= getpass.getpass(" Password for %s: " % options.hostname_destination)
 	if options.ssl_destination and options.protocol_destination == "http+xmlrpc":
 		options.protocol_destination = "https+xmlrpc"
 
@@ -199,22 +210,43 @@ def insert_template(api, version, template, overwrite_on_conflict):
 
 options = parseArgs()
 
-print "logging in to source backend..."
-if options.url_source:
-	url_source = options.url_source
-else:
-	url_source = createUrl(options.protocol_source, options.hostname_source, options.port_source, options.username_source, options.password_source)
-api_source = getConnection(url_source, options.client_cert_source)
+print ""
+print "testing connection to source backend..."
+try:
+	if options.url_source:
+		url_source = options.url_source
+	else:
+		url_source = createUrl(options.protocol_source, options.hostname_source, options.port_source, options.username_source, options.password_source)
+	api_source = getConnection(url_source, options.client_cert_source)
+	source_version = api_source.server_info().get('api_version', [3, 0, 0])
+	print " Success"
+except TransportError as e:
+	print " ERROR:", e.message
+	exit(1)
+except:
+	print " ERROR"
+	print ""
+	raise
 
-print "logging in to destination backend..."
-if options.url_destination:
-	url_destination = options.url_destination
-else:
-	url_destination = createUrl(options.protocol_destination, options.hostname_destination, options.port_destination, options.username_destination, options.password_destination)
-api_destination = getConnection(url_destination, options.client_cert_destination)
+print ""
+print "testing connection to destination backend..."
+try:
+	if options.url_destination:
+		url_destination = options.url_destination
+	else:
+		url_destination = createUrl(options.protocol_destination, options.hostname_destination, options.port_destination, options.username_destination, options.password_destination)
+	api_destination = getConnection(url_destination, options.client_cert_destination)
+	target_version = api_destination.server_info().get('api_version', [3, 0, 0])
+	print " Success"
+except TransportError as e:
+	print " ERROR:", e.message
+	exit(1)
+except:
+	print " ERROR"
+	print ""
+	raise
 
-source_version = api_source.server_info().get('api_version', [3, 0, 0])
-target_version = api_destination.server_info().get('api_version', [3, 0, 0])
+print ""
 
 print "fetching source templates"
 source_templates = read_templates(api_source, source_version, options.include_restricted, options.templates)
