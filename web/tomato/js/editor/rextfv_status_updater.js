@@ -39,15 +39,15 @@ var RexTFV_status_updater = Class.extend({
 	updateSome: function(t) { //this should be called by a timer. Takes RexTFV_status_updater as argument.
 		                      //update only the first five elements of the array. This boundary is to avoid server overload.
         var max_tries = t.elements.length; // number of tries until whole list is cycled
-        var to_update = 1 // maximum number of requests to do per second. fixme: maxe this configurable.
-        var count = Math.min(max_tries, to_update) // maximum number of requests to do per second
+        var to_update = 1; // maximum number of requests to do per second. fixme: maxe this configurable.
+        var count = Math.min(max_tries, to_update); // maximum number of requests to do per second
         while (max_tries>0 && count>0) {
         	max_tries = max_tries - 1;
         	if (t.updateFirst(t)) {
         		count = count - 1;
         	}
         }
-	}
+	},
 	addIfNeeded: function(el) {
 		if (editor.topology.elements[entry.element].rextfvStatusSupport() &&
 			editor.topology.elements[entry.element].data.rextfv_run_status.running) {
