@@ -151,7 +151,13 @@ var Component = Class.extend({
 		this.configWindow.show();
 		this.triggerEvent({operation: "attribute-dialog"});
 	},
+	updateSynchronous: function(fetch, callback, hide_errors) {
+		this._update(fetch, callback, hide_errors, true);
+	},
 	update: function(fetch, callback, hide_errors) {
+		this._update(fetch, callback, hider_errors, false);
+	},
+	_update: function(fetch, callback, hide_errors, synchronous) {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
 		ajax({
@@ -165,7 +171,8 @@ var Component = Class.extend({
 		 	errorFn: function(error) {
 		 		if (!hide_errors) new errorWindow({error:error});
 				t.triggerEvent({operation: "update", phase: "error"});
-		 	}
+		 	},
+		 	synchronous: synchronous
 		});
 	},
 	updateDependent: function() {
@@ -215,7 +222,7 @@ var Component = Class.extend({
 		 		if (options.callback) options.callback(t, result[0], result[1]);
 				t.triggerEvent({operation: "action", phase: "end", action: action, params: params});
 				if (! options.noUpdate) t.updateDependent();
-				editor.rextfv_status_updater.add(t, 30);
+				editor.rextfv_status_updater.add(t, 5);
 		 	},
 		 	errorFn: function(error) {
 		 		new errorWindow({error:error});

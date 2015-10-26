@@ -3,7 +3,7 @@ var ajax = function(options) {
 	var t = this;
 	$.ajax({
 		type: "POST",
-	 	async: true,
+	 	async: !options.synchronous,
 	 	url: "../ajax/" + options.url,
 	 	data: {data: $.toJSON(options.data || {})},
 	 	complete: function(res) {
