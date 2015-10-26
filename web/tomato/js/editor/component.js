@@ -222,14 +222,14 @@ var Component = Class.extend({
 		 		if (options.callback) options.callback(t, result[0], result[1]);
 				t.triggerEvent({operation: "action", phase: "end", action: action, params: params});
 				if (! options.noUpdate) t.updateDependent();
-				editor.rextfv_status_updater.add(t, 5);
+				editor.rextfv_status_updater.add(t, 5000);
 		 	},
 		 	errorFn: function(error) {
 		 		new errorWindow({error:error});
 		 		t.update();
 		 		t.setBusy(false);
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
-				editor.rextfv_status_updater.add(t, 5);
+				editor.rextfv_status_updater.add(t, 5000);
 		 	}
 		});
 	},
