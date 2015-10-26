@@ -1,0 +1,43 @@
+{
+  "_documentation_": {
+    "1": "Do not modify this file. Instead, place a copy in ~/.tomato/ or /etc/tomato.",
+    "2": "You can either remove the examples, or use them as non-examples.",
+    "3": "'templates' is a filter for template names. Only use those templates that are specified here (all techs)",
+    "4": "'template_source' is the backend where templates will be fetched from",
+    "5": "'site' is the site for all hosts",
+    "6": "'hosts' is a list of hosts to be used for testing."
+  },
+  "templates__example": [
+    "debian-7.0_x86_64",
+    "debian-7.0_x86",
+    "debian-8.0_x86_64",
+    "debian-8.0_x86",
+    "openvswitch",
+    "ryu",
+    "floodlight",
+    "pingable_node"
+  ],
+  "templates": [],
+  "template_source": {
+    "port": "8000",
+    "host": "master.tomato-lab.org",
+    "restricted_templates": false
+  },
+  "site": {
+    "name": "ukl",
+    "label": "Test Hosts (TU Kaiserslautern)",
+    "location": "Kaiserslautern",
+    "geolocation": {
+      "latitude": 49.4400657,
+      "longitude": 7.7491265
+    }
+  },
+  "hosts": [],
+  "hosts__example": [
+    {
+      "name": "test_1",
+      "rpcurl": "ssl+jsonrpc://192.168.2.104:8000",
+      "address": "192.168.2.104"
+    }
+  ]
+}
