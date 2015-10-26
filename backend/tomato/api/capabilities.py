@@ -31,7 +31,7 @@ def capabilities_connection(type, host=None): #@ReservedAssignment
 		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
 	return connections.Connection.getCapabilities(type, host)
 
-@cached(timeout=24*3600)
+@cached(timeout=24*3600, autoupdate=True)
 def capabilities():
 	res = {"element": {}, "connection": {}}
 	host = None
