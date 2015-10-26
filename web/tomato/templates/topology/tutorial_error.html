@@ -1,0 +1,38 @@
+{% extends "topology/base.html" %}
+
+{% load url from future %}
+{% load tomato %}
+
+{% block title %}
+<title>Tutorials - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+<h1>Error loading custom tutorial</h1>
+
+
+<script src="/js/jquery.js"></script>
+
+
+<script languange="JavaScript">
+	function submit() {
+		var ta = $('#tutorialURL');
+		window.location = "{%url "tutorial.start" %}?url="+ta.val();
+	}
+	
+	function cancel() {
+		window.location= "{%url "tomato.tutorial.list" %}";
+	}
+</script>
+An error occurred! Please check the URL and make sure it leads to the right direction.
+
+<div class="skip-xs"></div>
+<input type="text" id="tutorialURL" name="tutorial_url" value="{{url}}"  autofocus style="width: 100%" />
+<div class="skip-xs"></div>
+<div class="col-sm-offset-4">
+	<button type="button" onclick="cancel();" class="btn btn-danger backbutton"><span class="glyphicon glyphicon-remove"></span> Cancel</button>
+	<button type="button" onclick="submit();" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> Start Tutorial</button>   
+</div>
+
+
+{% endblock %}

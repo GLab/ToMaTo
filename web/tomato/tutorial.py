@@ -26,6 +26,11 @@ import uuid
 import urllib2, urllib
 from urlparse import urljoin
 from settings import tutorial_list_url
+from lib.error import UserError #@UnresolvedImport
+
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
+
 
 
 
@@ -58,6 +63,17 @@ def start(api, request):
 		request.session["id"] = session_id
 		form = ConfirmForm.build(reverse("tomato.tutorial.start")+"?"+urllib.urlencode({"token": correct_token, "url": url}))
 		return render(request, "form.html", {"heading": "Load tutorial", "message_before": "Are you sure you want to load the tutorial from the following URL? <pre>"+url+"</pre>", 'form': form})
+
+	val = URLValidator()
+	
+	try: 
+		val(url)
+		data = json.load(urllib2.urlopen(url))
+	except ValidationError:
+		return render(request,"topology/tutorial_error.html",{"error_typ":"invalidurl", "error_msg":"Invalid url","url":url})
+	except ValueError:
+		return render(request,"topology/tutorial_error.html",{"error_typ":"invalidurl", "error_msg":"Invalid url","url":url})
+	
 	_, _, top_dict, data, _ = loadTutorial(url)
 	top_dict['topology']['attrs']['_tutorial_state'] = {'enabled': True,
 														'url': url,
@@ -67,7 +83,6 @@ def start(api, request):
 	return redirect("tomato.topology.info", id=top_id)
 
 def loadTutorial(url):
-	data = json.load(urllib2.urlopen(url))
 	steps_str = None
 	tut_data = {}
 	initscript_str = ""
@@ -89,4 +104,6 @@ def loadTutorial(url):
 	if 'initial_data' in data:
 		tut_data = data['initial_data']
 	data["base_url"] = urljoin(url, data.get("base_url", "."))
+
+		
 	return (data, steps_str, top_dict, tut_data, initscript_str)
