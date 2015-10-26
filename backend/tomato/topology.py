@@ -166,11 +166,15 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		for con in self.connections:
 			con.checkRemove()
 
-	def remove(self, recurse=True):
+	def _remove(self, recurse=True):
 		self.checkRemove(recurse)
 		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		if self.id:
+			for el in self.elements:
+				el._remove(recurse=recurse)
+			for con in self.connections:
+				con._remove(recurse=recurse)
 			self.delete()
 		self.totalUsage.remove()
 
@@ -235,6 +239,7 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		return "%s [#%s]" % (self.name, self.id)
 
 	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(_remove, check=checkRemove),
 		"start": Action(action_start, check=lambda self: self.checkAction('start'), paramSchema=schema.Constant({})),
 		"stop": Action(action_stop, check=lambda self: self.checkAction('stop'), paramSchema=schema.Constant({})),
 		"prepare": Action(action_prepare, check=lambda self: self.checkAction('prepare'), paramSchema=schema.Constant({})),
