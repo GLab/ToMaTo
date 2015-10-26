@@ -148,6 +148,11 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 			if not stateFilter(el.state) or el.type in typesExclude or el.type in typeOrder:
 				continue
 			el.action(action)
+		# execute action on connections
+		for con in self.connections:
+			if not stateFilter(con.state) or con.type in typesExclude:
+				continue
+			con.action(action)
 
 	def checkRemove(self, recurse=True):
 		self.checkRole(Role.owner)
