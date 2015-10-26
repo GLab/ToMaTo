@@ -48,6 +48,6 @@ def api_call_stats(request):
 	original_data = api_duration_log().get_api_durations()
 	data = []
 	for name, values in original_data.iteritems():
-		data.append([name, values['duration']])
+		data.append([name, values['duration'], values['count'], values['total_duration']])
 
-	return render(request, "debug/table.html", {'title': "API duration log", 'data': data, 'table_headings': ['Function', 'Duration (s)']})
+	return render(request, "debug/table.html", {'title': "API duration log", 'data': data, 'table_headings': ['Function', 'Average Duration (s)', '# Calls', 'Total Duration (s)']})
