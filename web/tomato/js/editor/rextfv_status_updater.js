@@ -49,8 +49,8 @@ var RexTFV_status_updater = Class.extend({
         }
 	},
 	addIfNeeded: function(el) {
-		if (editor.topology.elements[entry.element].rextfvStatusSupport() &&
-			editor.topology.elements[entry.element].data.rextfv_run_status.running) {
+		if (el.rextfvStatusSupport() &&
+			el.data.rextfv_run_status.running) {
 				this.add(el, 1);
 			}
 	},
