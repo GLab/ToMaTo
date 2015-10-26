@@ -3,7 +3,7 @@ var IconElement = Element.extend({
 		this._super(topology, data, canvas);
 		this.iconSize = {x: 32, y:32};
 		this.busy = false;
-		editor.rextfv_status_updater.add(this, 1);
+		editor.rextfv_status_updater.addIfNeeded(this, 1);
 	},
 	iconUrl: function() {
 		return "img/" + this.data.type + "32.png";

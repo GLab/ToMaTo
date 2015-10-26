@@ -75,6 +75,12 @@ var RexTFV_status_updater = Class.extend({
 			t.remove(toRemove[i]);
 		}
 	},
+	addIfNeeded: function(el) {
+		if (editor.topology.elements[entry.element].rextfvStatusSupport() &&
+			editor.topology.elements[entry.element].data.rextfv_run_status.running) {
+				this.add(el, 1)
+			}
+	}
 	add: function(el,timeout) { //every entry has a number of retries and an element ID attached to it.
 								// timeout is a time in milliseconds when the entry should be removed.
 								// before the entry is removed due to timeout, it is checked a last time.
