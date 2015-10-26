@@ -88,7 +88,7 @@ def account_notification_set_read(notification_id, read):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	currentUser().set_notification_read(notification_id, read)
 
-def account_list(organization=None):
+def account_list(organization=None, with_flag=None):
 	"""
 	Retrieves information about all accounts. 
 	 
@@ -100,12 +100,12 @@ def account_list(organization=None):
 	if organization:
 		organization = _getOrganization(organization)
 	if currentUser().hasFlag(Flags.GlobalAdmin):
-		accounts = getAllUsers(organization=organization) if organization else getAllUsers()
+		accounts = getAllUsers(organization=organization, with_flag=with_flag) if organization else getAllUsers(with_flag=with_flag)
 		return [acc.info(True) for acc in accounts]
 	elif currentUser().hasFlag(Flags.OrgaAdmin):
 		UserError.check(organization == currentUser().organization, code=UserError.DENIED,
 			message="Not enough permissions")
-		return [acc.info(True) for acc in getAllUsers(organization=currentUser().organization)]
+		return [acc.info(True) for acc in getAllUsers(organization=currentUser().organization, with_flag=with_flag)]
 	else:
 		raise UserError(code=UserError.DENIED, message="Not enough permissions")
 

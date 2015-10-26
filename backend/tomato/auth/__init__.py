@@ -498,11 +498,17 @@ def sendMessage(user, subject, text):
 	UserError.check(to, code=UserError.ENTITY_DOES_NOT_EXIST, message="User not found")
 	to.sendNotification(title="Message from %s: %s" % (from_.name, subject), message="The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text), fromUser=from_)
 
-def getAllUsers(organization = None):
+def getAllUsers(organization = None, with_flag = None):
 	if organization is None:
-		return User.objects.all()
+		if with_flag is None:
+			return User.objects.all()
+		else:
+			return User.objects.filter(flags__contains=with_flag)
 	else:
-		return User.objects.filter(organization=organization)
+		if with_flag is None:
+			return User.objects.filter(organization=organization)
+		else:
+			return User.objects.filter(organization=organization, flags__contains=with_flag)
 
 @util.wrap_task
 def cleanup():
