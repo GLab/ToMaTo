@@ -47,7 +47,7 @@ def resources_map():
 		'network_instances': network_instance_list()
 	}
 
-@cached(timeout=6*3600)
+@cached(timeout=6*3600, autoupdate=True)
 def template_list(tech=None):
 	"""
 	Retrieves information about all resources.
@@ -174,7 +174,7 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	res = _getTemplate(id)
 	return res.info(include_torrent_data=include_torrent_data)
 
-@cached(timeout=6*3600)
+@cached(timeout=6*3600, autoupdate=True)
 def profile_list(tech=None):
 	"""
 	Retrieves information about all resources.
@@ -300,7 +300,7 @@ def profile_info(id):
 	return res.info()
 
 
-@cached(timeout=6*3600)
+@cached(timeout=6*3600, autoupdate=True)
 def network_list():
 	"""
 	Retrieves information about all resources.
@@ -407,7 +407,7 @@ def network_info(id): #@ReservedAssignment
 	return res.info()
 
 
-@cached(timeout=6*3600)
+@cached(timeout=6*3600, autoupdate=True)
 def network_instance_list(network=None, host=None):
 	"""
 	Retrieves information about all resources.
