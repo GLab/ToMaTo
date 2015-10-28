@@ -72,7 +72,7 @@ var Editor = Class.extend({
 		
 		this.setWorkspaceContentMenu();
 		
-		setInterval(function(){t.rextfv_status_updater.updateSome(t.rextfv_status_updater)}, 1200);
+		setInterval(function(){t.rextfv_status_updater.updateSome(t.rextfv_status_updater)}, 1000);
 	},
 	triggerEvent: function(event) {
 		log(event); //keep this logging
