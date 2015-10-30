@@ -77,25 +77,37 @@ class APIDurationLog:
 					with open(filename) as f:
 						data = json.loads(f.read())
 						self.durations = data['durations']
+						self.counts = data['counts']
+						self.total_durations = data['total_durations']
 				except:
 					self.durations = {}
+					self.counts = {}
+					self.total_durations = {}
 			else:
 				self.durations = {}
+				self.counts = {}
+				self.total_durations = {}
 
 	def _save(self):
 		if self.filename:
 			with open(self.filename, 'w+') as f:
 				f.write(json.dumps({
-					'durations': self.durations
+					'durations': self.durations,
+					'counts': self.counts,
+					'total_durations': self.total_durations
 				}))
 
 	def log_call(self, name, duration, args, kwargs):  # fixme: create args/kwargs depending logs
 		if self.enabled:
 			try:
 				drs = self.durations[name]
+				self.counts[name] += 1
+				self.total_durations[name] += duration
 			except KeyError:
 				drs = []
 				self.durations[name] = drs
+				self.counts[name] = 1
+				self.total_durations[name] = duration
 			drs.append(duration)
 			if len(drs) > APIDurationLog.entry_count:
 				drs.pop(0)
@@ -103,7 +115,11 @@ class APIDurationLog:
 
 	def get_api_durations(self):
 		if self.enabled:
-			return {k: {'duration': reduce(lambda x, y: x + y, l) / len(l)} for k, l in self.durations.iteritems()}
+			return {k: {
+				'duration': reduce(lambda x, y: x + y, self.durations[k]) / len(self.durations[k]),
+				'count': self.counts[k],
+				'total_duration': self.total_durations[k]
+			} for k in self.durations.iterkeys()}
 		return {}
 
 

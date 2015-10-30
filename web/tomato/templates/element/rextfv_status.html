@@ -87,7 +87,7 @@ function doAjaxCall(url,successfn) {
 function ElementInfoURL(){return "/ajax/element/"+ElementID+"/info"}
 function TopologyInfoURL(top_id){return "/ajax/topology/"+top_id+"/info"}
 
-//auto-refresh process. timer initited by initWindow().
+//auto-refresh process. first called by initWindow(), always sets a timer to call itself again.
 function updateRexTFVStatus() {
 	doAjaxCall(ElementInfoURL(),function(element_info){
 		console.log(element_info);
@@ -112,6 +112,8 @@ function updateRexTFVStatus() {
 				} else {
 					document.getElementById('custom_status').innerHTML = "None";
 				}
+				setTimeout(updateRexTFVStatus, Math.max(new Date(element_info['info_next_sync']*1000 - new Date()),0)+1000);
+				console.log(Math.max(new Date(element_info['info_next_sync']*1000 - new Date()),2000));
 			} else {
 				document.getElementById('rextfv_readable').innerHTML = "No (no information)";
 				document.getElementById('overall_status_p').innerHTML = "";	
@@ -137,7 +139,6 @@ function initWindow() {
 		
 		if (info['rextfv_supported']) {//this shouldn't be called by the user if not rextfv_supported. However, this can be called by url.
 			updateRexTFVStatus();
-			setInterval(updateRexTFVStatus, 1200);
 		} else
 			document.getElementById('rextfv_readable').innerHTML = "not supported";
 	})
