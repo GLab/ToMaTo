@@ -135,6 +135,7 @@ class ErrorGroup(BaseDocument):
 		self.removedDumps += oldLen - len(self.dumps)
 		self.save()
 
+
 	def info(self):
 		res = {
 			'group_id': self.groupId,
