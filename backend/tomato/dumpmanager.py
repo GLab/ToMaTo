@@ -106,8 +106,32 @@ class ErrorGroup(BaseDocument):
 		oldLen = len(self.dumps)
 		if oldLen <= 10:
 			return
+
+		# first and last 5 dumps are kept under any circumstance.
 		#            first 5          last 5
-		self.dumps = self.dumps[:5] + self.dumps[-5:]
+		dumps_keep = self.dumps[:5] + self.dumps[-5:]
+		# all except first and last 5
+		toremove = self.dumps[5:-5]
+
+		tokeep = []  # dumps in toremove, that should be kept
+		sources = set()  # sources that have been found in following loop
+		versions = []  # versions that have been found in following loop
+
+		for d in dumps_keep + toremove:  # prioritize those that are kept under any circumstance.
+			keep = False
+			if d.source not in sources:  # this source has not been found in a previous loop cycle
+				sources.add(d.source)
+				keep = True
+			if d.softwareVersion not in versions:  # this version has not been found in a previous loop cycle
+				versions.append(d.softwareVersion)
+				keep = True
+			if keep and (d in toremove):  # source or version haven't been found in previous cycle.
+				# Also make sure that tokeep is a subset of toremove
+				tokeep.append(d)
+
+		#            first 5                   last 5
+		self.dumps = self.dumps[:5] + tokeep + self.dumps[-5:]
+		# before:    self.dumps[:5] + toremove + self.dumps[-5:]
 		self.removedDumps += oldLen - len(self.dumps)
 		self.save()
 
