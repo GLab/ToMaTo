@@ -3,6 +3,26 @@
 DIR=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))
 TOMATODIR="$DIR"/../..
 
+function tomato-write_version_info() {
+    # first argument: output directory
+    # second argument: dpkg package
+  if git rev-parse --git-dir > /dev/null 2>&1; then
+    git describe --tags --dirty > "$1"/git-describe
+  fi
+  if dpkg-query -l $2 > /dev/null 2>&1; then
+    dpkg-query -s $2 > "$1"/dpkg-query
+  fi
+}
+
+function tomato-delete_version_info() {
+    # first argument: output directory of write_version_info
+    for filename in "$1"/git-describe "$1"/dpkg-query; do
+        if [ -e $filename ]; then
+            rm $filename
+        fi
+    done
+}
+
 function tomato-db-start () {
   mkdir -p "$DIR"/mongodb-data
   docker run -d -v "$DIR"/mongodb-data:/data/db -p 127.0.0.1:27017:27017 --name mongodb mongo:latest --storageEngine wiredTiger
@@ -50,6 +70,7 @@ function tomato-db-stop () {
 
 function tomato-backend-start () {
   mkdir -p "$DIR"/backend/{config,data,logs}
+  tomato-write_version_info "$DIR"/backend/config tomato-backend
   docker run -d -v "$TOMATODIR"/backend:/code -v "$TOMATODIR"/shared:/shared \
              -v "$DIR"/backend/config:/config -v "$DIR"/backend/data:/data -v "$DIR"/backend/logs:/logs \
              --link mongodb:db -p 8006:8006 -p 8000:8000 -p 8001:8001 -p 8002:8002 \
@@ -61,6 +82,7 @@ function tomato-backend-start () {
 
 function tomato-backend-shell () {
   mkdir -p "$DIR"/backend/{config,data,logs}
+  tomato-write_version_info "$DIR"/backend/config tomato-backend
   docker run -it --rm -v "$TOMATODIR"/backend:/code -v "$TOMATODIR"/shared:/shared \
              -v "$DIR"/backend/config:/config -v "$DIR"/backend/data:/data -v "$DIR"/backend/logs:/logs \
              --link mongodb:db -p 8006:8006 -p 8000:8000 -p 8001:8001 -p 8002:8002 \
@@ -72,6 +94,7 @@ function tomato-backend-shell () {
 function tomato-backend-stop () {
   docker stop tomato-backend
   docker rm tomato-backend
+  tomato-delete_version_info "$DIR"/backend/config
 }
 
 function tomato-backend-restart() {
@@ -84,6 +107,7 @@ function tomato-backend-restart() {
 
 function tomato-web-start () {
   mkdir -p "$DIR"/web/config
+  tomato-write_version_info "$DIR"/web/config tomato-web
   SECRET_KEY=$(cat /dev/urandom | tr -cd 'a-zA-Z0-9' | head -c 32)
   docker run -d -v "$TOMATODIR"/web:/code -v "$TOMATODIR"/shared:/shared -v "$DIR"/web/config:/config \
              --link tomato-backend:backend -p 8080:80 --dns 131.246.9.116 --name tomato-web \
@@ -94,6 +118,7 @@ function tomato-web-start () {
 function tomato-web-stop () {
   docker stop tomato-web
   docker rm tomato-web
+  tomato-delete_version_info "$DIR"/web/config
 }
 
 function tomato-web-restart() {
