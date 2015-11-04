@@ -30,7 +30,7 @@ def getDpkgVersionStr(package):
 def getGitVersionStr():
 	info = getGitVersionInfo()
 	if info:
-		return "%s-%s" % (info[0], info[1])
+		return "%s-%s" % info[0:2]
 	return None
 
 def getGitVersionInfo():
@@ -74,7 +74,7 @@ def getVersionStr(module):
 	elif module == "backend":
 		version = getDpkgVersionStr("tomato-backend")
 	elif module == "hostmanager":
-		version = getDpkgVersionStr()
+		version = getDpkgVersionStr("tomato-hostmanager")
 	if version:
 		return version
 
