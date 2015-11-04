@@ -11,10 +11,18 @@ import os
 
 def getDpkgVersionStr(package):
 	from .cmd import runUnchecked
+	try:
+		error, output = runUnchecked(["dpkg-query", "-s", package])
+		assert not error
+		assert output
+	except:
+		try:
+			if os.path.exists("/etc/tomato/version/dpkg-query"):  # when changing filename, also update in docker/run/cmds.sh
+				with open("/etc/tomato/version/dpkg-query") as f:
+					output = f.read()
+		except:
+			return None
 	fields = {}
-	error, output = runUnchecked(["dpkg-query", "-s", package])
-	if error:
-		return None
 	for line in output.splitlines():
 		if ": " in line:
 			name, value = line.split(": ")
@@ -42,8 +50,8 @@ def getGitVersionInfo():
 		assert output
 	except:
 		try:
-			if os.path.exists("/etc/tomato/git-describe"):  # when changing filename, also update in docker/run/cmds.sh
-				with open("/etc/tomato/git-describe") as f:
+			if os.path.exists("/etc/tomato/version/git-describe"):  # when changing filename, also update in docker/run/cmds.sh
+				with open("/etc/tomato/version/git-describe") as f:
 					output = f.read()
 		except:
 			return None
