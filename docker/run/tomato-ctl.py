@@ -183,7 +183,7 @@ def backend_start(config):
 	[
 		"--link", "%s:db" % config['db']['docker_container']
 	] + \
-	reduce(lambda x, y: x+y, [['-p', str(p)] for p in config['backend']['ports']]) + \
+	reduce(lambda x, y: x+y, [['-p', "%s:%s" % (str(p),str(p))] for p in config['backend']['ports']]) + \
 	[
 		"-e", "TIMEZONE=Europe/Berlin",
 		"-e", "TOMATO_VERSION=%s" % config['backend']['version'],
@@ -334,9 +334,9 @@ for path in filter(os.path.exists, ["/etc/tomato/tomato-ctl.conf", os.path.expan
 		with open(path) as f:
 			conf_new = json.loads(f.read())
 			config = merge_dirs(config, conf_new)
-		print "loaded config from %s" % path
+		print " [tomato-ctl] loaded config from %s" % path
 	except:
-		print "failed to load config from %s" % path
+		print " [tomato-ctl] failed to load config from %s" % path
 		raise
 
 if 'tomato_dir' not in config:
