@@ -314,26 +314,26 @@ config = {
 	# 'tomato_dir'  (will be generated if not found in config)
 }
 
-def merge_dirs(dir_a, dir_b):
-	for k, v in dir_b.iteritems():
-		if k in dir_a:
+def merge_dicts(dict_a, dict_b):
+	for k, v in dict_b.iteritems():
+		if k in dict_a:
 			if isinstance(v, list):
-				assert isinstance(dir_a[k], list)
-				dir_a[k] = dir_a[k] + v
+				assert isinstance(dict_a[k], list)
+				dict_a[k] = dict_a[k] + v
 			elif isinstance(v, dict):
-				assert isinstance(dir_a[k], dict)
-				dir_a[k] = merge_dirs(dir_a[k], v)
+				assert isinstance(dict_a[k], dict)
+				dict_a[k] = merge_dicts(dict_a[k], v)
 			else:
-				dir_a[k] = v
+				dict_a[k] = v
 		else:
-			dir_a[k] = v
-		return dir_a
+			dict_a[k] = v
+	return dict_a
 
 for path in filter(os.path.exists, ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf"]):
 	try:
 		with open(path) as f:
 			conf_new = json.loads(f.read())
-			config = merge_dirs(config, conf_new)
+			config = merge_dicts(config, conf_new)
 		print " [tomato-ctl] loaded config from %s" % path
 	except:
 		print " [tomato-ctl] failed to load config from %s" % path
