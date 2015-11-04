@@ -6,7 +6,7 @@ TOMATODIR="$DIR"/../..
 function tomato-write_version_info() {
     # first argument: output directory
     # second argument: dpkg package
-  if [! -d "$1"/version ]; then
+  if [ ! -d "$1"/version ]; then
     mkdir "$1"/version
   fi
   if git rev-parse --git-dir > /dev/null 2>&1; then
