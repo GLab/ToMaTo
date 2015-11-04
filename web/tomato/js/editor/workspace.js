@@ -191,7 +191,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "big_editor", "debug_mode", "show_ids", "show_sites_on_elements"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "big_editor", "debug_mode", "show_ids", "show_sites_on_elements","element_name_on_top"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data["_"+opts[i]]);
 		}
@@ -354,6 +354,11 @@ var Topology = Class.extend({
 		this.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "begin", attrs: data});
 		obj.setBusy(true);
 		this.pendingNames.push(data.name);
+		
+		if(editor.options.element_name_on_top) {
+			data.name_on_top = true;
+		}
+		
 		var t = this;
 		ajax({
 			url: "topology/" + this.id + "/create_element",
@@ -363,6 +368,7 @@ var Topology = Class.extend({
 				t.elements[data.id] = obj;
 				obj.setBusy(false);
 				obj.updateData(data);
+				
 				if (callback) callback(obj);
 				t.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "end", attrs: data});
 				t.onUpdate();
