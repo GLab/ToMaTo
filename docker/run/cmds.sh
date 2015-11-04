@@ -6,21 +6,13 @@ TOMATODIR="$DIR"/../..
 function tomato-write_version_info() {
     # first argument: output directory
     # second argument: dpkg package
-  if [ ! -d "$1"/version ]; then
-    mkdir "$1"/version
-  fi
-  if git rev-parse --git-dir > /dev/null 2>&1; then
-    git describe --tags --dirty > "$1"/version/git-describe
-  fi
-  if dpkg-query -l $2 > /dev/null 2>&1; then
-    dpkg-query -s $2 > "$1"/version/dpkg-query
-  fi
+  git describe --tags | cut -f1,2 -d'-' > "$1"/version
 }
 
 function tomato-delete_version_info() {
     # first argument: output directory of write_version_info
     if [ -e "$1"/version ]; then
-        rm -r "$1"/version
+        rm "$1"/version
     fi
 }
 
