@@ -24,6 +24,8 @@ from .. import settings
 from .error import Error  # @UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault
 from thread import start_new_thread
+from versioninfo import getVersionStr
+from .cmd import runUnchecked
 
 from ..settings import duration_log_location, enable_duration_log, duration_log_size, account_info_update_time
 
@@ -223,33 +225,6 @@ class wrap_json:
 			return HttpResponse(json.dumps({"success": False, "error": 'Error %s' % f}))
 
 
-DEVNULL = open("/dev/null", "w")
-
-
-def runUnchecked(cmd, shell=False, ignoreErr=False, input=None, cwd=None):  # @ReservedAssignment
-	import subprocess
-	stderr = DEVNULL if ignoreErr else subprocess.STDOUT
-	stdin = subprocess.PIPE if input else None
-	proc = subprocess.Popen(cmd, cwd=cwd, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, shell=shell,
-		close_fds=True)
-	res = proc.communicate(input)
-	return (proc.returncode, res[0])
-
-
-def getDpkgVersionStr(package):
-	fields = {}
-	error, output = runUnchecked(["dpkg-query", "-s", package])
-	if error:
-		return None
-	for line in output.splitlines():
-		if ": " in line:
-			name, value = line.split(": ")
-			fields[name.lower()] = value
-	if not "installed" in fields["status"]:
-		return None
-	return fields["version"]
-
-
 @cached(600)
 def serverInfo():
 	return getapi().server_info()
@@ -284,7 +259,7 @@ def getNews():
 
 @cached(3600)
 def getVersion():
-	return getDpkgVersionStr("tomato-web") or "devel"
+	return getVersionStr("web")
 
 
 def security_token(data, session=""):
