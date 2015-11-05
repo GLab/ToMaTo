@@ -378,7 +378,7 @@ def read_config():
 				('%(config)s', '/config')
 			],
 			'directories': {
-				'config': os.path.join("backend", "config")
+				'config': os.path.join("web", "config")
 			}
 			# 'version'  (will be generated if not found in config)
 		},
