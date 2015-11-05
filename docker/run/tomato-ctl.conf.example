@@ -1,0 +1,63 @@
+{
+  "___doc": [
+    "place a file containing some of these settings in one of these places:",
+    "    /etc/tomato/tomato-ctl.conf",
+    "    ~/.tomato/tomato-ctl.conf",
+    "    tomato-ctl.conf      (i.e., the current working directory)",
+    "",
+    "dictionaries will be merged.",
+    "lists will be concatenated.",
+    "all other values will be overwritten.",
+    "config files will be imported in the order given above.",
+    "",
+    "if no docker_dir or tomato_dir is given, docker_dir will be the current working dir,",
+    "  and tomato_dir will be docker_dir/../..",
+    "",
+    "Directiories in the 'directories' dicts can either be absolute, or relative to docker_dir"
+  ],
+  "db": {
+		"docker_container": "mongodb",
+		"image": "mongo:latest",
+        "port": 27017,
+		"additional_args": ["--dns", "8.8.8.8"],
+		"directories": {
+			"data": "/path/on/host/to/data",
+			"backup": "relative/to/docker_dir/backup"
+		},
+		"additional_directories": [
+          ["/path/on/host", "/path/on/container"]
+        ]
+  },
+  "backend": {
+		"docker_container": "tomato-backend",
+		"image": "tomato-backend",
+		"ports": [8000, 8001, 8002, 8006],
+        "timezone": "Europe/Berlin",
+		"additional_args": ["--dns", "8.8.8.8"],
+		"additional_directories": [
+          ["/path/on/host", "/path/on/container"]
+		],
+		"directories": {
+			"data": "/path/on/host/to/data",
+			"config": "/path/on/host/to/config",
+			"logs": "/path/on/host/to/logs"
+		},
+        "version": "3.6"
+  },
+  "web": {
+		"docker_container": "tomato-backend",
+		"image": "tomato-backend",
+		"port": 8000,
+        "timezone": "Europe/Berlin",
+		"additional_args": ["--dns", "8.8.8.8"],
+		"additional_directories": [
+          ["/path/on/host", "/path/on/container"]
+        ],
+		"directories": {
+			"config": "/path/on/host/to/config"
+		},
+        "version": "3.6"
+  },
+  "docker_dir": "/home/user/work/ToMaTo/docker/run",
+  "tomato_dir": "/home/user/work/ToMaTo"
+}
