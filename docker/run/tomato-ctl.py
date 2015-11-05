@@ -298,7 +298,7 @@ def db_backup(config, backup_name):
 		'-v', '%s:/backup' % backup_dir,
 		'--rm',
 		config['db']['image'],
-		'sh', '-c', 'mongodump -h "localhost:%s" -d tomato --out /backup; chmod -R ogu+rwX /backup' % config['db']['port']
+		'sh', '-c', 'mongodump -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" -d tomato --out /backup; chmod -R ogu+rwX /backup'
 	]
 	run_observing(*cmd)
 	run_observing('tar', 'czf', os.path.join(os.getcwd(), '%s.tar.gz' % backup_name), '-C', backup_dir, '.')
@@ -318,7 +318,7 @@ def db_restore(config, backup_name):
 		'-v', '%s:/backup' % backup_dir,
 		'--rm',
 		config['db']['image'],
-		'sh', '-c', 'exec mongorestore -h "localhost:%s" "/backup" --drop' % config['db']['port']
+		'sh', '-c', 'exec mongorestore -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" "/backup" --drop'
 	]
 	run_observing(*cmd)
 	shutil.rmtree(backup_dir)
