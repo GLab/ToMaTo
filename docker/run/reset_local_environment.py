@@ -10,7 +10,7 @@ import time
 sys.path.insert(1, "../../cli/")
 import lib as tomato
 
-if not os.path.exists('cmds.sh') or not os.path.exists('../../cli'):
+if not os.path.exists('tomato-ctl.py') or not os.path.exists('../../cli'):
 	print "this script must be executed in ToMaTo/docker/run."
 	exit(1)
 
