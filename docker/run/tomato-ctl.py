@@ -6,6 +6,7 @@ import random
 import string
 import time
 import json
+import shutil
 
 # functions to call processes
 
@@ -63,7 +64,7 @@ def show_help():
 
 Usage: %(cmd)s [COMMAND]
   or:  %(cmd)s [MODULE] [COMMAND]
-  or:  %(cmd)s db [BACKUP|RESTORE] [BACKUP_NAME|empty]  (unimplemented)
+  or:  %(cmd)s db [BACKUP|RESTORE] [BACKUP_NAME]
   or:  %(cmd)s help
 
 available modules:
@@ -116,7 +117,8 @@ Additional commands for the db module:
    If the database is not running, it will be started and stopped afterwards.
 
  restore:
-   Restore a backup. You have to pass the backup name as additional argument.
+   Restore a backup.
+   You have to pass the backup name as additional argument.
    If the database is not running, it will be started and stopped afterwards.
 
 
@@ -284,10 +286,43 @@ def db_log(config, interactive):
 	docker_logs(config['db']['docker_container'], interactive)
 
 def db_backup(config, backup_name):
-	pass
+	backup_dir = config['db']['directories']['backup']
+	if not os.path.isabs(backup_dir):
+		backup_dir = os.path.join(config['docker_dir'],backup_dir)
+	assure_path(backup_dir)
+	cmd = [
+		'docker',
+		'run',
+		'-it',
+		'--link', '%s:mongo' % config['db']['docker_container'],
+		'-v', '%s:/backup' % backup_dir,
+		'--rm',
+		config['db']['image'],
+		'sh', '-c', 'mongodump -h "localhost:%s" -d tomato --out /backup; chmod -R ogu+rwX /backup' % config['db']['port']
+	]
+	run_observing(*cmd)
+	run_observing('tar', 'czf', os.path.join(os.getcwd(), '%s.tar.gz' % backup_name), '-C', backup_dir, '.')
+	shutil.rmtree(backup_dir)
 
 def db_restore(config, backup_name):
-	pass
+	backup_dir = config['db']['directories']['backup']
+	if not os.path.isabs(backup_dir):
+		backup_dir = os.path.join(config['docker_dir'],backup_dir)
+	assure_path(backup_dir)
+	run_observing('tar', 'xzf', os.path.join(os.getcwd(), '%s.tar.gz' % backup_name), '-C', backup_dir)
+	cmd = [
+		'docker',
+		'run',
+		'-it',
+		'--link', '%s:mongo' % config['db']['docker_container'],
+		'-v', '%s:/backup' % backup_dir,
+		'--rm',
+		config['db']['image'],
+		'sh', '-c', 'exec mongorestore -h "localhost:%s" "/backup" --drop' % config['db']['port']
+	]
+	run_observing(*cmd)
+	shutil.rmtree(backup_dir)
+
 
 
 
@@ -307,8 +342,7 @@ def read_config():
 			'port': 27017,
 			'additional_args': [],
 			'additional_directories': [
-				('%(data)s', '/data'),
-				('%(backup)s', '/backup')
+				('%(data)s', '/data')
 			],
 			'directories': {
 				'data': "mongodb-data",
@@ -475,6 +509,14 @@ elif len(sys.argv) == 3:
 			db_log(config, True)
 			exit(0)
 
+		if sys.argv[2] == "backup":
+			backup_name = str(time.time()).split(".")[0]
+			print "Warning: no backup name specified. Using %s." % backup_name
+			sys.argv.append(backup_name)
+			# now, len(sys.argv == 4)
+
+		if sys.argv[2] == "restore":
+			print "Error: you have to specify a backup name."
 
 	if sys.argv[1] == "backend":
 
@@ -545,6 +587,25 @@ elif len(sys.argv) == 3:
 
 		if sys.argv[2] == "logs-interactive":
 			web_log(config, True)
+			exit(0)
+
+if len(sys.argv) == 4:
+	if sys.argv[1] == 'db':
+		if sys.argv[2] in ('backup', 'restore'):
+			backup_name = sys.argv[3]
+
+			is_started = db_status(config)
+			if not is_started:
+				db_start(config)
+
+			if sys.argv[2] == 'backup':
+				db_backup(config, backup_name)
+			else:
+				db_restore(config, backup_name)
+
+			if not is_started:
+				db_stop(config)
+
 			exit(0)
 
 
