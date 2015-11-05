@@ -61,8 +61,9 @@ def docker_logs(container, interactive):
 def show_help():
 	print """tomato-ctl:  control ToMaTo's docker containers.
 
-Usage: %(cmd)s [MODULE] [COMMAND]
-  or:  %(cmd)s [COMMAND]
+Usage: %(cmd)s [COMMAND]
+  or:  %(cmd)s [MODULE] [COMMAND]
+  or:  %(cmd)s db [BACKUP|RESTORE] [BACKUP_NAME|empty]  (unimplemented)
   or:  %(cmd)s help
 
 available modules:
@@ -104,6 +105,20 @@ available commands:
    Show the log of the selected container continuously.
    Quit using Ctrl+C.
    This command is not available if no module is selected.
+
+
+Additional commands for the db module:
+
+ backup:
+   Create a backup of the database.
+   You can pass an additional argument specifying the backup name.
+   If you do not pass a backup name as argument, the current timestamp will be used.
+   If the database is not running, it will be started and stopped afterwards.
+
+ restore:
+   Restore a backup. You have to pass the backup name as additional argument.
+   If the database is not running, it will be started and stopped afterwards.
+
 
 examples:
  %(cmd)s db stop
@@ -268,83 +283,127 @@ def db_log(config, interactive):
 		exit(1)
 	docker_logs(config['db']['docker_container'], interactive)
 
+def db_backup(config, backup_name):
+	pass
+
+def db_restore(config, backup_name):
+	pass
 
 
 
 
 
 
-# although some things here are called 'additional', they may be essential.
-config = {
-	'db': {
-		'docker_container': 'mongodb',
-		'image': 'mongo:latest',
-		'port': 27017,
-		'additional_args': [],
-		'additional_directories': [
-			(os.path.join(os.getcwd(), "mongodb-data"), '/data')
-		]
-		# 'version'  (will be generated if not found in config)
-	},
-	'backend': {
-		'docker_container': 'tomato-backend',
-		'image': 'tomato-backend',
-		'ports': [8000, 8001, 8002, 8006] + range(8010,8021),
-		'timezone': 'Europe/Berlin',
-		'additional_args': [],
-		'additional_directories': [
-			(os.path.join(os.getcwd(), "backend", "config"), '/config'),
-			(os.path.join(os.getcwd(), "backend", "data"), '/data'),
-			(os.path.join(os.getcwd(), "backend", "logs"), '/logs')
-		]
-		# 'version'  (will be generated if not found in config)
-	},
-	'web': {
-		'docker_container': 'tomato-web',
-		'image': 'tomato-web',
-		'port': 8080,
-		'timezone': 'Europe/Berlin',
-		'additional_args': [],
-		'additional_directories': [
-			(os.path.join(os.getcwd(), "web", "config"), '/config')
-		]
-		# 'version'  (will be generated if not found in config)
-	},
-	'docker_dir': os.getcwd()
-	# 'tomato_dir'  (will be generated if not found in config)
-}
 
-def merge_dicts(dict_a, dict_b):
-	for k, v in dict_b.iteritems():
-		if k in dict_a:
-			if isinstance(v, list):
-				assert isinstance(dict_a[k], list)
-				dict_a[k] = dict_a[k] + v
-			elif isinstance(v, dict):
-				assert isinstance(dict_a[k], dict)
-				dict_a[k] = merge_dicts(dict_a[k], v)
+def read_config():
+
+	# step 0: default config
+
+	# although some things here are called 'additional', they may be essential.
+	config = {
+		'db': {
+			'docker_container': 'mongodb',
+			'image': 'mongo:latest',
+			'port': 27017,
+			'additional_args': [],
+			'additional_directories': [
+				('%(data)s', '/data'),
+				('%(backup)s', '/backup')
+			],
+			'directories': {
+				'data': "mongodb-data",
+				'backup': "mongodb-backup"
+			}
+			# 'version'     (will be generated if not found in config)
+		},
+		'backend': {
+			'docker_container': 'tomato-backend',
+			'image': 'tomato-backend',
+			'ports': [8000, 8001, 8002, 8006] + range(8010,8021),
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(config)s', '/config'),
+				('%(data)s', '/data'),
+				('%(logs)s', '/logs')
+			],
+			'directories': {
+				'data': os.path.join("backend", "data"),
+				'config': os.path.join("backend", "config"),
+				'logs': os.path.join("backend", "logs")
+			}
+			# 'version'  (will be generated if not found in config)
+		},
+		'web': {
+			'docker_container': 'tomato-web',
+			'image': 'tomato-web',
+			'port': 8080,
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(config)s', '/config')
+			],
+			'directories': {
+				'config': os.path.join("backend", "config")
+			}
+			# 'version'  (will be generated if not found in config)
+		},
+		'docker_dir': os.getcwd()
+		# 'tomato_dir'  (will be generated if not found in config)
+	}
+
+	# step 1: read config files
+
+	def merge_dicts(dict_a, dict_b):
+		for k, v in dict_b.iteritems():
+			if k in dict_a:
+				if isinstance(v, list):
+					assert isinstance(dict_a[k], list)
+					dict_a[k] = dict_a[k] + v
+				elif isinstance(v, dict):
+					assert isinstance(dict_a[k], dict)
+					dict_a[k] = merge_dicts(dict_a[k], v)
+				else:
+					dict_a[k] = v
 			else:
 				dict_a[k] = v
-		else:
-			dict_a[k] = v
-	return dict_a
+		return dict_a
 
-for path in filter(os.path.exists, ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf"]):
-	try:
-		with open(path) as f:
-			conf_new = json.loads(f.read())
-			config = merge_dicts(config, conf_new)
-		print " [tomato-ctl] loaded config from %s" % path
-	except:
-		print " [tomato-ctl] failed to load config from %s" % path
-		raise
+	for path in filter(os.path.exists, ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf"]):
+		try:
+			with open(path) as f:
+				conf_new = json.loads(f.read())
+				config = merge_dicts(config, conf_new)
+			print " [tomato-ctl] loaded config from %s" % path
+		except:
+			print " [tomato-ctl] failed to load config from %s" % path
+			raise
 
-if 'tomato_dir' not in config:
-	config['tomato_dir'] = os.path.join(config['docker_dir'], "..", "..")
-print ""
-for module in "db", "backend", "web":
-	if "version" not in config[module]:
-		config[module]['version'] = subprocess.check_output(["bash", "-c", "cd '%s'; git describe --tags | cut -f1,2 -d'-'" % config['tomato_dir']]).split()[0]
+
+	# step 2: calculate missing paths.
+
+	if 'docker_dir' not in config:
+		config['docker_dir'] = os.path.join(config['tomato_dir'], "docker", "run")
+	print ""
+
+	for module in "db", "backend", "web":
+
+		if "version" not in config[module]:
+			config[module]['version'] = subprocess.check_output(["bash", "-c", "cd '%s'; git describe --tags | cut -f1,2 -d'-'" % config['tomato_dir']]).split()[0]
+
+		additional_dirs_new = []
+		for additional_dir in config[module]['additional_directories']:
+			directory = additional_dir[0] % config[module]['directories']
+			if not os.path.isabs(directory):
+				directory = os.path.join(config['docker_dir'], directory)
+			additional_dirs_new.append((directory, additional_dir[1]))
+		config[module]['additional_directories'] = additional_dirs_new
+
+	return config
+
+
+
+config = read_config()
 
 if len(sys.argv) == 2:
 
