@@ -251,13 +251,18 @@ var Element = Component.extend({
 			}
 		);
 	},
-	uploadFile: function(window_title, grant_action, use_action) {
+	uploadFile: function(window_title, grant_action, use_action, via_url) {  // via url: if true, use the upload-from-url functionality.
 		if (window.location.protocol == 'https:') { //TODO: fix this.
 			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
 			return;
 		}
 		this.action(grant_action, {callback: function(el, res) {
-			var url = "http://" + el.data.host_info.address + ":" + el.data.host_info.fileserver_port + "/" + res + "/upload";
+			var url;
+			if (via_url) {
+				url = "http://" + el.data.host_info.address + ":" + el.data.host_info.fileserver_port + "/" + res + "/from_url";
+			} else {
+				url = "http://" + el.data.host_info.address + ":" + el.data.host_info.fileserver_port + "/" + res + "/upload";
+			}
 			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
 			// iframe.load will be triggered a moment after iframe is added to body
 			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
@@ -273,7 +278,17 @@ var Element = Component.extend({
 				});
 				var t = this;							
 				var div = $('<div/>');
-				this.upload_form = $('<form method="post" id="upload_form" enctype="multipart/form-data" action="'+url+'" target="upload_target">\
+				if (via_url) {
+					this.upload_form = $('<form method="post" id="upload_form" enctype="multipart/form-data" action="'+url+'" target="upload_target">\
+							<div class="form-group">\
+								<label for="id_url" class="control-label">URL</label> \
+								<div class="controls">\
+									<input id="id_url" class="textinput textInput form-control" type="text" name="url" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\'); $(this).parents(\'.input-group\').find(\':text.form-control\').val(this.value.replace(/\\\\/g, \'/\').replace(/.*\\//, \'\'));"/>\
+								</div>\
+							</div>\
+					</form>')
+				} else {
+					this.upload_form = $('<form method="post" id="upload_form" enctype="multipart/form-data" action="'+url+'" target="upload_target">\
 								<div class="input-group">\
 				                    <span class="btn btn-primary btn-file input-group-btn">\
 				                        Browse <input type="file" name="upload" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\'); $(this).parents(\'.input-group\').find(\':text.form-control\').val(this.value.replace(/\\\\/g, \'/\').replace(/.*\\//, \'\'));"/>\
@@ -281,6 +296,7 @@ var Element = Component.extend({
 									<input type="text" class="form-control" readonly>\
 								</div>\
 						</form>');
+				}
 				div.append(this.upload_form);
 				this.info = new Window({
 					title: window_title, 
@@ -314,11 +330,17 @@ var Element = Component.extend({
 			$('body').append(iframe);			
 		}});
 	},
-	uploadImage: function() {
-		this.uploadFile("Upload Image","upload_grant","upload_use");	
+	uploadImage_fromFile: function() {
+		this.uploadFile("Upload Image","upload_grant","upload_use",false);
 	},
-	uploadRexTFV: function() {
-		this.uploadFile("Upload Executable Archive","rextfv_upload_grant","rextfv_upload_use");
+	uploadImage_byURL: function() {
+		this.uploadFile("Upload Image","upload_grant","upload_use",true);
+	},
+	uploadRexTFV_fromFile: function() {
+		this.uploadFile("Upload Executable Archive","rextfv_upload_grant","rextfv_upload_use",false);
+	},
+	uploadRexTFV_byURL: function() {
+		this.uploadFile("Upload Executable Archive","rextfv_upload_grant","rextfv_upload_use",true);
 	},
 	action_start: function() {
 		this.action("start");
