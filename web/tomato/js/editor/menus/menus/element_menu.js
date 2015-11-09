@@ -153,7 +153,7 @@ var createElementMenu = function(obj) {
 								obj.uploadImage_fromFile();
 							}
 						} : null,
-						"upload_image_url": obj.actionEnabled("upload_grant") ? {
+						"upload_image_url": (obj.actionEnabled("upload_grant") && editor.web_resources.executable_archives.length > 0) ? {
 							name:"Upload custom image from URL",
 							icon:"upload",
 							callback: function(){
@@ -185,6 +185,13 @@ var createElementMenu = function(obj) {
 							icon:"upload",
 							callback: function(){
 								obj.uploadRexTFV_byURL();
+							}
+						} : null,
+						"upload_rextfv_default": obj.actionEnabled("rextfv_upload_grant") ? {
+							name:"Use a Default Archive",
+							icon:"upload",
+							callback: function(){
+								obj.uploadRexTFV_fromDefault();
 							}
 						} : null,
 						"rextfv_status": obj.rextfvStatusSupport() ? {
