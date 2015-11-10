@@ -204,7 +204,7 @@ var Editor = Class.extend({
 			var data = {type: type, _pos: pos};
 			t.topology.createElement(data, function(el1) {
 					el1.showConfigWindow(false, function (el2) { 
-							el2.action("prepare", { callback: function(el3) {el3.uploadImage();} });	
+							el2.action("prepare", { callback: function(el3) {el3.uploadImage_fromFile();} });
 						}
 				);
 				}

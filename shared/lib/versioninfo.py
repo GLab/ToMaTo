@@ -1,4 +1,4 @@
-# specify version in /etc/tomato/version
+# specify version in /etc/tomato/version, or in OS environment variable $TOMATO_VERSION
 import os
 
 def getVersionStr(module):
@@ -7,8 +7,13 @@ def getVersionStr(module):
 		try:
 			with open("/etc/tomato/version") as f:
 				version = f.readline()
-				return version
+				if version:
+					return version
 		except:
 			pass
+
+	version = os.getenv("TOMATO_VERSION", None)
+	if version:
+		return version
 
 	return "devel"
