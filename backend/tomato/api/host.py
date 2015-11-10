@@ -154,11 +154,19 @@ def host_create(name, site, attrs=None):
 	return h.info()
 
 @checkauth
-def host_info(name):
+def host_info(name,force_update=False):
 	"""
 	undocumented
 	"""
 	h = _getHost(name)
+	if(force_update):
+		
+		try:
+			h.update()
+		except:
+			host_list.invalidate()
+			return h.info()
+		host_list.invalidate()
 	return h.info()
 
 @checkauth

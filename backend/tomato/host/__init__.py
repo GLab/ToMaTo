@@ -100,6 +100,7 @@ class Host(DumpSource, Entity, BaseDocument):
 	dumpLastFetch = FloatField(db_field='dump_last_fetch')
 	templates = ListField(ReferenceField(Template, reverse_delete_rule=PULL))
 	hostNetworks = ListField(db_field='host_networks')
+	synchronized = True
 	meta = {
 		'ordering': ['site', 'name'],
 		'indexes': [
@@ -175,21 +176,40 @@ class Host(DumpSource, Entity, BaseDocument):
 	def update(self):
 		self.availability *= config.HOST_AVAILABILITY_FACTOR
 		self.save()
+		
 		if not self.enabled:
 			return
 		before = time.time()
-		self.hostInfo = self._info()
-		after = time.time()
-		self.hostInfoTimestamp = (before + after) / 2.0
-		self.hostInfo["query_time"] = after - before
-		self.hostInfo["time_diff"] = self.hostInfo["time"] - self.hostInfoTimestamp
+		
+		oldInfo = self.hostInfo
+		
+		try:
+			self.hostInfo = self._info()
+			self.synchronized = True
+		
+			after = time.time()
+			self.hostInfoTimestamp = (before + after) / 2.0
+			self.hostInfo["query_time"] = after - before
+			self.hostInfo["time_diff"] = self.hostInfo["time"] - self.hostInfoTimestamp
+		except:
+			self.hostInfo = oldInfo
+			self.synchronized = False
 		try:
 			self.hostNetworks = self.getProxy().host_networks()
 		except:
 			self.hostNetworks = []
-		caps = self._convertCapabilities(self.getProxy().host_capabilities())
-		self.elementTypes = caps["elements"]
-		self.connectionTypes = caps["connections"]
+	
+		oldElementTypes = self.elementTypes
+		oldconnectionTypes = self.connectionTypes
+		caps = []
+		try:
+			caps = self._convertCapabilities(self.getProxy().host_capabilities())
+			self.elementTypes = caps["elements"]
+			self.connectionTypes = caps["connections"]
+		except:
+			self.elementTypes = oldElementTypes
+			self.connectionTypes = oldconnectionTypes
+		
 		self.componentErrors = max(0, self.componentErrors / 2)
 		if not self.problems():
 			self.availability += 1.0 - config.HOST_AVAILABILITY_FACTOR
@@ -506,6 +526,8 @@ class Host(DumpSource, Entity, BaseDocument):
 			problems.append("Lots of error dumps")
 		if "problems" in hi:
 			problems += hi["problems"]
+		if not self.synchronized:
+			problems.append("Host informations could not be updated")
 		return problems
 
 	def checkProblems(self):
@@ -786,7 +808,7 @@ def synchronizeHost(host):
 			host.updateAccountingData()
 		except:
 			import traceback
-
+			
 			traceback.print_exc()
 			logging.logException(host=host.name)
 			print >>sys.stderr, "Error updating information from %s" % host
