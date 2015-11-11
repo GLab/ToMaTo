@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+
+{% load tomato %}
+
+{% block title %}
+<title>Default Executable Archives - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+<h1>Default Executable Archives</h1>
+
+<div class="skip-sm"></div>
+
+{% if archive_list %}
+	<script src="/js/enhancetable.js"></script>
+	<table class="sortable,filterable table table-striped">
+	  <tr>
+	  	<th class="icononly"></th>
+	  	<th>Name</th>
+	    <th>Label</th>
+	    <th>Creation Date</th>
+	    <th>Alternatives</th>
+	    <th class="icononly"></th>
+	  </tr>
+	{% for archive in archive_list %}
+	  <tr>
+	  	<td align="right" class="icononly">
+	  		<img src="{{archive.icon}}" />
+		</td>
+	    <td><a href="{%url "web_resources.executable_archive_info" archive.name%}">{{archive.name}}</a></td>
+	    <td>{{archive.label}}</td>
+	    <td>{{archive.creation_date|todate}}</td>
+	    <td>{{archive.alternatives}}</td>
+	    <td class="icononly">
+	    <div class="hoverdescription">
+	    	<img src="/img/info.png" alt="i" />
+			
+    		<div class="hiddenbox"><table>
+			<tr>
+				<td><img src="/img/info.png" /></td>
+				{% if templ.description %}
+					<td>{{ templ.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+				{% else %}
+					<td>No description available.</td>
+				{%endif%}
+			</tr>
+			
+    		</table></div>
+		 </div>	    
+	    </td>
+	  </tr>
+	{% endfor %}
+	</table>
+{% else %}
+	<p>No default executable archives.</p>
+{% endif %}
+
+{% if request.session.user.isGlobalHostManager %}
+
+<div class="row">
+	<div class="alert alert-info col-xs-12 text-center" style="">
+		{% if default_executable_archives_list_url %}
+			Default executable archives are described at <a href="{{default_executable_archives_list_url}}">{{default_executable_archives_list_url}}</a><br />
+			This location can be changed in the webfrontend settings via 'default_executable_archives_list_url'.
+		{% else %}
+			You can describe default executable archives via the webfrontend settings by providing a URL for the setting 'default_executable_archives_list_url'.
+		{% endif %}
+	</div>
+</div>
+{% endif %}
+
+{% endblock %}
