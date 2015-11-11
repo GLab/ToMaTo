@@ -30,6 +30,8 @@ def executable_archives():
 		else:
 			entry['icon'] = None
 
+		entry['description'] = default_archive.get('description', None)
+
 		entry['default_archive'] = urljoin(url, default_archive['default_archive'])
 
 		entry['alternatives'] = {k: dict() for k in techs()}
@@ -40,6 +42,7 @@ def executable_archives():
 				alt_entry = {
 					'url': urljoin(url, alternative['archive'])
 				}
+				alt_entry['description'] = alternative.get('description', None)
 				if ':' in template:
 					tech, template_name = template.split(':')
 					entry['alternatives'][tech][template_name] = alt_entry

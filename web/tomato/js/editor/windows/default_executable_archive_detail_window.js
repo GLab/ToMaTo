@@ -92,7 +92,7 @@ var DefaultExecutableArchiveDetailWindow = Window.extend({
 						tech: tech,
 						template: template,
 						icon: tech_icon,
-						description: "" //fixme: allow descriptions
+						description: alt_entry.description
 					});
 				}
 			}
@@ -106,6 +106,25 @@ var DefaultExecutableArchiveDetailWindow = Window.extend({
 	getValue: function() {
 		return this.value;
 	},
+	get_infobox(item) {
+		if (item.description) {
+			return $('\
+				<div class="hoverdescription" style="display: inline; white-space:nowrap;">\
+					<img src="/img/info.png"/>\
+					<div class="hiddenbox">\
+						<p style="margin:4px; border:0px; padding:0px; color:black; min-width:8.5cm;">\
+							<table>\
+								<tr><th><img src="/img/info.png" /></th>\
+								<td style="background:white; white-space:pre !important;">'+item.description+'</td></tr>\
+							</table>\
+						</p>\
+					</div>\
+				</div>\
+			');
+		} else {
+			return $('<div></div>');
+		}
+	},
 	getList: function() {
 		var form = $('<form class="form-horizontal"></form>');
 		var ths = this;
@@ -117,7 +136,7 @@ var DefaultExecutableArchiveDetailWindow = Window.extend({
 			var alt = this.choices[i];
 
 
-			var div_option = $('<div class="col-md-10" />');
+			var div_option = $('<div class="col-sm-10" />');
 			var div_radio = $('<div class="radio"></div>');
 			div_option.append(div_radio);
 			var radio = $('<input type="radio" name="template" value="'+alt.url+'" id="'+winID+alt.tech+":"+alt.template+'" />');
@@ -141,8 +160,8 @@ var DefaultExecutableArchiveDetailWindow = Window.extend({
 			});
 			div_radio.append(radiolabel);
 			radiolabel.prepend(radio);
-			var div_info = $('<div class="col-md-2" />');
-			//div_info.append(alt.infobox());  // fixme: generate infoboxes
+			var div_info = $('<div class="col-sm-2" />');
+			div_info.append(this.get_infobox(alt));
 
 			div_formgroup.append(div_option);
 			div_formgroup.append(div_info);

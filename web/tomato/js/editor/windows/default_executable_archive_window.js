@@ -51,6 +51,25 @@ var DefaultExecutableArchiveWindow = Window.extend({
 	getValue: function() {
 		return this.value;
 	},
+	get_infobox(item) {
+		if (item.description) {
+			return $('\
+				<div class="hoverdescription" style="display: inline; white-space:nowrap;">\
+					<img src="/img/info.png"/>\
+					<div class="hiddenbox">\
+						<p style="margin:4px; border:0px; padding:0px; color:black; min-width:8.5cm;">\
+							<table>\
+								<tr><th><img src="/img/info.png" /></th>\
+								<td style="background:white; white-space:pre !important;">'+item.description+'</td></tr>\
+							</table>\
+						</p>\
+					</div>\
+				</div>\
+			');
+		} else {
+			return $('<div></div>');
+		}
+	},
 	getList: function() {
 		var form = $('<form class="form-horizontal"></form>');
 		var ths = this;
@@ -63,7 +82,7 @@ var DefaultExecutableArchiveWindow = Window.extend({
 			var archive = this.choices[i];
 
 
-			var div_option = $('<div class="col-md-10" />');
+			var div_option = $('<div class="col-sm-10" />');
 			var div_radio = $('<div class="radio"></div>');
 			div_option.append(div_radio);
 			var radio = $('<input type="radio" name="template" value="'+archive.name+'" id="'+winID+archive.name+'" />');
@@ -74,7 +93,7 @@ var DefaultExecutableArchiveWindow = Window.extend({
 				radio.change(function() {
 					ths.value = this.value;
 				});
-			}
+			}1
 
 			if (!something_selected) {
 				radio.prop("checked",true);
@@ -92,8 +111,8 @@ var DefaultExecutableArchiveWindow = Window.extend({
 			});
 			div_radio.append(radiolabel);
 			radiolabel.prepend(radio);
-			var div_info = $('<div class="col-md-2" />');
-			//div_info.append(archive.infobox());  // fixme: generate infoboxes
+			var div_info = $('<div class="col-sm-2" />');
+			div_info.append(this.get_infobox(archive));
 
 			div_formgroup.append(div_option);
 			div_formgroup.append(div_info);
