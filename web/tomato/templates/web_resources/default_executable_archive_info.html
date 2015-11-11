@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+
+{% block header %}
+<script language="JavaScript" type="text/javascript" src="/js/dynimg.js"></script>
+{% endblock %}
+
+{% block title %}
+<title>Executable Archive '{{template.name}}' - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+{% load tomato %}
+
+<form>
+  <button type="submit" formaction="{%url "web_resources.executable_archive_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Default Executable Archives</button>
+</form>
+
+<h1>Executable Archive '{{archive.name}}'</h1>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<table class="table">
+	<tr>
+		<th>Name:</th>
+		<td>{{archive.name}}</td>
+	</tr>
+	<tr>
+		<th>Label:</th>
+		<td>{{archive.label}}</td>
+	</tr>
+	<tr>
+		<th>Creation date:</th>
+		<td>{{archive.creation_date|todate}}</td>
+	</tr>
+	<tr>
+		<th>Icon:</th>
+		<td>
+		{% if archive.icon %}
+			<img src="{{archive.icon}}" />
+		{% else %}
+			<img src="/img/rextfv.png" />
+		{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<th>Description:</th>
+		<td>{{archive.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+	</tr>
+	{% if not template.restricted or "restricted_templates" in request.session.user.flags %}
+	<tr>
+		<th>Archive File</th>
+		<td>
+			<form><button type="submit" formaction="{{archive.default_archive}}" class="btn btn-info"><span class="glyphicon glyphicon-floppy-save"></span></button></form>
+		</td>
+	</tr>
+	{% endif %}
+</table>
+
+<div class="skip-sm"></div>
+
+<h2>Alternatives</h2>
+
+{% for alternative in archive.alternatives %}
+
+<table class="table">
+	<tr>
+		<th>Templates:</th>
+		<td>
+			<ul>
+				{% for template in alternative.templates %}
+					<li><a href="{%url 'tomato.template.info' template.id%}"><img src="/img/{{template.tech}}16.png"/> {{template.label}} ({{template.tech|tech_to_label}})</a></li>
+				{% endfor %}
+			</ul>
+		</td>
+	</tr>
+	<tr>
+		<th>Creation date:</th>
+		<td>{{alternative.creation_date|todate}}</td>
+	</tr>
+	<tr>
+		<th>Description:</th>
+		<td>{{alternative.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+	</tr>
+	{% if not template.restricted or "restricted_templates" in request.session.user.flags %}
+	<tr>
+		<th>Archive File</th>
+		<td>
+			<form><button type="submit" formaction="{{alternative.url}}" class="btn btn-info"><span class="glyphicon glyphicon-floppy-save"></span></button></form>
+		</td>
+	</tr>
+	{% endif %}
+</table>
+
+{% endfor %}
+
+<div class="skip-sm"></div>
+
+{% if request.session.user.isGlobalHostManager %}
+
+<div class="row">
+	<div class="alert alert-info col-xs-12 text-center" style="">
+		{% if default_executable_archives_list_url %}
+			Default executable archives are described at <a href="{{default_executable_archives_list_url}}">{{default_executable_archives_list_url}}</a><br />
+			This location can be changed in the webfrontend settings via 'default_executable_archives_list_url'.
+		{% else %}
+			You can describe default executable archives via the webfrontend settings by providing a URL for the setting 'default_executable_archives_list_url'.
+		{% endif %}
+	</div>
+</div>
+{%endif%}
+
+{% endblock %}

@@ -33,12 +33,19 @@ var Editor = Class.extend({
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.sites = this.options.sites;
+		this.web_resources = this.options.web_resources;
 		this.profiles = new ProfileStore(this.options.resources.profiles,this);
 		this.templates = new TemplateStore(this.options.resources.templates,this);
 		this.networks = new NetworkStore(this.options.resources.networks,this);
 		this.buildMenu(this);
 		this.setMode(Mode.select);
-		
+
+		// create web_resources.executable_archives_dict
+		this.web_resources.executable_archives_dict = {};
+		for(var i=0; i<this.web_resources.executable_archives.length; i++) {
+			var archive = this.web_resources.executable_archives[i];
+			this.web_resources.executable_archives_dict[archive.name] = archive;
+		}
 		
 		this.sites_dict = {};
 		for (s in this.sites) {

@@ -24,10 +24,13 @@ import re, time
 from .lib import anyjson as json
 
 from tutorial import loadTutorial
+from web_resources import web_resources
 from lib import wrap_rpc, AuthError, serverInfo
 
 from admin_common import BootstrapForm, Buttons
 from tomato.crispy_forms.layout import Layout
+
+from settings import default_executable_archives_list_url
 
 
 class ImportTopologyForm(BootstrapForm):
@@ -68,6 +71,7 @@ def list(api, request, show_all=False, organization=None):
 		{'top_list': toplist, 'organization': organization, 'orgas': orgas, 'show_all': show_all})
 
 
+
 def _display(api, request, info, tutorial_state):
 	caps = api.capabilities()
 	resources = api.resources_map()
@@ -97,6 +101,7 @@ def _display(api, request, info, tutorial_state):
 		'top': info,
 		'timeout_settings': serverInfo()["topology_timeout"],
 		'res_json': json.dumps(resources),
+		'res_web_json': json.dumps(web_resources()),
 		'sites_json': json.dumps(sites),
 		'caps_json': json.dumps(caps),
 		'tutorial_info':{'state': tutorial_state,
