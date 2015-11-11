@@ -80,7 +80,7 @@ var TemplateWindow = Window.extend({
 			var t = this.choices[i];
 
 			
-			var div_option = $('<div class="col-md-10" />');
+			var div_option = $('<div class="col-sm-10" />');
 			var div_radio = $('<div class="radio"></div>');
 			div_option.append(div_radio);
 			var radio = $('<input type="radio" name="template" value="'+t.name+'" id="'+winID+t.name+'" />');
@@ -107,7 +107,7 @@ var TemplateWindow = Window.extend({
 			});
 			div_radio.append(radiolabel);
 			radiolabel.prepend(radio);
-			var div_info = $('<div class="col-md-2" />');
+			var div_info = $('<div class="col-sm-2" />');
 			div_info.append(t.infobox());
 			
 			div_formgroup.append(div_option);
