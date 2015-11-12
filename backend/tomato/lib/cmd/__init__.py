@@ -63,19 +63,6 @@ def removeControlChars(s):
     controlChars = "".join(map(chr, range(0,9)+range(11,13)+range(14,32)))
     return s.translate(None, controlChars)
 
-def getDpkgVersionStr(package):
-    fields = {}
-    error, output = runUnchecked(["dpkg-query", "-s", package])
-    if error:
-        return None 
-    for line in output.splitlines():
-        if ": " in line:
-            name, value = line.split(": ")
-            fields[name.lower()] = value
-    if not "installed" in fields["status"]:
-        return None
-    return fields["version"]
-
 def splitVersion(verStr):
     version = []
     numStr = ""

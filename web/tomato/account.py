@@ -168,19 +168,31 @@ class AccountChangeForm(AccountForm):
 			self.fields["flags"].widget = AccountFlagCheckboxList(api)
 		else:
 			self.fields["flags"].widget = AccountFlagFixedList(api)
+
+		is_self = data['name'] == api.account_info()['name']
 			
 		self.helper.form_action = reverse(edit, kwargs={'id':data['name']})
-		self.helper.layout = Layout(
-			'name',
-			'password',
-			'password2',
-			'organization',
-			'realname',
-			'email',
-			'flags',
-			'send_mail',
-			Buttons.cancel_save
-		)
+		self.helper.layout = Layout(*(
+			(
+				'name',
+				'password',
+				'password2'
+			) +
+			(() if is_self else (
+				'organization',
+			)) +
+			(
+				'realname',
+				'email',
+				'flags'
+			) +
+			(() if is_self else (
+				'send_mail',
+			)) +
+			(
+				Buttons.cancel_save,
+			)
+		))
 			
 
 class AccountRegisterForm(AccountForm):

@@ -146,11 +146,18 @@ var createElementMenu = function(obj) {
 								obj.downloadImage();
 							}
 						} : null,
-						"upload_image": obj.actionEnabled("upload_grant") ? {
-							name:"Upload custom image",
+						"upload_image_file": obj.actionEnabled("upload_grant") ? {
+							name:"Upload custom image from disk",
 							icon:"upload",
 							callback: function(){
-								obj.uploadImage();
+								obj.uploadImage_fromFile();
+							}
+						} : null,
+						"upload_image_url": (obj.actionEnabled("upload_grant") && editor.web_resources.executable_archives.length > 0) ? {
+							name:"Upload custom image from URL",
+							icon:"upload",
+							callback: function(){
+								obj.uploadImage_byURL();
 							}
 						} : null,
 					}
@@ -166,11 +173,25 @@ var createElementMenu = function(obj) {
 								obj.downloadRexTFV();
 							}
 						} : null,
-						"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
-							name:"Upload Archive",
+						"upload_rextfv_file": obj.actionEnabled("rextfv_upload_grant") ? {
+							name:"Upload Archive from Disk",
 							icon:"upload",
 							callback: function(){
-								obj.uploadRexTFV();
+								obj.uploadRexTFV_fromFile();
+							}
+						} : null,
+						"upload_rextfv_url": obj.actionEnabled("rextfv_upload_grant") ? {
+							name:"Upload Archive from URL",
+							icon:"upload",
+							callback: function(){
+								obj.uploadRexTFV_byURL();
+							}
+						} : null,
+						"upload_rextfv_default": obj.actionEnabled("rextfv_upload_grant") ? {
+							name:"Use a Default Archive",
+							icon:"upload",
+							callback: function(){
+								obj.uploadRexTFV_fromDefault();
 							}
 						} : null,
 						"rextfv_status": obj.rextfvStatusSupport() ? {

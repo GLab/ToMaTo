@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from lib.cmd import getDpkgVersionStr #@UnresolvedImport
+from lib.versioninfo import getVersionStr
 
 def getVersion():
-	return getDpkgVersionStr("tomato-backend") or "devel"
+	return getVersionStr("backend")
 
 from . import config
 

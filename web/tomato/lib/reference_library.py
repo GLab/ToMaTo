@@ -11,6 +11,9 @@ def tech_to_label(tech):
 		return "Repy"
 	return tech
 
+def techs():
+	return ['kvmqm', 'openvz', 'repy']
+
 def entity_to_label(entity):
 	if entity == 'topology':
 		return "Topology"
