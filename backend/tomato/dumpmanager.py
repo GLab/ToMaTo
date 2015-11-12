@@ -270,7 +270,7 @@ class DumpSource(object):
 					to_be_dumped = False
 			if to_be_dumped:
 				InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
-								data={"source": repr(self), "exception": exc}).dump()
+								data={"source": repr(self), "exception": repr(exc)}).dump()
 			return []
 
 
