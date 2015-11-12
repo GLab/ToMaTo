@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string",
+        "format": "uri",
+        "description": "URL of the default executable archive description file, relative to this file"
+      },
+      "name": {
+        "type": "string",
+        "description": "A short name for the tutorial. Should not contain the / symbol."
+      },
+      "label": {
+        "type": "string",
+        "description": "An on-screen name of the archive."
+      }
+    },
+    "required": ["url", "name"]
+  }
+}
