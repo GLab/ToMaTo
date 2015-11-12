@@ -20,34 +20,42 @@ function showDump(group_id, source, dump_id, include_data) {
 	var url = include_data ? "{%url 'dumpmanager.dump_export_with_data' '__GROUP__' '_SOURCE_' '23542.123456' %}" : "{%url 'dumpmanager.dump_export' '__GROUP__' '_SOURCE_' '23542.123456' %}";
 	url = url.replace("__GROUP__", group_id).replace("_SOURCE_",source).replace("23542.123456", dump_id);
 	var xmlhttp=new XMLHttpRequest();
-	xmlhttp.open("GET",url,false);
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState==4) {
+			try {
+				res = JSON.parse(xmlhttp.responseText);
+				title = source.toLowerCase() + "__" + dump_id
+				filename = title + ".errordump.json";
+				filename.replace('[^\w\-_\. :]',"_");
+				pretty_json_popup(res,title,filename);
+			} catch(ex) {
+				alert('Failed to retrieve dump');
+			}
+		}
+	};
+	xmlhttp.open("GET",url,true);
 	xmlhttp.send();
-	try {
-	    res = JSON.parse(xmlhttp.responseText);
-	    title = source.toLowerCase() + "__" + dump_id
-	    filename = title + ".errordump.json";
-	    filename.replace('[^\w\-_\. :]',"_");
-	    pretty_json_popup(res,title,filename);
-    } catch(ex) {
-        alert('Failed to retrieve dump');
-    }
 }
 
 function openGithub(group_id) {
 	var url = "{%url 'dumpmanager.errorgroup_github' '__GROUP__' %}".replace('__GROUP__', group_id)
 	var xmlhttp=new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState==4) {
+			try {
+				res = JSON.parse(xmlhttp.responseText);
+				if (res.success) {
+					window.open(res.result, '_blank');
+				} else {
+					alert('Failed to open issue: '+res.error.typemsg+': '+res.error.errormsg);
+				}
+		    } catch(ex) {
+				alert('Failed to open issue');
+		    }
+		}
+	};
 	xmlhttp.open("GET", url, false);
 	xmlhttp.send();
-	try {
-	    res = JSON.parse(xmlhttp.responseText);
-	    if (res.success) {
-			window.open(res.result, '_blank');
-		} else {
-			alert('Failed to open issue: '+res.error.typemsg+': '+res.error.errormsg);
-		}
-   } catch(ex) {
-        alert('Failed to open issue');
-    }
 }
 </script>
 {% endblock %}
