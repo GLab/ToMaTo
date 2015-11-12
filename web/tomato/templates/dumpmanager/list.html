@@ -69,9 +69,32 @@
 
 
 <form style="padding: 0px;margin:0px;">
- <button type="submit" onClick="loadbusy(event,'Refreshing Dumps')" formaction="{%url "dumpmanager.refresh" %}" class="btn btn-info"><span class="glyphicon glyphicon-refresh"></span> Refresh Dumps</button>
- <button type="submit" formaction="{%url "dumpmanager.hide_old_errorgroups" %}" class="btn btn-warning"><span class="glyphicon glyphicon-ok"></span> <span class="glyphicon glyphicon-time"></span> Clear Old Groups</button>
- <button type="submit" formaction="{%url "dumpmanager.remove_old_errorgroups" %}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> <span class="glyphicon glyphicon-time"></span> Remove Old Groups</button>
+
+	<button type="submit" onClick="loadbusy(event,'Refreshing Dumps')" formaction="{%url "dumpmanager.refresh" %}" class="btn btn-info"><span class="glyphicon glyphicon-refresh"></span> Refresh Dumps</button>
+
+	<div class="btn-group">
+		<button type="button" class="btn btn-warning" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+			<span class="glyphicon glyphicon-ok"></span> <span class="glyphicon glyphicon-time"></span> Clear Old Groups <span class="caret"></span>
+		</button>
+		<ul class="dropdown-menu">
+			<li><a href="{%url "dumpmanager.hide_old_errorgroups" 60 %}">Clear groups older than 60 days</a></li>
+			<li><a href="{%url "dumpmanager.hide_old_errorgroups" 1 %}">Clear groups older than 1 day</a></li>
+			<li><a href="{%url "dumpmanager.hide_old_errorgroups" 0 %}">Clear all groups</a></li>
+		</ul>
+	</div>
+
+	<div class="btn-group">
+		<button type="button" class="btn btn-danger" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+			<span class="glyphicon glyphicon-trash"></span> <span class="glyphicon glyphicon-time"></span> Remove Old Groups <span class="caret"></span>
+		</button>
+		<ul class="dropdown-menu">
+			<li><a href="{%url "dumpmanager.remove_old_errorgroups" 60 %}">Remove groups older than 60 days</a></li>
+			<li><a href="{%url "dumpmanager.remove_old_errorgroups" 1 %}">Remove groups older than 1 day</a></li>
+			<li><a href="{%url "dumpmanager.remove_old_errorgroups" 0 %}">Remove all groups</a></li>
+		</ul>
+	</div>
+
+
  </form>
 
 {% endblock %}
