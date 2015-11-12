@@ -4,6 +4,8 @@ DIR=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))
 TOMATODIR="$DIR"/../..
 
 function tomato-db-start () {
+  echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
+  echo madvise >/sys/kernel/mm/transparent_hugepage/defrag
   mkdir -p "$DIR"/mongodb-data
   docker run -d -v "$DIR"/mongodb-data:/data/db -p 127.0.0.1:27017:27017 --name mongodb mongo:latest --storageEngine wiredTiger
   docker start mongodb
