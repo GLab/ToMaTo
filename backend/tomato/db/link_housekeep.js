@@ -126,7 +126,10 @@ function() {
         for (; e < lastList.length && lastList[e].e <= end; e++);
         if (e == lastList.length) break;
         var records = lastList.slice(s, e);
-        list.push(combineRecords(records));
+        var combined = combineRecords(records);
+        combined.b = begin;
+        combined.e = end;
+        list.push(combined);
         changed = true;
         begin = end;
         end = nextPoint(end, type);
