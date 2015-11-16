@@ -521,7 +521,7 @@ class Host(DumpSource, Entity, BaseDocument):
 				notifyFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 											   or user.hasFlag(
 					Flags.OrgaHostContact) and user.organization == self.site.organization,
-								  "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self, ref=['host', self.name], subject_group="failure")
+								  "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self, ref=['host', self.name], subject_group="host failure")
 			self.problemAge = 0
 		if problems and (self.problemAge < time.time() - 300):
 			if self.problemMailTime < self.problemAge:
@@ -531,7 +531,7 @@ class Host(DumpSource, Entity, BaseDocument):
 											   or user.hasFlag(
 					Flags.OrgaHostContact) and user.organization == self.site.organization,
 								  "Host %s: Problems" % self,
-								  "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)), ref=['host', self.name], subject_group="failure")
+								  "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)), ref=['host', self.name], subject_group="host failure")
 			if self.problemAge < time.time() - 6 * 60 * 60:
 				# persistent problem older than 6h
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
@@ -543,7 +543,7 @@ class Host(DumpSource, Entity, BaseDocument):
 						Flags.OrgaHostContact) and user.organization == self.site.organization,
 									  "Host %s: Problems persist" % self,
 									  "Host %s has the following problems since %s:\n\n%s" % (
-										  self, duration, ", ".join(problems)), ref=['host', self.name], subject_group="failure")
+										  self, duration, ", ".join(problems)), ref=['host', self.name], subject_group="host failure")
 
 		self.save()
 
