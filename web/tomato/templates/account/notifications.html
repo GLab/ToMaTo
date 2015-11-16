@@ -29,6 +29,25 @@
 
 		location.reload();
 	}
+
+	function mark_all_read() {
+		var url = "{% url 'notification_mark_read' '__NOTIFICATIONID__'%}";
+		var notification_ids = [];
+		{% for notification in notifications %}
+			{% if not notification.read %}
+				try {
+					var xmlhttp=new XMLHttpRequest();
+					xmlhttp.open("GET",url.replace('__NOTIFICATIONID__', "{{notification.id}}"),false);
+					xmlhttp.send();
+					res = JSON.parse(xmlhttp.responseText);
+				}catch(ex) {
+
+				}
+			{% endif %}
+		{% endfor %}
+
+		window.location = '{% url 'tomato.account.unread_notifications' %}';
+	}
 </script>
 
 <div class="row">
@@ -98,9 +117,16 @@
 
 {% endfor %}
 
+{% if is_filtered %}
+<div class="skip-sm"></div>
+<div style="text-align: right;">
+  <button type="submit" onclick="mark_all_read()" class="btn btn-default"><span class="glyphicon glyphicon-ok-circle"></span> Mark all read</button>
+</div>
+{% endif %}
+
 	  {% else %}
 
-	  <h2>No {% if not include_read %}unread {%endif%}notifications!</h2>
+	  <h2>No {% if not include_read %}unread {%endif%}notifications{% if is_filtered %} matching your query{% endif%}!</h2>
 
 	  {% endif %}
 
