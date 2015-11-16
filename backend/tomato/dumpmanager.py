@@ -371,8 +371,11 @@ def insert_dump(dump, source):
 				group_desc = dump['description']
 			group = create_group(dump['group_id'], group_desc)
 			notifyFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
-							 "A new group of error has been found, with ID %s. It has first been observed on %s." % (
-								 dump['group_id'], source.dump_source_name()), ref=['errorgroup', dump['group_id']])
+							 "\n\n".join((
+								 "A new group of error has been found.",
+								 "Description: %s",
+								 "It has first been observed on %s.")) % (
+								 group_desc, source.dump_source_name()), ref=['errorgroup', dump['group_id']])
 
 			# insert the dump.
 		for d in group.dumps:
