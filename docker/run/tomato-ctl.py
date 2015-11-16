@@ -342,7 +342,7 @@ def read_config():
 			'port': 27017,
 			'additional_args': [],
 			'additional_directories': [
-				('%(data)s', '/data')
+				('%(data)s', '/data/db')
 			],
 			'directories': {
 				'data': "mongodb-data",
