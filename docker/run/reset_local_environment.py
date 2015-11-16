@@ -87,10 +87,13 @@ conn.site_create(config['site']['name'],
 									'geolocation': config['site']['geolocation']}
 								 )
 for host in config['hosts']:
-	conn.host_create(host['name'],
-									 config['site']['name'],
-									 {'address': host['address'],
-										'rpcurl': host['rpcurl']})
+	try:
+		conn.host_create(host['name'],
+										 config['site']['name'],
+										 {'address': host['address'],
+											'rpcurl': host['rpcurl']})
+	except:
+		print "error inserting %s" % host['name']
 print ""
 
 
