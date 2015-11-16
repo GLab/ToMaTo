@@ -31,22 +31,24 @@
 	}
 
 	function mark_all_read() {
-		var url = "{% url 'notification_mark_read' '__NOTIFICATIONID__'%}";
-		var notification_ids = [];
-		{% for notification in notifications %}
-			{% if not notification.read %}
-				try {
-					var xmlhttp=new XMLHttpRequest();
-					xmlhttp.open("GET",url.replace('__NOTIFICATIONID__', "{{notification.id}}"),false);
-					xmlhttp.send();
-					res = JSON.parse(xmlhttp.responseText);
-				}catch(ex) {
+		if (confirm("Do you really want to mark all these notifications as read?")){
+			var url = "{% url 'notification_mark_read' '__NOTIFICATIONID__'%}";
+			var notification_ids = [];
+			{% for notification in notifications %}
+				{% if not notification.read %}
+					try {
+						var xmlhttp=new XMLHttpRequest();
+						xmlhttp.open("GET",url.replace('__NOTIFICATIONID__', "{{notification.id}}"),false);
+						xmlhttp.send();
+						res = JSON.parse(xmlhttp.responseText);
+					}catch(ex) {
 
-				}
-			{% endif %}
-		{% endfor %}
+					}
+				{% endif %}
+			{% endfor %}
 
-		window.location = '{% url 'tomato.account.unread_notifications' %}';
+			window.location = '{% url 'tomato.account.unread_notifications' %}';
+		}
 	}
 </script>
 
