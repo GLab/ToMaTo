@@ -87,6 +87,7 @@ available commands:
  restart:
    Restart the container
    This is equivalent to stop and then start.
+   This will also restart all modules that depend on the selected module.
 
  shell:
    Open the shell of the container.
@@ -499,10 +500,16 @@ elif len(sys.argv) == 3:
 			exit(0)
 
 		if sys.argv[2] == "restart":
+			web_started = web_status(config)
+			backend_started = backend_status(config)
 			web_stop(config)
 			backend_stop(config)
 			db_stop(config)
 			db_start(config)
+			if backend_started:
+				backend_start(config)
+			if web_started:
+				web_start(config)
 			exit(0)
 
 		if sys.argv[2] == "status":
@@ -543,10 +550,13 @@ elif len(sys.argv) == 3:
 			exit(0)
 
 		if sys.argv[2] == "restart":
+			web_started = web_status(config)
 			web_stop(config)
 			backend_stop(config)
 			db_start(config)
 			backend_start(config)
+			if web_started:
+				web_start(config)
 			exit(0)
 
 		if sys.argv[2] == "status":
