@@ -122,6 +122,12 @@ Additional commands for the db module:
    If the database is not running, it will be started and stopped afterwards.
 
 
+Additional commands for the web module:
+
+ reload:
+   Reloads the apache configuration and ToMaTo code.
+
+
 examples:
  %(cmd)s db stop
  %(cmd)s start
@@ -182,6 +188,12 @@ def web_log(config, interactive):
 		print "web not running"
 		exit(1)
 	docker_logs(config['web']['docker_container'], interactive)
+
+def web_reload(config):
+	if not web_status(config):
+		print "web not running"
+		exit(1)
+	docker_exec(config['web']['docker_container'], "service", "apache2", "reload")
 
 
 def backend_start(config):
@@ -587,6 +599,10 @@ elif len(sys.argv) == 3:
 
 		if sys.argv[2] == "logs-interactive":
 			web_log(config, True)
+			exit(0)
+
+		if sys.argv[2] == "reload":
+			web_reload(config)
 			exit(0)
 
 if len(sys.argv) == 4:
