@@ -381,8 +381,8 @@ def read_config():
 				'config': os.path.join("web", "config")
 			}
 			# 'version'  (will be generated if not found in config)
-		},
-		'docker_dir': os.getcwd()
+		}
+		# 'docker_dir'  (will be generated if not found in config)
 		# 'tomato_dir'  (will be generated if not found in config)
 	}
 
@@ -403,7 +403,7 @@ def read_config():
 				dict_a[k] = v
 		return dict_a
 
-	for path in filter(os.path.exists, ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf"]):
+	for path in filter(os.path.exists, ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]):
 		try:
 			with open(path) as f:
 				conf_new = json.loads(f.read())
@@ -415,7 +415,8 @@ def read_config():
 
 
 	# step 2: calculate missing paths.
-
+	if 'tomato_dir' not in config:
+		config['tomato_dir'] = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 	if 'docker_dir' not in config:
 		config['docker_dir'] = os.path.join(config['tomato_dir'], "docker", "run")
 	print ""
