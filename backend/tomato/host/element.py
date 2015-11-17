@@ -80,13 +80,15 @@ class HostElement(HostObject):
 		try:
 			if self.id:
 				self.delete()
+			self.usageStatistics.delete()
 		except OperationError:
 			from .connection import HostConnection
 			for hcon in HostConnection.objects(elementFrom=self):
 				hcon.remove()
 			for hcon in HostConnection.objects(elementTo=self):
 				hcon.remove()
-		self.usageStatistics.delete()
+			for ch in self.children:
+				ch.remove()
 
 	def getConnection(self):
 		return self.connection
