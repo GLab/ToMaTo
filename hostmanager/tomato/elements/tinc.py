@@ -237,8 +237,10 @@ class Tinc(elements.Element):
 			usage.memory = process.memory(pid)
 			cputime = process.cputime(pid)
 			usage.updateContinuous("cputime", cputime, data)
-			traffic = sum(net.trafficInfo(self.interfaceName()))
-			usage.updateContinuous("traffic", traffic, data)
+			trafficA, trafficB = net.trafficInfo(self.interfaceName())
+			if not trafficA is None and not trafficB is None:
+				traffic = trafficA + trafficB
+				usage.updateContinuous("traffic", traffic, data)
 			
 if not config.MAINTENANCE:
 	tincVersion = cmd.getDpkgVersion("tinc")
