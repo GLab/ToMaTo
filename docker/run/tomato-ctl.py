@@ -7,6 +7,7 @@ import string
 import time
 import json
 import shutil
+from datetime import date
 
 # functions to call processes
 
@@ -301,7 +302,9 @@ def db_backup(config, backup_name):
 		'sh', '-c', 'mongodump -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" -d tomato --out /backup; chmod -R ogu+rwX /backup'
 	]
 	run_observing(*cmd)
-	run_observing('tar', 'czf', os.path.join(os.getcwd(), '%s.tar.gz' % backup_name), '-C', backup_dir, '.')
+	if not backup_name.endswith(".tar.gz"):
+		backup_name += ".tar.gz"
+	run_observing('tar', 'czf', backup_name, '-C', backup_dir, '.')
 	shutil.rmtree(backup_dir)
 
 def db_restore(config, backup_name):
@@ -309,7 +312,9 @@ def db_restore(config, backup_name):
 	if not os.path.isabs(backup_dir):
 		backup_dir = os.path.join(config['docker_dir'],backup_dir)
 	assure_path(backup_dir)
-	run_observing('tar', 'xzf', os.path.join(os.getcwd(), '%s.tar.gz' % backup_name), '-C', backup_dir)
+	if not backup_name.endswith(".tar.gz"):
+		backup_name += ".tar.gz"
+	run_observing('tar', 'xzf', backup_name, '-C', backup_dir)
 	cmd = [
 		'docker',
 		'run',
@@ -511,7 +516,7 @@ elif len(sys.argv) == 3:
 			exit(0)
 
 		if sys.argv[2] == "backup":
-			backup_name = str(time.time()).split(".")[0]
+			backup_name = "mongodb-dump-%s" % date.today().isoformat()
 			print "Warning: no backup name specified. Using %s." % backup_name
 			sys.argv.append(backup_name)
 			# now, len(sys.argv == 4)
