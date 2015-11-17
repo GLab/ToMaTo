@@ -83,7 +83,7 @@ def statistics():
 	usage['topologies_active'] = 0
 	for top in list(topology.Topology.objects.all()):
 		usage['topologies'] += 1
-		topUsage = top.info()['usage']
+		topUsage = top.totalUsage.latest
 		if topUsage and (topUsage['memory']>0 or topUsage['cputime']>0 or topUsage['traffic']>0):
 			usage['topologies_active'] += 1
 	
