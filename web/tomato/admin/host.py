@@ -95,7 +95,7 @@ class AddHostForm(HostForm):
 					</div>\
 				</div>' % publickey
 		if site is not None:
-			self.fields['organization'].initial = site
+			self.fields['site'].initial = site
 
 
 class EditHostForm(HostForm):
