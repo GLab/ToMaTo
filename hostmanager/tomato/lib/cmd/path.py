@@ -49,6 +49,8 @@ def extractArchive(src, dst, opts=[]):
 	run(["tar", "-axf", src] + opts + ["-C", dst])
 
 def diskspace(path):
+	if not exists(path):
+		return 0
 	out = run(["du", "-sb", path])
 	return int(out.split()[0])
 
