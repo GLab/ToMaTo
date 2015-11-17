@@ -142,11 +142,13 @@ class Notification(EmbeddedDocument):
 	read = BooleanField(default=False)
 	ref_obj = ListField(StringField())
 	sender = StringField()
+	subject_group = StringField()
 
-	def init(self, ref, sender):
+	def init(self, ref, sender, subject_group=None):
 		self.ref_obj = ref if ref else []
 		print self.ref_obj
 		self.sender = sender.name if sender else None
+		self.subject_group = subject_group
 
 	def info(self):
 		return {
@@ -156,7 +158,8 @@ class Notification(EmbeddedDocument):
 			'message': self.message,
 			'read': self.read,
 			'ref': self.ref_obj if self.ref_obj else None,
-			'sender': self.sender
+			'sender': self.sender,
+			'subject_group': self.subject_group
 		}
 
 	def set_read(self, read):
@@ -216,15 +219,15 @@ class User(BaseDocument):
 		user.save()
 		return user
 
-	def sendNotification(self, subject, message, ref=None, fromUser=None, send_email=True):
-		self._addNotification(subject, message, ref, fromUser)
+	def sendNotification(self, subject, message, ref=None, fromUser=None, send_email=True, subject_group=None):
+		self._addNotification(subject, message, ref, fromUser, subject_group=subject_group)
 		if send_email:
 			self._sendMail(subject, message, fromUser)
 
-	def _addNotification(self, title, message, ref, fromUser):
+	def _addNotification(self, title, message, ref, fromUser, subject_group=None):
 		now = time.time()
 		notf = Notification(title=title, message=message, timestamp=now, id=str(now))
-		notf.init(ref, fromUser)
+		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
 		self.save()
 
@@ -467,12 +470,12 @@ def getFilteredUsers(filterfn, organization = None):
 def getFlaggedUsers(flag):
 	return getFilteredUsers(lambda user: user.hasFlag(flag))
 
-def notifyFilteredUsers(filterfn, subject, message, organization = None, ref=None):
+def notifyFilteredUsers(filterfn, subject, message, organization = None, ref=None, subject_group=None):
 	for user in getFilteredUsers(filterfn, organization):
-		user.sendNotification(subject, message, ref=ref)
+		user.sendNotification(subject, message, ref=ref, subject_group=subject_group)
 
-def notifyFlaggedUsers(flag, subject, message, organization=None, ref=None):
-	notifyFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization, ref)
+def notifyFlaggedUsers(flag, subject, message, organization=None, ref=None, subject_group=None):
+	notifyFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization, ref=ref, subject_group=subject_group)
 	
 def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 	user = currentUser()

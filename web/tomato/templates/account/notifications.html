@@ -29,14 +29,35 @@
 
 		location.reload();
 	}
+
+	function mark_all_read() {
+		if (confirm("Do you really want to mark all these notifications as read?")){
+			var url = "{% url 'notification_mark_read' '__NOTIFICATIONID__'%}";
+			var notification_ids = [];
+			{% for notification in notifications %}
+				{% if not notification.read %}
+					try {
+						var xmlhttp=new XMLHttpRequest();
+						xmlhttp.open("GET",url.replace('__NOTIFICATIONID__', "{{notification.id}}"),false);
+						xmlhttp.send();
+						res = JSON.parse(xmlhttp.responseText);
+					}catch(ex) {
+
+					}
+				{% endif %}
+			{% endfor %}
+
+			window.location = '{% url 'tomato.account.unread_notifications' %}';
+		}
+	}
 </script>
 
 <div class="row">
   <div class="col-md-8 col-md-offset-2">
 
 <form>
-	{% if include_read %}
-  <button type="submit" formaction="{%url 'tomato.account.unread_notifications' %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> Show Unread Notifications</button>
+	{% if include_read or is_filtered %}
+  <button type="submit" formaction="{%url 'tomato.account.unread_notifications' %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> Show {% if is_filtered %}All {%endif%}Unread Notifications</button>
 	{% else %}
 	<button type="submit" formaction="{%url 'tomato.account.all_notifications' %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> Show All Notifications</button>
 	{% endif %}
@@ -74,6 +95,12 @@
 				</div>
 
 				<div class="col-sm-6" style="text-align: right;">
+				{% if notification.subject_group and notification.ref and not is_filtered %}
+				  <button class="subject-group-button btn btn-default" onclick="window.location = '{%url 'account.filtered_unread_notifications' notification.ref.0 notification.ref.1 notification.subject_group%}'">
+					<span class="glyphicon glyphicon-arrow-right"></span> related notifications
+				  </button>
+				{% endif %}
+
 				{% if notification.read %}
 				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read({{notification.id}}, false)">
 					<span class="glyphicon glyphicon-remove-circle"></span> mark as unread
@@ -92,9 +119,16 @@
 
 {% endfor %}
 
+{% if is_filtered %}
+<div class="skip-sm"></div>
+<div style="text-align: right;">
+  <button type="submit" onclick="mark_all_read()" class="btn btn-default"><span class="glyphicon glyphicon-ok-circle"></span> Mark all read</button>
+</div>
+{% endif %}
+
 	  {% else %}
 
-	  <h2>No {% if not include_read %}unread {%endif%}notifications!</h2>
+	  <h2>No {% if not include_read %}unread {%endif%}notifications{% if is_filtered %} matching your query{% endif%}!</h2>
 
 	  {% endif %}
 

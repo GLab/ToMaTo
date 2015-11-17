@@ -44,6 +44,7 @@ var Editor = Class.extend({
 		this.web_resources.executable_archives_dict = {};
 		for(var i=0; i<this.web_resources.executable_archives.length; i++) {
 			var archive = this.web_resources.executable_archives[i];
+			if (archive.icon==undefined || archive.icon==null) archive.icon="/img/rextfv.png";
 			this.web_resources.executable_archives_dict[archive.name] = archive;
 		}
 		
