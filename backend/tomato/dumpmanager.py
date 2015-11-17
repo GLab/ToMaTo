@@ -4,7 +4,7 @@ from .lib import anyjson as json
 
 import host
 from . import scheduler, config, currentUser
-from .lib.error import InternalError, UserError, Error  # @UnresolvedImport
+from .lib.error import InternalError, UserError, Error, TransportError  # @UnresolvedImport
 from .lib.rpc.sslrpc import RPCError
 from .lib import util
 
@@ -267,6 +267,9 @@ class DumpSource(object):
 			to_be_dumped = True
 			if isinstance(exc, RPCError):
 				if exc.category == RPCError.Category.NETWORK:
+					to_be_dumped = False
+			if isinstance(exc, Error):
+				if exc.type == TransportError.TYPE:
 					to_be_dumped = False
 			if to_be_dumped:
 				InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
