@@ -523,7 +523,7 @@ class Host(DumpSource, Entity, BaseDocument):
 					Flags.OrgaHostContact) and user.organization == self.site.organization,
 								  "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self, ref=['host', self.name])
 			self.problemAge = 0
-		if problems and (self.problemAge < time.time() - 300):
+		if problems and (self.problemAge < time.time() - config.HOST_UPDATE_INTERVAL * 5):
 			if self.problemMailTime < self.problemAge:
 				# problem exists and no mail has been sent so far
 				self.problemMailTime = time.time()
