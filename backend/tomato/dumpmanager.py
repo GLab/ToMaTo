@@ -417,9 +417,18 @@ def update_all(async=True):
 			update_source(s)
 	return len(getDumpSources())
 
+@util.wrap_task
+def scheduleUpdates():
+	toSync = set(getDumpSources())
+	syncTasks = {t.args[0]: tid for tid, t in scheduler.tasks.items() if t.fn == update_source}
+	syncing = set(syncTasks.keys())
+	for s in toSync - syncing:
+		scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, update_source, s)
+	for s in syncing - toSync:
+		scheduler.cancelTask(syncTasks[s])
 
 def init():
-	scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, update_all, immediate=True)
+	scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, scheduleUpdates, immediate=True)
 
 
 # Second Part: Access to known dumps for API
