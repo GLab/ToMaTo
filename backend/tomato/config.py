@@ -118,6 +118,8 @@ ERROR_NOTIFY = []
 
 MAX_REQUESTS = 50
 
+MAX_WORKERS = 25
+
 import socket
 _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 _socket.connect(("8.8.8.8",80))
