@@ -19,15 +19,19 @@
 		}
 
 		var xmlhttp=new XMLHttpRequest();
-		xmlhttp.open("GET",url,false);
-		xmlhttp.send();
-		try {
-			res = JSON.parse(xmlhttp.responseText);
-		} catch(ex) {
-			alert('Failed to mark notifification');
-		}
+		xmlhttp.onreadystatechange = function() {
+			if (xmlhttp.readyState==4) {
+				try {
+					res = JSON.parse(xmlhttp.responseText);
+				} catch(ex) {
+					alert('Failed to mark notifification');
+				}
 
-		location.reload();
+				location.reload();
+			}
+		}
+		xmlhttp.open("GET",url,true);
+		xmlhttp.send();
 	}
 
 	function mark_all_read() {
