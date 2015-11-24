@@ -22,7 +22,7 @@ from lib import logging #@UnresolvedImport
 from accounting import UsageStatistics
 from .auth.permissions import PermissionMixin, Role
 from . import scheduler
-from .lib.error import UserError #@UnresolvedImport
+from .lib.error import UserError, InternalError #@UnresolvedImport
 from .lib import util
 
 class TimeoutStep:
@@ -70,6 +70,7 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		"""
 		:type owner: auth.User
 		"""
+		InternalError.check(False, InternalError.UNKNOWN, "This is a test", todump=True)
 		if not attrs: attrs = {}
 		self.setRole(owner, Role.owner)
 		self.totalUsage = UsageStatistics.objects.create()

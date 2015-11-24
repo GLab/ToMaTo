@@ -1,5 +1,6 @@
 import os, hashlib, re
 import httplib
+import inspect, traceback
 
 from . import anyjson as json
 
@@ -8,16 +9,44 @@ dumpError = None
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
 
+def generate_inspect_trace(frame=None):
+	res = []
+	if frame is None:
+		frame = inspect.currentframe()
+
+	for frame_ in inspect.getouterframes(frame):
+		res.append({
+			'locals': {k: repr(v) for k, v in frame_[0].f_locals.iteritems()},
+			'file': frame_[1],
+			'line_no': frame_[2],
+			'function': frame_[3],
+			'code': frame_[4]
+		})
+
+	res.reverse()
+	return res
+
 class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=None, onscreenmessage=None):
+	def __init__(self, code=None, message=None, data=None, type=None, todump=None, module=MODULE, httpcode=None, onscreenmessage=None, frame=None, frame_trace=None, trace=None):
 		self.type = type or self.TYPE
 		self.code = code
 		self.message = message
 		self.data = data or {}
 		self.module = module
+		if trace is None:
+			self.trace = traceback.extract_stack()
+		else:
+			self.trace = trace
+		if frame_trace is None:
+			if frame is None:
+				self.frame_trace = generate_inspect_trace(inspect.currentframe())
+			else:
+				self.frame_trace = generate_inspect_trace(frame)
+		else:
+			self.frame_trace = frame_trace
 		if httpcode is None:
 			self.httpcode = getCodeHTTPErrorCode(code)
 		else:
@@ -56,7 +85,10 @@ class Error(Exception):
 		"""
 		creates a dict representation of this error.
 		"""
-		return dict(self.__dict__)
+		res = dict(self.__dict__)
+		if 'frame_trace' in res:
+			del res['frame_trace']
+		return res
 
 	@property
 	def rawstr(self):
@@ -80,13 +112,14 @@ class Error(Exception):
 	@classmethod
 	def check(cls, condition, code, message, todump=None, *args, **kwargs):
 		if condition: return
-		exception = cls(code=code, message=message,todump=todump, *args, **kwargs)
+		exception = cls(code=code, message=message, todump=todump,
+										frame=inspect.currentframe(), trace=traceback.extract_stack(), *args, **kwargs)
 		exception.dump()
 		raise exception
 
 	@classmethod
-	def wrap(cls, error, code=UNKNOWN, todump=None, message=None, *args, **kwargs):
-		return cls(code=code, message=message or str(error), todump=todump, *args, **kwargs)
+	def wrap(cls, error, code=UNKNOWN, todump=None, message=None, trace=None, frame_trace=None, frame=None, *args, **kwargs):
+		return cls(code=code, message=message or str(error), todump=todump, trace=trace, frame_trace=frame_trace, frame=frame, *args, **kwargs)
 
 	def __str__(self):
 		lines = []
@@ -101,7 +134,6 @@ class Error(Exception):
 
 	def __repr__(self):
 		return "Error(module=%r, type=%r, code=%r, message=%r, data=%r, onscreenmessage=%r)" % (self.module, self.type, self.code, self.message, self.data,self.onscreenmessage)
-
 
 def ErrorType(Type):
 	TYPES[Type.TYPE]=Type
