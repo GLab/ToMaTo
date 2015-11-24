@@ -146,11 +146,18 @@ var createElementMenu = function(obj) {
 								obj.downloadImage();
 							}
 						} : null,
-						"upload_image": obj.actionEnabled("upload_grant") ? {
-							name:"Upload custom image",
-							icon:"upload",
+						"upload_image_file": obj.actionEnabled("upload_grant") ? {
+							name:"Upload custom image from disk",
+							icon:"upload_file",
 							callback: function(){
-								obj.uploadImage();
+								obj.uploadImage_fromFile();
+							}
+						} : null,
+						"upload_image_url": (obj.actionEnabled("upload_grant") && editor.web_resources.executable_archives.length > 0) ? {
+							name:"Upload custom image from URL",
+							icon:"upload_url",
+							callback: function(){
+								obj.uploadImage_byURL();
 							}
 						} : null,
 					}
@@ -166,13 +173,29 @@ var createElementMenu = function(obj) {
 								obj.downloadRexTFV();
 							}
 						} : null,
-						"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
-							name:"Upload Archive",
-							icon:"upload",
+						"sep2": obj.actionEnabled("rextfv_upload_grant") && obj.actionEnabled("rextfv_download_grant") ? "---" : null,
+						"upload_rextfv_file": obj.actionEnabled("rextfv_upload_grant") ? {
+							name:"Upload Archive from Disk",
+							icon:"upload_file",
 							callback: function(){
-								obj.uploadRexTFV();
+								obj.uploadRexTFV_fromFile();
 							}
 						} : null,
+						"upload_rextfv_url": obj.actionEnabled("rextfv_upload_grant") ? {
+							name:"Upload Archive from URL",
+							icon:"upload_url",
+							callback: function(){
+								obj.uploadRexTFV_byURL();
+							}
+						} : null,
+						"upload_rextfv_default": obj.actionEnabled("rextfv_upload_grant") ? {
+							name:"Use a Default Archive",
+							icon:"upload_defaultrextfv",
+							callback: function(){
+								obj.uploadRexTFV_fromDefault();
+							}
+						} : null,
+						"sep2": obj.actionEnabled("rextfv_upload_grant") && obj.rextfvStatusSupport() ? "---" : null,
 						"rextfv_status": obj.rextfvStatusSupport() ? {
 							name:"Status",
 							icon:"info",

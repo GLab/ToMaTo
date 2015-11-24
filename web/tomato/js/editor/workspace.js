@@ -676,7 +676,6 @@ var Topology = Class.extend({
 		dialog = new AttributeWindow({
 			title: "New Topology",
 			width: 500,
-			height: 500,
 			closable: false,
 			buttons: [
 						{ 

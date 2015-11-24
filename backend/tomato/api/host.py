@@ -133,7 +133,8 @@ def host_list(site=None, organization=None):
 	undocumented
 	"""
 	if site:
-		hosts = Host.objects(site__name=site)
+		site = Site.get(site)
+		hosts = Host.objects(site=site)
 	elif organization:
 		organization = _getOrganization(organization)
 		sites = Site.objects(organization=organization)

@@ -4,7 +4,7 @@ from .lib import anyjson as json
 
 import host
 from . import scheduler, config, currentUser
-from .lib.error import InternalError, UserError, Error  # @UnresolvedImport
+from .lib.error import InternalError, UserError, Error, TransportError  # @UnresolvedImport
 from .lib.rpc.sslrpc import RPCError
 from .lib import util
 
@@ -292,9 +292,12 @@ class DumpSource(object):
 			if isinstance(exc, RPCError):
 				if exc.category == RPCError.Category.NETWORK:
 					to_be_dumped = False
+			if isinstance(exc, Error):
+				if exc.type == TransportError.TYPE:
+					to_be_dumped = False
 			if to_be_dumped:
 				InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
-								data={"source": repr(self), "exception": exc}).dump()
+								data={"source": repr(self), "exception": repr(exc)}).dump()
 			return []
 
 
@@ -371,8 +374,11 @@ def insert_dump(dump, source):
 				group_desc = dump['description']
 			group = create_group(dump['group_id'], group_desc)
 			notifyFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
-							 "A new group of error has been found, with ID %s. It has first been observed on %s." % (
-								 dump['group_id'], source.dump_source_name()), ref=['errorgroup', dump['group_id']])
+							 "\n\n".join((
+								 "A new group of error has been found.",
+								 "Description: %s",
+								 "It has first been observed on %s.")) % (
+								 group_desc, source.dump_source_name()), ref=['errorgroup', dump['group_id']])
 
 			# insert the dump.
 		for d in group.dumps:
@@ -411,9 +417,18 @@ def update_all(async=True):
 			update_source(s)
 	return len(getDumpSources())
 
+@util.wrap_task
+def scheduleUpdates():
+	toSync = set(getDumpSources())
+	syncTasks = {t.args[0]: tid for tid, t in scheduler.tasks.items() if t.fn == update_source}
+	syncing = set(syncTasks.keys())
+	for s in toSync - syncing:
+		scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, update_source, s)
+	for s in syncing - toSync:
+		scheduler.cancelTask(syncTasks[s])
 
 def init():
-	scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, update_all, immediate=True)
+	scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, scheduleUpdates, immediate=True)
 
 
 # Second Part: Access to known dumps for API

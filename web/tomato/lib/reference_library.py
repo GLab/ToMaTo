@@ -11,6 +11,9 @@ def tech_to_label(tech):
 		return "Repy"
 	return tech
 
+def techs():
+	return ['kvmqm', 'openvz', 'repy']
+
 def entity_to_label(entity):
 	if entity == 'topology':
 		return "Topology"
@@ -93,3 +96,13 @@ def resolve_reference(api, ref):
 			return ref_link, "View %s Template '%s'" % (tech_to_label(template_info['tech']), template_info['label'])
 		except:
 			return ref_link, "View Template '%s'" % obj_id
+
+	if obj_type == "errorgroup":
+		ref_link = reverse("tomato.dumpmanager.group_info", kwargs={"group_id": obj_id})
+		try:
+			errorgroup_info = api.errorgroup_info(obj_id)
+			return ref_link, "View Error group '%s'" % errorgroup_info['description']
+		except:
+			return ref_link, "View Error group '%s'" % obj_id
+
+	return "", "%s %s" % (obj_type, obj_id)

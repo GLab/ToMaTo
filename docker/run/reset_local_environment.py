@@ -10,7 +10,7 @@ import time
 sys.path.insert(1, "../../cli/")
 import lib as tomato
 
-if not os.path.exists('cmds.sh') or not os.path.exists('../../cli'):
+if not os.path.exists('tomato-ctl.py') or not os.path.exists('../../cli'):
 	print "this script must be executed in ToMaTo/docker/run."
 	exit(1)
 
@@ -51,7 +51,7 @@ print ""
 
 # stop tomato
 print "Stopping ToMaTo..."
-subprocess.call(["bash", "-c", "source cmds.sh; tomato-stop;"])
+subprocess.call(["./tomato-ctl.py", "stop"])
 print ""
 
 # remove mongodb data
@@ -65,12 +65,12 @@ if os.path.exists(mongodb_path):
 		cmd = ["sudo", "rm", "-rf", mongodb_path]
 		print " [%s]" % " ".join(cmd)
 		subprocess.call(cmd)
-		print ""
+print ""
 
 # start tomato
 print "Starting ToMaTo..."
-subprocess.call(["bash", "-c", "source cmds.sh; tomato-start;"])
-time.sleep(2)  # give tomato some time to open ports
+subprocess.call(["./tomato-ctl.py", "start"])
+time.sleep(5)  # give tomato some time to open ports
 print ""
 
 
@@ -87,10 +87,13 @@ conn.site_create(config['site']['name'],
 									'geolocation': config['site']['geolocation']}
 								 )
 for host in config['hosts']:
-	conn.host_create(host['name'],
-									 config['site']['name'],
-									 {'address': host['address'],
-										'rpcurl': host['rpcurl']})
+	try:
+		conn.host_create(host['name'],
+										 config['site']['name'],
+										 {'address': host['address'],
+											'rpcurl': host['rpcurl']})
+	except:
+		print "error inserting %s" % host['name']
 print ""
 
 

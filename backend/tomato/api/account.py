@@ -211,14 +211,14 @@ def account_flag_configuration():
 		'categories': categories
 		}
 
-def account_send_notification(name, subject, message, ref=None, from_support=False):
+def account_send_notification(name, subject, message, ref=None, from_support=False, subject_group=None):
 	"""
 	Sends an email to the account
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
-	acc.sendNotification(subject, message, ref=None, fromUser=(None if from_support else currentUser()))
+	acc.sendNotification(subject, message, ref=ref, fromUser=(None if from_support else currentUser()), subject_group=subject_group)
 
 def broadcast_announcement(title, message, ref=None, show_sender=True):
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")

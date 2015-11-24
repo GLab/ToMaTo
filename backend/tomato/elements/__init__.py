@@ -209,7 +209,7 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			self.parent.onChildRemoved(self)
 		if self.id:
 			for ch in self.children:
-				ch.remove(recurse=True)
+				ch.remove()
 			for hel in self.hostElements:
 				try:
 					hel.remove()
