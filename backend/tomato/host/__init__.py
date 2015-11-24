@@ -100,7 +100,7 @@ class Host(DumpSource, Entity, BaseDocument):
 	dumpLastFetch = FloatField(db_field='dump_last_fetch')
 	templates = ListField(ReferenceField(Template, reverse_delete_rule=PULL))
 	hostNetworks = ListField(db_field='host_networks')
-	synchronized = True
+	synchronized = BooleanField(default=True)
 	meta = {
 		'ordering': ['site', 'name'],
 		'indexes': [
@@ -145,7 +145,8 @@ class Host(DumpSource, Entity, BaseDocument):
 		"host_info": Attribute(field=hostInfo, readOnly=True, schema=schema.StringMap(additional=True)),
 		"host_info_timestamp": Attribute(field=hostInfoTimestamp, readOnly=True, schema=schema.Number()),
 		"availability": Attribute(field=availability, readOnly=True, schema=schema.Number()),
-		"networks": Attribute(field=hostNetworks, readOnly=True, schema=schema.List())
+		"networks": Attribute(field=hostNetworks, readOnly=True, schema=schema.List()),
+		"synchronized": Attribute(field=synchronized, readOnly=True, schema=schema.Bool())
 	}
 
 	def init(self, attrs=None):
@@ -181,7 +182,6 @@ class Host(DumpSource, Entity, BaseDocument):
 			return
 		before = time.time()
 		
-		oldInfo = self.hostInfo
 		
 		try:
 			self.hostInfo = self._info()
@@ -191,31 +191,20 @@ class Host(DumpSource, Entity, BaseDocument):
 			self.hostInfoTimestamp = (before + after) / 2.0
 			self.hostInfo["query_time"] = after - before
 			self.hostInfo["time_diff"] = self.hostInfo["time"] - self.hostInfoTimestamp
-		except:
-			self.hostInfo = oldInfo
-			self.synchronized = False
-		try:
 			self.hostNetworks = self.getProxy().host_networks()
-		except:
-			self.hostNetworks = []
-	
-		oldElementTypes = self.elementTypes
-		oldconnectionTypes = self.connectionTypes
-		caps = []
-		try:
 			caps = self._convertCapabilities(self.getProxy().host_capabilities())
 			self.elementTypes = caps["elements"]
 			self.connectionTypes = caps["connections"]
+			self.componentErrors = max(0, self.componentErrors / 2)
+			if not self.problems():
+				self.availability += 1.0 - config.HOST_AVAILABILITY_FACTOR
+			self.save()
+			logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)
+			logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
 		except:
-			self.elementTypes = oldElementTypes
-			self.connectionTypes = oldconnectionTypes
+			self.synchronized = False
+	
 		
-		self.componentErrors = max(0, self.componentErrors / 2)
-		if not self.problems():
-			self.availability += 1.0 - config.HOST_AVAILABILITY_FACTOR
-		self.save()
-		logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)
-		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
 
 	def _convertCapabilities(self, caps):
 		def convertActions(actions, next_state):
