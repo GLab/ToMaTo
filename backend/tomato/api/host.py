@@ -17,6 +17,7 @@
 
 from api_helpers import checkauth
 from ..lib.cache import cached, invalidates #@UnresolvedImport
+from ..auth import Flags
 
 def _getOrganization(name):
 	o = Organization.get(name)
@@ -159,7 +160,9 @@ def host_info(name,force_update=False):
 	undocumented
 	"""
 	h = _getHost(name)
+	
 	if(force_update):
+		UserError.check(currentUser().hasFlag(Flags.OrgaHostManager)| currentUser().hasFlag(Flags.GlobalHostManager)|currentUser().hasFlag(Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
 		
 		try:
 			h.update()
@@ -202,5 +205,6 @@ def host_usage(name): #@ReservedAssignment
 	return h.totalUsage.info()	
 
 from ..host import Host, Site
+from .. import currentUser
 from ..host.organization import Organization
 from ..lib.error import UserError
