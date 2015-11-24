@@ -105,7 +105,9 @@ if "BACKEND_PORT_8000_TCP" in os.environ:
 	server_port = os.getenv('BACKEND_PORT_8000_TCP_PORT')
 
 server_httprealm = "G-Lab ToMaTo"
+
 tutorial_list_url = "http://packages.tomato-lab.org/tutorials/index.json"
+default_executable_archives_list_url = ""
 
 CRISPY_TEMPLATE_PACK = "bootstrap3"
 

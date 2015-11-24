@@ -113,7 +113,7 @@ class String(Sequence):
 		if value is None or self.regex is None:
 			return
 		if not re.match("^%s$" % self.regex, value):
-			self._error("String must match regular experession", value)
+			self._error("String must match regular expression", value)
 	def describe(self):
 		desc = Sequence.describe(self)
 		if not self.regex is None:

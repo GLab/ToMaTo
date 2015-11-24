@@ -251,7 +251,9 @@ var Element = Component.extend({
 			}
 		);
 	},
-	uploadFile: function(window_title, grant_action, use_action, via_url) {  // via url: if true, use the upload-from-url functionality.
+	uploadFile: function(window_title, grant_action, use_action, via_url, url_path) {
+				// via_url: if true, use the upload-from-url functionality.
+				// url_path: only used if via_url is true. If true, use this url, and don't prompt the user for a url.
 		if (window.location.protocol == 'https:') { //TODO: fix this.
 			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
 			return;
@@ -279,68 +281,97 @@ var Element = Component.extend({
 				var t = this;							
 				var div = $('<div/>');
 				if (via_url) {
+					if (!url_path) url_path = "";
 					this.upload_form = $('<form method="post" id="upload_form" enctype="multipart/form-data" action="'+url+'" target="upload_target">\
 							<div class="form-group">\
 								<label for="id_url" class="control-label">URL</label> \
 								<div class="controls">\
-									<input id="id_url" class="textinput textInput form-control" type="text" name="url" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\'); $(this).parents(\'.input-group\').find(\':text.form-control\').val(this.value.replace(/\\\\/g, \'/\').replace(/.*\\//, \'\'));"/>\
+									<input id="id_url" value="'+url_path+'" class="textinput textInput form-control" type="text" name="url" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\'); $(this).parents(\'.input-group\').find(\':text.form-control\').val(this.value.replace(/\\\\/g, \'/\').replace(/.*\\//, \'\'));"/>\
 								</div>\
 							</div>\
-					</form>')
+					</form>');
 				} else {
 					this.upload_form = $('<form method="post" id="upload_form" enctype="multipart/form-data" action="'+url+'" target="upload_target">\
-								<div class="input-group">\
-				                    <span class="btn btn-primary btn-file input-group-btn">\
-				                        Browse <input type="file" name="upload" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\'); $(this).parents(\'.input-group\').find(\':text.form-control\').val(this.value.replace(/\\\\/g, \'/\').replace(/.*\\//, \'\'));"/>\
-				                    </span>\
-									<input type="text" class="form-control" readonly>\
-								</div>\
-						</form>');
+							<div class="input-group">\
+								<span class="btn btn-primary btn-file input-group-btn">\
+									Browse <input type="file" name="upload" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\'); $(this).parents(\'.input-group\').find(\':text.form-control\').val(this.value.replace(/\\\\/g, \'/\').replace(/.*\\//, \'\'));"/>\
+								</span>\
+								<input type="text" class="form-control" readonly>\
+							</div>\
+					</form>');
 				}
 				div.append(this.upload_form);
-				this.info = new Window({
-					title: window_title, 
-					content: div, 
-					autoShow: true, 
-					width:300,
-					buttons: [{
-						text: "Upload",
-						id: "upload_window_upload",
-						disabled: true,
-						click: function() {		
+				var confirm_form_fun = function() {
 							t.upload_form.css("display","none");
 							$('#upload_window_upload').button("disable");
 							$('#upload_window_cancel').button("disable");
 							t.upload_form.submit();
 							div.append($('<div style="text-align:center;"><img src="../img/loading_big.gif" /></div>'));
+						}
+				if (url_path) {
+					confirm_form_fun();
+				} else {
+					this.info = new Window({
+						title: window_title,
+						content: div,
+						autoShow: true,
+						width:300,
+						buttons: [{
+							text: "Upload",
+							id: "upload_window_upload",
+							disabled: true,
+							click: confirm_form_fun,
 						},
-					},
-					{
-						text: "Cancel",
-						id: "upload_window_cancel",
-						click: function() {
-							t.info.hide();
-							t.info.remove();
-							t.info = null;
-						},
-					}]										
-				});
+						{
+							text: "Cancel",
+							id: "upload_window_cancel",
+							click: function() {
+								t.info.hide();
+								t.info.remove();
+								t.info = null;
+							},
+						}]
+					});
+				}
 			});
 			iframe.css("display", "none");
 			$('body').append(iframe);			
 		}});
 	},
 	uploadImage_fromFile: function() {
-		this.uploadFile("Upload Image","upload_grant","upload_use",false);
+		this.uploadFile("Upload Image","upload_grant","upload_use",false,null);
 	},
 	uploadImage_byURL: function() {
-		this.uploadFile("Upload Image","upload_grant","upload_use",true);
+		this.uploadFile("Upload Image","upload_grant","upload_use",true,null);
 	},
 	uploadRexTFV_fromFile: function() {
-		this.uploadFile("Upload Executable Archive","rextfv_upload_grant","rextfv_upload_use",false);
+		this.uploadFile("Upload Executable Archive","rextfv_upload_grant","rextfv_upload_use",false,null);
 	},
 	uploadRexTFV_byURL: function() {
-		this.uploadFile("Upload Executable Archive","rextfv_upload_grant","rextfv_upload_use",true);
+		this.uploadFile("Upload Executable Archive","rextfv_upload_grant","rextfv_upload_use",true,null);
+	},
+	uploadRexTFV_fromDefault: function() {
+		var t = this;
+		var window = new DefaultExecutableArchiveWindow({
+			element: t,
+			show_ids: true, //fixme: read from settings
+			disabled: false,
+			width: 600,
+			callback: function(name) {
+				var window = new DefaultExecutableArchiveDetailWindow({
+					element: t,
+					archive: editor.web_resources.executable_archives_dict[name],
+					show_ids: true, //fixme: read from settings
+					disabled: false,
+					width: 600,
+					callback: function(url) {
+						t.uploadFile("", "rextfv_upload_grant", "rextfv_upload_use", true, url);
+					}
+				})
+				window.show();
+			}
+		});
+		window.show();
 	},
 	action_start: function() {
 		this.action("start");

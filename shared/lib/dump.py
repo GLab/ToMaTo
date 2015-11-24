@@ -115,11 +115,18 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 		}
 
 		#save it (in the dumps array, and on disk)
+		try:
+			meta_str = json.dumps(dump_meta)
+			data_str = json.dumps(data)
+		except Exception:
+			import traceback
+			traceback.print_exc()
+			raise
 		with open(get_absolute_path(dump_id, True), "w") as f:
-			json.dump(dump_meta, f)
+			f.write(meta_str)
 		fp = gzip.GzipFile(get_absolute_path(dump_id, False), "w", 9)
 		try:
-			fp.write(json.dumps(data))
+			fp.write(data_str)
 		finally:
 			fp.close()
 		dumps[dump_id] = dump_meta

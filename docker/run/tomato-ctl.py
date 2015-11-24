@@ -7,6 +7,7 @@ import string
 import time
 import json
 import shutil
+from datetime import date
 
 # functions to call processes
 
@@ -87,6 +88,7 @@ available commands:
  restart:
    Restart the container
    This is equivalent to stop and then start.
+   This will also restart all modules that depend on the selected module.
 
  shell:
    Open the shell of the container.
@@ -120,6 +122,12 @@ Additional commands for the db module:
    Restore a backup.
    You have to pass the backup name as additional argument.
    If the database is not running, it will be started and stopped afterwards.
+
+
+Additional commands for the web module:
+
+ reload:
+   Reloads the apache configuration and ToMaTo code.
 
 
 examples:
@@ -182,6 +190,12 @@ def web_log(config, interactive):
 		print "web not running"
 		exit(1)
 	docker_logs(config['web']['docker_container'], interactive)
+
+def web_reload(config):
+	if not web_status(config):
+		print "web not running"
+		exit(1)
+	docker_exec(config['web']['docker_container'], "service", "apache2", "reload")
 
 
 def backend_start(config):
@@ -301,7 +315,9 @@ def db_backup(config, backup_name):
 		'sh', '-c', 'mongodump -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" -d tomato --out /backup; chmod -R ogu+rwX /backup'
 	]
 	run_observing(*cmd)
-	run_observing('tar', 'czf', os.path.join(os.getcwd(), '%s.tar.gz' % backup_name), '-C', backup_dir, '.')
+	if not backup_name.endswith(".tar.gz"):
+		backup_name += ".tar.gz"
+	run_observing('tar', 'czf', backup_name, '-C', backup_dir, '.')
 	shutil.rmtree(backup_dir)
 
 def db_restore(config, backup_name):
@@ -309,7 +325,9 @@ def db_restore(config, backup_name):
 	if not os.path.isabs(backup_dir):
 		backup_dir = os.path.join(config['docker_dir'],backup_dir)
 	assure_path(backup_dir)
-	run_observing('tar', 'xzf', os.path.join(os.getcwd(), '%s.tar.gz' % backup_name), '-C', backup_dir)
+	if not backup_name.endswith(".tar.gz"):
+		backup_name += ".tar.gz"
+	run_observing('tar', 'xzf', backup_name, '-C', backup_dir)
 	cmd = [
 		'docker',
 		'run',
@@ -342,7 +360,7 @@ def read_config():
 			'port': 27017,
 			'additional_args': [],
 			'additional_directories': [
-				('%(data)s', '/data')
+				('%(data)s', '/data/db')
 			],
 			'directories': {
 				'data': "mongodb-data",
@@ -381,8 +399,8 @@ def read_config():
 				'config': os.path.join("web", "config")
 			}
 			# 'version'  (will be generated if not found in config)
-		},
-		'docker_dir': os.getcwd()
+		}
+		# 'docker_dir'  (will be generated if not found in config)
 		# 'tomato_dir'  (will be generated if not found in config)
 	}
 
@@ -403,7 +421,7 @@ def read_config():
 				dict_a[k] = v
 		return dict_a
 
-	for path in filter(os.path.exists, ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf"]):
+	for path in filter(os.path.exists, ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]):
 		try:
 			with open(path) as f:
 				conf_new = json.loads(f.read())
@@ -415,7 +433,8 @@ def read_config():
 
 
 	# step 2: calculate missing paths.
-
+	if 'tomato_dir' not in config:
+		config['tomato_dir'] = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 	if 'docker_dir' not in config:
 		config['docker_dir'] = os.path.join(config['tomato_dir'], "docker", "run")
 	print ""
@@ -487,10 +506,16 @@ elif len(sys.argv) == 3:
 			exit(0)
 
 		if sys.argv[2] == "restart":
+			web_started = web_status(config)
+			backend_started = backend_status(config)
 			web_stop(config)
 			backend_stop(config)
 			db_stop(config)
 			db_start(config)
+			if backend_started:
+				backend_start(config)
+			if web_started:
+				web_start(config)
 			exit(0)
 
 		if sys.argv[2] == "status":
@@ -510,7 +535,7 @@ elif len(sys.argv) == 3:
 			exit(0)
 
 		if sys.argv[2] == "backup":
-			backup_name = str(time.time()).split(".")[0]
+			backup_name = "mongodb-dump-%s" % date.today().isoformat()
 			print "Warning: no backup name specified. Using %s." % backup_name
 			sys.argv.append(backup_name)
 			# now, len(sys.argv == 4)
@@ -531,10 +556,13 @@ elif len(sys.argv) == 3:
 			exit(0)
 
 		if sys.argv[2] == "restart":
+			web_started = web_status(config)
 			web_stop(config)
 			backend_stop(config)
 			db_start(config)
 			backend_start(config)
+			if web_started:
+				web_start(config)
 			exit(0)
 
 		if sys.argv[2] == "status":
@@ -587,6 +615,10 @@ elif len(sys.argv) == 3:
 
 		if sys.argv[2] == "logs-interactive":
 			web_log(config, True)
+			exit(0)
+
+		if sys.argv[2] == "reload":
+			web_reload(config)
 			exit(0)
 
 if len(sys.argv) == 4:

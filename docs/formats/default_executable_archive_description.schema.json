@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "icon": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL of the icon of this archive, relative to this file"
+    },
+    "default_archive": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL of the archive to be used by the editor, relative to this file. Must be reachable from all hosts."
+    },
+    "description": {
+      "type": "string",
+      "description": "A string describing what the archive does, what it requires, etc."
+    },
+    "creation-date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation date of the archive."
+    },
+    "alternatives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "creation-date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation date of the archive. If this is not specified in the alternative, the creation date of the archive will be assumed."
+          },
+          "description": {
+            "type": "string",
+            "description": "A string describing what the differences between this alternative and the default archive."
+          },
+          "archive": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the archive to be used by the editor, relative to this file. Must be reachable from all hosts."
+          },
+          "templates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "A list of templates. Either of the format '%(name)s' or '%(tech)s:%(name)s'. In the first case, this will be expanded to all available techs."
+            },
+            "description": "A list of templates that this alternative is meant for."
+          }
+        },
+        "required": ["templates", "archive"],
+        "description": "A list of alternatives. These are alternative archives for certain cases."
+      }
+    }
+  },
+  "required": ["alternatives", "default_archive"]
+}

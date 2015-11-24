@@ -172,14 +172,13 @@ def refresh(api,request):
 	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
 
 @wrap_rpc
-def _remove_old_errors(api, request, delete):
+def _remove_old_errors(api, request, border_time, delete):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			border = time.time() - 60*60*24*60
 			errorgroups = api.errorgroup_list()
 			for group in errorgroups:
-				if group['last_timestamp'] < border:
+				if group['last_timestamp'] < time.time() - border_time*60*60*24:
 					if delete:
 						api.errorgroup_remove(group['group_id'])
 					else:
@@ -187,15 +186,17 @@ def _remove_old_errors(api, request, delete):
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
 	reverse_target = "tomato.dumpmanager.remove_old_errorgroups" if delete else "tomato.dumpmanager.hide_old_errorgroups"
 	heading = "%s Old Error Groups" % ("Remove" if delete else "Clear")
-	message_before = "Are you sure you want to %s all error groups with no dumps younger than 60 days?" % ("remove" if delete else "clear")
-	form = RemoveConfirmForm.build(reverse(reverse_target))
+	message_before = "Are you sure you want to %s all error groups%s?"
+	message_before = message_before % ("remove" if delete else "clear",
+																		(" with no dumps younger than %s day%s" % (str(border_time), "" if border_time==1 else "s") if border_time!=0 else ""))
+	form = RemoveConfirmForm.build(reverse(reverse_target, kwargs={'border_time': border_time}))
 	return render(request, "form.html", {"form": form, "heading": heading, "message_before": message_before})
 
-def remove_old_errorgroups(request):
-	return _remove_old_errors(request, True)
+def remove_old_errorgroups(request, border_time):
+	return _remove_old_errors(request, float(border_time), True)
 
-def hide_old_errorgroups(request):
-	return _remove_old_errors(request, False)
+def hide_old_errorgroups(request, border_time):
+	return _remove_old_errors(request, float(border_time), False)
 
 @wrap_rpc
 def errorgroup_favorite(api, request, group_id):

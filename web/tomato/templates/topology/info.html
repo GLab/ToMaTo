@@ -52,6 +52,8 @@
 <script language="JavaScript" type="text/javascript" src="js/editor/windows/input_window.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor/windows/permissions_window.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor/windows/template_window.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/windows/default_executable_archive_window.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/editor/windows/default_executable_archive_detail_window.js"></script>
 	
 <script language="JavaScript" type="text/javascript" src="js/editor/component.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor/components/connection.js"></script>
@@ -138,6 +140,7 @@
 		timeout_settings: {{timeout_settings|jsonify}},
 		sites: {{sites_json|safe}},
 		resources: {{res_json|safe}},
+		web_resources: {{res_web_json|safe}},
 		capabilities: {{caps_json|safe}}, 
 		topology: "{{top.id}}",
 		user: {{request.session.user.data|jsonify}},

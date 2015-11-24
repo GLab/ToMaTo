@@ -29,7 +29,8 @@ class Error(Exception):
 		if todump is not None:
 			self.todump = todump
 		else:
-			self.todump = not isinstance(self, UserError)
+			self.todump = not isinstance(self, UserError) and self.module == MODULE \
+						  or isinstance(self, UserError) and self.module != MODULE
 		
 	
 	def group_id(self):

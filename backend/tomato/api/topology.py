@@ -194,7 +194,8 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	if organization:
 		organization = _getOrganization(organization)
-		tops = topology.getAll(permissions__user__organization=organization, permissions__role="owner")
+		users = getAllUsers(organization)
+		tops = topology.getAll(permissions__user__in=users, permissions__role="owner")
 	elif showAll:
 		tops = topology.getAll()
 	else:
@@ -379,3 +380,4 @@ from .. import topology, currentUser
 from elements import element_create, element_modify 
 from connections import connection_create, connection_modify
 from ..lib.error import UserError
+from ..auth import getAllUsers

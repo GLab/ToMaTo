@@ -404,7 +404,7 @@ def remove(api, request, id=None):
 
 
 @wrap_rpc
-def _own_notifications(api, request, show_read):
+def _own_notifications(api, request, show_read, ref_filter=None, subject_group=None):
 	notifications = api.account_notifications(show_read)
 
 	for notification in notifications:
@@ -419,15 +419,39 @@ def _own_notifications(api, request, show_read):
 			except:
 				notification['sender_realname'] = notification["sender"]
 
+	is_filtered = ref_filter or subject_group
+	if is_filtered:
+		notifications_old = notifications
+		notifications = []
+		for notification in notifications_old:
+			to_add = True
+
+			if ref_filter is not None:
+				notification_ref = notification.get('ref', None)
+				if notification_ref:
+					to_add = (notification_ref[0] == ref_filter[0]) and (notification_ref[1] == ref_filter[1])
+				else:
+					to_add = False
+
+			if to_add and (subject_group is not None):
+				if notification['subject_group'] != subject_group:
+					to_add = False
+
+			if to_add:
+				notifications.append(notification)
+
 	notifications = sorted(notifications, key=lambda n: n['timestamp'], reverse=True)
 
-	return render(request, "account/notifications.html", {"notifications": notifications, "include_read": show_read})
+	return render(request, "account/notifications.html", {"notifications": notifications, "include_read": show_read, 'is_filtered': is_filtered})
 
 def unread_notifications(request):
 	return _own_notifications(request, False)
 
 def all_notifications(request):
 	return _own_notifications(request, True)
+
+def filtered_unread_notifications(request, ref_entity, ref_id, subject_group):
+	return _own_notifications(request, False, (ref_entity, ref_id), subject_group)
 
 @wrap_json
 def notification_mark_read(api, request, notification_id, read):
