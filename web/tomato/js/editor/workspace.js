@@ -355,10 +355,6 @@ var Topology = Class.extend({
 		obj.setBusy(true);
 		this.pendingNames.push(data.name);
 		
-		if(editor.options.element_name_on_top) {
-			data.name_on_top = true;
-		}
-		
 		var t = this;
 		ajax({
 			url: "topology/" + this.id + "/create_element",

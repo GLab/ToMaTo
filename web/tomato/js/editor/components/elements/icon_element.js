@@ -83,7 +83,8 @@ var IconElement = Element.extend({
 	paint: function() {
 		var pos = this.canvas.absPos(this.getPos());
 		this.icon = this.canvas.image(this.iconUrl(), pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
-		if(this.data.name_on_top) {
+		if(editor.options.element_name_on_top) {
+			
 			this.text = this.canvas.text(pos.x, pos.y-this.iconSize.y/2-10, this.data.name);	
 		} else {
 			this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.name);
@@ -120,7 +121,7 @@ var IconElement = Element.extend({
 		this.rextfvIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2+8});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		
-		if(this.data.name_on_top) {
+		if(editor.options.element_name_on_top) {
 			this.text.attr({x: pos.x, y: pos.y-this.iconSize.y/2-10, text: this.data.name});	
 		} else {
 			this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.name});

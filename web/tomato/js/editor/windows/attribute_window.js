@@ -59,7 +59,7 @@ var AttributeWindow = Window.extend({
 			    disabled: !enabled
 		    });
 		}
-		if (jQuery.type(value)=="boolean") {
+		if (type == "bool") {
 			return new CheckboxElement({
 				label: info.label || info.name,
 				name: info.name,

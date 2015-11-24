@@ -125,6 +125,9 @@ var Editor = Class.extend({
 		this.topology.onOptionChanged(name);
 		this.workspace.onOptionChanged(name);
 		this.workspace.updateTopologyTitle();
+		for(elements in this.topology.elements) {
+			this.topology.elements[elements].paintUpdate();
+		}
 	},
 	optionMenuItem: function(options) {
 		var t = this;
