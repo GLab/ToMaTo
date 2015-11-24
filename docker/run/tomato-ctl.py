@@ -88,6 +88,7 @@ available commands:
  restart:
    Restart the container
    This is equivalent to stop and then start.
+   This will also restart all modules that depend on the selected module.
 
  shell:
    Open the shell of the container.
@@ -121,6 +122,12 @@ Additional commands for the db module:
    Restore a backup.
    You have to pass the backup name as additional argument.
    If the database is not running, it will be started and stopped afterwards.
+
+
+Additional commands for the web module:
+
+ reload:
+   Reloads the apache configuration and ToMaTo code.
 
 
 examples:
@@ -183,6 +190,12 @@ def web_log(config, interactive):
 		print "web not running"
 		exit(1)
 	docker_logs(config['web']['docker_container'], interactive)
+
+def web_reload(config):
+	if not web_status(config):
+		print "web not running"
+		exit(1)
+	docker_exec(config['web']['docker_container'], "service", "apache2", "reload")
 
 
 def backend_start(config):
@@ -493,10 +506,16 @@ elif len(sys.argv) == 3:
 			exit(0)
 
 		if sys.argv[2] == "restart":
+			web_started = web_status(config)
+			backend_started = backend_status(config)
 			web_stop(config)
 			backend_stop(config)
 			db_stop(config)
 			db_start(config)
+			if backend_started:
+				backend_start(config)
+			if web_started:
+				web_start(config)
 			exit(0)
 
 		if sys.argv[2] == "status":
@@ -537,10 +556,13 @@ elif len(sys.argv) == 3:
 			exit(0)
 
 		if sys.argv[2] == "restart":
+			web_started = web_status(config)
 			web_stop(config)
 			backend_stop(config)
 			db_start(config)
 			backend_start(config)
+			if web_started:
+				web_start(config)
 			exit(0)
 
 		if sys.argv[2] == "status":
@@ -593,6 +615,10 @@ elif len(sys.argv) == 3:
 
 		if sys.argv[2] == "logs-interactive":
 			web_log(config, True)
+			exit(0)
+
+		if sys.argv[2] == "reload":
+			web_reload(config)
 			exit(0)
 
 if len(sys.argv) == 4:
