@@ -3,9 +3,9 @@ Created on Nov 20, 2014
 
 @author: Tim Gerhard
 '''
-from error import Error, UserError, InternalError, getCodeMsg #@UnresolvedImport
+from error import Error, UserError, InternalError, getCodeMsg, generate_inspect_trace #@UnresolvedImport
 from django.shortcuts import render, redirect
-import xmlrpclib, socket, sys
+import xmlrpclib, socket, sys, inspect
 from . import anyjson as json
 from django.http import HttpResponse
 
@@ -25,6 +25,8 @@ def interpretError(error):
     debuginfos_dict = data
     debuginfos_dict['module'] = error.module
     ajaxinfos = data
+
+    frame_trace = json.dumps(error.frame_trace)
     
     #now, return everything.
     if 'function' in debuginfos_dict:
@@ -57,7 +59,7 @@ def interpretError(error):
         if '\n' in str(val):
             val = "<pre>%s</pre>" % val
         debuginfos.append({'th':name, 'td': val})
-    return (typemsg, errormsg, debuginfos, ajaxinfos, responsecode)
+    return (typemsg, errormsg, debuginfos, ajaxinfos, responsecode, frame_trace)
 
 
 
@@ -66,8 +68,8 @@ def interpretError(error):
 
 
 def renderError(request, error):
-    typemsg, errormsg, debuginfos, _, responsecode = interpretError(error)
-    return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos}, status=responsecode)
+    typemsg, errormsg, debuginfos, _, responsecode, frame_trace = interpretError(error)
+    return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos, 'frame_trace': frame_trace}, status=responsecode)
 
 def renderFault (request, fault):
     import traceback
@@ -99,7 +101,7 @@ def renderFault (request, fault):
         ecode = ""
         etext = fault.message
     _, _, etraceback =sys.exc_info()
-    return render(request, "error/exception.html", {'type': etype, 'text': etext, 'traceback': traceback.extract_tb(etraceback)}, status=500)
+    return render(request, "error/exception.html", {'type': etype, 'text': etext, 'traceback': traceback.extract_tb(etraceback), 'frame_trace': None}, status=500)
         
 def renderMessage(request, message, heading=None, data={}, responsecode=500):
     debuginfos = []
