@@ -25,6 +25,8 @@ def interpretError(error):
     debuginfos_dict = data
     debuginfos_dict['module'] = error.module
     ajaxinfos = data
+
+    frame_trace = json.dumps(error.frame_trace)
     
     #now, return everything.
     if 'function' in debuginfos_dict:
@@ -57,7 +59,7 @@ def interpretError(error):
         if '\n' in str(val):
             val = "<pre>%s</pre>" % val
         debuginfos.append({'th':name, 'td': val})
-    return (typemsg, errormsg, debuginfos, ajaxinfos, responsecode)
+    return (typemsg, errormsg, debuginfos, ajaxinfos, responsecode, frame_trace)
 
 
 
@@ -66,8 +68,8 @@ def interpretError(error):
 
 
 def renderError(request, error):
-    typemsg, errormsg, debuginfos, _, responsecode = interpretError(error)
-    return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos}, status=responsecode)
+    typemsg, errormsg, debuginfos, _, responsecode, frame_trace = interpretError(error)
+    return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos, 'frame_trace': frame_trace}, status=responsecode)
 
 def renderFault (request, fault):
     import traceback

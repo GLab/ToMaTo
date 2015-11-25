@@ -15,13 +15,27 @@ def generate_inspect_trace(frame=None):
 		frame = inspect.currentframe()
 
 	for frame_ in inspect.getouterframes(frame):
-		res.append({
-			'locals': {k: repr(v) for k, v in frame_[0].f_locals.iteritems()},
+		obj = {
+			'locals': {},
 			'file': frame_[1],
 			'line_no': frame_[2],
 			'function': frame_[3],
 			'code': frame_[4]
-		})
+		}
+		for k, v in frame_[0].f_locals.iteritems():
+			try:
+				v_ = repr(v)
+			except:
+				try:
+					v_ = str(v)
+				except:
+					v_ = "<unreadable object>"
+			if len(v_) > 1000:
+				v_ = v_[:1000]
+			obj['locals'][k] = v_
+
+		res.append(obj)
+
 
 	res.reverse()
 	return res
@@ -40,13 +54,6 @@ class Error(Exception):
 			self.trace = traceback.extract_stack()
 		else:
 			self.trace = trace
-		if frame_trace is None:
-			if frame is None:
-				self.frame_trace = generate_inspect_trace(inspect.currentframe())
-			else:
-				self.frame_trace = generate_inspect_trace(frame)
-		else:
-			self.frame_trace = frame_trace
 		if httpcode is None:
 			self.httpcode = getCodeHTTPErrorCode(code)
 		else:
@@ -60,6 +67,13 @@ class Error(Exception):
 		else:
 			self.todump = not isinstance(self, UserError) and self.module == MODULE \
 						  or isinstance(self, UserError) and self.module != MODULE
+		if frame_trace is None:  # this must be last because it may call repr(self)
+			if frame is None:
+				self.frame_trace = generate_inspect_trace(inspect.currentframe())
+			else:
+				self.frame_trace = generate_inspect_trace(frame)
+		else:
+			self.frame_trace = frame_trace
 		
 	
 	def group_id(self):
