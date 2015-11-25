@@ -314,7 +314,8 @@ def dumpUnknownException(type_, value, trace, **kwargs):
 		"type": type_.__name__,
 		"value": str(value),
 		"trace": trace,
-		"inspect_trace": generate_inspect_trace(inspect.currentframe())}
+		"inspect_trace": generate_inspect_trace(inspect.currentframe())
+	}
 	exception_forid = {"type": type_.__name__, "value": re.sub("[a-fA-F0-9]+","x",str(value)), "trace": trace}
 	exception_id = hashlib.md5(json.dumps(exception_forid)).hexdigest()
 	description = {"subject": exception['value'], "type": exception['type']}
