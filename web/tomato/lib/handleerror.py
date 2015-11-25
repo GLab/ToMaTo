@@ -3,9 +3,9 @@ Created on Nov 20, 2014
 
 @author: Tim Gerhard
 '''
-from error import Error, UserError, InternalError, getCodeMsg #@UnresolvedImport
+from error import Error, UserError, InternalError, getCodeMsg, generate_inspect_trace #@UnresolvedImport
 from django.shortcuts import render, redirect
-import xmlrpclib, socket, sys
+import xmlrpclib, socket, sys, inspect
 from . import anyjson as json
 from django.http import HttpResponse
 
@@ -101,7 +101,7 @@ def renderFault (request, fault):
         ecode = ""
         etext = fault.message
     _, _, etraceback =sys.exc_info()
-    return render(request, "error/exception.html", {'type': etype, 'text': etext, 'traceback': traceback.extract_tb(etraceback)}, status=500)
+    return render(request, "error/exception.html", {'type': etype, 'text': etext, 'traceback': traceback.extract_tb(etraceback), 'frame_trace': None}, status=500)
         
 def renderMessage(request, message, heading=None, data={}, responsecode=500):
     debuginfos = []
