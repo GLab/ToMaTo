@@ -25,9 +25,9 @@ def send(to_realname, to_addr, subject, message, from_realname=None, from_addr=N
 
 	try:
 		msg = MIMEText(EMAIL_MESSAGE_TEMPLATE % {'realname': to_realname, 'message': message}, 'plain', 'utf-8')
-		msg['Subject'] = Header(EMAIL_SUBJECT_TEMPLATE % {'subject': subject}, 'iso-8859-1')
-		msg['From'] = "%s <%s>" %(Header(from_realname, 'iso-8859-1'), from_addr) if from_realname and from_addr else EMAIL_FROM
-		msg['To'] = "%s <%s>" % (Header(to_realname, 'iso-8859-1'), to_addr)
+		msg['Subject'] = Header(EMAIL_SUBJECT_TEMPLATE % {'subject': subject}, 'utf-8')
+		msg['From'] = "%s <%s>" %(Header(from_realname, 'utf-8'), from_addr) if from_realname and from_addr else EMAIL_FROM
+		msg['To'] = "%s <%s>" % (Header(to_realname, 'utf-8'), to_addr)
 		print "here"
 		print msg.as_string()
 		print "__jfdklsajfkdlsa"
