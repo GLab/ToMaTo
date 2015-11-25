@@ -231,7 +231,7 @@ class User(BaseDocument):
 			'title': title,
 			'message': message,
 			'ref': ref,
-			'fromUser': fromUser.name,
+			'fromUser': fromUser.name if fromUser else None,
 			'subject_group': subject_group,
 			'timestamp': now
 		})).hexdigest()
