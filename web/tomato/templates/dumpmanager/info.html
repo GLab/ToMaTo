@@ -29,7 +29,26 @@ function showDump(group_id, source, dump_id, include_data) {
 				filename.replace('[^\w\-_\. :]',"_");
 				pretty_json_popup(res,title,filename);
 			} catch(ex) {
-				alert('Failed to retrieve dump');
+				//try fetching cached data from the backend without querying the source for data.
+				var url_fallback = include_data ? "{%url 'dumpmanager.dump_export' '__GROUP__' '_SOURCE_' '23542.123456' %}" : "{%url 'dumpmanager.dump_export' '__GROUP__' '_SOURCE_' '23542.123456' %}";
+				url_fallback = url_fallback.replace("__GROUP__", group_id).replace("_SOURCE_",source).replace("23542.123456", dump_id);
+				var xmlhttp_fallback=new XMLHttpRequest();
+				xmlhttp_fallback.onreadystatechange = function() {
+					if (xmlhttp_fallback.readyState==4) {
+						try {
+							res_fallback = JSON.parse(xmlhttp_fallback.responseText);
+							res_fallback.data = "DATA IS UNAVAILABLE";
+							title = source.toLowerCase() + "__" + dump_id
+							filename = title + ".errordump.json";
+							filename.replace('[^\w\-_\. :]',"_");
+							pretty_json_popup(res_fallback,title,filename);
+						} catch(ex) {
+							alert('Failed to retrieve dump');
+						}
+					}
+				};
+				xmlhttp_fallback.open("GET",url_fallback,true);
+				xmlhttp_fallback.send();
 			}
 		}
 	};

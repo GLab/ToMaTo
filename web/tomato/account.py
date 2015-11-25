@@ -170,18 +170,16 @@ class AccountChangeForm(AccountForm):
 			self.fields["flags"].widget = AccountFlagFixedList(api)
 
 		is_self = data['name'] == api.account_info()['name']
+		if is_self:
+			self.fields['organization'].widget = FixedText()
 			
 		self.helper.form_action = reverse(edit, kwargs={'id':data['name']})
 		self.helper.layout = Layout(*(
 			(
 				'name',
 				'password',
-				'password2'
-			) +
-			(() if is_self else (
+				'password2',
 				'organization',
-			)) +
-			(
 				'realname',
 				'email',
 				'flags'
