@@ -1,9 +1,9 @@
-import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip
+import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip, inspect
 
 from . import anyjson as json
 from .cmd import run, CommandError  # @UnresolvedImport
 from .. import config, scheduler
-from .error import InternalError
+from .error import InternalError, generate_inspect_trace
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
@@ -306,16 +306,15 @@ def dumpException(**kwargs):
 	
 	return dumpUnknownException(type_, value, trace, **kwargs)
 
-	
-	
-	
-	
-	
-	
+
 # function to handle an exception where no special handler is available.
 # Should only be called by dumpException	
 def dumpUnknownException(type_, value, trace, **kwargs):
-	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
+	exception = {
+		"type": type_.__name__,
+		"value": str(value),
+		"trace": trace,
+		"inspect_trace": generate_inspect_trace(inspect.currentframe())}
 	exception_forid = {"type": type_.__name__, "value": re.sub("[a-fA-F0-9]+","x",str(value)), "trace": trace}
 	exception_id = hashlib.md5(json.dumps(exception_forid)).hexdigest()
 	description = {"subject": exception['value'], "type": exception['type']}
@@ -332,10 +331,14 @@ def dumpError(error):
 		if not error.todump:
 			return None
 		error.todump = False
-		
-		(type_, value, trace) = sys.exc_info()
-		trace = traceback.extract_tb(trace) if trace else None
-		data = {"exception":{"trace":trace}}
+
+		trace = error.trace
+		data = {
+			"exception":{
+				"trace": trace,
+				"inspect_trace": error.frame_trace
+			}
+		}
 		
 		description = error.raw
 		del description['todump']

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time, crypt, string, random, sys
+import time, crypt, string, random, sys, hashlib
 from ..db import *
 from ..lib import logging, util, mail #@UnresolvedImport
 from .. import config, currentUser, setCurrentUser, scheduler, accounting
@@ -227,7 +227,15 @@ class User(BaseDocument):
 
 	def _addNotification(self, title, message, ref, fromUser, subject_group=None):
 		now = time.time()
-		notf = Notification(title=title, message=message, timestamp=now, id=str(now))
+		notf_id = hashlib.sha256(repr({
+			'title': title,
+			'message': message,
+			'ref': ref,
+			'fromUser': fromUser.name,
+			'subject_group': subject_group,
+			'timestamp': now
+		})).hexdigest()
+		notf = Notification(title=title, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
 		self.save()

@@ -7,6 +7,21 @@
 <title>Error: {{typemsg}}</title> 
 {% endblock %}
 
+{% block header %}
+<link type="text/css" href="/style/pretty-json.css" rel="stylesheet" />
+<link type="text/css" href="/style/jquery-ui.css" rel="stylesheet" />
+<script language="JavaScript" type="text/javascript" src="/js/jquery-ui.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/underscore-min.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/backbone-min.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/pretty-json-min.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/pretty-json-popup.js"></script>
+<script>
+	{% if frame_trace %}
+	frame_trace = {{frame_trace|safe}};
+	{% endif %}
+</script>
+{% endblock %}
+
 {% block content %}
 <h1>Error: {{typemsg}}</h1>
 
@@ -18,6 +33,9 @@
 	{% for tr in debuginfos %}
 		<tr><th>{{tr.th}}:</th><td>{{tr.td|safe}}</td></tr>
 	{% endfor %}
+	{% if frame_trace %}
+		<tr><th>Frame Trace</th><td style="text-align: center;"><button type="button" class="btn btn-info" onclick="pretty_json_popup(frame_trace,'Error Trace',frame_trace.json);; return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span> Show</button></td></tr>
+	{% endif %}
 	</tbody></table>
 {% else %}
 	<p>If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" target="_help">file a bug report</a>.</p>
