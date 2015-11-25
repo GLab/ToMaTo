@@ -223,7 +223,6 @@ class User(BaseDocument):
 		self._addNotification(subject, message, ref, fromUser, subject_group=subject_group)
 		if send_email:
 			self._sendMail(subject, message, fromUser)
-		print "sendnotification"
 
 	def _addNotification(self, title, message, ref, fromUser, subject_group=None):
 		now = time.time()
@@ -241,7 +240,6 @@ class User(BaseDocument):
 		self.save()
 
 	def _sendMail(self, subject, message, fromUser=None):
-		print "_sendmail"
 		if not self.email or self.hasFlag(Flags.NoMails):
 			logging.logMessage("failed to send mail", category="user", subject=subject)
 			return
