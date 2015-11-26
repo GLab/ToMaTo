@@ -243,13 +243,15 @@ class User(BaseDocument):
 		if not self.email or self.hasFlag(Flags.NoMails):
 			logging.logMessage("failed to send mail", category="user", subject=subject)
 			return
-		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
-		subject = config.EMAIL_SUBJECT_TEMPLATE % data
-		message = config.EMAIL_MESSAGE_TEMPLATE % data
-		from_ = None
+
 		if fromUser:
-			from_ = "%s <%s>" % (fromUser.realname or fromUser.name, fromUser.email)
-		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
+			fromuser_realname = fromUser.realname or fromUser.name
+			fromuser_addr = fromUser.email
+		else:
+			fromuser_realname = None
+			fromuser_addr = None
+
+		mail.send(self.realname or self.name, self.email, subject, message, fromuser_realname, fromuser_addr)
 
 	def _get_notification(self, notification_id):
 		for n in self.notifications:
