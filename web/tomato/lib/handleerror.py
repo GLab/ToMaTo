@@ -30,7 +30,6 @@ def interpretError(error):
     
     #now, return everything.
     if 'function' in debuginfos_dict:
-      has_bracket = False
       need_comma = False
       debuginfos_dict['function'] = debuginfos_dict['function']+'('
       if 'args' in debuginfos_dict:
