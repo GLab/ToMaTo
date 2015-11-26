@@ -40,8 +40,8 @@
     		<div class="hiddenbox"><table>
 			<tr>
 				<td><img src="/img/info.png" /></td>
-				{% if templ.description %}
-					<td>{{ templ.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+				{% if archive.description %}
+					<td>{{ archive.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 				{% else %}
 					<td>No description available.</td>
 				{%endif%}
