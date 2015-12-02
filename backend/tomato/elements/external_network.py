@@ -126,6 +126,8 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.parent._nextName("port")
+		if not self.kind:
+			self.kind = self.parent.kind
 		self.save()
 
 	@property
