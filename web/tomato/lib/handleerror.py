@@ -120,7 +120,7 @@ def renderMessage(request, message, heading=None, data={}, responsecode=500):
 
 
 def ajaxError(error):
-    typemsg, errormsg, debuginfos, ajaxinfos, responsecode = interpretError(error)
+    typemsg, errormsg, debuginfos, ajaxinfos, responsecode, _ = interpretError(error)
     return HttpResponse(
                         json.dumps(
                                    {"success": False, 
