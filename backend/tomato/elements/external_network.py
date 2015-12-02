@@ -51,6 +51,7 @@ class ExternalNetwork(Element):
 
 	def check_kind(self, val):
 		network = Network.get(val)
+		UserError.check(network, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network not found")
 		if network.restricted and not self.kind == val:
 			UserError.check(currentUser().hasFlag(Flags.RestrictedNetworks), code=UserError.DENIED, message="Network is restricted")
 		return True
@@ -97,13 +98,13 @@ class ExternalNetwork(Element):
 
 class ExternalNetworkEndpoint(Element, ConnectingElement):
 	"""
-	:type parent: ExternalNetwork or None
+	:type parent: ExternalNetwork
 	:type network: NetworkInstance
 	"""
 	parent = Element.parent
+	_kind = StringField(db_field="kind") #not used anymore
 	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
 	name = StringField()
-	kind = StringField(default='internet')
 	network = ReferenceField(NetworkInstance, reverse_delete_rule=DENY)
 
 	TYPE = "external_network_endpoint"
@@ -111,7 +112,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	CAP_CHILDREN = {}
 	
 	DIRECT_ATTRS_EXCLUDE = ["network", "timeout"]
-	CAP_PARENT = [None, ExternalNetwork.TYPE]
+	CAP_PARENT = [ExternalNetwork.TYPE]
 	DEFAULT_ATTRS = {}
 	CAP_CONNECTABLE = True
 
@@ -126,8 +127,6 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.parent._nextName("port")
-		if not self.kind:
-			self.kind = self.parent.kind
 		self.save()
 
 	@property
@@ -151,14 +150,14 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 
 	def action_start(self):
 		hPref, sPref = self.getLocationPrefs()
-		kind = self.parent.network.kind if self.parent and self.parent.samenet else self.kind
+		kind = self.parent.network.kind if self.parent and self.parent.samenet else self.parent.kind
 		_host = host.select(elementTypes=["external_network"], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE})
 		if self.parent and self.parent.samenet:
 			self.network = NetworkInstance.get(_host, self.parent.network.kind)
 		else:
-			self.network = NetworkInstance.get(_host, self.kind)
+			self.network = NetworkInstance.get(_host, self.parent.kind)
 		attrs = {"network": self.network.network.kind}
 		self.element = _host.createElement("external_network", parent=None, attrs=attrs, ownerElement=self)
 		self.setState(ST_STARTED)
@@ -177,8 +176,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=name),
-		"kind": StatefulAttribute(writableStates=[ST_CREATED])
+		"name": Attribute(field=name)
 	})
 
 	ACTIONS = Element.ACTIONS.copy()
