@@ -116,7 +116,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	DEFAULT_ATTRS = {}
 	CAP_CONNECTABLE = True
 
-	SAME_HOST_AFFINITY = 50 #we definitely want to be on the same host as our connected elements
+	SAME_HOST_AFFINITY = 1000 #we definitely want to be on the same host as our connected elements
 	
 	class Meta:
 		db_table = "tomato_external_network_endpoint"
