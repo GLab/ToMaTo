@@ -7,7 +7,27 @@ import string
 import time
 import json
 import shutil
+import socket, fcntl, struct
 from datetime import date
+
+
+# basic functions
+
+def get_interface_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
+
+
+
+
+
+
+
+
 
 # functions to call processes
 
@@ -153,6 +173,7 @@ def web_start(config):
 	] + \
 	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['web']['additional_directories'])) + \
 	[
+		"--add-host=%s:%s" % (socket.gethostname(), get_interface_ip_address(config['docker_network_interface'])),
 		"--link", "%s:backend" % config['backend']['docker_container'],
 		"-p", "%s:80" % str(config['web']['port']),
 		"--name", config['web']['docker_container'],
@@ -212,6 +233,7 @@ def backend_start(config):
 	] + \
 	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['backend']['additional_directories'])) + \
 	[
+		"--add-host=%s:%s" % (socket.gethostname(), get_interface_ip_address(config['docker_network_interface'])),
 		"--link", "%s:db" % config['db']['docker_container']
 	] + \
 	reduce(lambda x, y: x+y, [['-p', "%s:%s" % (str(p),str(p))] for p in config['backend']['ports']]) + \
@@ -399,7 +421,8 @@ def read_config():
 				'config': os.path.join("web", "config")
 			}
 			# 'version'  (will be generated if not found in config)
-		}
+		},
+		'docker_network_interface': 'docker0'
 		# 'docker_dir'  (will be generated if not found in config)
 		# 'tomato_dir'  (will be generated if not found in config)
 	}
