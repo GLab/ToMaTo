@@ -106,11 +106,11 @@
 				{% endif %}
 
 				{% if notification.read %}
-				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read({{notification.id}}, false)">
+				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read('{{notification.id}}', false)">
 					<span class="glyphicon glyphicon-remove-circle"></span> mark as unread
 				  </button>
 				{% else %}
-				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read({{notification.id}}, true)">
+				  <button class="mark-read-button btn btn-default" onclick="notification_mark_read('{{notification.id}}', true)">
 					<span class="glyphicon glyphicon-ok-circle"></span> mark as read
 				  </button>
 

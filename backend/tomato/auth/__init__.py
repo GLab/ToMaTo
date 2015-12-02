@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time, crypt, string, random, sys
+import time, crypt, string, random, sys, hashlib
 from ..db import *
 from ..lib import logging, util, mail #@UnresolvedImport
 from .. import config, currentUser, setCurrentUser, scheduler, accounting
@@ -226,7 +226,15 @@ class User(BaseDocument):
 
 	def _addNotification(self, title, message, ref, fromUser, subject_group=None):
 		now = time.time()
-		notf = Notification(title=title, message=message, timestamp=now, id=str(now))
+		notf_id = hashlib.sha256(repr({
+			'title': title,
+			'message': message,
+			'ref': ref,
+			'fromUser': fromUser.name if fromUser else None,
+			'subject_group': subject_group,
+			'timestamp': now
+		})).hexdigest()
+		notf = Notification(title=title, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
 		self.save()
@@ -235,13 +243,15 @@ class User(BaseDocument):
 		if not self.email or self.hasFlag(Flags.NoMails):
 			logging.logMessage("failed to send mail", category="user", subject=subject)
 			return
-		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
-		subject = config.EMAIL_SUBJECT_TEMPLATE % data
-		message = config.EMAIL_MESSAGE_TEMPLATE % data
-		from_ = None
+
 		if fromUser:
-			from_ = "%s <%s>" % (fromUser.realname or fromUser.name, fromUser.email)
-		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
+			fromuser_realname = fromUser.realname or fromUser.name
+			fromuser_addr = fromUser.email
+		else:
+			fromuser_realname = None
+			fromuser_addr = None
+
+		mail.send(self.realname or self.name, self.email, subject, message, fromuser_realname, fromuser_addr)
 
 	def _get_notification(self, notification_id):
 		for n in self.notifications:
