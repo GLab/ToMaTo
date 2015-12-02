@@ -30,26 +30,20 @@ def interpretError(error):
     
     #now, return everything.
     if 'function' in debuginfos_dict:
-      has_bracket = False
       need_comma = False
+      debuginfos_dict['function'] = debuginfos_dict['function']+'('
       if 'args' in debuginfos_dict:
-        debuginfos_dict['function'] = debuginfos_dict['function']+'('
-        has_bracket = True
         if debuginfos_dict['args']:
           need_comma = True
-          debuginfos_dict['function'] = debuginfos_dict['function'] + ", ".join(json.dumps(debuginfos_dict['args']))
+          debuginfos_dict['function'] = debuginfos_dict['function'] + ", ".join([json.dumps(arg) for arg in debuginfos_dict['args']])
         del debuginfos_dict['args']
       if 'kwargs' in debuginfos_dict:
-        if not has_bracket:
-          debuginfos_dict['function'] = debuginfos_dict['function']+'('
-          has_bracket = True
         if debuginfos_dict['kwargs']:
           if need_comma:
             debuginfos_dict['function'] = debuginfos_dict['function']+', '
           debuginfos_dict['function'] = debuginfos_dict['function'] + ", ".join(["%s=%s" % (k, json.dumps(v)) for k, v in debuginfos_dict['kwargs'].iteritems()])
         del debuginfos_dict['kwargs']
-      if has_bracket:
-        debuginfos_dict['function'] = debuginfos_dict['function']+')'
+      debuginfos_dict['function'] = debuginfos_dict['function']+')'
 
 
 
