@@ -14,6 +14,17 @@ def generate_inspect_trace(frame=None):
 	if frame is None:
 		frame = inspect.currentframe()
 
+	# there may be recursive errors if repr(obj) fails for any local variable at any point.
+	# thus, we need to figure out whether we have such a recursion before any repr function is called.
+	# we detect a recursion by testing whether this function appears multiple times in the stack.
+	# the try: outside the repr() or str() function below does not mean that this function is not called in error handling.
+	self_count = 0  # count how often this function is in the trace. abort if recursion may be happening
+	for frame_ in inspect.getouterframes(frame):
+		if frame_[3] == generate_inspect_trace.__name__:
+			self_count += 1
+		if self_count > 1:  # assume recursion if this function is in the stack 2 or more times
+			return []
+
 	for frame_ in inspect.getouterframes(frame):
 		obj = {
 			'locals': {},

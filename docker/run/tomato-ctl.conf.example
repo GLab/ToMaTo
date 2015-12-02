@@ -59,5 +59,6 @@
         "version": "3.6"
   },
   "docker_dir": "/home/user/work/ToMaTo/docker/run",
-  "tomato_dir": "/home/user/work/ToMaTo"
+  "tomato_dir": "/home/user/work/ToMaTo",
+  "docker_network_interface": "docker0"
 }

@@ -48,7 +48,7 @@ class Provider(AuthProvider):
 		notifyFilteredUsers(lambda u: u.hasFlag(Flags.GlobalAdminContact)
 					or u.hasFlag(Flags.OrgaAdminContact) and user.organization == u.organization,
 		            NEW_USER_ADMIN_INFORM_MESSAGE['subject'], NEW_USER_ADMIN_INFORM_MESSAGE['body'] % username)
-		user.sendMail(NEW_USER_WELCOME_MESSAGE['subject'], NEW_USER_WELCOME_MESSAGE['body'] % username, ref=['account', username])
+		user.sendNotification(NEW_USER_WELCOME_MESSAGE['subject'], NEW_USER_WELCOME_MESSAGE['body'] % username, ref=['account', username])
 		return user
 		
 def init(**kwargs):

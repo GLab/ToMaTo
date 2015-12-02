@@ -83,6 +83,7 @@ def start(api, request):
 	return redirect("tomato.topology.info", id=top_id)
 
 def loadTutorial(url):
+	data = json.load(urllib2.urlopen(url))
 	steps_str = None
 	tut_data = {}
 	initscript_str = ""
