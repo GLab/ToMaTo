@@ -53,7 +53,7 @@ var errorWindow = Window.extend({
 
 		this.content.append(this.errorMessage);
 		
-		if(editor.options.isDebugUser && editor.options.debug_mode) {
+		if(editor.options.isDebugUser && editor.options.debug_mode && error.debuginfos) {
 			
 			this.content.append($('<b>Error details:</b>'))
 			var errorDebugInfos = $('<table />');
