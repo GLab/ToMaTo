@@ -52,6 +52,7 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	hostConnections = ListField(ReferenceField('HostConnection', reverse_delete_rule=PULL), db_field='host_connections')
 	clientData = DictField(db_field='client_data')
 	directData = DictField(db_field='direct_data')
+	
 	meta = {
 		'allow_inheritance': True,
 		'indexes': [
@@ -432,7 +433,7 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			'host_connections': schema.List(items=schema.List(minLength=2, maxLength=2))
 		}, required=['host_elements', 'host_connections'])),
 		"host": Attribute(get=lambda self: self.host.name if self.host else None, readOnly=True),
-		"host_info": Attribute(field=host_info, readOnly=True)
+		"host_info": Attribute(field=host_info, readOnly=True),
 	}
 
 from .. import currentUser, host

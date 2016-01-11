@@ -125,9 +125,13 @@ var Editor = Class.extend({
 		this.topology.onOptionChanged(name);
 		this.workspace.onOptionChanged(name);
 		this.workspace.updateTopologyTitle();
+		for(elements in this.topology.elements) {
+			this.topology.elements[elements].paintUpdate();
+		}
 	},
 	optionMenuItem: function(options) {
 		var t = this;
+
 		return Menu.checkbox({
 			name: options.name, 
 			label: options.label, 
@@ -624,7 +628,13 @@ var Editor = Class.extend({
 		        name:"debug_mode",
 		        label:"Debug mode",
 		        tooltip:"Displays debug messages"
-		    })
+		    }),
+		    
+		    element_name_on_top: this.optionMenuItem({
+		        name:"element_name_on_top",
+		        label:"Names on Top",
+		        tooltip:"Show element name on top of element the element."
+		    }),
 		};
 
 		group.addStackedElements([this.optionCheckboxes.safe_mode, 
@@ -634,7 +644,8 @@ var Editor = Class.extend({
 									this.optionCheckboxes.big_editor,
 									this.optionCheckboxes.show_ids,
 									this.optionCheckboxes.show_sites_on_elements,
-									this.optionCheckboxes.debug_mode
+									this.optionCheckboxes.debug_mode,
+									this.optionCheckboxes.element_name_on_top,
 								]);
 
 		
