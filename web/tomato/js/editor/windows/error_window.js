@@ -67,8 +67,8 @@ var errorWindow = Window.extend({
 	},
 	
 	addText: function(text) {
-		var message = $('<p>'+text.replace(/(\r\n)|(\r)|(\n)/g, '<br />')+'</p>');
-		return message;
+        if (text) text = $('<p>'+text.replace(/(\r\n)|(\r)|(\n)/g, '<br />')+'</p>');
+		return text;
 	}
 });
 

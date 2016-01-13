@@ -150,6 +150,13 @@ var Topology = Class.extend({
 				//hide tinc endpoints with tinc_vpn parent but show endpoints without parent 
 				elObj = el.parent ? new SwitchPortElement(this, el, this._getCanvas()) : new VPNElement(this, el, this._getCanvas()) ;
 				break;
+			case "vpncloud":
+				elObj = new VPNElement(this, el, this._getCanvas());
+				break;
+			case "vpncloud_endpoint":
+				//hide vpncloud endpoints with vpcloud parent but show endpoints without parent
+				elObj = el.parent ? new SwitchPortElement(this, el, this._getCanvas()) : new VPNElement(this, el, this._getCanvas()) ;
+				break;
 			default:
 				elObj = new UnknownElement(this, el, this._getCanvas());
 				break;
@@ -336,6 +343,12 @@ var Topology = Class.extend({
 			case "tinc_endpoint":
 				base = "tinc";
 				break;		
+			case "vpncloud":
+				base = "switch";
+				break;
+			case "vpncloud_endpoint":
+				base = "port";
+				break;
 			default:
 				if (data && data.template) {
 					base = editor.templates.get(data.type, data.template).label;

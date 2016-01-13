@@ -2,9 +2,11 @@ def patch_xmlrpc_mongoengine():
 	from xmlrpclib import Marshaller
 	from mongoengine.base.datastructures import BaseDict, BaseList
 	from bson.binary import Binary
+	from bson.int64 import Int64
 	Marshaller.dispatch[BaseDict] = Marshaller.dump_struct
 	Marshaller.dispatch[BaseList] = Marshaller.dump_array
 	Marshaller.dispatch[Binary] = Marshaller.dump_string
+	Marshaller.dispatch[Int64] = lambda m, v, w: m.dump_string(str(v), w)
 
 def patch_mongoengine_from_son():
 	from mongoengine.base.document import BaseDocument

@@ -22,6 +22,7 @@ from elements.repy import Repy, Repy_Interface #@UnusedImport
 from elements.external_network import External_Network #@UnusedImport
 from elements.udp_tunnel import UDP_Tunnel #@UnusedImport
 from elements.tinc import Tinc #@UnusedImport
+from elements.vpncloud import VpnCloud #@UnusedImport
 from connections import Connection #@UnusedImport
 from connections.bridge import Bridge #@UnusedImport
 from connections.fixed_bridge import Fixed_Bridge #@UnusedImport
