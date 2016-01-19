@@ -83,7 +83,13 @@ var IconElement = Element.extend({
 	paint: function() {
 		var pos = this.canvas.absPos(this.getPos());
 		this.icon = this.canvas.image(this.iconUrl(), pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
-		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.name);
+		if(editor.options.element_name_on_top) {
+			
+			this.text = this.canvas.text(pos.x, pos.y-this.iconSize.y/2-10, this.data.name);	
+		} else {
+			this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.name);
+		}
+		
 		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
 		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2, pos.y-this.iconSize.y/2-10, 16, 16);
 		this.rextfvIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2, pos.y-this.iconSize.y/2+8, 16, 16);
@@ -114,7 +120,13 @@ var IconElement = Element.extend({
 		this.errIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2-10});
 		this.rextfvIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2+8});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
-		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.name});
+		
+		if(editor.options.element_name_on_top) {
+			this.text.attr({x: pos.x, y: pos.y-this.iconSize.y/2-10, text: this.data.name});	
+		} else {
+			this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.name});
+		}
+		
 		this.updateStateIcon();
 		$(this.rect.node).attr("class", "tomato element selectable");
 		this.rect.conditionalClass("connectable", this.isConnectable());

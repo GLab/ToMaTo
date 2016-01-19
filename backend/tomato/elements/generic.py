@@ -224,8 +224,8 @@ class VMElement(Element):
 		"profile": StatefulAttribute(get=lambda self: self.profile.name if self.profile else None, set=modify_profile, writableStates=[ST_CREATED, ST_PREPARED]),
 		"template": StatefulAttribute(get=lambda self: self.template.name if self.template else None, set=modify_template, writableStates=[ST_CREATED]),
 		"name": Attribute(field=name, label="Name"),
-		"info_last_sync": Attribute(field=lastSync, readOnly=True),
-		"info_next_sync": Attribute(field=nextSync, readOnly=True)
+		"info_last_sync": Attribute(field=lastSync, readOnly=True,label="Last synchronization"),
+		"info_next_sync": Attribute(field=nextSync, readOnly=True,label="Next synchronization")
 	})
 
 	ACTIONS = Element.ACTIONS.copy()
