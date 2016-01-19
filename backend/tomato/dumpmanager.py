@@ -81,6 +81,19 @@ class ErrorGroup(BaseDocument):
 		]
 	}
 
+	LOCKS = {}
+	LOCKS_LOCK = threading.RLock()
+
+	@property
+	def lock(self):
+		key = self.groupId
+		with self.LOCKS_LOCK:
+			lock = self.LOCKS.get(key)
+			if not lock:
+				lock = threading.RLock()
+				self.LOCKS[key] = lock
+			return lock
+
 	def add_favorite_user(self, user_obj):
 		if user_obj not in self.users_favorite:
 			self.users_favorite.append(user_obj)
@@ -319,10 +332,6 @@ def getDumpSources(include_disabled=False):
 	return sources
 
 
-# only one thread may write to the dump table at a time.
-lock_db = threading.RLock()
-
-
 def find_source_by_name(source_name):
 	for s in getDumpSources(include_disabled=True):
 		if s.dump_source_name() == source_name:
@@ -331,13 +340,14 @@ def find_source_by_name(source_name):
 
 
 def insert_dump(dump, source):
-	with lock_db:
-		source_name = source.dump_source_name()
-		must_fetch_data = False
+	source_name = source.dump_source_name()
+	must_fetch_data = False
 
-		# check whether the group ID already exists. If not, create it,
-		# remember to fetch dump data in the end, and email developer users
-		group = get_group(dump['group_id'])
+	# check whether the group ID already exists. If not, create it,
+	# remember to fetch dump data in the end, and email developer users
+	group = get_group(dump['group_id'])
+	with group.lock:
+		group = group.reload()
 		if not group:
 			from auth import notifyFlaggedUsers, Flags
 			must_fetch_data = True
@@ -378,7 +388,8 @@ def update_source(source):
 					pass  # better than losing all dumps in next for loop iterations...
 	finally:
 		for group in getAll_group():
-			with lock_db:
+			with group.lock:
+				group = group.reload()
 				group.shrink()
 
 @util.wrap_task
@@ -415,20 +426,20 @@ def checkPermissions():
 
 def api_errorgroup_list(show_empty=False):
 	checkPermissions()
-	with lock_db:
-		res = []
-		for grp in getAll_group():
+	res = []
+	for grp in getAll_group():
+		with grp.lock:
 			if show_empty or (grp.dumps and (not grp.hidden)):
 				info = grp.info()
 				info['user_favorite'] = (currentUser() in grp.users_favorite)
 				res.append(info)
-		return res
+	return res
 
 
 def api_errorgroup_modify(group_id, attrs):
 	checkPermissions()
-	with lock_db:
-		grp = get_group(group_id)
+	grp = get_group(group_id)
+	with grp.lock:
 		UserError.check(grp is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 						data={"group_id": group_id})
 		grp.modify(attrs)
@@ -437,8 +448,9 @@ def api_errorgroup_modify(group_id, attrs):
 
 def api_errorgroup_info(group_id, include_dumps=False):
 	checkPermissions()
-	with lock_db:
-		group = get_group(group_id)
+	group = get_group(group_id)
+	with group.lock:
+		group = group.reload()
 		UserError.check(group is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 						data={"group_id": group_id})
 		res = group.info()
@@ -451,8 +463,9 @@ def api_errorgroup_info(group_id, include_dumps=False):
 
 def api_errordump_info(group_id, source, dump_id, include_data=False):
 	checkPermissions()
-	with lock_db:
-		group = get_group(group_id)
+	group = get_group(group_id)
+	with group.lock:
+		group = group.reload()
 		UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 						data={"group_id": group_id})
 		dump = None
@@ -467,7 +480,8 @@ def api_errordump_info(group_id, source, dump_id, include_data=False):
 
 def api_errorgroup_remove(group_id):
 	checkPermissions()
-	with lock_db:
+	group = get_group(group_id)
+	with group.lock:
 		res = remove_group(group_id)
 		UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 						data={"group_id": group_id})
@@ -475,8 +489,9 @@ def api_errorgroup_remove(group_id):
 
 def api_errordump_list(group_id, source=None, data_available=None):
 	checkPermissions()
-	with lock_db:
-		group = get_group(group_id)
+	group = get_group(group_id)
+	with group.lock:
+		group = group.reload()
 		UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 						data={"group_id": group_id})
 		res = []
@@ -493,8 +508,9 @@ def api_errordump_list(group_id, source=None, data_available=None):
 
 def api_errorgroup_hide(group_id):
 	checkPermissions()
-	with lock_db:
-		group = get_group(group_id)
+	group = get_group(group_id)
+	with group.lock:
+		group = group.reload()
 		group.hide()
 
 def api_force_refresh():
