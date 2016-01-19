@@ -568,8 +568,9 @@ class KVMQM_Interface(elements.Element):
 		self.save()
 
 	def info(self):
-		if self.state == ST_STARTED:
-			self.used_addresses = ipspy.read(self.dataPath("ipspy.json"))
+		path = self.dataPath("ipspy.json")
+		if self.state == ST_STARTED and os.path.exists(path):
+			self.used_addresses = ipspy.read(path)
 		else:
 			self.used_addresses = []
 		info = elements.Element.info(self)
