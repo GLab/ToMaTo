@@ -50,6 +50,8 @@ var TemplateStore = Class.extend({
 			if (t) return t;
 			if (t1.name < t2.name) return -1;
 			if (t2.name < t1.name) return 1;
+			if (t1.type < t2.type) return -1;
+			if (t2.type < t1.type) return 1;
 			return 0;
 		});
 		return common;
