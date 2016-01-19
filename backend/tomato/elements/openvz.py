@@ -51,7 +51,11 @@ class OpenVZ_Interface(VMInterface):
 def syncRexTFV():
 	for e in OpenVZ.objects.filter(nextSync__gt=0.0, nextSync__lte=time.time()):
 		with e:
-			e.updateInfo()
+			try:
+				e.reload().updateInfo()
+			except OpenVZ.DoesNotExist:
+				pass
+
 
 scheduler.scheduleRepeated(1, syncRexTFV)
 
