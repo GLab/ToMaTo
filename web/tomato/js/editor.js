@@ -4135,6 +4135,13 @@ var TemplateStore = Class.extend({
 		 for (var name in this.types[type])
 		  if (this.types[type][name].showAsCommon && (!this.types[type][name].restricted || this.editor.allowRestrictedTemplates))
 		   common.push(this.types[type][name]);
+		common.sort(function(t1, t2){
+		    var t = t2.preference - t1.preference;
+			if (t) return t;
+			if (t1.name < t2.name) return -1;
+			if (t2.name < t1.name) return 1;
+			return 0;
+		});
 		return common;
 	}
 });
