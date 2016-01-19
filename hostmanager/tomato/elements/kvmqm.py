@@ -273,7 +273,14 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	def _removeInterface(self, interface):
 		assert self.state == ST_PREPARED
-		qm.delNic(self.vmid, interface.num)
+		try:
+			qm.delNic(self.vmid, interface.num)
+		except qm.QMError as err:
+			if err.code == qm.QMError.CODE_NO_SUCH_NIC:
+				err.dump()
+				# ignore error as it is exactly what we wanted
+			else:
+				raise
 
 	def _configure(self):
 		assert self.state == ST_PREPARED
