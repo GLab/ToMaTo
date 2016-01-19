@@ -144,7 +144,7 @@ class Error(Exception):
 
 	@classmethod
 	def wrap(cls, error, code=UNKNOWN, todump=None, message=None, trace=None, frame_trace=None, frame=None, *args, **kwargs):
-		return cls(code=code, message=message or str(error), todump=todump, trace=trace, frame_trace=frame_trace, frame=frame, *args, **kwargs)
+		return cls(code=code, message=message or repr(error), todump=todump, trace=trace, frame_trace=frame_trace, frame=frame, *args, **kwargs)
 
 	def __str__(self):
 		lines = []
