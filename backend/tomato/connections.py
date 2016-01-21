@@ -369,6 +369,9 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			with getLock(self):
 				try:
 					self.reload()
+					for el in self.elements:
+						if el.readyToConnect and el.busy:
+							return
 					self._stop()
 				except Connection.DoesNotExist:
 					# Other end of connection deleted the connection, no need to stop it
