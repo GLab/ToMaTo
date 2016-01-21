@@ -138,8 +138,8 @@ def list(api, request, site=None, organization=None):
 
 
 @wrap_rpc
-def info(api, request, name):
-	host = api.host_info(name)
+def info(api, request, name,forced_update=False):
+	host = api.host_info(name,forced_update)
 	host['element_types'].sort()
 	host['connection_types'].sort()
 	site = api.site_info(host["site"])
