@@ -203,6 +203,7 @@ class Host(DumpSource, Entity, BaseDocument):
 			logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
 		except:
 			self.synchronized = False
+			raise
 	
 		
 
