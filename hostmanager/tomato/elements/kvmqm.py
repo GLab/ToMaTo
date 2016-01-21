@@ -557,7 +557,12 @@ class KVMQM_Interface(elements.Element):
 			
 	def interfaceName(self):
 		if self.state != ST_CREATED:
-			return qm.getNicName(self.getParent().vmid, self.num)
+			try:
+				return qm.getNicName(self.getParent().vmid, self.num)
+			except qm.QMError as err:
+				if err.code == qm.QMError.CODE_NO_SUCH_NIC:
+					return
+				raise
 		else:
 			return None
 		
