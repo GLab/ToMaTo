@@ -24,6 +24,7 @@ from .elements.openvz import OpenVZ, OpenVZ_Interface
 from .elements.kvmqm import KVMQM, KVMQM_Interface
 from .elements.repy import Repy, Repy_Interface
 from .elements.tinc import TincVPN, TincEndpoint
+from .elements.vpncloud import VpnCloud, VpnCloudEndpoint
 from .elements.external_network import ExternalNetworkEndpoint, ExternalNetwork
 from .elements.udp import UDPEndpoint
 from .connections import Connection

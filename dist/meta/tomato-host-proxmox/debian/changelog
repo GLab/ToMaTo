@@ -1,3 +1,9 @@
+tomato-host-proxmox (3.6.1) stable; urgency=medium
+
+  * Added vpncloud-tomato dependency
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 24 Nov 2015 11:32:37 +0100
+
 tomato-host-proxmox (3.2.1) stable; urgency=low
 
   * Moved websockify dependency to hostmanager

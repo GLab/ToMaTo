@@ -12,6 +12,6 @@ Depends: ${misc:Depends}, ${python:Depends}, python (>=2.6),
  daemon, bittorrent, openssl, ssl-cert, python-openssl, websockify, ebtables
 Recommends: ${misc:Depends}, pve-qemu-kvm, vzctl, vzdump, bridge-utils, iproute,
  tinc, ucspi-tcp, rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.5), vtun,
- logrotate, dosfstools, tomato-updater, ipspy
+ logrotate, dosfstools, tomato-updater, ipspy, vpncloud-tomato
 Description: ToMaTo hostmanager
  ToMaTo hostmanager

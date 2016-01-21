@@ -5,7 +5,7 @@ var settings = {
 	commonPreferenceThreshold: 100,
 	otherCommonElements: [
 	                      {
-	                  		label: "Switch",
+	                  		label: "Switch (Tinc)",
 	                		name: "vpn-switch",
 	                		icon: "img/switch32.png",
 	                		data: {

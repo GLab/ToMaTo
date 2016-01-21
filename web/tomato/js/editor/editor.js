@@ -431,7 +431,7 @@ var Editor = Class.extend({
 
 		var group = tab.addGroup("VPN Elements");
 		group.addElement(Menu.button({
-			label: "Switch",
+			label: "Switch (Tinc)",
 			name: "vpn-switch",
 			icon: "img/switch32.png",
 			toggle: true,
@@ -443,7 +443,7 @@ var Editor = Class.extend({
 			}))
 		}));
 		group.addElement(Menu.button({
-			label: "Hub",
+			label: "Hub (Tinc)",
 			name: "vpn-hub",
 			icon: "img/hub32.png",
 			toggle: true,
@@ -452,6 +452,17 @@ var Editor = Class.extend({
 			func: this.createPositionElementFunc(this.createElementFunc({
 				type: "tinc_vpn",
 				mode: "hub"
+			}))
+		}));
+		group.addElement(Menu.button({
+			label: "Switch (VpnCloud)",
+			name: "vpn-switch",
+			icon: "img/switch32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createElementFunc({
+				type: "vpncloud"
 			}))
 		}));
 

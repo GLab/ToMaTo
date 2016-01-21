@@ -5,7 +5,7 @@ var VPNElement = IconElement.extend({
 		this.iconSize = {x: 32, y:16};
 	},
 	iconUrl: function() {
-		return dynimg(32,"vpn",this.data.mode,null);
+		return dynimg(32,"vpn",this.data.mode||"switch",null);
 	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -17,6 +17,10 @@ var VPNElement = IconElement.extend({
 		return false;
 	},
 	getConnectTarget: function(callback) {
-		return this.topology.createElement({type: "tinc_endpoint", parent: this.data.id}, callback);
+	    if (this.data.type == "tinc_vpn") {
+		    return this.topology.createElement({type: "tinc_endpoint", parent: this.data.id}, callback);
+	    } else {
+	        return this.topology.createElement({type: "vpncloud_endpoint", parent: this.data.id}, callback);
+        }
 	}
 });
