@@ -13,6 +13,7 @@ var createConnectionMenu = function(obj) {
 				}
 			},
 			"sep1": "---",
+			/*
 			"cloudshark_capture": obj.captureDownloadable() ? {
 				name:"View capture in Cloudshark",
 				icon:"cloudshark",
@@ -20,6 +21,7 @@ var createConnectionMenu = function(obj) {
 					obj.viewCapture();
 				}
 			} : null,
+			*/
 			"download_capture": obj.captureDownloadable() ? {
 				name:"Download capture",
 				icon:"download-capture",

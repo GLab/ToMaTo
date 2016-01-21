@@ -121,12 +121,14 @@ var Connection = Component.extend({
 			window.location.href = url;
 		}})
 	},
+	/*
 	viewCapture: function() {
 		this.action("download_grant", {params: {limitSize: 1024*1024}, callback: function(con, res) {
 			var url = "http://" + con.data.host_info.address + ":" + con.data.host_info.fileserver_port + "/" + res + "/download";
 			window.open("http://www.cloudshark.org/view?url="+url, "_newtab");
 		}})
 	},
+	*/
 	liveCaptureEnabled: function() {
 		return this.actionEnabled("download_grant") && this.data.capturing && this.data.capture_mode == "net";
 	},
