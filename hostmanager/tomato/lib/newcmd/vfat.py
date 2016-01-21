@@ -81,6 +81,7 @@ def create(path, size, nested=False):
 			device = cmd.run(["losetup", "-f", "--show", "--offset", str(start), "--sizelimit", str(size), path]).splitlines()[0]
 			ImageError.check(os.path.exists(device), ImageError.CODE_FAILED_TO_CREATE, "Failed to bind to loop device", {"path": path, "size": size, "loop_device": device})
 		cmd.run(["mkfs.vfat", device])
+		cmd.run(["sync"])
 		if nested:
 			cmd.run(["losetup", "-d", device])
 	except cmd.CommandError, err:
