@@ -22,7 +22,7 @@ class Task:
 
 		# if random offset to be used as first timeout, next_timeout must be randomly selected.
 		if random_offset:
-			next_time = random.randint(0, timeout)
+			next_time = random.random() * timeout
 		else:
 			next_time = timeout
 
