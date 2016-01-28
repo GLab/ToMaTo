@@ -1,7 +1,0 @@
-- .*
-- *~
-- *.pyc
-+ django.wsgi
-+ tomato
-+ web.conf.example
-- /*
