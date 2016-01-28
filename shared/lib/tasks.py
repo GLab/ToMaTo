@@ -4,12 +4,12 @@ Created on Jan 24, 2014
 @author: dswd
 '''
 
-import threading, time
+import threading, time, random
 
 MAX_WAIT = 3600.0
 
 class Task:
-	def __init__(self, fn, args=None, kwargs=None, timeout=0, repeated=False, immediate=False):
+	def __init__(self, fn, args=None, kwargs=None, timeout=0, repeated=False, immediate=False, random_offset=True):
 		if not kwargs:
 			kwargs = {}
 		if not args:
@@ -19,7 +19,22 @@ class Task:
 		self.fn = fn
 		self.args = args
 		self.kwargs = kwargs
-		self.next = time.time() + (0 if immediate else timeout) 
+
+		# if random offset to be used as first timeout, next_timeout must be randomly selected.
+		if random_offset:
+			next_time = random.random() * timeout
+		else:
+			next_time = timeout
+
+		# if there is an additional, immediate execution, next_time has to be used as next_timeout, and next_time must be 0.
+		if immediate:
+			self.next_timeout = next_time  # will be overwritten by self.timeout after first execute()
+			next_time = 0
+		else:
+			self.next_timeout = timeout
+
+		self.next = time.time() + next_time
+
 		self.busy = False
 		self.last = None
 		self.duration = None
@@ -33,7 +48,8 @@ class Task:
 		self.duration = time.time()-self.last
 		self.last = self.next
 		if self.repeated:
-			self.next = time.time() + self.timeout
+			self.next = time.time() + self.next_timeout
+			self.next_timeout = self.timeout
 		else:
 			self.next = 0
 	def info(self):
@@ -151,7 +167,8 @@ class TaskScheduler(threading.Thread):
 		#print "Ignoring task %s" % fn
 		#return
 		immediate = kwargs.pop("immediate", True)
-		return self._schedule(Task(fn, args, kwargs, timeout=timeout, repeated=True, immediate=immediate))
+		random_offset = kwargs.pop("random_offset", True)
+		return self._schedule(Task(fn, args, kwargs, timeout=timeout, repeated=True, immediate=immediate, random_offset=random_offset))
 	def cancelTask(self, taskId):
 		with self.tasksLock:
 			del self.tasks[taskId]
