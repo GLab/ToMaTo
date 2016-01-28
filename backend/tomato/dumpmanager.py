@@ -466,9 +466,9 @@ def api_errorgroup_list(show_empty=False):
 def api_errorgroup_modify(group_id, attrs):
 	checkPermissions()
 	grp = get_group(group_id)
+	UserError.check(grp is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+					data={"group_id": group_id})
 	with grp.lock:
-		UserError.check(grp is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
-						data={"group_id": group_id})
 		grp.modify(attrs)
 		return grp.info()
 
@@ -476,10 +476,10 @@ def api_errorgroup_modify(group_id, attrs):
 def api_errorgroup_info(group_id, include_dumps=False):
 	checkPermissions()
 	group = get_group(group_id)
+	UserError.check(group is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+					data={"group_id": group_id})
 	with group.lock:
 		group = group.reload()
-		UserError.check(group is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
-						data={"group_id": group_id})
 		res = group.info()
 		if include_dumps:
 			res['dumps'] = []
@@ -491,10 +491,10 @@ def api_errorgroup_info(group_id, include_dumps=False):
 def api_errordump_info(group_id, source, dump_id, include_data=False):
 	checkPermissions()
 	group = get_group(group_id)
+	UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+					data={"group_id": group_id})
 	with group.lock:
 		group = group.reload()
-		UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
-						data={"group_id": group_id})
 		dump = None
 		for d in group.dumps:
 			if d.dumpId == dump_id and d.source == source:
@@ -517,10 +517,10 @@ def api_errorgroup_remove(group_id):
 def api_errordump_list(group_id, source=None, data_available=None):
 	checkPermissions()
 	group = get_group(group_id)
+	UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
+					data={"group_id": group_id})
 	with group.lock:
 		group = group.reload()
-		UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
-						data={"group_id": group_id})
 		res = []
 		for d in group.dumps:
 			di = d.info(include_data=False)
