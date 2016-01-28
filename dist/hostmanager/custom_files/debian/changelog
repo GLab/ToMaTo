@@ -1,8 +1,8 @@
-tomato-hostmanager (3.6+test1) UNRELEASED; urgency=medium
+tomato-hostmanager (3.7) stable; urgency=medium
 
-  * VpnCloud test
+  * Lots of changes and improvements
 
- -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 02 Dec 2015 12:29:54 +0100
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 28 Jan 2016 09:53:21 +0100
 
 tomato-hostmanager (3.6) stable; urgency=medium
 
