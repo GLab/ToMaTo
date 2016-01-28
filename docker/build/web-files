@@ -1,1 +1,7 @@
-../../dist/web/files
+- .*
+- *~
+- *.pyc
++ django.wsgi
++ tomato
++ web.conf.example
+- /*

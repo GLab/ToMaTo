@@ -1,1 +1,9 @@
-../../dist/backend/files
+- logs
+- .*
+- templates
+- htmlcov
+- dumps
++ */
++ backend.conf.example
++ *.py
+- *
