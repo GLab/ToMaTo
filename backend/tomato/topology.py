@@ -22,7 +22,7 @@ from lib import logging #@UnresolvedImport
 from accounting import UsageStatistics
 from .auth.permissions import PermissionMixin, Role
 from . import scheduler
-from .lib.error import UserError, InternalError #@UnresolvedImport
+from .lib.error import UserError #@UnresolvedImport
 from .lib import util
 
 class TimeoutStep:

@@ -172,7 +172,7 @@ class AccountChangeForm(AccountForm):
 		is_self = data['name'] == api.account_info()['name']
 		if is_self:
 			self.fields['organization'].widget = FixedText()
-			
+
 		self.helper.form_action = reverse(edit, kwargs={'id':data['name']})
 		self.helper.layout = Layout(*(
 			(
@@ -191,7 +191,7 @@ class AccountChangeForm(AccountForm):
 				Buttons.cancel_save,
 			)
 		))
-			
+
 
 class AccountRegisterForm(AccountForm):
 	aup = forms.BooleanField(label="", required=True)

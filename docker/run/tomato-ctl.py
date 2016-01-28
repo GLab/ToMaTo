@@ -24,11 +24,6 @@ def get_interface_ip_address(ifname):
 
 
 
-
-
-
-
-
 # functions to call processes
 
 def run_interactive(command, *args):
@@ -108,7 +103,10 @@ available commands:
  restart:
    Restart the container
    This is equivalent to stop and then start.
+<<<<<<< HEAD
    This will also restart all modules that depend on the selected module.
+=======
+>>>>>>> stable
 
  shell:
    Open the shell of the container.
@@ -217,7 +215,6 @@ def web_reload(config):
 		print "web not running"
 		exit(1)
 	docker_exec(config['web']['docker_container'], "service", "apache2", "reload")
-
 
 def backend_start(config):
 	if backend_status(config):

@@ -85,7 +85,7 @@ class Error(Exception):
 				self.frame_trace = generate_inspect_trace(frame)
 		else:
 			self.frame_trace = frame_trace
-		
+
 	
 	def group_id(self):
 		"""
