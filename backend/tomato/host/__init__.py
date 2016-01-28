@@ -34,6 +34,12 @@ class RemoteWrapper:
 		self._kwargs = kwargs
 		self._proxy = None
 
+	def __repr__(self):
+		return "RemoteWrapper(host=%s, url=%s)" % (self._host, self._url)
+
+	def __str__(self):
+		return "RemoteWrapper(host=%s, url=%s)" % (self._host, self._url)
+
 	def __getattr__(self, name):
 		def call(*args, **kwargs):
 			retries = 3
