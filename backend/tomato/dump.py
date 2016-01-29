@@ -2,12 +2,6 @@ from .lib import dump as dump_lib
 import misc, traceback, sys
 
 envCmds = { 
-  "disks": ["df", "-h"],
-  "processes": ["ps", "faux"],
-  "network connections": ["netstat", "-tupen"],
-  "dmesg": ["dmesg", "-xT", "-s", "4096"],
-  "syslog": ["tail", "/var/log/syslog"],
-  "tc": ["tc", "-s", "qdisc", "show"]
 }
 
 def dumpException(**kwargs):

@@ -15,3 +15,4 @@ Entries should be sorted by component and status with important entries and entr
 - [backend, fixed] Gracefully handling errors on topology timeout
 - [backend, fixed] Gracefully handling errors on host component synchronization
 - [backend, fixed] Fixed profiling when server does not terminate
+- [backend, removed] Removed useless dump environment infos
