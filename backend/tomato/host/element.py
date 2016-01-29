@@ -126,6 +126,9 @@ class HostElement(HostObject):
 				return
 			self.modify({"timeout": time.time() + config.HOST_COMPONENT_TIMEOUT})
 		except error.UserError, err:
+			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
+				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
+				self.remove()
 			if err.code != error.UserError.UNSUPPORTED_ATTRIBUTE:
 				raise
 		except:

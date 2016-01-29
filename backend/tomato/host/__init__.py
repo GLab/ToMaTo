@@ -815,14 +815,21 @@ def scheduleHostChecks():
 def synchronizeComponents():
 	from .element import HostElement
 	for hel in HostElement.objects.all():
-		hel.synchronize()
+		try:
+			hel.synchronize()
+		except Exception:
+			handleError()
 	from .connection import HostConnection
 	for hcon in HostConnection.objects.all():
-		hcon.synchronize()
+		try:
+			hcon.synchronize()
+		except Exception:
+			handleError()
 
 
 from ..auth import Flags, notifyFilteredUsers
 from .site import Site
+from .. import handleError
 
 scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, scheduleHostChecks)  # @UndefinedVariable
 scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
