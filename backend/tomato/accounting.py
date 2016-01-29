@@ -42,6 +42,7 @@ MAX_AGE = {
 }
 
 class Usage(EmbeddedDocument):
+	__slots__ = ("memory", "diskspace", "traffic", "cputime")
 	memory = FloatField(default=0.0, db_field="m") #unit: bytes
 	diskspace = FloatField(default=0.0, db_field="d") #unit: bytes
 	traffic = FloatField(default=0.0, db_field="t") #unit: bytes
@@ -62,6 +63,7 @@ class Usage(EmbeddedDocument):
 		}
 
 class UsageRecord(EmbeddedDocument):
+	__slots__ = ("begin", "end", "measurements", "usage")
 	begin = FloatField(required=True, db_field="b")
 	end = FloatField(required=True, db_field="e")
 	measurements = IntField(default=0, db_field="m")
