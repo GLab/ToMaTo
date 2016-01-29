@@ -12,3 +12,4 @@ Entries should be sorted by component and status with important entries and entr
 - [backend, fixed] Fixed problem with non-existing error groups
 - [backend, fixed] Fixed problem with accounting aggregation for topologies, users and organizations
 - [backend, fixed] Gracefully handling errors on topology timeout
+- [backend, fixed] Gracefully handling errors on host component synchronization

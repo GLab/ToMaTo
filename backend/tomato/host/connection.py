@@ -99,7 +99,13 @@ class HostConnection(HostObject):
 				self.remove()
 				return
 			self.updateInfo()
+		except error.UserError, err:
+			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
+				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
+				self.remove()
+			if err.code != error.UserError.UNSUPPORTED_ATTRIBUTE:
+				raise
 		except:
-			logging.logException(host=self.host.name)
+			logging.logException(host=self.host.address)
 
 HostConnection.register_delete_rule(HostElement, "connection", NULLIFY)
