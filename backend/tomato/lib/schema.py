@@ -1,7 +1,8 @@
 import types, re
 from .error import UserError as Error
 
-class Common:
+class Common(object):
+	__slots__ = ("options", "optionsDesc", "minValue", "maxValue", "null")
 	def __init__(self, options=None, optionsDesc=None, minValue=None, maxValue=None, null=False):
 		self.options = options
 		self.optionsDesc = optionsDesc
@@ -40,13 +41,15 @@ class Common:
 			return False
 
 class Any(Common):
-	pass
+	__slots__ = ()
 
 class Constant(Common):
+	__slots__ = ()
 	def __init__(self, value):
 		Common.__init__(self, options=[value])
 
 class Type(Common):
+	__slots__ = ()
 	TYPES = ()
 	TYPE_NAMES = []
 	def check(self, value):
@@ -59,6 +62,7 @@ class Type(Common):
 		return desc
 
 class Number(Type):
+	__slots__ = ("unit",)
 	TYPES = (types.IntType, types.LongType, types.FloatType)
 	TYPE_NAMES = ["int", "float"]
 
@@ -71,14 +75,17 @@ class Number(Type):
 		return desc
 
 class Int(Number):
+	__slots__ = ()
 	TYPES = (types.IntType, types.LongType)
 	TYPE_NAMES = ["int"]
 
 class Bool(Type):
+	__slots__ = ()
 	TYPES = (types.BooleanType,)
 	TYPE_NAMES = ["bool"]
 
 class Sequence(Type):
+	__slots__ = ("minLength", "maxLength")
 	TYPES = types.StringTypes + (types.ListType, types.TupleType, types.BufferType)
 	TYPE_NAMES = ["string", "list", "tuple"]
 	def __init__(self, minLength=None, maxLength=None, **kwargs):
@@ -103,6 +110,7 @@ class Sequence(Type):
 		return desc
 
 class String(Sequence):
+	__slots__ = ("regex",)
 	TYPES = types.StringTypes
 	TYPE_NAMES = ["string"]
 	def __init__(self, regex=None, **kwargs):
@@ -121,6 +129,7 @@ class String(Sequence):
 		return desc
 
 class Identifier(String):
+	__slots__ = ()
 	def __init__(self, strict=False, **kwargs):
 		minLength = kwargs.pop('minLength', 3)
 		maxLength = kwargs.pop('maxLength', 100)
@@ -131,10 +140,12 @@ class Identifier(String):
 		String.__init__(self, regex=regex, minLength=minLength, maxLength=maxLength, **kwargs)
 
 class URL(String):
+	__slots__ = ()
 	def __init__(self, **kwargs):
 		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$\-?]+", **kwargs)
 
 class List(Sequence):
+	__slots__ = ("items",)
 	TYPES = (types.ListType, types.TupleType)
 	TYPE_NAMES = ["list", "tuple"]
 	def __init__(self, items=None, **kwargs):
@@ -153,6 +164,7 @@ class List(Sequence):
 		return desc
 
 class StringMap(Sequence):
+	__slots__ = ("items", "required", "additional")
 	TYPES = (types.DictType,)
 	TYPE_NAMES = ["map"]
 	KEYS = String()

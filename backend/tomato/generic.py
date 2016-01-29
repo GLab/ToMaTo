@@ -2,7 +2,8 @@ import threading
 from .lib.error import UserError as Error
 from .lib import schema
 
-class Action:
+class Action(object):
+	__slots__ = ("fn", "description", "checkFn", "paramSchema")
 	def __init__(self, fn, description=None, check=None, paramSchema=None):
 		self.fn = fn
 		self.description = description or fn.__doc__
@@ -27,7 +28,8 @@ class Action:
 			"param_schema": self.paramSchema.describe() if self.paramSchema else None
 		}
 
-class Attribute:
+class Attribute(object):
+	__slots__ = ("getFn", "setFn", "checkFn", "readOnly", "schema", "field", "label", "description", "default")
 	def __init__(self, field=None, get=None, set=None, check=None, readOnly=False, schema=None, description=None, label=None, default=None):
 		self.getFn = get
 		self.setFn = set
@@ -70,15 +72,19 @@ class Attribute:
 		}
 
 class ConstantAttribute(Attribute):
+	__slots__ = ("value",)
 	def __init__(self, value):
 		Attribute.__init__(self, readOnly=True, get=lambda obj: value, schema=schema.Constant(value))
 		self.value = value
 
 class IdAttribute(Attribute):
+	__slots__ = ()
 	def __init__(self):
 		Attribute.__init__(self, readOnly=True, get=lambda obj: str(obj.id), schema=schema.String())
 
 class Entity(object):
+	__slots__ = ()
+
 	ACTIONS = {}
 	ATTRIBUTES = {}
 	DEFAULT_ATTRIBUTES = {}
@@ -183,6 +189,7 @@ class Entity(object):
 		}
 
 class StatefulAction(Action):
+	__slots__ = ("allowedStates", "stateChange")
 	def __init__(self, fn, allowedStates=None, stateChange=None, **kwargs):
 		Action.__init__(self, fn , **kwargs)
 		self.allowedStates = allowedStates
@@ -197,6 +204,7 @@ class StatefulAction(Action):
 		return info
 
 class StatefulAttribute(Attribute):
+	__slots__ = ("writableStates", "readableStates")
 	def __init__(self, writableStates=None, readableStates=None, **kwargs):
 		Attribute.__init__(self, **kwargs)
 		self.writableStates = writableStates
@@ -211,6 +219,8 @@ class StatefulAttribute(Attribute):
 		return info
 
 class LockedEntity(Entity):
+	__slots__ = ()
+
 	LOCKS = {}
 	LOCKS_LOCK = threading.RLock()
 
@@ -281,6 +291,8 @@ class LockedEntity(Entity):
 
 
 class StatefulEntity(Entity):
+	__slots__ = ()
+
 	STATES = []
 	DEFAULT_STATE = None
 
@@ -310,4 +322,4 @@ class StatefulEntity(Entity):
 
 
 class LockedStatefulEntity(LockedEntity, StatefulEntity):
-	pass
+	__slots__ = ()

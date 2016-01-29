@@ -21,7 +21,8 @@ add_introspection_rules([], ["^tomato\.lib\.db\.JSONField"])
 import re
 from .error import UserError
 
-class Attr:
+class Attr(object):
+	__slots__ = ("name", "desc", "states", "default", "null", "type", "options", "unit", "regExp", "minValue", "maxValue")
 	def __init__(self, name, desc="", unit=None, states=None, default=None, null=False, type=None, options=None, regExp=None, minValue=None, maxValue=None):
 		self.name = name
 		self.desc = desc

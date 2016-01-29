@@ -8,7 +8,8 @@ import threading, time, random
 
 MAX_WAIT = 3600.0
 
-class Task:
+class Task(object):
+	__slots__ = ("timeout", "repeated", "fn", "args", "kwargs", "next_timeout", "busy", "next", "last", "duration")
 	def __init__(self, fn, args=None, kwargs=None, timeout=0, repeated=False, immediate=False, random_offset=True):
 		if not kwargs:
 			kwargs = {}
@@ -66,6 +67,7 @@ class Task:
 		}
 
 class TaskScheduler(threading.Thread):
+	__slots__ = ("tasks", "tasksLock", "nextId", "workers", "workersLock", "stopped", "wakeup", "stopped_confirm", "maxLateTime", "maxWorkers", "minWorkers", "waitFrac")
 	def __init__(self, maxLateTime=2.0, maxWorkers=5, minWorkers=1):
 		self.tasks = {}
 		self.tasksLock = threading.RLock()
