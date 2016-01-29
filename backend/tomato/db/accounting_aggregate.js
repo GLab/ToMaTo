@@ -168,26 +168,26 @@ function() {
   var organizations = prepare(db.organization);
 
   db.host_element.find().forEach(function(obj) {
-    if (obj.topology_element) elements.srcs[obj.topology_element].push(obj.usage_statistics);
-    if (obj.topology_connection) connections.srcs[obj.topology_connection].push(obj.usage_statistics);
-    hosts.srcs[obj.host].push(obj.usage_statistics);
+    if (obj.topology_element && elements.srcs[obj.topology_element]) elements.srcs[obj.topology_element].push(obj.usage_statistics);
+    if (obj.topology_connection && connections.srcs[obj.topology_connection]) connections.srcs[obj.topology_connection].push(obj.usage_statistics);
+    if (hosts.srcs[obj.host]) hosts.srcs[obj.host].push(obj.usage_statistics);
   });
   db.connection_element.find().forEach(function(obj) {
-    if (obj.topology_element) elements.srcs[obj.topology_element].push(obj.usage_statistics);
-    if (obj.topology_connection) connections.srcs[obj.topology_connection].push(obj.usage_statistics);
-    hosts.srcs[obj.host].push(obj.usage_statistics);
+    if (obj.topology_element && elements.srcs[obj.topology_element]) elements.srcs[obj.topology_element].push(obj.usage_statistics);
+    if (obj.topology_connection && connections.srcs[obj.topology_connection]) connections.srcs[obj.topology_connection].push(obj.usage_statistics);
+    if (hosts.srcs[obj.host]) hosts.srcs[obj.host].push(obj.usage_statistics);
   });
   db.element.find().forEach(function(obj) {
-    topologies.srcs[obj.topology].push(obj.total_usage);
+    if (topologies.srcs[obj.topology]) topologies.srcs[obj.topology].push(obj.total_usage);
   });
   db.topology.find().forEach(function(obj) {
     for (var i=0; i<obj.permissions.length; i++) {
       var perm = obj.permissions[i];
-      if (perm.role == 'owner') users.srcs[perm.user].push(obj.total_usage);
+      if (perm.role == 'owner' && users.srcs[perm.user]) users.srcs[perm.user].push(obj.total_usage);
     }
   });
   db.user.find().forEach(function(obj) {
-    organizations.srcs[obj.organization].push(obj.total_usage);
+    if (organizations.srcs[obj.organization]) organizations.srcs[obj.organization].push(obj.total_usage);
   });
 
   count["elements"] = updateAll(elements);
