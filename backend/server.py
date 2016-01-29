@@ -33,8 +33,18 @@ if __name__ == "__main__":
 		cov.html_report()
 	elif sys.argv[1] == "--profile":
 		import cProfile as profile
+		import signal
 		from tomato import run
-		profile.run("run()", "profile")
+		pr = profile.Profile()
+		def stats(*args):
+			pr.create_stats()
+			pr.dump_stats("profile")
+			pr.enable()
+		signal.signal(signal.SIGUSR1, stats)
+		pr.enable()
+		run()
+		pr.disable()
+		pr.dump_stats("profile")
 		import pstats
 		stat = pstats.Stats("profile")
 		stat.sort_stats("cum")
