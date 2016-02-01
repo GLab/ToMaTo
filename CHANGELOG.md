@@ -7,7 +7,7 @@ Entries should be prefixed with some tags:
 Entries should be sorted by component and status with important entries and entries with multiple components being on top.
 
 
-### UNRELEASED
+### UNRELEASED (RUNNING ON SERVERS)
 - [backend, changed] Not using cache when building docker images so that most current packages get installed 
 - [backend, changed] Using __slots__ for generic classes, attributes and schemas and tasks to save space and increase performance
 - [backend, fixed] Fixed problem with dumping stack variables when dumping errors
@@ -16,4 +16,8 @@ Entries should be sorted by component and status with important entries and entr
 - [backend, fixed] Gracefully handling errors on topology timeout
 - [backend, fixed] Gracefully handling errors on host component synchronization
 - [backend, fixed] Fixed profiling when server does not terminate
+- [backend, fixed] Fixed problem when stopping external networks with inconsistent states
 - [backend, removed] Removed useless dump environment infos
+
+
+### UNRELEASED (NOT RUNNING ON SERVERS)
