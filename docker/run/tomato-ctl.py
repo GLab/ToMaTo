@@ -14,12 +14,12 @@ from datetime import date
 # basic functions
 
 def get_interface_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-    )[20:24])
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	return socket.inet_ntoa(fcntl.ioctl(
+		s.fileno(),
+		0x8915,  # SIOCGIFADDR
+		struct.pack('256s', ifname[:15])
+	)[20:24])
 
 
 
@@ -166,8 +166,8 @@ def web_start(config):
 		"docker",
 		"run",
 		"-d",
-		"-v", "%s/web:/code" % config['tomato_dir'],
-		"-v", "%s/shared:/shared" % config['tomato_dir']
+		"-v", "%s/web:/code/web" % config['tomato_dir'],
+		"-v", "%s/shared:/code/shared" % config['tomato_dir']
 	] + \
 	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['web']['additional_directories'])) + \
 	[
@@ -225,8 +225,8 @@ def backend_start(config):
 		"docker",
 		"run",
 		"-d",
-		"-v", "%s/backend:/code" % config['tomato_dir'],
-		"-v", "%s/shared:/shared" % config['tomato_dir']
+		"-v", "%s/backend:/code/backend" % config['tomato_dir'],
+		"-v", "%s/shared:/code/shared" % config['tomato_dir']
 	] + \
 	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['backend']['additional_directories'])) + \
 	[
