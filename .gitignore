@@ -20,8 +20,8 @@ docs_build
 web/tomato/static/newui
 backend/htmlcov
 backend/templates
-docs/presentations
 backend/dumps
+docs/presentations
 cli/ovz
 docs/static/doc
 cli/tests/backend/old

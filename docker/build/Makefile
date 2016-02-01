@@ -1,9 +1,10 @@
-default: tomato-backend-image tomato-web-image
+default: tomato_backend_core_image tomato_web_image
 
-tomato-backend-image:
-	rsync -aL ../../backend/ tomato-backend/code/backend/ --filter 'merge backend-files'
-	./build.sh tomato-backend
+tomato_backend_core_image:
+	rsync -aL ../../backend_core/ tomato_backend_core/code/backend_core/ --filter 'merge backend_core-files'
+	./build.sh tomato_backend_core
 
-tomato-web-image:
-	rsync -aL ../../web/ tomato-web/code/web/ --filter 'merge web-files'
-	./build.sh tomato-web
+tomato_web_image:
+	rsync -aL ../../web/ tomato_web/code/web/ --filter 'merge web-files'
+	./build.sh tomato_web
+	./build.sh tomato_web

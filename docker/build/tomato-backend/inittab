@@ -1,3 +1,0 @@
-::sysinit:/init.sh >/dev/stdout 2>/dev/stderr
-::respawn:/code/backend/server.py >/dev/stdout 2>/dev/stderr
-

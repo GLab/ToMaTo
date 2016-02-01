@@ -28,9 +28,9 @@
           ["/path/on/host", "/path/on/container"]
         ]
   },
-  "backend": {
-		"docker_container": "tomato-backend",
-		"image": "tomato-backend",
+  "backend_core": {
+		"docker_container": "tomato_backend_core",
+		"image": "tomato_backend_core",
 		"ports": [8000, 8001, 8002, 8006],
         "timezone": "Europe/Berlin",
 		"additional_args": ["--dns", "8.8.8.8"],
@@ -45,8 +45,8 @@
         "version": "3.6"
   },
   "web": {
-		"docker_container": "tomato-backend",
-		"image": "tomato-backend",
+		"docker_container": "tomato_web",
+		"image": "tomato_web",
 		"port": 8000,
         "timezone": "Europe/Berlin",
 		"additional_args": ["--dns", "8.8.8.8"],

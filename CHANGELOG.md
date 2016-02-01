@@ -3,7 +3,7 @@
 This file should be used to track all changes to ToMaTo in a similar way to [VpnCloud](https://github.com/dswd/vpncloud.rs/blob/master/CHANGELOG.md)
 Entries should be prefixed with some tags:
 - Status tags: `added`, `fixed`, `changed`, `removed`
-- Component tags: `backend`, `web`, `cli`, `hostmanager`
+- Component tags: `backend_core`, `web`, `cli`, `hostmanager`
 Entries should be sorted by component and status with important entries and entries with multiple components being on top.
 
 
@@ -22,4 +22,7 @@ Entries should be sorted by component and status with important entries and entr
 
 
 ### UNRELEASED (NOT RUNNING ON SERVERS)
+- [backend, backend_core, changed] Renamed backend to backend_core
 - [backend, web, changed] Changed docker mount points of tomato code
+- [backend_core, changed] Backend_core no longer uses two separate ssl keys
+- [backend_core, web, fixed] Fixed tomato-ctl stopping behaviour

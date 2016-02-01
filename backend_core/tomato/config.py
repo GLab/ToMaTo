@@ -17,7 +17,7 @@
 
 import os
 
-CERTIFICATE = "/etc/tomato/backend.pem"
+CERTIFICATE = "/etc/tomato/backend_core.pem"
 EXTERNAL_URLS = {
 				'aup':  "http://tomato-lab.org/aup",
 				'help': "http://github.com/GLab/ToMaTo/wiki",
@@ -58,8 +58,8 @@ SERVER.append({
 	"PORT": 8001,
 	"SSL": True,
 	"SSL_OPTS": {
-		"cert_file" : "/etc/tomato/server.cert",
-		"key_file": "/etc/tomato/server.cert",
+		"cert_file" : "/etc/tomato/backend_core.pem",
+		"key_file": "/etc/tomato/backend_core.pem",
 	}
 })
 

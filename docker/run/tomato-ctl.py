@@ -57,13 +57,13 @@ def docker_stop(container):
 
 def docker_container_started(container):
 	p = subprocess.Popen(
-		['docker', 'inspect', '-f', '{{.State.Running}}', container],
-		stdout=subprocess.PIPE, stderr=open("/dev/null")
+		['docker', 'logs', container],
+		stdout=subprocess.PIPE, stderr=subprocess.PIPE
 	)
-	output, err = p.communicate()
-	if err:
+	p.communicate()
+	if p.returncode:
 		return False
-	return "true" in output
+	return True
 
 def docker_logs(container, interactive):
 	if interactive:
@@ -84,9 +84,9 @@ Usage: %(cmd)s [COMMAND]
   or:  %(cmd)s help
 
 available modules:
- db:      database
- backend: ToMaTo backend
- web:     ToMaTo webfrontend
+ db:             Database
+ backend_core:   ToMaTo backend, core service
+ web:            ToMaTo webfrontend
 
 available commands:
 
@@ -159,7 +159,7 @@ examples:
 def web_start(config):
 	if web_status(config):
 		return
-	for directory, _ in config['backend']['additional_directories']:
+	for directory, _ in config['backend_core']['additional_directories']:
 		assure_path(directory)
 	secret_key = "".join(random.choice(string.digits+string.ascii_letters) for _ in range(32))
 	cmd = [
@@ -172,7 +172,7 @@ def web_start(config):
 	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['web']['additional_directories'])) + \
 	[
 		"--add-host=%s:%s" % (socket.gethostname(), get_interface_ip_address(config['docker_network_interface'])),
-		"--link", "%s:backend" % config['backend']['docker_container'],
+		"--link", "%s:backend" % config['backend_core']['docker_container'],
 		"-p", "%s:80" % str(config['web']['port']),
 		"--name", config['web']['docker_container'],
 		"-e", "SECRET_KEY=%s" % secret_key,
@@ -216,58 +216,58 @@ def web_reload(config):
 		exit(1)
 	docker_exec(config['web']['docker_container'], "service", "apache2", "reload")
 
-def backend_start(config):
-	if backend_status(config):
+def backend_core_start(config):
+	if backend_core_status(config):
 		return
-	for directory, _ in config['backend']['additional_directories']:
+	for directory, _ in config['backend_core']['additional_directories']:
 		assure_path(directory)
 	cmd = [
 		"docker",
 		"run",
 		"-d",
-		"-v", "%s/backend:/code/backend" % config['tomato_dir'],
+		"-v", "%s/backend_core:/code/backend_core" % config['tomato_dir'],
 		"-v", "%s/shared:/code/shared" % config['tomato_dir']
 	] + \
-	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['backend']['additional_directories'])) + \
+	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['backend_core']['additional_directories'])) + \
 	[
 		"--add-host=%s:%s" % (socket.gethostname(), get_interface_ip_address(config['docker_network_interface'])),
 		"--link", "%s:db" % config['db']['docker_container']
 	] + \
-	reduce(lambda x, y: x+y, [['-p', "%s:%s" % (str(p),str(p))] for p in config['backend']['ports']]) + \
+	reduce(lambda x, y: x+y, [['-p', "%s:%s" % (str(p),str(p))] for p in config['backend_core']['ports']]) + \
 	[
 		"-e", "TIMEZONE=Europe/Berlin",
-		"-e", "TOMATO_VERSION=%s" % config['backend']['version'],
-		"--name", config['backend']['docker_container']
+		"-e", "TOMATO_VERSION=%s" % config['backend_core']['version'],
+		"--name", config['backend_core']['docker_container']
 	] + \
-	config['backend']['additional_args'] + \
+	config['backend_core']['additional_args'] + \
 	[
-		config['backend']['image']
+		config['backend_core']['image']
 	]
 	run_observing(*cmd)
-	run_observing("docker", "start", config['backend']['docker_container'])
+	run_observing("docker", "start", config['backend_core']['docker_container'])
 
 
-def backend_stop(config):
-	if not backend_status(config):
+def backend_core_stop(config):
+	if not backend_core_status(config):
 		return
-	docker_stop(config['backend']['docker_container'])
+	docker_stop(config['backend_core']['docker_container'])
 
 
-def backend_status(config):
-	return docker_container_started(config['backend']['docker_container'])
+def backend_core_status(config):
+	return docker_container_started(config['backend_core']['docker_container'])
 
 
-def backend_shell(config):
-	if not backend_status(config):
-		print "backend not running"
+def backend_core_shell(config):
+	if not backend_core_status(config):
+		print "backend_core not running"
 		exit(1)
-	docker_exec(config['backend']['docker_container'], 'bin/bash')
+	docker_exec(config['backend_core']['docker_container'], 'bin/bash')
 
-def backend_log(config, interactive):
-	if not backend_status(config):
-		print "backend not running"
+def backend_core_log(config, interactive):
+	if not backend_core_status(config):
+		print "backend_core not running"
 		exit(1)
-	docker_logs(config['backend']['docker_container'], interactive)
+	docker_logs(config['backend_core']['docker_container'], interactive)
 
 
 def db_start(config):
@@ -284,7 +284,6 @@ def db_start(config):
 	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['db']['additional_directories'])) + \
 	[
 		"-p", "127.0.0.1:%s:%s" % (config['db']['port'],config['db']['port']),
-		"-e", "TOMATO_VERSION=%s" % config['backend']['version'],
 		"--name", config['db']['docker_container']
 	] + \
 	config['db']['additional_args'] + \
@@ -387,9 +386,9 @@ def read_config():
 			}
 			# 'version'     (will be generated if not found in config)
 		},
-		'backend': {
-			'docker_container': 'tomato-backend',
-			'image': 'tomato-backend',
+		'backend_core': {
+			'docker_container': 'tomato_backend_core',
+			'image': 'tomato_backend_core',
 			'ports': [8000, 8001, 8002, 8006] + range(8010,8021),
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
@@ -399,15 +398,15 @@ def read_config():
 				('%(logs)s', '/logs')
 			],
 			'directories': {
-				'data': os.path.join("backend", "data"),
-				'config': os.path.join("backend", "config"),
-				'logs': os.path.join("backend", "logs")
+				'data': os.path.join("backend_core", "data"),
+				'config': os.path.join("backend_core", "config"),
+				'logs': os.path.join("backend_core", "logs")
 			}
 			# 'version'  (will be generated if not found in config)
 		},
 		'web': {
-			'docker_container': 'tomato-web',
-			'image': 'tomato-web',
+			'docker_container': 'tomato_web',
+			'image': 'tomato_web',
 			'port': 8080,
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
@@ -459,7 +458,7 @@ def read_config():
 		config['docker_dir'] = os.path.join(config['tomato_dir'], "docker", "run")
 	print ""
 
-	for module in "db", "backend", "web":
+	for module in "db", "backend_core", "web":
 
 		if "version" not in config[module]:
 			config[module]['version'] = subprocess.check_output(["bash", "-c", "cd '%s'; git describe --tags | cut -f1,2 -d'-'" % config['tomato_dir']]).split()[0]
@@ -482,22 +481,22 @@ if len(sys.argv) == 2:
 
 	if sys.argv[1] == "start":
 		db_start(config)
-		backend_start(config)
+		backend_core_start(config)
 		web_start(config)
 		exit(0)
 
 	if sys.argv[1] == "stop":
 		web_stop(config)
-		backend_stop(config)
+		backend_core_stop(config)
 		db_stop(config)
 		exit(0)
 
 	if sys.argv[1] == "restart":
 		web_stop(config)
-		backend_stop(config)
+		backend_core_stop(config)
 		db_stop(config)
 		db_start(config)
-		backend_start(config)
+		backend_core_start(config)
 		web_start(config)
 		exit(0)
 
@@ -506,9 +505,9 @@ if len(sys.argv) == 2:
 		exit(0)
 
 	if sys.argv[1] =="status":
-		print "db:      %s" % ("started" if db_status(config) else "stopped")
-		print "backend: %s" % ("started" if backend_status(config) else "stopped")
-		print "web:     %s" % ("started" if web_status(config) else "stopped")
+		print "db:           %s" % ("started" if db_status(config) else "stopped")
+		print "backend_core: %s" % ("started" if backend_core_status(config) else "stopped")
+		print "web:          %s" % ("started" if web_status(config) else "stopped")
 		exit(0)
 
 elif len(sys.argv) == 3:
@@ -521,19 +520,19 @@ elif len(sys.argv) == 3:
 
 		if sys.argv[2] == "stop":
 			web_stop(config)
-			backend_stop(config)
+			backend_core_stop(config)
 			db_stop(config)
 			exit(0)
 
 		if sys.argv[2] == "restart":
 			web_started = web_status(config)
-			backend_started = backend_status(config)
+			backend_core_started = backend_core_status(config)
 			web_stop(config)
-			backend_stop(config)
+			backend_core_stop(config)
 			db_stop(config)
 			db_start(config)
-			if backend_started:
-				backend_start(config)
+			if backend_core_started:
+				backend_core_start(config)
 			if web_started:
 				web_start(config)
 			exit(0)
@@ -563,42 +562,42 @@ elif len(sys.argv) == 3:
 		if sys.argv[2] == "restore":
 			print "Error: you have to specify a backup name."
 
-	if sys.argv[1] == "backend":
+	if sys.argv[1] == "backend_core":
 
 		if sys.argv[2] == "start":
 			db_start(config)
-			backend_start(config)
+			backend_core_start(config)
 			exit(0)
 
 		if sys.argv[2] == "stop":
 			web_stop(config)
-			backend_stop(config)
+			backend_core_stop(config)
 			exit(0)
 
 		if sys.argv[2] == "restart":
 			web_started = web_status(config)
 			web_stop(config)
-			backend_stop(config)
+			backend_core_stop(config)
 			db_start(config)
-			backend_start(config)
+			backend_core_start(config)
 			if web_started:
 				web_start(config)
 			exit(0)
 
 		if sys.argv[2] == "status":
-			print "backend: %s" % ("started" if backend_status(config) else "stopped")
+			print "backend_core: %s" % ("started" if backend_core_status(config) else "stopped")
 			exit(0)
 
 		if sys.argv[2] == "shell":
-			backend_shell(config)
+			backend_core_shell(config)
 			exit(0)
 
 		if sys.argv[2] == "logs":
-			backend_log(config, False)
+			backend_core_log(config, False)
 			exit(0)
 
 		if sys.argv[2] == "logs-interactive":
-			backend_log(config, True)
+			backend_core_log(config, True)
 			exit(0)
 
 
@@ -606,7 +605,7 @@ elif len(sys.argv) == 3:
 
 		if sys.argv[2] == "start":
 			db_start(config)
-			backend_start(config)
+			backend_core_start(config)
 			web_start(config)
 			exit(0)
 
@@ -617,7 +616,7 @@ elif len(sys.argv) == 3:
 		if sys.argv[2] == "restart":
 			web_stop(config)
 			db_start(config)
-			backend_start(config)
+			backend_core_start(config)
 			web_start(config)
 			exit(0)
 
