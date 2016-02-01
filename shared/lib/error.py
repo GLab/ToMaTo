@@ -74,10 +74,9 @@ class Error(Exception):
 		else:
 			self.onscreenmessage = onscreenmessage
 		if todump is not None:
-			self.todump = todump
+			self.todump = todump or self.module != MODULE
 		else:
-			self.todump = not isinstance(self, UserError) and self.module == MODULE \
-						  or isinstance(self, UserError) and self.module != MODULE
+			self.todump = not isinstance(self, UserError) and self.module == MODULE or self.module != MODULE
 		if frame_trace is None:  # this must be last because it may call repr(self)
 			if frame is None:
 				self.frame_trace = generate_inspect_trace(inspect.currentframe())

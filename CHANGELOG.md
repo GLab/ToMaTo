@@ -10,6 +10,7 @@ Entries should be sorted by component and status with important entries and entr
 ### UNRELEASED (RUNNING ON SERVERS)
 - [backend, changed] Not using cache when building docker images so that most current packages get installed 
 - [backend, changed] Using __slots__ for generic classes, attributes and schemas and tasks to save space and increase performance
+- [backend, changed] Dumping more errors
 - [backend, fixed] Fixed problem with dumping stack variables when dumping errors
 - [backend, fixed] Fixed problem with non-existing error groups
 - [backend, fixed] Fixed problem with accounting aggregation for topologies, users and organizations
