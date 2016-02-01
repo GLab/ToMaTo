@@ -183,7 +183,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
 		"start": StatefulAction(action_start, allowedStates=[ST_CREATED, "default"], stateChange=ST_STARTED),
-		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED, "default"], stateChange=ST_CREATED)
+		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED, ST_CREATED, "default"], stateChange=ST_CREATED)
 	})
 
 elements.TYPES[ExternalNetwork.TYPE] = ExternalNetwork
