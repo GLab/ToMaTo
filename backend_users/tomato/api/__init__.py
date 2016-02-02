@@ -16,18 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from account import *
-from topology import *
-from host import *
-from elements import *
-from connections import *
-from resources import *
-from docs import *
-from capabilities import *
-from misc import *
-from dumpmanager import *
 
 def debug(method, args=None, kwargs=None, profile=None):
-	UserError.check(currentUser().hasFlag(auth.Flags.Debug), code=UserError.DENIED, message="Not enough permissions")
 	func = globals().get(method)
 	from ..lib import debug
 	result = debug.run(func, args, kwargs, profile)

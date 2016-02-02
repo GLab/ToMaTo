@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ToMaTo (Topology management software) 
-# Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
+# Copyright (C) 2016 Dennis Schwerdel, University of Kaiserslautern
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,21 +17,6 @@
 
 import os
 
-CERTIFICATE = "/etc/tomato/backend_core.pem"
-EXTERNAL_URLS = {
-				'aup':  "http://tomato-lab.org/aup",
-				'help': "http://github.com/GLab/ToMaTo/wiki",
-				'impressum': "http://tomato-lab.org/contact/",
-				'project': "http://tomato-lab.org",
-				'json_feed': "http://www.tomato-lab.org/feed.json",
-				'rss_feed': "http://tomato-lab.org/feed.xml",
-				'bugtracker': 'http://github.com/GLab/ToMaTo/issues'
-				}
-
-TEMPLATE_PATH = "/var/lib/tomato/templates"
-TRACKER_PORT = 8002
-BITTORRENT_RESTART = 60 * 30
-
 AUTH = []
 
 AUTH.append ({
@@ -47,46 +32,21 @@ AUTH.append ({
 
 LOG_FILE = "/var/log/tomato/main.log"
 
-SERVER = []
+SERVER_PORT = 8000
+SERVER_CERT = "/etc/tomato/service.pem"
+SERVER_CA_CERTS = "/etc/tomato/ca.pem"
 
-SERVER.append({
-	"PORT": 8000,
-	"SSL": False
-})
-
-SERVER.append({
-	"PORT": 8001,
-	"SSL": True,
-	"SSL_OPTS": {
-		"cert_file" : "/etc/tomato/backend_core.pem",
-		"key_file": "/etc/tomato/backend_core.pem",
-	}
-})
-
-
-DATABASE = 'tomato'
+DATABASE = 'tomato_users'
 DATABASE_HOST = 'localhost'
 if "DB_PORT_27017_TCP" in os.environ:
-	DATABASE_HOST = 'mongodb://%s:%s/tomato' % (os.getenv('DB_PORT_27017_TCP_ADDR'), os.getenv('DB_PORT_27017_TCP_PORT'))
+	DATABASE_HOST = 'mongodb://%s:%s/%s' % (os.getenv('DB_PORT_27017_TCP_ADDR'), os.getenv('DB_PORT_27017_TCP_PORT'), DATABASE)
 
 RPC_TIMEOUT = 60
-HOST_UPDATE_INTERVAL = 60
-HOST_AVAILABILITY_HALFTIME = 60.0 * 60 * 24 * 90 # 90 days 
-RESOURCES_SYNC_INTERVAL = 600
 
 EMAIL_SMTP = "localhost"
 EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
 EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
 EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
-
-TOPOLOGY_TIMEOUT_INITIAL = 3600.0
-TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 24 * 3
-TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 30
-TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24
-TOPOLOGY_TIMEOUT_REMOVE = 3600.0 * 24 * 90
-TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 24, 3600.0 * 24 * 3, 3600.0 * 24 * 14, 3600.0 * 24 * 30]
-
-HOST_COMPONENT_TIMEOUT = 3600.0 * 24 * 30 * 12
 
 DEFAULT_QUOTA = {
 	"cputime": 5.0 *(60*60*24*30), # 5 cores all the time
@@ -96,37 +56,12 @@ DEFAULT_QUOTA = {
 	"continous_factor": 1.0
 }
 
-DUMP_DIR = "/var/log/tomato/dumps_backend"
-"""
-The location of the dump files that are created when unexpected errors occur.
-"""
-
-DUMP_LIFETIME = 60*60*24*7
-"""
-Time in seconds until a dump file may be deleted.
-If it has been collected by the dumpmanager until then, it will still be saved
-in the dumpmanager's database.
-dumps will only be deleted daily, and only one day after the program has started.
-"""
-
-DUMP_COLLECTION_INTERVAL = 30*60
-"""
-Interval in which the dump manager will collect error dumps from hosts and backend.
-"""
-
-ERROR_NOTIFY = []
-
 MAX_REQUESTS = 50
 
 MAX_WORKERS = 25
 
 import socket
-_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-_socket.connect(("8.8.8.8",80))
-PUBLIC_ADDRESS = _socket.getsockname()[0]
-_socket.close()
-
-socket.setdefaulttimeout(1800)
+socket.setdefaulttimeout(300)
 
 # E-Mail sent to new users after registering
 NEW_USER_WELCOME_MESSAGE = {
@@ -148,7 +83,7 @@ Best Wishes,\nThe ToMaTo Testbed"
 
 try:
 	import sys
-	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
+	for path in filter(os.path.exists, ["/etc/tomato/backend_users.conf", os.path.expanduser("~/.tomato/backend_users.conf"), "backend_users.conf"]):
 		try:
 			execfile(path)
 			print >>sys.stderr, "Loaded config from %s" % path
@@ -157,9 +92,3 @@ try:
 except:
 	import traceback
 	traceback.print_exc()
-
-if not isinstance(SERVER, list):
-	SERVER = [SERVER]
-	
-import math
-HOST_AVAILABILITY_FACTOR = math.pow(0.5, HOST_UPDATE_INTERVAL/HOST_AVAILABILITY_HALFTIME)

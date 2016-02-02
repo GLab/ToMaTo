@@ -14,9 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
-#from imaplib import Flags
-from ..auth import Flags
 
+from ..auth import Flags
 
 def _getAccount(name):
 	acc = currentUser()
@@ -179,11 +178,7 @@ def account_remove(name=None):
 	Return value:
 	  This method returns nothing if the account has been deleted.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
-	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
-	if acc == currentUser() and acc.hasFlag(Flags.GlobalAdmin):
-		raise UserError(code=UserError.DENIED, message="Admins must not delete themselves")
 	remove(acc)
 		
 def account_flags():
@@ -215,23 +210,16 @@ def account_send_notification(name, subject, message, ref=None, from_support=Fal
 	"""
 	Sends an email to the account
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
-	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
 	acc.sendNotification(subject, message, ref=ref, fromUser=(None if from_support else currentUser()), subject_group=subject_group)
 
 def broadcast_announcement(title, message, ref=None, show_sender=True):
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	sender = currentUser()
 	send_announcement(sender, title, message, ref, show_sender)
 
 	
 def account_usage(name): #@ReservedAssignment
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	return acc.totalUsage.info()	
 	
-from host import _getOrganization
-from .. import currentUser
 from ..lib.error import UserError
 from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags, send_announcement

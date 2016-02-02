@@ -18,7 +18,7 @@
 import time, crypt, string, random, sys, hashlib
 from ..db import *
 from ..lib import logging, util, mail #@UnresolvedImport
-from .. import config, currentUser, setCurrentUser, scheduler, accounting
+from .. import config, scheduler
 from ..lib.error import UserError
 
 class Flags:
@@ -165,6 +165,7 @@ class Notification(EmbeddedDocument):
 	def set_read(self, read):
 		self.read = read
 
+
 class User(BaseDocument):
 	"""
 	:type organization: host.Organization
@@ -174,15 +175,14 @@ class User(BaseDocument):
 	:type clientData: dict
 	:type notifications: list of Notification
 	"""
-	from ..host.organization import Organization
-	from ..accounting import Quota, UsageStatistics
+	from ..organization import Organization
+	from ..quota import Quota
 	name = StringField(required=True, unique_with='origin')
 	origin = StringField(required=True)
 	organization = ReferenceField(Organization, required=True, reverse_delete_rule=DENY)
 	password = StringField(required=True)
 	passwordTime = FloatField(db_field='password_time', required=True)
 	lastLogin = FloatField(db_field='last_login', required=True)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	quota = EmbeddedDocumentField(Quota, required=True)
 	realname = StringField()
 	email = EmailField()
@@ -195,10 +195,6 @@ class User(BaseDocument):
 			'lastLogin', 'passwordTime', 'flags', 'organization', ('name', 'origin')
 		]
 	}
-	@property
-	def topologies(self):
-		from ..topology import Topology
-		return Topology.objects(permissions__user=self)
 
 	@classmethod	
 	def create(cls, name, organization, password, flags, origin, **kwargs):

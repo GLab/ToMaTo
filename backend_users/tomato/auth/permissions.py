@@ -17,7 +17,6 @@
 
 from ..db import *
 
-from .. import currentUser
 from ..lib.error import UserError
 
 # noinspection PyClassHasNoInit

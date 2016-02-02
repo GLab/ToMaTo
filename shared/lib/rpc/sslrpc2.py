@@ -150,7 +150,7 @@ class Failure(Exception):
 		self.data = data
 
 	def __str__(self):
-		"Failure: %s" % self.data
+		return "Failure: %s" % self.data
 
 
 class Message:

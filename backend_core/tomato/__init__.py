@@ -17,7 +17,7 @@
 
 import os, sys, signal, time, thread
 
-os.environ['TOMATO_MODULE'] = "backend"
+os.environ['TOMATO_MODULE'] = "backend_core"
 
 import monkey
 monkey.patch_all()
