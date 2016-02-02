@@ -397,7 +397,7 @@ class Module:
 		host_ip = get_interface_ip_address(config['docker_network_interface'])
 		host_name = get_hostname()
 		self.container_name = "%s_%s" % (config['docker_container_namespace'], module_name)
-		db_container = "%s_db" % config['docker_container_namespace']
+		db_container = "%s_%s" % (config['docker_container_namespace'], DB_MODULE)
 		timezone = module_config['timezone']
 		tomato_version = module_config['version']
 		additional_args = module_config['additional_args']
@@ -427,7 +427,7 @@ class Module:
 			flat_list([["-v", "%s/%s:/code/%s" % (tomato_dir, host_dir, container_dir)] for container_dir, host_dir in code_directories]),
 			flat_list([["-v", "%s:%s" % c] for c in additional_directories]),
 			["--add-host=%s:%s" % (host_name, host_ip)],
-			["--link", "%s:db" % db_container],
+			(["--link", "%s:db" % db_container] if not self.is_db else []),
 			flat_list([["-p", "%s:%s" % p] for p in ports]),
 			["-e", "TIMEZONE=%s" % timezone],
 			["-e", "TOMATO_VERSION=%s" % tomato_version],
