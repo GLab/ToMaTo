@@ -164,11 +164,227 @@ examples:
  %(cmd)s db stop
  %(cmd)s start
  %(cmd)s web status
+<<<<<<< HEAD
 """ % {
 		'cmd': sys.argv[0],
 		'DB_MODULE': DB_MODULE,
 		'modules': "\n ".join([DB_MODULE]+TOMATO_MODULES)
 	}
+=======
+""" % {'cmd': sys.argv[0]}
+	exit(0)
+
+
+def web_start(config):
+	if web_status(config):
+		return
+	for directory, _ in config['backend_core']['additional_directories']:
+		assure_path(directory)
+	secret_key = "".join(random.choice(string.digits+string.ascii_letters) for _ in range(32))
+	cmd = [
+		"docker",
+		"run",
+		"-d",
+		"-v", "%s/web:/code/web" % config['tomato_dir'],
+		"-v", "%s/shared:/code/shared" % config['tomato_dir']
+	] + \
+	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['web']['additional_directories'])) + \
+	[
+		"--add-host=%s:%s" % (socket.gethostname(), get_interface_ip_address(config['docker_network_interface'])),
+		"--link", "%s:backend" % config['backend_core']['docker_container'],
+		"-p", "%s:80" % str(config['web']['port']),
+		"--name", config['web']['docker_container'],
+		"-e", "SECRET_KEY=%s" % secret_key,
+		"-e", "TIMEZONE=%s" % config['web']['timezone'],
+		"-e", "TOMATO_VERSION=%s" % config['web']['version']
+	] + \
+	config['web']['additional_args'] + \
+	[
+		config['web']['image']
+	]
+
+	run_observing(*cmd)
+	run_observing("docker", "start", config['web']['docker_container'])
+
+
+def web_stop(config):
+	if not web_status(config):
+		return
+	docker_stop(config['web']['docker_container'])
+
+
+def web_status(config):
+	return docker_container_started(config['web']['docker_container'])
+
+
+def web_shell(config):
+	if not web_status(config):
+		print "web not running"
+		exit(1)
+	docker_exec(config['web']['docker_container'], 'bin/bash')
+
+def web_log(config, interactive):
+	if not web_status(config):
+		print "web not running"
+		exit(1)
+	docker_logs(config['web']['docker_container'], interactive)
+
+def web_reload(config):
+	if not web_status(config):
+		print "web not running"
+		exit(1)
+	docker_exec(config['web']['docker_container'], "service", "apache2", "reload")
+
+def backend_core_start(config):
+	if backend_core_status(config):
+		return
+	for directory, _ in config['backend_core']['additional_directories']:
+		assure_path(directory)
+	cmd = [
+		"docker",
+		"run",
+		"-d",
+		"-v", "%s/backend_core:/code/service" % config['tomato_dir'],
+		"-v", "%s/shared:/code/shared" % config['tomato_dir']
+	] + \
+	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['backend_core']['additional_directories'])) + \
+	[
+		"--add-host=%s:%s" % (socket.gethostname(), get_interface_ip_address(config['docker_network_interface'])),
+		"--link", "%s:db" % config['db']['docker_container']
+	] + \
+	reduce(lambda x, y: x+y, [['-p', "%s:%s" % (str(p),str(p))] for p in config['backend_core']['ports']]) + \
+	[
+		"-e", "TIMEZONE=Europe/Berlin",
+		"-e", "TOMATO_VERSION=%s" % config['backend_core']['version'],
+		"--name", config['backend_core']['docker_container']
+	] + \
+	config['backend_core']['additional_args'] + \
+	[
+		config['backend_core']['image']
+	]
+	run_observing(*cmd)
+	run_observing("docker", "start", config['backend_core']['docker_container'])
+
+
+def backend_core_stop(config):
+	if not backend_core_status(config):
+		return
+	docker_stop(config['backend_core']['docker_container'])
+
+
+def backend_core_status(config):
+	return docker_container_started(config['backend_core']['docker_container'])
+
+
+def backend_core_shell(config):
+	if not backend_core_status(config):
+		print "backend_core not running"
+		exit(1)
+	docker_exec(config['backend_core']['docker_container'], 'bin/bash')
+
+def backend_core_log(config, interactive):
+	if not backend_core_status(config):
+		print "backend_core not running"
+		exit(1)
+	docker_logs(config['backend_core']['docker_container'], interactive)
+
+
+def db_start(config):
+	if db_status(config):
+		return
+	for directory, _ in config['db']['additional_directories']:
+		assure_path(directory)
+
+	cmd = [
+		"docker",
+		"run",
+		"-d"
+	] + \
+	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['db']['additional_directories'])) + \
+	[
+		"-p", "127.0.0.1:%s:%s" % (config['db']['port'],config['db']['port']),
+		"--name", config['db']['docker_container']
+	] + \
+	config['db']['additional_args'] + \
+	[
+		config['db']['image'],
+		"--storageEngine", "wiredTiger"
+	]
+	run_observing(*cmd)
+	run_observing("docker", "start", config['db']['docker_container'])
+
+
+def db_stop(config):
+	if not db_status(config):
+		return
+	docker_stop(config['db']['docker_container'])
+
+
+def db_status(config):
+	return docker_container_started(config['db']['docker_container'])
+
+
+def db_shell(config):
+	if not db_status(config):
+		print "db not running"
+		exit(1)
+	docker_exec(config['db']['docker_container'], '/usr/bin/mongo', "localhost:27017/tomato")
+
+def db_log(config, interactive):
+	if not db_status(config):
+		print "db not running"
+		exit(1)
+	docker_logs(config['db']['docker_container'], interactive)
+
+def db_backup(config, backup_name):
+	backup_dir = config['db']['directories']['backup']
+	if not os.path.isabs(backup_dir):
+		backup_dir = os.path.join(config['docker_dir'],backup_dir)
+	assure_path(backup_dir)
+	cmd = [
+		'docker',
+		'run',
+		'-it',
+		'--link', '%s:mongo' % config['db']['docker_container'],
+		'-v', '%s:/backup' % backup_dir,
+		'--rm',
+		config['db']['image'],
+		'sh', '-c', 'mongodump -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" -d tomato --out /backup; chmod -R ogu+rwX /backup'
+	]
+	run_observing(*cmd)
+	if not backup_name.endswith(".tar.gz"):
+		backup_name += ".tar.gz"
+	run_observing('tar', 'czf', backup_name, '-C', backup_dir, '.')
+	shutil.rmtree(backup_dir)
+
+def db_restore(config, backup_name):
+	backup_dir = config['db']['directories']['backup']
+	if not os.path.isabs(backup_dir):
+		backup_dir = os.path.join(config['docker_dir'],backup_dir)
+	assure_path(backup_dir)
+	if not backup_name.endswith(".tar.gz"):
+		backup_name += ".tar.gz"
+	run_observing('tar', 'xzf', backup_name, '-C', backup_dir)
+	cmd = [
+		'docker',
+		'run',
+		'-it',
+		'--link', '%s:mongo' % config['db']['docker_container'],
+		'-v', '%s:/backup' % backup_dir,
+		'--rm',
+		config['db']['image'],
+		'sh', '-c', 'exec mongorestore -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" "/backup" --drop'
+	]
+	run_observing(*cmd)
+	shutil.rmtree(backup_dir)
+
+
+
+
+
+
+
+>>>>>>> b70a325abffd1c57aa0ef74b3c08a59996600bf7
 
 
 def show_help_configure(config):
