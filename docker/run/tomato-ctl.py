@@ -280,7 +280,7 @@ def generate_default_config():
 		'backend_core': {
 			'enabled': True,
 			'image': 'tomato_backend_core',
-			'ports': [8000, 8001, 8002, 8006] + range(8010,8021),
+			'ports': [8000, 8001, 8002, 8006] + range(8010, 8021),
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
