@@ -271,7 +271,7 @@ def generate_default_config():
 				('%(config)s', '/config')
 			],
 			'directories': {
-				'config': os.path.join("backend_core", "config")
+				'config': os.path.join("web", "config")
 			},
 			'code_directories': ['web', 'shared'],
 			'shell_cmd': "/bin/bash"
