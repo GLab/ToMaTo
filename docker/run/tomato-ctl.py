@@ -361,7 +361,7 @@ def read_config():
 		config['docker_dir'] = os.path.join(config['tomato_dir'], "docker", "run")
 	print ""
 
-	for module in "db", "backend_core", "web":
+	for module in TOMATO_MODULES+[DB_MODULE]:
 
 		if "version" not in config[module]:
 			config[module]['version'] = subprocess.check_output(["bash", "-c", "cd '%s'; git describe --tags | cut -f1,2 -d'-'" % config['tomato_dir']]).split()[0]
@@ -389,6 +389,8 @@ class Module:
 		self.module_name = module_name
 		module_config = config[module_name]
 		self.enabled = module_config['enabled']
+
+		self.is_db = module_config.get('is_database', False)
 
 		tomato_dir = config['tomato_dir']
 		additional_directories = module_config['additional_directories']
@@ -429,6 +431,7 @@ class Module:
 			flat_list([["-p", "%s:%s" % p] for p in ports]),
 			["-e", "TIMEZONE=%s" % timezone],
 			["-e", "TOMATO_VERSION=%s" % tomato_version],
+			["-e", "SECRET_KEY=%s" % "".join(random.choice(string.digits+string.ascii_letters) for _ in range(32))],
 			["--name", self.container_name],
 			additional_args,
 			[self.image]
@@ -442,9 +445,9 @@ class Module:
 		if not isinstance(self.shell_cmd, list):
 			self.shell_cmd = [self.shell_cmd]
 
-		self.is_db = module_config.get('is_database', False)
-
 	def start(self, ignore_disabled=False):
+		if self.is_started():
+			return
 		for d in self.directories_to_assure:
 			assure_path(d)
 		if ignore_disabled or self.enabled:
