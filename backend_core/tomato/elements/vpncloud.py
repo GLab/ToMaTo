@@ -27,7 +27,7 @@ from ..lib.error import UserError
 
 class VpnCloud(ConnectingElement, Element):
 	name = StringField()
-	network_id = IntField()
+	network_id = LongField()
 
 	DIRECT_ATTRS = False
 	DIRECT_ATTRS_EXCLUDE = []
@@ -45,7 +45,7 @@ class VpnCloud(ConnectingElement, Element):
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + self.idStr
-		self.network_id = random.randint(0, 2**64)
+		self.network_id = random.randint(0, 2**63)
 		self.save()
 	
 	def onChildAdded(self, iface):
