@@ -1,3 +1,9 @@
+vpncloud-tomato (0.4.3) stable; urgency=medium
+
+  * Version bump
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 02 Feb 2016 11:50:23 +0100
+
 vpncloud-tomato (0.4.2) stable; urgency=medium
 
   * Version bump

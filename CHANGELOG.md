@@ -21,6 +21,7 @@ Entries should be sorted by component and status with important entries and entr
 - [backend_core, fixed] Fixed problem when generating vpncloud networkids (BSON 8 byte ints)
 - [backend, removed] Removed useless dump environment infos
 - [web, fixed] Fixed small menu display issue for vpncloud switches
+- [hostmanager] Fixed problem with vpncloud dropping ARP packets
 
 
 ### UNRELEASED (NOT RUNNING ON SERVERS)
