@@ -192,12 +192,12 @@ The following settings can be set in the root dict:
 
  docker_network_interface:
    Network interface of the host for communicating with containers.
-   default: 'docker0'
+   default: '%(default_docker_interface)s'
 
  docker_conainer_namespace:
    container names will start with this string, and a _.
    eg, if this is set to 'tomato', the 'backend_core' module will run in the container 'tomato_backend_core'.
-   default: 'tomato'
+   default: '%(default_docker_namespace)s'
 
 The configuration of a modules is specified as a subdictionary, where its key is the module name.
  available modules: %(modules)s
@@ -209,10 +209,11 @@ Configuration parameters for all modules:
  enabled:
    Modules will only be started if this is set to True.
    The %(DB_MODULE)s module will always be started regardless of this setting.
+   By default, all modules are enabled.
 
  image:
    The Docker image to use for this container.
-   default for %(DB_MODULE)s: 'mongo-latest'
+   default for %(DB_MODULE)s: '%(default_db_image)s'
    default for other modules: 'tomato_[MODULE_NAME]'
 
  timezone:
@@ -224,20 +225,24 @@ Configuration parameters for all modules:
    If an entry is an integer, it is treated as a tuple (entry, entry).
    This forwards ports on the host to specific ports on the container.
    The first entry is the port on the host, the second one on the container.
+   Defaults:
+    %(default_ports)s
 
  additional_args:
    List of additional arguments when creating the container via 'docker run -d'
    When specified by multiple config files, all arguments are used.
+   These are empty by default.
 
  additional_directories:
    List of tuples of directories.
    For each entry, the container's directory is linked to the host's directory.
    The container's directory is the second element, and the host's directory is the first element.
+   These are empty by default.
 
  shell_cmd:
    Command to use when running the shell.
-   default for %(DB_MODULE)s: '%(default_db_shell_cmd)s'
-   default for other modules: /bin/bash
+   Defaults:
+    %(default_shell_cmds)s
 
  directories:
    Dict of special directories. They will also be mounted to the right location on the container.
@@ -249,14 +254,20 @@ Configuration parameters for all modules:
    not used for %(DB_MODULE)s.
    A list of directories in tomato_dir that will be mounted to /code/dir_name on the container.
    The first directory will be mounted as /code/service, The other directories will be mounted with their own name in /code.
-
-""" % {
+   Defaults:
+    %(default_code_directories)s""" % {
 		'config_paths': CONFIG_PATHS,
 		'modules': ", ".join([DB_MODULE] + TOMATO_MODULES),
 		'DB_MODULE': DB_MODULE,
 		'default_timezone': defconfig[DB_MODULE]['timezone'],
-		'default_db_shell_cmd': defconfig[DB_MODULE]['shell_cmd'],
-		'default_directories': "\n    ".join(append_to_str(module, ": ", TOMATO_MODULES+[DB_MODULE]) + (", ".join(defconfig[module]['directories'].keys())) for module in sorted([DB_MODULE]+TOMATO_MODULES))
+		'default_db_shell_cmd': defconfig[DB_MODULE]['shell_cmd'] if not isinstance(defconfig[DB_MODULE]['shell_cmd'], list) else " ".join(defconfig[DB_MODULE]['shell_cmd']),
+		'default_directories': "\n    ".join(append_to_str(module, ": ", TOMATO_MODULES+[DB_MODULE]) + (", ".join(defconfig[module]['directories'].keys())) for module in sorted([DB_MODULE]+TOMATO_MODULES)),
+		'default_docker_interface': defconfig['docker_network_interface'],
+		'default_docker_namespace': defconfig['docker_container_namespace'],
+		'default_db_image': defconfig[DB_MODULE]['image'],
+		'default_ports': "\n    ".join([append_to_str(module, ": ", TOMATO_MODULES+[DB_MODULE]) + (repr(defconfig[module]['ports'])) for module in sorted([DB_MODULE]+TOMATO_MODULES)]),
+		'default_code_directories': "\n    ".join(append_to_str(module, ": ", TOMATO_MODULES+[DB_MODULE]) + (", ".join(defconfig[module]['code_directories'])) for module in sorted(TOMATO_MODULES)),
+		'default_shell_cmds': "\n    ".join([append_to_str(module, ": ", TOMATO_MODULES+[DB_MODULE]) + (" ".join(defconfig[module]['shell_cmd']) if isinstance(defconfig[module]['shell_cmd'], list) else defconfig[module]['shell_cmd']) for module in sorted([DB_MODULE]+TOMATO_MODULES)])
 	}
 
 def generate_default_config():
