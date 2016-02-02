@@ -434,6 +434,10 @@ class Module:
 			[self.image]
 		])
 
+		self.directories_to_assure = []
+		for d, _ in additional_directories:
+			self.directories_to_assure.append(d)
+
 		self.shell_cmd = module_config['shell_cmd']
 		if not isinstance(self.shell_cmd, list):
 			self.shell_cmd = [self.shell_cmd]
@@ -441,6 +445,8 @@ class Module:
 		self.is_db = module_config.get('is_database', False)
 
 	def start(self, ignore_disabled=False):
+		for d in self.directories_to_assure:
+			assure_path(d)
 		if ignore_disabled or self.enabled:
 			docker_start(self.container_name, self.start_args)
 
