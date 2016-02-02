@@ -3,6 +3,8 @@
 set -e
 
 NAME="$1"
+shift
+ARGS="$@"
 VERSION=$(./getversion.sh "$NAME/Dockerfile")
-docker build --rm --no-cache -t "$NAME:$VERSION" "$NAME"
+docker build --rm $ARGS -t "$NAME:$VERSION" "$NAME"
 docker tag -f "$NAME:$VERSION" "$NAME:latest"

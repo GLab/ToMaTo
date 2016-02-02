@@ -225,7 +225,7 @@ def backend_core_start(config):
 		"docker",
 		"run",
 		"-d",
-		"-v", "%s/backend_core:/code/backend_core" % config['tomato_dir'],
+		"-v", "%s/backend_core:/code/service" % config['tomato_dir'],
 		"-v", "%s/shared:/code/shared" % config['tomato_dir']
 	] + \
 	reduce(lambda x, y: x+y, (['-v', '%s:%s' % c] for c in config['backend_core']['additional_directories'])) + \

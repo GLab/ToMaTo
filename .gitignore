@@ -15,6 +15,7 @@ docs_build
 *.torrent
 *.qcow2
 .idea
+__pycache__
 
 *old*
 web/tomato/static/newui
