@@ -256,7 +256,9 @@ class Repy(elements.Element):
 
 	def modify_template(self, tmplName):
 		self.template = template.get(self.TYPE, tmplName)
-		UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
+		if tmplName:
+			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
+			UserError.check(self.template.isReady(), code=UserError.INVALID_VALUE, message="The selected template's image is not yet synced to this host.")
 		self._useImage(self._template().getPath())
 
 	def action_start(self):
