@@ -259,7 +259,7 @@ def getNews():
 
 @cached(3600)
 def getVersion():
-	return getVersionStr("web")
+	return getVersionStr()
 
 
 def security_token(data, session=""):

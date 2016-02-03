@@ -82,14 +82,14 @@ def executable_archives(split_alternatives=True, ignore_errors=True):
 
 
 def executable_archive_list(request):
-	archives = executable_archives(False, False)
+	archives = executable_archives(False, True)
 	for archive in archives:
 		archive['alternatives'] = len(archive['alternatives'])
 	return render(request, 'web_resources/default_executable_archive_list.html', {'archive_list': archives, 'default_executable_archives_list_url': default_executable_archives_list_url})
 
 @wrap_rpc
 def executable_archive_info(api, request, name):
-	archives = executable_archives(False, False)
+	archives = executable_archives(False, True)
 
 	# find archive corresponding to name
 	archive = None
