@@ -170,7 +170,7 @@ class VMElement(Element):
 
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
-		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
+		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref, template=self.template)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE})
 		attrs = self._remoteAttrs

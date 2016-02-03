@@ -678,7 +678,7 @@ class HostObject(BaseDocument):
 		return ret
 
 
-def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None, best=True):
+def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None, best=True, template=None):
 	# STEP 1: limit host choices to what is possible
 	if not sitePrefs: sitePrefs = {}
 	if not hostPrefs: hostPrefs = {}
@@ -695,6 +695,8 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 		if connectionTypes and set(connectionTypes) - set(host.connectionTypes.keys()):
 			continue
 		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
+			continue
+		if template and template not in host.templates:
 			continue
 		if not best:
 			return host
