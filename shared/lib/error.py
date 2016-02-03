@@ -136,9 +136,8 @@ class Error(Exception):
 	@classmethod
 	def check(cls, condition, code, message, todump=None, *args, **kwargs):
 		if condition: return
-		exception = cls(code=code, message=message, todump=todump,
-										frame=inspect.currentframe(), trace=traceback.extract_stack(), *args, **kwargs)
-		exception.dump()
+		exception = cls(code=code, message=message, todump=todump, frame=inspect.currentframe(), trace=traceback.extract_stack(), *args, **kwargs)
+		#exception.dump()
 		raise exception
 
 	@classmethod

@@ -15,109 +15,53 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, signal, time, thread
+import os, sys, signal, time, thread, threading
 
-os.environ['TOMATO_MODULE'] = "backend_core"
+os.environ['TOMATO_MODULE'] = "backend_users"
 
-import monkey
+from lib import monkey
 monkey.patch_all()
 
 import config
 from mongoengine import connect
-database_connnection = connect(config.DATABASE, host=config.DATABASE_HOST)
-database_obj = getattr(database_connnection, config.DATABASE)
+database_connection = connect(config.DATABASE, host=config.DATABASE_HOST)
+database_obj = getattr(database_connection, config.DATABASE)
 
-def db_migrate():
-	def getMigration(version):
-		try:
-			return __import__("tomato.migrations.migration_%04d" % version, {}, {}, 'migration_%04d' % version).migrate
-		except ImportError:
-			return None
-
-	from .db import data
-	version = data.get('db_version', 0)
-	print >>sys.stderr, "Database version: %04d" % version
-	if version > 0 and not getMigration(version):
-		raise Exception("Database is newer than code")
-	if not version and not getMigration(1):
-		raise Exception("Failed to migrate to initial version")
-	while True:
-		version += 1
-		migrate = getMigration(version)
-		if not migrate:
-			break
-		print >>sys.stderr, " - migrating to version %04d..." % version
-		try:
-			migrate()
-		except:
-			import traceback
-			traceback.print_exc()
-			raise
-		data.set('db_version', version)
-
-import threading
-_currentUser = threading.local()
-
-def currentUser():
-	return _currentUser.user if hasattr(_currentUser, "user") else None  # fixme
-	
-def setCurrentUser(user):
-	_currentUser.user = user
-
-def login(credentials, sslCert):
-	user = auth.login(*credentials) if credentials else None
-	setCurrentUser(user)
-	return user or not credentials
-
-from lib import logging
+from .lib import logging
 def handleError():
 	logging.logException()
-	dump.dumpException()
 
-from lib import tasks #@UnresolvedImport
+from .lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=config.MAX_WORKERS)
 
 starttime = time.time()
 
-from . import host, auth, rpcserver #@UnresolvedImport
-from lib.cmd import bittorrent, process #@UnresolvedImport
-from lib import util, cache #@UnresolvedImport
-
-scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
+from . import db, organization, user, rpcserver #@UnresolvedImport
 
 stopped = threading.Event()
 
-import dump
-import dumpmanager
 import models
 
 def start():
 	logging.openDefault(config.LOG_FILE)
 	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
-		db_migrate()
+		db.migrate()
 	else:
 		print >>sys.stderr, "Skipping migrations"
-	auth.init()
+	#auth.init()
 	global starttime
-	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
-	bittorrent.startClient(config.TEMPLATE_PATH)
 	rpcserver.start()
 	starttime = time.time()
 	if not os.environ.has_key("TOMATO_NO_TASKS"):
 		scheduler.start()
 	else:
 		print >>sys.stderr, "Running without tasks"
-	dump.init()
-	dumpmanager.init()# important: must be called after dump.init()
-	cache.init()# this does not depend on anything (except the scheduler variable being initialized), and nothing depends on this. No need to hurry this.
-	
+
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
 	logging.closeDefault()
 	reload(config)
 	logging.openDefault(config.LOG_FILE)
-	#stopRPCserver()
-	#startRPCserver()
 
 def _printStackTraces():
 	import traceback
@@ -144,16 +88,14 @@ def _stopHelper():
 	print >>sys.stderr, "Some threads are still running:"
 	_printStackTraces()
 	print >>sys.stderr, "Killing process..."
+	from .lib.cmd import process
 	process.kill(os.getpid(), force=True)
 
 def stop(*args):
 	print >>sys.stderr, "Shutting down..."
 	thread.start_new_thread(_stopHelper, ())
 	rpcserver.stop()
-	host.stopCaching()
 	scheduler.stop()
-	bittorrent.stopTracker()
-	bittorrent.stopClient()
 	logging.closeDefault()
 	stopped.set()
 
