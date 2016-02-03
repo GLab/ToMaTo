@@ -430,6 +430,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	
 	def modify_template(self, tmplName):
 		self.template = template.get(self.TYPE, tmplName)
+		UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
 		if self.state == ST_PREPARED:
 			self._useImage(self._template().getPath())
 
