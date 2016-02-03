@@ -4,7 +4,8 @@ import inspect, traceback
 
 from . import anyjson as json
 
-dumpError = None
+def dumpError(*args):
+	print "Warning: dump.py is not used."
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}

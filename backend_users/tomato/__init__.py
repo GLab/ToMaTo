@@ -30,6 +30,7 @@ database_obj = getattr(database_connection, config.DATABASE)
 from .lib import logging
 def handleError():
 	logging.logException()
+	dump.dumpException()
 
 from .lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=config.MAX_WORKERS)
@@ -40,6 +41,7 @@ from . import db, organization, user, rpcserver #@UnresolvedImport
 
 stopped = threading.Event()
 
+import dump
 import models
 
 def start():
@@ -56,6 +58,7 @@ def start():
 		scheduler.start()
 	else:
 		print >>sys.stderr, "Running without tasks"
+	dump.init()
 
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."

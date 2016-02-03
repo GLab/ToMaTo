@@ -1,7 +1,7 @@
 # specify version in /etc/tomato/version, or in OS environment variable $TOMATO_VERSION
 import os
 
-def getVersionStr(module):
+def getVersionStr():
 
 	if os.path.exists("/etc/tomato/version"):
 		try:
