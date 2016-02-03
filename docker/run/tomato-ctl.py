@@ -11,7 +11,7 @@ import socket, fcntl, struct
 from datetime import date
 
 
-TOMATO_MODULES = ['web', 'backend_core']
+TOMATO_MODULES = ['web', 'backend_core', 'tomato_users']
 DB_MODULE = "db"
 CONFIG_PATHS = ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]
 
@@ -305,6 +305,24 @@ def generate_default_config():
 				'logs': os.path.join("backend_core", "logs")
 			},
 			'code_directories': ['backend_core', 'shared'],
+			'shell_cmd': "/bin/bash"
+			# 'version'  (will be generated if not found in config)
+		},
+		'backend_users': {
+			'enabled': True,
+			'image': 'tomato_backend_users',
+			'ports': [(8003, 8000)],
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(config)s', '/config'),
+				('%(logs)s', '/logs')
+			],
+			'directories': {
+				'config': os.path.join("backend_users", "config"),
+				'logs': os.path.join("backend_users", "logs")
+			},
+			'code_directories': ['backend_users', 'shared'],
 			'shell_cmd': "/bin/bash"
 			# 'version'  (will be generated if not found in config)
 		},
