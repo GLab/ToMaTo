@@ -144,6 +144,12 @@ class URL(String):
 	def __init__(self, **kwargs):
 		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$\-?]+", **kwargs)
 
+class Email(String):
+	__slots__ = ()
+	def __init__(self, **kwargs):
+		String.__init__(self, regex="[a-zA-Z0-9.-+_]+@[A-Za-z0-9.-+_]+", **kwargs)
+
+
 class List(Sequence):
 	__slots__ = ("items",)
 	TYPES = (types.ListType, types.TupleType)

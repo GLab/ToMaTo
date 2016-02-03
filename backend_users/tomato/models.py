@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .auth import User
-from .auth.permissions import Permission
+from .user import User
+from .quota import Quota
+from .organization import Organization
 from .db import DataEntry

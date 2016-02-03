@@ -36,7 +36,7 @@ scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=confi
 
 starttime = time.time()
 
-from . import db, auth, rpcserver #@UnresolvedImport
+from . import db, organization, user, rpcserver #@UnresolvedImport
 
 stopped = threading.Event()
 

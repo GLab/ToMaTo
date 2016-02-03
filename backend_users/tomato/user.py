@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# ToMaTo (Topology management software) 
+# ToMaTo (Topology management software)
 # Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,10 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import time, crypt, string, random, sys, hashlib
-from ..db import *
-from ..lib import logging, util, mail #@UnresolvedImport
-from .. import config, scheduler
-from ..lib.error import UserError
+from .generic import *
+from .db import *
+from .lib import logging, util, mail #@UnresolvedImport
+from . import config, scheduler
+from .lib.error import UserError
+from .config import NEW_USER_WELCOME_MESSAGE, NEW_USER_ADMIN_INFORM_MESSAGE
 
 class Flags:
 	Debug = "debug"
@@ -35,14 +37,14 @@ class Flags:
 	GlobalHostManager = "global_host_manager"
 	GlobalToplOwner = "global_topl_owner"
 	GlobalToplManager = "global_topl_manager"
-	GlobalToplUser = "global_topl_user"	
+	GlobalToplUser = "global_topl_user"
 	GlobalHostContact = "global_host_contact"
 	GlobalAdminContact = "global_admin_contact"
 	OrgaAdmin = "orga_admin" #nicht "global-" rechte vergeben für eigene user (auch nicht debug)
 	OrgaHostManager = "orga_host_manager" # eigene orga, hosts und sites verwalten
 	OrgaToplOwner = "orga_topl_owner"
 	OrgaToplManager = "orga_topl_manager"
-	OrgaToplUser = "orga_topl_user"	
+	OrgaToplUser = "orga_topl_user"
 	OrgaHostContact = "orga_host_contact"
 	OrgaAdminContact = "orga_admin_contact"
 
@@ -121,11 +123,11 @@ categories = [
 						Flags.NoMails
 						]}
 			]
-		
 
-orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
+
+orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount,
 						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.RestrictedNetworks, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
-						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser, 
+						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser,
 						Flags.OrgaHostContact, Flags.OrgaAdminContact]
 global_pi_flags = [Flags.GlobalAdmin, Flags.GlobalToplOwner, Flags.GlobalAdminContact]
 global_tech_flags = [Flags.GlobalHostManager, Flags.GlobalHostContact]
@@ -146,7 +148,6 @@ class Notification(EmbeddedDocument):
 
 	def init(self, ref, sender, subject_group=None):
 		self.ref_obj = ref if ref else []
-		print self.ref_obj
 		self.sender = sender.name if sender else None
 		self.subject_group = subject_group
 
@@ -166,22 +167,19 @@ class Notification(EmbeddedDocument):
 		self.read = read
 
 
-class User(BaseDocument):
+class User(Entity, BaseDocument):
 	"""
-	:type organization: host.Organization
-	:type totalUsage: accounting.UsageStatistics
-	:type quota: accounting.Quota
+	:type organization: organization.Organization
+	:type quota: quota.Quota
 	:type flags: list
 	:type clientData: dict
 	:type notifications: list of Notification
 	"""
-	from ..organization import Organization
-	from ..quota import Quota
-	name = StringField(required=True, unique_with='origin')
-	origin = StringField(required=True)
+	from .organization import Organization
+	from .quota import Quota
+	name = StringField(required=True)
 	organization = ReferenceField(Organization, required=True, reverse_delete_rule=DENY)
 	password = StringField(required=True)
-	passwordTime = FloatField(db_field='password_time', required=True)
 	lastLogin = FloatField(db_field='last_login', required=True)
 	quota = EmbeddedDocumentField(Quota, required=True)
 	realname = StringField()
@@ -189,38 +187,90 @@ class User(BaseDocument):
 	flags = ListField(StringField())
 	notifications = ListField(EmbeddedDocumentField(Notification))
 	clientData = DictField(db_field='client_data')
+	_origin = StringField(db_field="origin")
+	_passwordTime = FloatField(db_field='password_time')
 	meta = {
 		'ordering': ['name'],
 		'indexes': [
-			'lastLogin', 'passwordTime', 'flags', 'organization', ('name', 'origin')
+			'lastLogin', 'flags', 'organization', 'name'
 		]
 	}
 
-	@classmethod	
-	def create(cls, name, organization, password, flags, origin, **kwargs):
-		from ..host.organization import Organization
-		from ..accounting import Quota, UsageStatistics
-		orga = Organization.get(organization)
-		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": organization})
-		user = User(name=name, organization=orga, flags=flags, origin=origin)
-		setCurrentUser(user)
-		user.modify(kwargs, save=False)
-		user.storePassword(password)
-		user.lastLogin = time.time()
-		user.quota = Quota()
-		user.quota.init(**config.DEFAULT_QUOTA)
-		stats = UsageStatistics()
-		stats.init()
-		user.totalUsage = stats
-		user.save()
-		return user
+	@classmethod
+	def create(cls, password=None, **kwargs):
+		if not password:
+			password = User.randomPassword()
+		from .quota import Quota, Usage
+		obj = cls(lastLogin=time.time(), quota=Quota(
+			used=Usage(cputime=0, memory=0, diskspace=0, traffic=0),
+			monthly=Usage(
+				cputime=config.DEFAULT_QUOTA["cputime"],
+				memory=config.DEFAULT_QUOTA["memory"],
+				diskspace=config.DEFAULT_QUOTA["diskspace"],
+				traffic=config.DEFAULT_QUOTA["traffic"],
+			),
+			continousFactor=config.DEFAULT_QUOTA["continous_factor"],
+			usedTime=time.time()
+		))
+		try:
+			obj.modify_password(password)
+			obj.modify(**kwargs)
+			obj.save()
+		except:
+			if obj.id:
+				obj.remove()
+			raise
+		return obj
 
-	def sendNotification(self, subject, message, ref=None, fromUser=None, send_email=True, subject_group=None):
-		self._addNotification(subject, message, ref, fromUser, subject_group=subject_group)
-		if send_email:
-			self._sendMail(subject, message, fromUser)
+	def _remove(self):
+		logging.logMessage("remove", category="user", name=self.name)
+		if self.id:
+			self.delete()
 
-	def _addNotification(self, title, message, ref, fromUser, subject_group=None):
+	def __str__(self):
+		return self.name
+
+	def __repr__(self):
+		return "User(%s)" % self.name
+
+	@classmethod
+	def hashPassword(cls, password):
+		saltchars = string.ascii_letters + string.digits + './'
+		salt = "$1$"
+		salt += ''.join([ random.choice(saltchars) for _ in range(8) ])
+		return crypt.crypt(password, salt)
+
+	@classmethod
+	def randomPassword(cls):
+		return ''.join(random.choice(2 * string.ascii_lowercase + string.ascii_uppercase + 2 * string.digits) for x in range(12))
+
+	def checkPassword(self, password):
+		return self.password == crypt.crypt(password, self.password)
+
+	@classmethod
+	def get(cls, name, **kwargs):
+		"""
+		:rtype : User
+		"""
+		try:
+			return User.objects.get(name=name, **kwargs)
+		except User.DoesNotExist:
+			return None
+
+	def modify_organization(self, val):
+		from .organization import Organization
+		orga = Organization.get(val)
+		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": val})
+		self.organization = orga
+
+	def modify_quota(self, val):
+		self.quota.modify(val)
+
+	def modify_password(self, password):
+		self.password = User.hashPassword(password)
+		self.save()
+
+	def notification_add(self, fromUser, title, message, ref=None, subject_group=None):
 		now = time.time()
 		notf_id = hashlib.sha256(repr({
 			'title': title,
@@ -233,7 +283,43 @@ class User(BaseDocument):
 		notf = Notification(title=title, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
+
+	def notification_list(self, include_read=False):
+		return [n.info() for n in self.notifications if (include_read or not n.read)]
+
+	def notification_get(self, notification_id):
+		for n in self.notifications:
+			if n.id == notification_id:
+				return n
+		UserError.check(False, code=UserError.ENTITY_DOES_NOT_EXIST, message="Notification with that id does not exist", data={"id": notification_id, "user": self.name})
+
+	def notification_read(self, notification_id):
+		notif = self.notification_get(notification_id)
+		notif.read = True
 		self.save()
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=_remove),
+	}
+	ATTRIBUTES = {
+		"id": Attribute(get=lambda self: self.name),
+		"name": Attribute(field=name, schema=schema.Identifier(minLength=3)),
+		"realname": Attribute(field=realname, schema=schema.String(minLength=3)),
+		"email": Attribute(field=email, schema=schema.Email()),
+		"flags": Attribute(field=flags, schema=schema.List(items=schema.Identifier())),
+		"organization": Attribute(get=lambda self: self.organization.name, set=modify_organization),
+		"quota": Attribute(get=lambda self: self.quota.info(), set=modify_quota),
+		"notification_count": Attribute(get=lambda self: len(self.notifications)),
+		"client_data": Attribute(field=clientData),
+		"last_login": Attribute(get=lambda self: self.lastLogin),
+		"password_hash": Attribute(field=password)
+	}
+
+"""
+	def sendNotification(self, subject, message, ref=None, fromUser=None, send_email=True, subject_group=None):
+		self._addNotification(subject, message, ref, fromUser, subject_group=subject_group)
+		if send_email:
+			self._sendMail(subject, message, fromUser)
 
 	def _sendMail(self, subject, message, fromUser=None):
 		if not self.email or self.hasFlag(Flags.NoMails):
@@ -261,12 +347,6 @@ class User(BaseDocument):
 		self.save()
 
 	def clean_up_notifications(self):
-		"""
-		This removes old notifications.
-		read notifications older than 30 days
-		unread notifications older than 180 days
-		:return:
-		"""
 		border_read = time.time() - 60*60*24*30
 		border_unread = time.time() - 60*60*24*180
 		for n in list(self.notifications):
@@ -274,64 +354,34 @@ class User(BaseDocument):
 				self.notifications.remove(n)
 		self.save()
 
-	def checkPassword(self, password):
-		return self.password == crypt.crypt(password, self.password)
-
-	def storePassword(self, password):
-		saltchars = string.ascii_letters + string.digits + './'
-		salt = "$1$"
-		salt += ''.join([ random.choice(saltchars) for _ in range(8) ])
-		self.password = crypt.crypt(password, salt)
-		self.passwordTime = time.time()
-
-	def forgetPassword(self):
-		self.password = None
-		self.passwordTime = None
-		self.save()		
-		
-	def updateFrom(self, other):
-		if not self.email and other.email:
-			self.email = other.email
-		if not self.realname and other.realname:
-			self.realname = other.realname
-		self.save()
-	
 	def loggedIn(self):
 		logging.logMessage("successful login", category="auth", user=self.name, origin=self.origin)
 		self.lastLogin = time.time()
 		self.save()
-	
+
 	def hasFlag(self, flag):
 		return flag in self.flags
-	
+
 	def addFlag(self, flag):
 		if self.hasFlag(flag):
-			return		
-		logging.logMessage("add_flag", category="user", name=self.name, origin=self.origin, flag=flag)	
+			return
+		logging.logMessage("add_flag", category="user", name=self.name, origin=self.origin, flag=flag)
 		self.flags.append(flag)
 		self.save()
-		
+
 	def removeFlag(self, flag):
 		if not self.hasFlag(flag):
 			return
-		logging.logMessage("remove_flag", category="user", name=self.name, origin=self.origin, flag=flag)	
+		logging.logMessage("remove_flag", category="user", name=self.name, origin=self.origin, flag=flag)
 		self.flags.remove(flag)
 		self.save()
 
-	def modify_password(self, password):
-		for prov in providers:
-			if not prov.getName() == self.origin:
-				continue
-			UserError.check(prov.canChangePassword(), code=UserError.INVALID_CONFIGURATION, message="Provider can not change password")
-			prov.changePassword(self.name, password)
-			self.storePassword(password)
-
 	def modify_organization(self, value):
-		from ..host.organization import Organization
+		from .organization import Organization
 		orga = Organization.get(value)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": value})
 		self.organization=orga
-		
+
 	def modify_quota(self, value):
 		self.quota.modify(value)
 
@@ -345,7 +395,6 @@ class User(BaseDocument):
 			return True
 		if attr in USER_ATTRS:
 			return True
-		user = currentUser()
 		if user.hasFlag(Flags.GlobalAdmin):
 			if user == self and attr == "flags" and not Flags.GlobalAdmin in value:
 				# Admins must not delete their own admin flag
@@ -355,105 +404,49 @@ class User(BaseDocument):
 			if attr in ["name"]:
 				return True
 			if attr == "flags":
-				changedFlags = (set(value) - set(self.flags)) | (set(self.flags) - set(value)) 
+				changedFlags = (set(value) - set(self.flags)) | (set(self.flags) - set(value))
 				for flag in changedFlags:
 					if not flag in orga_admin_changeable:
 						return False
 				return True
 		return False
 
-	def modify(self, attrs, save=True):
-		logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
-		for key, value in attrs.items():
-			UserError.check(self.can_modify(key, value), code=UserError.DENIED,
-				message="No permission to change attribute", data={"attribute": key})
-			if key.startswith("_"):
-				self.clientData[key[1:]] = value
-				continue
-			if hasattr(self, "modify_%s" % key):
-				getattr(self, "modify_%s" % key)(value)
-			else:
-				setattr(self, key, value)
-		if save:
-			self.save()
-
 	def list_notifications(self, include_read=False):
 		return [n.info() for n in self.notifications if (include_read or not n.read)]
 
 	def get_notification(self, notification_id):
 		return self._get_notification(notification_id).info()
-	
-	def info(self, includeInfos):
-		info = {
-			"name": self.name,
-			"origin": self.origin,
-			"organization": self.organization.name,
-			"id": "%s@%s" % (self.name, self.origin),
-			"realname": self.realname,
-			"email": self.email,
-			"flags": list(self.flags),
-			"notification_count": len(filter(lambda n: not n.read, self.notifications))
-		}
-		info.update({"_"+k: v for k, v in self.clientData.items()})
-		if not includeInfos:
-			del info["email"]
-			del info["flags"]
-			del info["notification_count"]
-		else:
-			info["quota"] = self.quota.info()
-		return info
-		
-	def updateQuota(self):
-		self.quota.updateUsage(self.totalUsage)
-		self.save()
-		
-	def enforceQuota(self):
-		if not self.hasFlag(Flags.NewAccount):
-			if self.quota.getFactor() >= 1.0:
-				self.addFlag(Flags.OverQuota)
-			else:
-				self.removeFlag(Flags.OverQuota)
-		#FIXME: send warning emails, etc
-		
-	def __str__(self):
-		return self.__unicode__()
-
-	def __unicode__(self):
-		return "%s@%s" % ( self.name, self.origin )
 
 
 class Provider:
-	def __init__(self, name, options):
-		self.name = name
+	def __init__(self, options):
 		self.options = options
 		self.parseOptions(**options)
-	def parseOptions(self, **kwargs):
-		pass
-	def canRegister(self):
-		return False
-	def register(self, username, password, organization, attrs):
-		raise Exception("not supported")
-	def canChangePassword(self):
-		return False
-	def changePassword(self, username, password):
-		raise Exception("not supported")
-	def getName(self):
-		return self.name
 	def getAccountTimeout(self):
 		return self.options.get("account_timeout", 0)
-	def getPasswordTimeout(self):
-		return self.options.get("password_timeout", 0)
 	def getUsers(self, **kwargs):
-		return User.objects.filter(origin=self.name, **kwargs)
-	def cleanup(self):
-		if self.getPasswordTimeout():
-			for user in self.getUsers(passwordTime__lte = time.time() - self.getPasswordTimeout()):
-				logging.logMessage("password cache timeout", category="auth", user=user.name)
-				user.forgetPassword()
-		if self.getAccountTimeout():
-			for user in self.getUsers(lastLogin__lte = time.time() - self.getAccountTimeout()):
-				logging.logMessage("account timeout", category="auth", user=user.name)
-				user.remove()
+		return User.objects.filter(**kwargs)
+	def parseOptions(self, allow_registration=True, default_flags=None, **kwargs):
+		if not default_flags: default_flags = ["over_quota"]
+		self.allow_registration = allow_registration
+		self.default_flags = default_flags
+	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
+		try:
+			user = self.getUsers().get(name=username)
+			if user.checkPassword(password):
+				return user
+			else:
+				return False
+		except User.DoesNotExist:
+			return False
+	def register(self, username, password, organization, attrs):
+		UserError.check(self.getUsers(name=username).count()==0, code=UserError.ALREADY_EXISTS, message="Username already exists")
+		user = User.create(name=username, organization=organization, flags=self.default_flags, password=password, origin=self.name, **attrs)
+		notifyFilteredUsers(lambda u: u.hasFlag(Flags.GlobalAdminContact)
+					or u.hasFlag(Flags.OrgaAdminContact) and user.organization == u.organization,
+		            NEW_USER_ADMIN_INFORM_MESSAGE['subject'], NEW_USER_ADMIN_INFORM_MESSAGE['body'] % username)
+		user.sendNotification(NEW_USER_WELCOME_MESSAGE['subject'], NEW_USER_WELCOME_MESSAGE['body'] % username, ref=['account', username])
+		return user
 
 
 def getUser(name):
@@ -482,11 +475,11 @@ def notifyFilteredUsers(filterfn, subject, message, organization = None, ref=Non
 
 def notifyFlaggedUsers(flag, subject, message, organization=None, ref=None, subject_group=None):
 	notifyFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization, ref=ref, subject_group=subject_group)
-	
+
 def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 	user = currentUser()
 	flag = None
-	
+
 	if global_contact:
 		if issue=="admin":
 			flag = Flags.GlobalAdminContact
@@ -498,9 +491,9 @@ def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 		if issue=="host":
 			flag = Flags.OrgaHostContact
 	UserError.check(flag, code=UserError.INVALID_VALUE, message="Issue does not exist", data={"issue": issue})
-	
+
 	notifyFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization, ref=None)
-	
+
 def sendMessage(user, subject, text):
 	from_ = currentUser()
 	to = getUser(user)
@@ -523,7 +516,7 @@ def getAllUsers(organization = None, with_flag = None):
 def cleanup():
 	for provider in providers:
 		provider.cleanup()
-	
+
 def provider_login(username, password):
 	for prov in providers:
 		user = prov.login(username, password)
@@ -595,9 +588,6 @@ def send_announcement(sender, title, message, ref=None, show_sender=True):
 		acc.sendNotification(title, message, ref, sender if show_sender else None, send_email=False)
 
 
-
-
-
 def clean_up_all_notifications():
 	for acc in User.objects.all():
 		acc.clean_up_notifications()
@@ -613,3 +603,4 @@ def init():
 	if not providers:
 		print >>sys.stderr, "Warning: No authentication modules configured."
 	scheduler.scheduleRepeated(60*60*24, clean_up_all_notifications, immediate=True)
+"""

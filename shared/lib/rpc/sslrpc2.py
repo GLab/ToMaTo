@@ -225,7 +225,7 @@ class Request(Message, object):
 		if not isinstance(kwargs, dict):
 			raise MessageError(MessageError.InvalidKwArgsType, id)
 		for k, v in kwargs.items():
-			if isinstance(k, basestring):
+			if not isinstance(k, basestring):
 				raise MessageError(MessageError.InvalidKwArgsKeyType, id)
 		return cls(id, method, args, kwargs)
 
@@ -422,11 +422,15 @@ class Handler(SocketServer.StreamRequestHandler):
 			except Failure as err:
 				reply = Reply(request.id, Reply.Result.Failure, err.data)
 			except Exception as err:
-				reply = Reply(request.id, Reply.Result.Failure, {"type": type(err), "message": str(err)})
+				reply = Reply(request.id, Reply.Result.Failure, {"type": str(type(err)), "message": str(err)})
 		try:
 			reply.writeTo(self)
-		except:
-			self.failed = True
+		except Exception as err:
+			reply = Reply(request.id, Reply.Result.Failure, {"type": str(type(err)), "message": str(err)})
+			try:
+				reply.writeTo(self)
+			except:
+				self.failed = True
 
 	def read(self, size):
 		try:
@@ -447,13 +451,12 @@ class Handler(SocketServer.StreamRequestHandler):
 
 
 class Proxy:
-	def __init__(self, address, onError=(lambda x: x), **args):
+	def __init__(self, address, onError=(lambda x: x), **sslargs):
 		self._con = None
 		self._onError = onError
-		try:
-			self._con = SSLConnection(address, **args)
-		except socket.error, err:
-			raise self._onError(NetworkError(NetworkError.ReadError))
+		self._address = address
+		self._sslargs = sslargs
+		self._reconnect()
 		self._id = 0
 		self._rlock = threading.RLock()
 		self._wlock = threading.RLock()
@@ -461,6 +464,12 @@ class Proxy:
 		self._resCond = threading.Condition(self._resLock)
 		self._results = {}
 		self._errors = {}
+
+	def _reconnect(self):
+		try:
+			self._con = SSLConnection(self._address, **self._sslargs)
+		except socket.error, err:
+			raise self._onError(NetworkError(NetworkError.ReadError))
 
 	def _nextId(self):
 		with self._wlock:
@@ -484,7 +493,7 @@ class Proxy:
 				if request_id in self._errors:
 					error = self._errors[request_id]
 					del self._errors[request_id]
-					raise error
+					raise self._onError(error)
 			if self._rlock.acquire(blocking=False):
 				# We are waiting for a message
 				try:
@@ -512,10 +521,17 @@ class Proxy:
 	def _call(self, name, args=None, kwargs=None):
 		if not kwargs: kwargs = {}
 		if not args: args = []
-		try:
-			return self._callInternal(name, args, kwargs)
-		except Exception, err:
-			raise self._onError(err), None, sys.exc_info()[2]
+		tries = 3
+		while True:
+			try:
+				return self._callInternal(name, args, kwargs)
+			except NetworkError:
+				tries -= 1
+				if tries == 0:
+					raise
+				self._reconnect()
+			except Exception, err:
+				raise self._onError(err), None, sys.exc_info()[2]
 
 	def _listMethods(self):
 		return self._call("$list$")

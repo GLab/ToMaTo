@@ -18,23 +18,17 @@ class Organization(Entity, BaseDocument):
 
 	@property
 	def users(self):
-		from .auth import User
+		from .user import User
 		return User.objects(organization=self)
 
-	def init(self, attrs):
-		self.modify(attrs)
-
 	def _checkRemove(self):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		if self.id:
-			UserError.check(not self.sites, code=UserError.NOT_EMPTY, message="Organization still has sites")
 			UserError.check(not self.users, code=UserError.NOT_EMPTY, message="Organization still has users")
 
 	def _remove(self):
 		logging.logMessage("remove", category="organization", name=self.name)
 		if self.id:
 			self.delete()
-		self.totalUsage.remove()
 
 	def __str__(self):
 		return self.name
@@ -52,35 +46,13 @@ class Organization(Entity, BaseDocument):
 		except Organization.DoesNotExist:
 			return None
 
-	@classmethod
-	def create(cls, name, label="", attrs=None):
-		if not attrs:
-			attrs = {}
-		UserError.check(currentUser().hasFlag(Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
-		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Organization name may not include a '/'")
-		logging.logMessage("create", category="site", name=name, label=label)
-		organization = Organization(name=name, label=label)
-		try:
-			attrs_ = attrs.copy()
-			attrs_['name'] = name
-			attrs_['label'] = label
-			organization.init(attrs_)
-			organization.save()
-		except:
-			organization.remove()
-			raise
-		return organization
-
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(fn=_remove, check=_checkRemove)
 	}
 	ATTRIBUTES = {
-		"name": Attribute(field=name, schema=schema.Identifier()),
-		"label": Attribute(field=label, schema=schema.String()),
+		"name": Attribute(field=name, schema=schema.Identifier(minLength=3)),
+		"label": Attribute(field=label, schema=schema.String(minLength=3)),
 		"homepage_url": Attribute(field=homepageUrl, schema=schema.URL(null=True)),
 		"image_url": Attribute(field=imageUrl, schema=schema.URL(null=True)),
 		"description": Attribute(field=description, schema=schema.String())
 	}
-
-
-from .auth import Flags

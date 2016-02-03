@@ -11,7 +11,7 @@ import socket, fcntl, struct
 from datetime import date
 
 
-TOMATO_MODULES = ['web', 'backend_core', 'tomato_users']
+TOMATO_MODULES = ['web', 'backend_core', 'backend_users']
 DB_MODULE = "db"
 CONFIG_PATHS = ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]
 
