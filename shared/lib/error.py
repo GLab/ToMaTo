@@ -74,9 +74,9 @@ class Error(Exception):
 		else:
 			self.onscreenmessage = onscreenmessage
 		if todump is not None:
-			self.todump = todump or self.module != MODULE
+			self.todump = todump  # will be set to False by dump.py after dumping
 		else:
-			self.todump = not isinstance(self, UserError) and self.module == MODULE or self.module != MODULE
+			self.todump = not isinstance(self, UserError) or self.module != MODULE
 		if frame_trace is None:  # this must be last because it may call repr(self)
 			if frame is None:
 				self.frame_trace = generate_inspect_trace(inspect.currentframe())
@@ -136,8 +136,9 @@ class Error(Exception):
 	@classmethod
 	def check(cls, condition, code, message, todump=None, *args, **kwargs):
 		if condition: return
-		exception = cls(code=code, message=message, todump=todump, frame=inspect.currentframe(), trace=traceback.extract_stack(), *args, **kwargs)
-		#exception.dump()
+		exception = cls(code=code, message=message, todump=todump,
+										frame=inspect.currentframe(), trace=traceback.extract_stack(), *args, **kwargs)
+		exception.dump()
 		raise exception
 
 	@classmethod
