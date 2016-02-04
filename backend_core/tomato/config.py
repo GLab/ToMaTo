@@ -18,6 +18,7 @@
 import os
 
 CERTIFICATE = "/etc/tomato/backend_core.pem"
+SSL_CA = "/etc/tomato/ca.pem"
 EXTERNAL_URLS = {
 				'aup':  "http://tomato-lab.org/aup",
 				'help': "http://github.com/GLab/ToMaTo/wiki",
@@ -127,6 +128,9 @@ PUBLIC_ADDRESS = _socket.getsockname()[0]
 _socket.close()
 
 socket.setdefaulttimeout(1800)
+
+backend_users_address = "sslrpc2://sslrpc:8003"
+
 
 # E-Mail sent to new users after registering
 NEW_USER_WELCOME_MESSAGE = {
