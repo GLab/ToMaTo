@@ -1,5 +1,5 @@
 from .lib import dump as dump_lib
-import misc, traceback, sys
+from .lib.versioninfo import getVersionStr
 
 envCmds = { 
 }
@@ -21,4 +21,4 @@ def get(dump_id, include_data=False, compress_data=False, dump_on_error=False):
 
 
 def init():
-    dump_lib.init(envCmds,"Backend",misc.getVersion())
+    dump_lib.init(envCmds, "backend_core", getVersionStr())

@@ -16,9 +16,10 @@
     "Directiories in the 'directories' dicts can either be absolute, or relative to docker_dir"
   ],
   "db": {
+        "enabled": false,
 		"docker_container": "mongodb",
 		"image": "mongo:latest",
-        "port": 27017,
+        "ports": 27017,
 		"additional_args": ["--dns", "8.8.8.8"],
 		"directories": {
 			"data": "/path/on/host/to/data",
@@ -29,6 +30,7 @@
         ]
   },
   "backend_core": {
+        "enabled": true,
 		"docker_container": "tomato_backend_core",
 		"image": "tomato_backend_core",
 		"ports": [8000, 8001, 8002, 8006],
@@ -37,6 +39,7 @@
 		"additional_directories": [
           ["/path/on/host", "/path/on/container"]
 		],
+		'code_directories': ['backend_core', 'shared'],
 		"directories": {
 			"data": "/path/on/host/to/data",
 			"config": "/path/on/host/to/config",
@@ -47,7 +50,7 @@
   "web": {
 		"docker_container": "tomato_web",
 		"image": "tomato_web",
-		"port": 8000,
+		"ports": [(8080, 80)],
         "timezone": "Europe/Berlin",
 		"additional_args": ["--dns", "8.8.8.8"],
 		"additional_directories": [
@@ -56,9 +59,12 @@
 		"directories": {
 			"config": "/path/on/host/to/config"
 		},
+        'code_directories': ['web', 'shared'],
+        'shell_cmd': "/bin/bash",
         "version": "3.6"
   },
   "docker_dir": "/home/user/work/ToMaTo/docker/run",
   "tomato_dir": "/home/user/work/ToMaTo",
-  "docker_network_interface": "docker0"
+  "docker_network_interface": "docker0",
+  "docker_conainer_namespace": 'tomato'
 }
