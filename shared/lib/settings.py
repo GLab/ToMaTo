@@ -308,6 +308,10 @@ class SettingsProvider:
 
 		self.secret_key = os.getenv('SECRET_KEY', str(random.random()))
 
+	def get_account_info_update_interval(self):
+		InternalError.check('account-info-update-interval' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="account-info-update-interval configuration missing")
+		return self.original_settings[self.tomato_module]['account-info-update-interval']
+
 	def get_secret_key(self):
 		"""
 		get the secret key for signing things

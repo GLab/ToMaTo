@@ -278,7 +278,7 @@ class UserObj:
 		self.updateData(api)
 
 	def checkUpdate(self, api):
-		if time.time() - self.data_time > account_info_update_time:
+		if time.time() - self.data_time > settings.get_account_info_update_interval():
 			self.updateData(api)
 
 	def updateData(self, api):
