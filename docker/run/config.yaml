@@ -64,7 +64,7 @@
 
 services:
   backend_api:  # currently, this points to backend_core
-    host: twentythree
+    host: dockerhost
     interfaces:
       - port: 8000
         ssl: false
@@ -73,15 +73,15 @@ services:
         ssl: true
         protocol: ??
   backend_core:
-    host: twentythree
+    host: dockerhost
     port: 8000
     protocol: ??
   backend_users:
-    host: twentythree
+    host: dockerhost
     port: 8002
     protocol: sslrpc2
   web:
-    host: twentythree
+    host: dockerhost
     port: 8080
     protocol: http
 
