@@ -1,6 +1,6 @@
 __author__ = 't-gerhard'
 
-import yaml, os
+import yaml, os, random
 from error import InternalError
 
 default_settings = yaml.load("""
@@ -238,6 +238,10 @@ dumpmanager:
 """)
 
 settings = None
+"""
+contains current settings
+:type: SettingsProvider
+"""
 
 def init(filename, tomato_module):
 	global settings
@@ -258,7 +262,13 @@ class Config:
 	WEB_RESOURCE_TUTORIAL_LIST = "tutorial-list"
 	WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST = "default-executable-archive-list"
 
-
+	EXTERNAL_URL_AUP = "aup"
+	EXTERNAL_URL_HELP = "help"
+	EXTERNAL_URL_IMPRESSUM = "impressum"
+	EXTERNAL_URL_PROJECT = "project"
+	EXTERNAL_URL_JSON_FEED = "json-feed"
+	EXTERNAL_URL_RSS_FEED = "rss-feed"
+	EXTERNAL_URL_BUGTRACKER = "bugtracker"
 
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
@@ -270,12 +280,22 @@ class SettingsProvider:
 		:return: None
 		"""
 		self.tomato_module = tomato_module
+
 		InternalError.check(os.path.exists(filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': filename})
 		with open(filename, "r") as f:
 			print "reading settings file '%s'." % filename
 			self.original_settings = yaml.load(f.read())
-			print "done reading settings file."
 		self._check_settings()
+
+		self.secret_key = os.getenv('SECRET_KEY', str(random.random()))
+
+	def get_secret_key(self):
+		"""
+		get the secret key for signing things
+		:return: the secret key
+		:rtype: str
+		"""
+		return self.secret_key
 
 	def get_tomato_module_name(self):
 		"""
@@ -430,8 +450,28 @@ class SettingsProvider:
 		}
 
 	def get_external_url(self, external_url):
+		"""
+		get the url for the given external link.
+		:param external_url: link name (Config.EXTERNAL_URL_*)
+		:return: the url
+		:rtype: str
+		"""
 		InternalError.check(external_url in self.original_settings['external-urls'], code=InternalError.INVALID_PARAMETER, message="External URL does not exist", data={"external-url": external_url})
 		return self.original_settings['external-urls']
+
+	def get_interface(self, target_module, ssl, protocol):
+		"""
+		get an interface matching ssl and protocol
+		:param str target_module: module for which to get the interface
+		:param bool ssl: whether the interface should support ssl
+		:param str protocol: protocol the interface should use
+		:return: a matching element of self.get_interfaces(target_module). If none is available, returns None.
+		:rtype: NoneType | dict
+		"""
+		interfaces = filter(lambda x: (x.get('ssl', True) == ssl) and x['protocol'] == protocol,self.get_interfaces(target_module))
+		if not interfaces:
+			return
+		return interfaces[0]
 
 	def get_interfaces(self, target_module):
 		"""
