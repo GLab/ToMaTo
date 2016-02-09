@@ -4,14 +4,14 @@ services:
     interfaces:
       - port: 8000
         ssl: false
-        protocol: ??
+        protocol: http
       - port: 8001
         ssl: true
-        protocol: ??
+        protocol: https
   backend_core:
     host: dockerhost
     port: 8000
-    protocol: ??
+    protocol: http
   backend_users:
     host: dockerhost
     port: 8002

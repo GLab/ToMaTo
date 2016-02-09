@@ -77,7 +77,7 @@ services:
         protocol: http
       - port: 8001
         ssl: true
-        protocol: http
+        protocol: https
   backend_core:
     host: dockerhost
     port: 8000
