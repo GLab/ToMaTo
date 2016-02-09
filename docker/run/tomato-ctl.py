@@ -346,6 +346,7 @@ def generate_default_config():
 		'docker_container_namespace': 'tomato'
 		# 'docker_dir'  (will be generated if not found in config)
 		# 'tomato_dir'  (will be generated if not found in config)
+		# 'config.yaml_path'   (will be generated if not found in config)
 	}
 
 def read_config():
@@ -388,6 +389,9 @@ def read_config():
 		config['tomato_dir'] = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 	if 'docker_dir' not in config:
 		config['docker_dir'] = os.path.join(config['tomato_dir'], "docker", "run")
+	if 'config.yaml_path' not in config:
+		print "warning: config.yaml_path not set. Using default."
+		config['config.yaml_path'] = os.path.join(config['docker_dir'], 'config.yaml')
 	print ""
 
 	for module in TOMATO_MODULES+[DB_MODULE]:
@@ -431,6 +435,7 @@ class Module:
 		tomato_version = module_config['version']
 		additional_args = module_config['additional_args']
 		self.image = module_config['image']
+		config_yaml_path = config['config.yaml_path']
 
 		code_directories = []
 		if 'code_directories' in module_config:
@@ -455,6 +460,7 @@ class Module:
 		self.start_args = flat_list([
 			flat_list([["-v", "%s/%s:/code/%s" % (tomato_dir, host_dir, container_dir)] for container_dir, host_dir in code_directories]),
 			flat_list([["-v", "%s:%s" % c] for c in additional_directories]),
+			["-v", "%s:/etc/tomato/config.yaml" % config_yaml_path],
 			["--add-host=%s:%s" % (host_name, host_ip)],
 			(["--link", "%s:db" % db_container] if not self.is_db else []),
 			flat_list([["-p", "%s:%s" % p] for p in ports]),
