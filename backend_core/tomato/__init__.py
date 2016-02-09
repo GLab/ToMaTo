@@ -16,8 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, sys, signal, time, thread
+from lib import settings
 
-os.environ['TOMATO_MODULE'] = "backend_core"
+tomato_module = settings.Config.TOMATO_MODULE_BACKEND_CORE
+settings.init('/etc/tomato/config.yaml', tomato_module)
+os.environ['TOMATO_MODULE'] = tomato_module
 
 import monkey
 monkey.patch_all()

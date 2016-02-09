@@ -1,1 +1,1 @@
-__author__ = 't-gerhard'
+../../../shared/lib/settings.py
