@@ -27,8 +27,12 @@ Entries should be sorted by component and status with important entries and entr
 ### UNRELEASED (NOT RUNNING ON SERVERS)
 - [backend_users] Created new user management service
 - [backend_core, backend_users, web] Complete rewrite of tomato-ctl.py
+- [backend_core, backend_users, web] New mandatory central config file and config parser.
 - [backend, backend_core, changed] Renamed backend to backend_core
 - [backend_core, hostmanager, changed] Checking whether selected templates exist on hosts and selecting hosts accordingly
 - [backend, web, changed] Changed docker mount points of tomato code
 - [backend_core, changed] Backend_core no longer uses two separate ssl keys
 - [web, fixed] Fixed problem with default executable archives
+
+### PLANNED UNTIL RELEASE
+- [backend_core, backend_users, web] Old config files will not work anymore.
