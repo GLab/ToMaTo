@@ -1,9 +1,5 @@
 __author__ = 't-gerhard'
 
-import yaml, os, random
-from error import InternalError
-
-default_settings = yaml.load("""
 # ignored from backend config:
 #
 #  AUTH = []
@@ -68,6 +64,10 @@ default_settings = yaml.load("""
 #  ( reading of config files)
 #
 
+import yaml, os, random
+from error import InternalError
+
+default_settings = yaml.load("""
 services:
   backend_api:  # currently, this points to backend_core
     host: dockerhost
