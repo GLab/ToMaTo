@@ -380,11 +380,11 @@ class APIDumpSource(DumpSource):
 
 
 local_dumpsource = LocalDumpSource()
-backend_users_dumpsource = APIDumpSource("backend_users", service.createProxy(backend_users_address, sslcert, sslca))
+api_dumpsources = []
 
 
 def getDumpSources(include_disabled=False):
-	sources = [local_dumpsource, backend_users_dumpsource]
+	sources = [local_dumpsource] + api_dumpsources
 	hosts = host.Host.getAll()
 	for h in hosts:
 		if include_disabled or h.enabled:
@@ -476,6 +476,7 @@ def scheduleUpdates():
 
 def init():
 	scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, scheduleUpdates, immediate=True)
+	api_dumpsources.append(APIDumpSource("backend_users", service.createProxy(backend_users_address, sslcert, sslca)))
 
 
 # Second Part: Access to known dumps for API

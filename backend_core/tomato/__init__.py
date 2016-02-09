@@ -16,16 +16,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, sys, signal, time, thread
+
+import monkey
+monkey.patch_all()
+
+import config
 from lib import settings
 
 tomato_module = settings.Config.TOMATO_MODULE_BACKEND_CORE
 settings.init('/etc/tomato/config.yaml', tomato_module)
 os.environ['TOMATO_MODULE'] = tomato_module
 
-import monkey
-monkey.patch_all()
-
-import config
 from mongoengine import connect
 database_connnection = connect(config.DATABASE, host=config.DATABASE_HOST)
 database_obj = getattr(database_connnection, config.DATABASE)
