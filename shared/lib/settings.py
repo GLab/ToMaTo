@@ -70,24 +70,24 @@ default_settings = yaml.load("""
 
 services:
   backend_api:  # currently, this points to backend_core
-    host: twentythree
+    host: dockerhost
     interfaces:
       - port: 8000
         ssl: false
-        protocol: ??
+        protocol: http
       - port: 8001
         ssl: true
-        protocol: ??
+        protocol: http
   backend_core:
-    host: twentythree
+    host: dockerhost
     port: 8000
-    protocol: ??
+    protocol: http
   backend_users:
-    host: twentythree
+    host: dockerhost
     port: 8002
     protocol: sslrpc2
   web:
-    host: twentythree
+    host: dockerhost
     port: 8080
     protocol: http
 
@@ -244,8 +244,27 @@ contains current settings
 """
 
 def init(filename, tomato_module):
+	"""
+	initialize settings variable
+	:param filename: settings file
+	:param tomato_module: current tomato module
+	:return:
+	"""
 	global settings
 	settings = SettingsProvider(filename, tomato_module)
+
+def get_settings(config_module):
+	"""
+	init settings if not done before
+	return reference to settings
+	:param config_module: module that has the values 'CONFIG_YAML_PATH' and 'TOMATO_MODULE'
+	:return: reference to settings
+	:rtype: SettingsProvider
+	"""
+	global settings
+	if settings is None:
+		init(config_module.CONFIG_YAML_PATH, config_module.TOMATO_MODULE)
+	return settings
 
 class Config:
 	TOMATO_MODULE_WEB = "web"
@@ -470,7 +489,7 @@ class SettingsProvider:
 		"""
 		interfaces = filter(lambda x: (x.get('ssl', True) == ssl) and x['protocol'] == protocol,self.get_interfaces(target_module))
 		if not interfaces:
-			return
+			return None
 		return interfaces[0]
 
 	def get_interfaces(self, target_module):
@@ -490,6 +509,7 @@ class SettingsProvider:
 					'protocol': interface['protocol'],
 					'ssl': interface['ssl']
 				})
+			return res
 		else:
 			return [{
 				'host': conf['host'],
@@ -723,7 +743,7 @@ class SettingsProvider:
 									print " using default port."
 									this_module_setting[sec][k]['port'] = v['port']
 
-		InternalError.check(not error_found, code=InternalError.CONFIGURATION_ERROR, message="fatal configuration error", todump=False)
+		InternalError.check(not error_found, code=InternalError.CONFIGURATION_ERROR, message="fatal configuration error", todump=False, data={'bad_paths': bad_paths})
 
 
 

@@ -18,16 +18,18 @@
 
 from django.http import HttpResponse
 import xmlrpclib, urllib, hashlib, time
-from . import anyjson as json
+import anyjson as json
 import os
-from .. import settings
 from .error import Error  # @UnresolvedImport
 from .handleerror import renderError, ajaxError, renderFault, ajaxFault
 from thread import start_new_thread
 from versioninfo import getVersionStr
 from .cmd import runUnchecked
 
-from ..settings import duration_log_location, enable_duration_log, duration_log_size, account_info_update_time
+from settings import get_settings, Config
+from .. import settings as config_module
+settings = get_settings(config_module)
+
 
 
 def getauth(request):
@@ -69,7 +71,8 @@ class AuthError(Exception):
 	pass
 
 class APIDurationLog:
-	entry_count = duration_log_size
+	duration_log_config = settings.get_duration_log_settings()
+	entry_count = duration_log_config['size']
 	def __init__(self, enabled=True, filename=None):
 		self.enabled = enabled
 		self.filename = filename
@@ -126,7 +129,8 @@ class APIDurationLog:
 
 
 def api_duration_log():
-	return APIDurationLog(enable_duration_log, duration_log_location)
+	duration_log_config = settings.get_duration_log_settings()
+	return APIDurationLog(duration_log_config['enabled'], duration_log_config['location'])
 
 def log_api_duration(name, duration, args, kwargs):
 	api_duration_log().log_call(name, duration, args, kwargs)
@@ -144,7 +148,7 @@ class ServerProxy(object):
 				before = time.time()
 				res = call_proxy(args, kwargs)
 				after = time.time()
-				if enable_duration_log:
+				if settings.get_duration_log_settings()['enabled']:
 					start_new_thread(
 						log_api_duration,
 						(),
@@ -168,19 +172,22 @@ def getapi(request=None):
 		(username, password) = auth
 		username = urllib.quote_plus(username)
 		password = urllib.quote_plus(password)
+	server_settings = settings.get_interface(Config.TOMATO_MODULE_BACKEND_API, True, 'https')
+	if server_settings is None:
+		server_settings = settings.get_interface(Config.TOMATO_MODULE_BACKEND_API, False, 'http')
 	try:
 		if auth:
 			api = ServerProxy('%s://%s:%s@%s:%s' % (
-			settings.server_protocol, username, password, settings.server_host, settings.server_port), allow_none=True)
+			server_settings['protocol'], username, password, server_settings['host'], server_settings['port']), allow_none=True)
 			api.user = UserObj(api)
 		else:
-			api = ServerProxy('%s://%s:%s' % (settings.server_protocol, settings.server_host, settings.server_port),
+			api = ServerProxy('%s://%s:%s' % (server_settings['protocol'], server_settings['host'], server_settings['port']),
 				allow_none=True)
 			api.user = None
 	except:
 		import traceback
 		traceback.print_exc()
-		api = ServerProxy('%s://%s:%s' % (settings.server_protocol, settings.server_host, settings.server_port),
+		api = ServerProxy('%s://%s:%s' % (server_settings['protocol'], server_settings['host'], server_settings['port']),
 			allow_none=True)
 		api.user = None
 	if request:
@@ -263,7 +270,7 @@ def getVersion():
 
 
 def security_token(data, session=""):
-	return hashlib.md5("%s|%s|%s" % (data, session, settings.SECRET_KEY)).hexdigest()
+	return hashlib.md5("%s|%s|%s" % (data, session, settings.get_secret_key())).hexdigest()
 
 
 class UserObj:

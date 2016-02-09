@@ -3,9 +3,9 @@
 
 import os
 from django import VERSION as DJANGO_VERSION
-from lib import settings
 
-settings.init('/etc/tomato/config.yaml', settings.Config.TOMATO_MODULE_WEB)
+CONFIG_YAML_PATH = "/etc/tomato/config.yaml"
+TOMATO_MODULE = "web"
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
