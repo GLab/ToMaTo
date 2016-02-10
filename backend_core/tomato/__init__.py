@@ -80,7 +80,7 @@ def handleError():
 	dump.dumpException()
 
 from lib import tasks #@UnresolvedImport
-scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=config.MAX_WORKERS)
+scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=settings.settings.get_tasks_settings()[settings.Config.TASKS_MAX_WORKERS])
 
 starttime = time.time()
 

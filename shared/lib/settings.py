@@ -14,12 +14,6 @@ __author__ = 't-gerhard'
 #  }
 #})
 #
-#
-#
-#
-#
-#  ERROR_NOTIFY = []
-#  MAX_REQUESTS = 50
 #  MAX_WORKERS = 25
 #
 #
@@ -134,6 +128,8 @@ backend_core:
     resource-sync-interval: 600
     component-timeout: 31104000  # 12 months
     availability-factor: 0.9999946516564278  # (1/2) ^ (update_interval / availability_halftime)
+  tasks:
+    max-workers: 25
 
 backend_users:
   paths:
@@ -151,6 +147,8 @@ backend_users:
     server:
       host: localhost
       port: 27017
+  tasks:
+    max-workers: 25
 
 web:
   paths:
@@ -311,6 +309,8 @@ class Config:
 	DUMPS_DIRECTORY = "directory"
 	DUMPS_LIFETIME = "lifetime"
 
+	TASKS_MAX_WORKERS = 'max-workers'
+
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
 		"""
@@ -334,7 +334,22 @@ class SettingsProvider:
 
 		self.secret_key = os.getenv('SECRET_KEY', str(random.random()))
 
+
+	def get_tasks_settings(self):
+		"""
+		get the tasks settings of the current module
+		:return: dict containing Config.TASKS_MAX_WORKERS
+		:rtype: int
+		"""
+		InternalError.check('tasks' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="tasks configuration missing")
+		return self.original_settings[self.tomato_module]['tasks']
+
 	def get_account_info_update_interval(self):
+		"""
+		get the interval in which to update user account info
+		:return: interval in seconds
+		:rtype: int
+		"""
 		InternalError.check('account-info-update-interval' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="account-info-update-interval configuration missing")
 		return self.original_settings[self.tomato_module]['account-info-update-interval']
 
