@@ -6,6 +6,8 @@ from . import anyjson as json
 
 def dumpError(*args):
 	print "Warning: dump.py is not used."
+	print args
+	print args[0].trace
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
