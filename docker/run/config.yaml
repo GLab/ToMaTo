@@ -63,6 +63,7 @@ backend_core:
     availability-halftime: 7776000  # 90 days
     resource-sync-interval: 600
     component-timeout: 31104000  # 12 months
+    availability-factor: 0.9999946516564278  # (1/2) ^ (update_interval / availability_halftime)
 
 backend_users:
   paths:
