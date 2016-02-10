@@ -17,7 +17,7 @@
 
 from ..db import *
 from ..generic import *
-from .. import config, currentUser, starttime, scheduler  #  config needed for host availability factor
+from .. import currentUser, starttime, scheduler
 from ..accounting import UsageStatistics
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
@@ -180,7 +180,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		self.save()
 
 	def update(self):
-		self.availability *= config.HOST_AVAILABILITY_FACTOR
+		self.availability *= settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
 		self.save()
 		if not self.enabled:
 			return
@@ -199,7 +199,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		self.connectionTypes = caps["connections"]
 		self.componentErrors = max(0, self.componentErrors / 2)
 		if not self.problems():
-			self.availability += 1.0 - config.HOST_AVAILABILITY_FACTOR
+			self.availability += 1.0 - settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
 		self.save()
 		logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)
 		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)

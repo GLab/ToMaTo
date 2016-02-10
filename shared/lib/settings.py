@@ -133,6 +133,7 @@ backend_core:
     availability-halftime: 7776000  # 90 days
     resource-sync-interval: 600
     component-timeout: 31104000  # 12 months
+    availability-factor: 0.9999946516564278  # (1/2) ^ (update_interval / availability_halftime)
 
 backend_users:
   paths:
@@ -303,8 +304,12 @@ class Config:
 	HOST_AVAILABILITY_HALFTIME = 'availability-halftime'
 	HOST_RESOURCE_SYNC_INTERVAL = 'resource-sync-interval'
 	HOST_COMPONENT_TIMEOUT = 'component-timeout'
+	HOST_AVAILABILITY_FACTOR = 'availability-factor'
 
-	DUMP_COLLECTION_INTERVAL = "collection-interval"
+	DUMPMANAGER_COLLECTION_INTERVAL = "collection-interval"
+	DUMPS_ENABLED = "enabled"
+	DUMPS_DIRECTORY = "directory"
+	DUMPS_LIFETIME = "lifetime"
 
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
@@ -473,6 +478,13 @@ class SettingsProvider:
 		:rtype: dict
 		"""
 		return {k: v for k, v in self.original_settings['topologies'].iteritems()}
+
+	def get_dump_config(self):
+		"""
+		get the dump config
+		:return: dict containing 'enabled', 'directory', 'lifetime'
+		"""
+		return {k: v for k, v in self.original_settings['dumps']}
 
 	def get_dumpmanager_config(self):
 		"""
