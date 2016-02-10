@@ -265,7 +265,7 @@ def get_recent_dumps():
 	return len(getAll(max(boot_time, time.time()-6*60*60), True))
 
 #initialize dump management on server startup.
-def init(env_cmds, tomatoComponent, tomatoVersion):
+def init(env_cmds, tomatoVersion):
 	with dumps_lock:
 		global envCmds
 		global dumps
@@ -273,7 +273,7 @@ def init(env_cmds, tomatoComponent, tomatoVersion):
 		global tomato_version
 		global boot_time
 		envCmds = env_cmds
-		tomato_component = tomatoComponent
+		tomato_component = settings.get_tomato_module_name()
 		tomato_version = tomatoVersion
 		boot_time = time.time()
 
