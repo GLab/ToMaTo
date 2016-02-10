@@ -17,7 +17,6 @@
 
 from . import run, spawn, CommandError, process
 from .. import util
-from ... import config
 import os
 
 _clientPid = None

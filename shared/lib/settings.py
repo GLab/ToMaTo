@@ -299,6 +299,11 @@ class Config:
 	TOPOLOGY_TIMEOUT_REMOVE = 'timeout-remove'
 	TOPOLOGY_TIMEOUT_OPTIONS = 'timeout-options'
 
+	HOST_UPDATE_INTERVAL = 'update-interval'
+	HOST_AVAILABILITY_HALFTIME = 'availability-halftime'
+	HOST_RESOURCE_SYNC_INTERVAL = 'resource-sync-interval'
+	HOST_COMPONENT_TIMEOUT = 'component-timeout'
+
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
 		"""
