@@ -2,8 +2,10 @@ import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip, ins
 
 from . import anyjson as json
 from .cmd import run, CommandError  # @UnresolvedImport
-from .. import config, scheduler
+from .. import scheduler
 from .error import InternalError, generate_inspect_trace
+
+from settings import settings, Config
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
@@ -66,7 +68,7 @@ def get_absolute_path(dump_id, is_meta, dump_file_version=1):
 			filename = dump_id + ".data.json"
 		elif dump_file_version == 1:
 			filename = dump_id + ".data.gz"
-	return os.path.join(config.DUMP_DIR, filename)
+	return os.path.join(settings.get_dump_config()[Config.DUMPS_DIRECTORY], filename)
 
 
 #get a free dump ID
@@ -231,7 +233,7 @@ def remove_all_where(before=None, group_id=None):
 
 #this will be done daily.
 def auto_cleanup():
-	before = time.time() - config.DUMP_LIFETIME
+	before = time.time() - settings.get_dump_config()[Config.DUMPS_LIFETIME]
 	remove_all_where(before=before)
 
 
@@ -275,10 +277,11 @@ def init(env_cmds, tomatoComponent, tomatoVersion):
 		tomato_version = tomatoVersion
 		boot_time = time.time()
 
-		if not os.path.exists(config.DUMP_DIR):
-			os.mkdir(config.DUMP_DIR)
+		dump_dir = settings.get_dump_config()[Config.DUMPS_DIRECTORY]
+		if not os.path.exists(dump_dir):
+			os.mkdir(dump_dir)
 		else:
-			dump_file_list = os.listdir(config.DUMP_DIR)
+			dump_file_list = os.listdir(dump_dir)
 			for d in dump_file_list:
 				if d.endswith('.meta.json'):
 					dump_id = re.sub('\.meta\.json', '', d)
