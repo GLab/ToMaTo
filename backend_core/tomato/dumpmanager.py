@@ -10,7 +10,6 @@ from .lib.error import InternalError, UserError, Error, TransportError  # @Unres
 from .lib.rpc.sslrpc import RPCError
 from .lib import util
 
-from config import backend_users_address, CERTIFICATE as sslcert, SSL_CA as sslca
 from lib.settings import settings, Config
 
 from auth import User
