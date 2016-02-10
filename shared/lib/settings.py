@@ -299,10 +299,14 @@ class SettingsProvider:
 		:return: None
 		"""
 		self.tomato_module = tomato_module
+		self.filename = filename
 
-		InternalError.check(os.path.exists(filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': filename})
-		with open(filename, "r") as f:
-			print "reading settings file '%s'." % filename
+		self.reload()
+
+	def reload(self):
+		InternalError.check(os.path.exists(self.filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': filename})
+		with open(self.filename, "r") as f:
+			print "reading settings file '%s'." % self.filename
 			self.original_settings = yaml.load(f.read())
 		self._check_settings()
 
