@@ -304,7 +304,7 @@ class SettingsProvider:
 		self.reload()
 
 	def reload(self):
-		InternalError.check(os.path.exists(self.filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': filename})
+		InternalError.check(os.path.exists(self.filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': self.filename})
 		with open(self.filename, "r") as f:
 			print "reading settings file '%s'." % self.filename
 			self.original_settings = yaml.load(f.read())

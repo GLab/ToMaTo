@@ -88,7 +88,7 @@ from . import host, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import util, cache #@UnresolvedImport
 
-scheduler.scheduleRepeated(settings.get_bittorrent_settings()['bittorrent-restart'], util.wrap_task(bittorrent.restartClient))
+scheduler.scheduleRepeated(settings.settings.get_bittorrent_settings()['bittorrent-restart'], util.wrap_task(bittorrent.restartClient))
 
 stopped = threading.Event()
 
@@ -97,15 +97,15 @@ import dumpmanager
 import models
 
 def start():
-	logging.openDefault(settings.get_log_filename())
+	logging.openDefault(settings.settings.get_log_filename())
 	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
 		db_migrate()
 	else:
 		print >>sys.stderr, "Skipping migrations"
 	auth.init()
 	global starttime
-	bittorrent.startTracker(settings.get_bittorrent_settings()['tracker-port'], settings.get_template_dir())
-	bittorrent.startClient(settings.get_template_dir())
+	bittorrent.startTracker(settings.settings.get_bittorrent_settings()['tracker-port'], settings.settings.get_template_dir())
+	bittorrent.startClient(settings.settings.get_template_dir())
 	rpcserver.start()
 	starttime = time.time()
 	if not os.environ.has_key("TOMATO_NO_TASKS"):
@@ -119,9 +119,9 @@ def start():
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
 	logging.closeDefault()
-	settings.reload()
+	settings.settings.reload()
 	# fixme: all cached methods should be invalidated here
-	logging.openDefault(settings.get_log_filename())
+	logging.openDefault(settings.settings.get_log_filename())
 	#stopRPCserver()
 	#startRPCserver()
 
