@@ -26,10 +26,9 @@ def server_info():
 	"""
 	return {
 		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
-		'external_urls': misc.getExternalURLs(),
 		'public_key': misc.getPublicKey(),
 		'version': getVersionStr(),
-		'api_version': [4, 0, 0],
+		'api_version': [4, 0, 1],
 		'topology_timeout': {
 			'initial': config.TOPOLOGY_TIMEOUT_INITIAL,
 			'maximum': config.TOPOLOGY_TIMEOUT_MAX,

@@ -480,7 +480,7 @@ class SettingsProvider:
 		:rtype: str
 		"""
 		InternalError.check(external_url in self.original_settings['external-urls'], code=InternalError.INVALID_PARAMETER, message="External URL does not exist", data={"external-url": external_url})
-		return self.original_settings['external-urls']
+		return self.original_settings['external-urls'][external_url]
 
 	def get_interface(self, target_module, ssl, protocol):
 		"""

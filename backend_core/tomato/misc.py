@@ -28,8 +28,5 @@ def getPublicKey():
 				lines.append(line)
 	return "".join(lines)
 
-def getExternalURLs():
-	return config.EXTERNAL_URLS
-
 
 	

@@ -23,7 +23,10 @@ def jsonify(o, pretty=False):
 @register.simple_tag
 @register.filter
 def externalurl(name):
-	return serverInfo()['external_urls'].get(name, "")
+	try:
+		return settings.get_external_url(name)
+	except:
+		return ""
 
 @register.filter
 def tech_to_label(value):
