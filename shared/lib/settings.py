@@ -726,7 +726,7 @@ class SettingsProvider:
 			else:
 				if isinstance(default_sec_val, dict):
 					for k, v in default_sec_val.iteritems():
-						if not this_module_setting[sec].get(k, None):
+						if this_module_setting[sec].get(k, None) is None:
 							print "Configuration ERROR at /%s/%s/%s: is missing." % (self.tomato_module, sec, k)
 							if (sec == "database" and k == "server") or (sec in ('paths', 'ssl')) or (sec == 'duration-log' and k == 'location'):
 								print " this is fatal."
