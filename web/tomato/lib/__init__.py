@@ -172,7 +172,7 @@ def getapi(request=None):
 		(username, password) = auth
 		username = urllib.quote_plus(username)
 		password = urllib.quote_plus(password)
-	server_settings = settings.get_interface(Config.TOMATO_MODULE_BACKEND_API, True, 'https')
+	server_settings = settings.get_interface(Config.TOMATO_MODULE_BACKEND_API, False, 'http')  # fixme: use https, and ssl
 	if server_settings is None:
 		server_settings = settings.get_interface(Config.TOMATO_MODULE_BACKEND_API, False, 'http')
 	try:
