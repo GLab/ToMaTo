@@ -484,7 +484,7 @@ class SettingsProvider:
 		get the dump config
 		:return: dict containing 'enabled', 'directory', 'lifetime'
 		"""
-		return {k: v for k, v in self.original_settings['dumps']}
+		return {k: v for k, v in self.original_settings[self.tomato_module]['dumps'].iteritems()}
 
 	def get_dumpmanager_config(self):
 		"""
