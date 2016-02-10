@@ -143,7 +143,7 @@ backend_users:
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_users.pem
-    key:  /etc/tomato/backend_core.pem
+    key:  /etc/tomato/backend_users.pem
     ca:  /etc/tomato/ca.pem
   database:
     db-name: tomato
@@ -155,9 +155,9 @@ web:
   paths:
     log:  /var/log/tomato/main.log
   ssl:
-    cert:  /etc/tomato/backend_users.pem
+    cert:  /etc/tomato/web.pem
+    key:  /etc/tomato/web.pem
     ca:  /etc/tomato/ca.pem
-    key:  /etc/tomato/backend_core.pem
   duration-log:
 
     # this logs the duration of all API calls.
@@ -291,6 +291,13 @@ class Config:
 	EXTERNAL_URL_JSON_FEED = "json-feed"
 	EXTERNAL_URL_RSS_FEED = "rss-feed"
 	EXTERNAL_URL_BUGTRACKER = "bugtracker"
+
+	TOPOLOGY_TIMEOUT_INITIAL = 'timeout-initial'
+	TOPOLOGY_TIMEOUT_DEFAULT = 'timeout-default'
+	TOPOLOGY_TIMEOUT_MAX = 'timeout-max'
+	TOPOLOGY_TIMEOUT_WARNING = 'timeout-warning'
+	TOPOLOGY_TIMEOUT_REMOVE = 'timeout-remove'
+	TOPOLOGY_TIMEOUT_OPTIONS = 'timeout-options'
 
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):

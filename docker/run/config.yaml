@@ -73,7 +73,7 @@ backend_users:
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_users.pem
-    key:  /etc/tomato/backend_core.pem
+    key:  /etc/tomato/backend_users.pem
     ca:  /etc/tomato/ca.pem
   database:
     db-name: tomato
@@ -85,8 +85,8 @@ web:
   paths:
     log:  /var/log/tomato/main.log
   ssl:
-    cert:  /etc/tomato/backend_users.pem
-    key:  /etc/tomato/backend_core.pem
+    cert:  /etc/tomato/web.pem
+    key:  /etc/tomato/web.pem
     ca:  /etc/tomato/ca.pem
   duration-log:
 
