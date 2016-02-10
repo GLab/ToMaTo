@@ -243,12 +243,7 @@ from urlparse import urljoin
 
 @cached(3600)
 def getNews():
-	infs = serverInfo()["external_urls"]
-	if "json_feed" in infs:
-		url = serverInfo()["external_urls"]["json_feed"]
-	else:
-		url = serverInfo()["external_urls"]["news_feed"]
-
+	url = settings.get_external_url(Config.EXTERNAL_URL_JSON_FEED)
 	news = json.load(urllib2.urlopen(url))
 	pattern = re.compile("<[^>]+((?:src|href)=(?:[\"']([^\"']+)[\"']))[^>]*>")
 	for item in news["items"]:
