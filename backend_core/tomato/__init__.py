@@ -20,7 +20,6 @@ import os, sys, signal, time, thread
 import monkey
 monkey.patch_all()
 
-import config  # needs MAX_WORKERS
 from lib import settings
 
 tomato_module = settings.Config.TOMATO_MODULE_BACKEND_CORE

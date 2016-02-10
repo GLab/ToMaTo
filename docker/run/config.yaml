@@ -64,6 +64,8 @@ backend_core:
     resource-sync-interval: 600
     component-timeout: 31104000  # 12 months
     availability-factor: 0.9999946516564278  # (1/2) ^ (update_interval / availability_halftime)
+  tasks:
+    max-workers: 25
 
 backend_users:
   paths:
@@ -81,6 +83,8 @@ backend_users:
     server:
       host: dockerhost
       port: 27017
+  tasks:
+    max-workers: 25
 
 web:
   paths:

@@ -32,14 +32,7 @@ AUTH.append ({
 })
 
 import socket
-_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-_socket.connect(("8.8.8.8", 80))
-PUBLIC_ADDRESS = _socket.getsockname()[0]
-_socket.close()
-
 socket.setdefaulttimeout(1800)
-
-
 
 try:
 	import sys

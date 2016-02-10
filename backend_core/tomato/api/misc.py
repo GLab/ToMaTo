@@ -26,7 +26,7 @@ def server_info():
 	"""
 	topology_config = settings.get_topology_settings()
 	return {
-		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, settings.get_bittorrent_settings()['tracker-port']),
+		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port']),
 		'public_key': misc.getPublicKey(),
 		'version': getVersionStr(),
 		'api_version': [4, 0, 1],
@@ -116,7 +116,8 @@ def debug_stats():
 	stats["threads"] = map(traceback.extract_stack, sys._current_frames().values())
 	return stats
 
-from .. import misc, config, link, currentUser, topology, auth, elements, connections, scheduler  # config needed for PUBLIC_ADDRESS
+from .. import misc, link, currentUser, topology, auth, elements, connections, scheduler
 from ..lib.settings import settings, Config
 from ..host import Host
 from ..lib.error import UserError
+from ..lib import get_public_ip_address
