@@ -423,7 +423,7 @@ class SettingsProvider:
 		"""
 		get the rpc timeout
 		:return: rpc timeout
-		:rtype: int|float
+		:rtype: int or float
 		"""
 		return self.original_settings['rpc-timeout']
 
@@ -479,7 +479,7 @@ class SettingsProvider:
 		:return: the url
 		:rtype: str
 		"""
-		InternalError.check(external_url in self.original_settings['external-urls'], code=InternalError.INVALID_PARAMETER, message="External URL does not exist", data={"external-url": external_url})
+		InternalError.check(external_url in self.original_settings['external-urls'], code=InternalError.INVALID_PARAMETER, message="External URL does not exist", data={"external-url": external_url, 'existing': self.original_settings['external-urls'].keys()})
 		return self.original_settings['external-urls'][external_url]
 
 	def get_interface(self, target_module, ssl, protocol):
@@ -489,7 +489,7 @@ class SettingsProvider:
 		:param bool ssl: whether the interface should support ssl
 		:param str protocol: protocol the interface should use
 		:return: a matching element of self.get_interfaces(target_module). If none is available, returns None.
-		:rtype: NoneType | dict
+		:rtype: NoneType or dict
 		"""
 		interfaces = filter(lambda x: (x.get('ssl', True) == ssl) and x['protocol'] == protocol,self.get_interfaces(target_module))
 		if not interfaces:
