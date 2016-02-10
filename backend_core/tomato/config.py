@@ -17,21 +17,6 @@
 
 import os
 
-CERTIFICATE = "/etc/tomato/backend_core.pem"
-SSL_CA = "/etc/tomato/ca.pem"
-EXTERNAL_URLS = {
-				'aup':  "http://tomato-lab.org/aup",
-				'help': "http://github.com/GLab/ToMaTo/wiki",
-				'impressum': "http://tomato-lab.org/contact/",
-				'project': "http://tomato-lab.org",
-				'json_feed': "http://www.tomato-lab.org/feed.json",
-				'rss_feed': "http://tomato-lab.org/feed.xml",
-				'bugtracker': 'http://github.com/GLab/ToMaTo/issues'
-				}
-
-TEMPLATE_PATH = "/var/lib/tomato/templates"
-TRACKER_PORT = 8002
-BITTORRENT_RESTART = 60 * 30
 
 AUTH = []
 
@@ -46,76 +31,6 @@ AUTH.append ({
 	}
 })
 
-LOG_FILE = "/var/log/tomato/main.log"
-
-SERVER = []
-
-SERVER.append({
-	"PORT": 8000,
-	"SSL": False
-})
-
-SERVER.append({
-	"PORT": 8001,
-	"SSL": True,
-	"SSL_OPTS": {
-		"cert_file" : "/etc/tomato/backend_core.pem",
-		"key_file": "/etc/tomato/backend_core.pem",
-	}
-})
-
-
-DATABASE = 'tomato'
-DATABASE_HOST = 'localhost'
-if "DB_PORT_27017_TCP" in os.environ:
-	DATABASE_HOST = 'mongodb://%s:%s/tomato' % (os.getenv('DB_PORT_27017_TCP_ADDR'), os.getenv('DB_PORT_27017_TCP_PORT'))
-
-RPC_TIMEOUT = 60
-HOST_UPDATE_INTERVAL = 60
-HOST_AVAILABILITY_HALFTIME = 60.0 * 60 * 24 * 90 # 90 days 
-RESOURCES_SYNC_INTERVAL = 600
-
-EMAIL_SMTP = "localhost"
-EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
-EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
-EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
-
-TOPOLOGY_TIMEOUT_INITIAL = 3600.0
-TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 24 * 3
-TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 30
-TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24
-TOPOLOGY_TIMEOUT_REMOVE = 3600.0 * 24 * 90
-TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 24, 3600.0 * 24 * 3, 3600.0 * 24 * 14, 3600.0 * 24 * 30]
-
-HOST_COMPONENT_TIMEOUT = 3600.0 * 24 * 30 * 12
-
-DEFAULT_QUOTA = {
-	"cputime": 5.0 *(60*60*24*30), # 5 cores all the time
-	"memory": 10e9, # 10 Gb all the time
-	"diskspace": 100e9, # 100 Gb all the time
-	"traffic": 5.0e6 /8.0*(60*60*24*30), # 5 Mbit/s all the time
-	"continous_factor": 1.0
-}
-
-DUMP_DIR = "/var/log/tomato/dumps_backend"
-"""
-The location of the dump files that are created when unexpected errors occur.
-"""
-
-DUMP_LIFETIME = 60*60*24*7
-"""
-Time in seconds until a dump file may be deleted.
-If it has been collected by the dumpmanager until then, it will still be saved
-in the dumpmanager's database.
-dumps will only be deleted daily, and only one day after the program has started.
-"""
-
-DUMP_COLLECTION_INTERVAL = 30*60
-"""
-Interval in which the dump manager will collect error dumps from hosts and backend.
-"""
-
-ERROR_NOTIFY = []
 
 MAX_REQUESTS = 50
 
@@ -129,41 +44,13 @@ _socket.close()
 
 socket.setdefaulttimeout(1800)
 
-backend_users_address = "sslrpc2://dockerhost:8003"
 
-
-# E-Mail sent to new users after registering
-NEW_USER_WELCOME_MESSAGE = {
-'subject': "Registration at ToMaTo-Lab",
-'body': "Dear %s,\n\n\
-Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our administrators shortly. Until then, you can create a topology (but not start it).\n\
-You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.\n\n\
-Best Wishes,\nThe ToMaTo Testbed"
-}
-
-# E-Mail sent to administrators when a new user registers
-NEW_USER_ADMIN_INFORM_MESSAGE = {
-'subject': "User Registration",
-'body': "Dear ToMaTo administrator,\n\n\
-A new user, %s, has just registered at the ToMaTo testbed.\n\
-You can review all pending user registrations at https://master.tomato-lab.org/account/registrations\n\n\
-Best Wishes,\nThe ToMaTo Testbed"
-}
 
 try:
 	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
-		try:
-			execfile(path)
-			print >>sys.stderr, "Loaded config from %s" % path
-		except Exception, exc:
-			print >>sys.stderr, "Failed to load config from %s: %s" % (path, exc)
+		print >> sys.stderr, "Found old-style config at %s - This is no longer supported." % (path)
 except:
 	import traceback
 	traceback.print_exc()
 
-if not isinstance(SERVER, list):
-	SERVER = [SERVER]
-	
-import math
-HOST_AVAILABILITY_FACTOR = math.pow(0.5, HOST_UPDATE_INTERVAL/HOST_AVAILABILITY_HALFTIME)
