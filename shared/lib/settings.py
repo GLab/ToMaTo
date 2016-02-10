@@ -118,6 +118,7 @@ backend_core:
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_core.pem
+    key:  /etc/tomato/backend_core.pem
     ca:  /etc/tomato/ca.pem
   bittorrent:
     tracker-port: 8002
@@ -142,6 +143,7 @@ backend_users:
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_users.pem
+    key:  /etc/tomato/backend_core.pem
     ca:  /etc/tomato/ca.pem
   database:
     db-name: tomato
@@ -155,6 +157,7 @@ web:
   ssl:
     cert:  /etc/tomato/backend_users.pem
     ca:  /etc/tomato/ca.pem
+    key:  /etc/tomato/backend_core.pem
   duration-log:
 
     # this logs the duration of all API calls.
@@ -388,6 +391,14 @@ class SettingsProvider:
 		:rtype: str
 		"""
 		return self.original_settings[self.tomato_module]['ssl']['ca']
+
+	def get_ssl_key_filename(self):
+		"""
+		get the ssl key filename
+		:return: path to ssl ca cert
+		:rtype: str
+		"""
+		return self.original_settings[self.tomato_module]['ssl']['key']
 
 	def get_ssl_cert_filename(self):
 		"""

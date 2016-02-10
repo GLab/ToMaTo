@@ -48,6 +48,7 @@ backend_core:
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_core.pem
+    key:  /etc/tomato/backend_core.pem
     ca:  /etc/tomato/ca.pem
   bittorrent:
     tracker-port: 8002
@@ -55,7 +56,7 @@ backend_core:
   database:
     db-name: tomato
     server:
-      host: localhost
+      host: dockerhost
       port: 27017
   host-connections:
     update-interval: 60
@@ -72,11 +73,12 @@ backend_users:
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_users.pem
+    key:  /etc/tomato/backend_core.pem
     ca:  /etc/tomato/ca.pem
   database:
     db-name: tomato
     server:
-      host: localhost
+      host: dockerhost
       port: 27017
 
 web:
@@ -84,6 +86,7 @@ web:
     log:  /var/log/tomato/main.log
   ssl:
     cert:  /etc/tomato/backend_users.pem
+    key:  /etc/tomato/backend_core.pem
     ca:  /etc/tomato/ca.pem
   duration-log:
 
