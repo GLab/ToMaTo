@@ -5,7 +5,7 @@ from .lib import anyjson as json
 from lib import service
 
 import host
-from . import scheduler, config, currentUser
+from . import scheduler, currentUser
 from .lib.error import InternalError, UserError, Error, TransportError  # @UnresolvedImport
 from .lib.rpc.sslrpc import RPCError
 from .lib import util
@@ -470,7 +470,7 @@ def scheduleUpdates():
 	syncTasks = {t.args[0]: tid for tid, t in scheduler.tasks.items() if t.fn == update_source}
 	syncing = set(syncTasks.keys())
 	for s in toSync - syncing:
-		scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, update_source, s)
+		scheduler.scheduleRepeated(settings.get_dumpmanager_config()[Config.DUMP_COLLECTION_INTERVAL], update_source, s)
 	for s in syncing - toSync:
 		scheduler.cancelTask(syncTasks[s])
 
@@ -482,7 +482,7 @@ def _create_api_dumpsource_for_module(tomato_module):
 	return APIDumpSource(tomato_module, proxy)
 
 def init():
-	scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, scheduleUpdates, immediate=True)
+	scheduler.scheduleRepeated(settings.get_dumpmanager_config()[Config.DUMP_COLLECTION_INTERVAL], scheduleUpdates, immediate=True)
 	api_dumpsources.append(_create_api_dumpsource_for_module(Config.TOMATO_MODULE_BACKEND_USERS))
 
 

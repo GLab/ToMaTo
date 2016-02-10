@@ -304,6 +304,8 @@ class Config:
 	HOST_RESOURCE_SYNC_INTERVAL = 'resource-sync-interval'
 	HOST_COMPONENT_TIMEOUT = 'component-timeout'
 
+	DUMP_COLLECTION_INTERVAL = "collection-interval"
+
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
 		"""
