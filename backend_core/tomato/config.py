@@ -129,7 +129,7 @@ _socket.close()
 
 socket.setdefaulttimeout(1800)
 
-backend_users_address = "sslrpc2://sslrpc:8003"
+backend_users_address = "sslrpc2://dockerhost:8003"
 
 
 # E-Mail sent to new users after registering

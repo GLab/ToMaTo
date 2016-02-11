@@ -462,6 +462,7 @@ class Module:
 			flat_list([["-v", "%s:%s" % c] for c in additional_directories]),
 			["-v", "%s:/etc/tomato/config.yaml" % config_yaml_path],
 			["--add-host=%s:%s" % (host_name, host_ip)],
+			["--add-host=dockerhost:%s" % host_ip],
 			(["--link", "%s:db" % db_container] if not self.is_db else []),
 			flat_list([["-p", "%s:%s" % p] for p in ports]),
 			["-e", "TIMEZONE=%s" % timezone],

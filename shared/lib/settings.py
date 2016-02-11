@@ -1,9 +1,5 @@
 __author__ = 't-gerhard'
 
-import yaml, os
-from error import InternalError
-
-default_settings = yaml.load("""
 # ignored from backend config:
 #
 #  AUTH = []
@@ -68,26 +64,30 @@ default_settings = yaml.load("""
 #  ( reading of config files)
 #
 
+import yaml, os, random
+from error import InternalError
+
+default_settings = yaml.load("""
 services:
   backend_api:  # currently, this points to backend_core
-    host: twentythree
+    host: dockerhost
     interfaces:
       - port: 8000
         ssl: false
-        protocol: ??
+        protocol: http
       - port: 8001
         ssl: true
-        protocol: ??
+        protocol: https
   backend_core:
-    host: twentythree
+    host: dockerhost
     port: 8000
-    protocol: ??
+    protocol: http
   backend_users:
-    host: twentythree
+    host: dockerhost
     port: 8002
     protocol: sslrpc2
   web:
-    host: twentythree
+    host: dockerhost
     port: 8080
     protocol: http
 
@@ -238,10 +238,33 @@ dumpmanager:
 """)
 
 settings = None
+"""
+contains current settings
+:type: SettingsProvider
+"""
 
 def init(filename, tomato_module):
+	"""
+	initialize settings variable
+	:param filename: settings file
+	:param tomato_module: current tomato module
+	:return:
+	"""
 	global settings
 	settings = SettingsProvider(filename, tomato_module)
+
+def get_settings(config_module):
+	"""
+	init settings if not done before
+	return reference to settings
+	:param config_module: module that has the values 'CONFIG_YAML_PATH' and 'TOMATO_MODULE'
+	:return: reference to settings
+	:rtype: SettingsProvider
+	"""
+	global settings
+	if settings is None:
+		init(config_module.CONFIG_YAML_PATH, config_module.TOMATO_MODULE)
+	return settings
 
 class Config:
 	TOMATO_MODULE_WEB = "web"
@@ -258,7 +281,13 @@ class Config:
 	WEB_RESOURCE_TUTORIAL_LIST = "tutorial-list"
 	WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST = "default-executable-archive-list"
 
-
+	EXTERNAL_URL_AUP = "aup"
+	EXTERNAL_URL_HELP = "help"
+	EXTERNAL_URL_IMPRESSUM = "impressum"
+	EXTERNAL_URL_PROJECT = "project"
+	EXTERNAL_URL_JSON_FEED = "json-feed"
+	EXTERNAL_URL_RSS_FEED = "rss-feed"
+	EXTERNAL_URL_BUGTRACKER = "bugtracker"
 
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
@@ -270,12 +299,26 @@ class SettingsProvider:
 		:return: None
 		"""
 		self.tomato_module = tomato_module
+
 		InternalError.check(os.path.exists(filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': filename})
 		with open(filename, "r") as f:
 			print "reading settings file '%s'." % filename
 			self.original_settings = yaml.load(f.read())
-			print "done reading settings file."
 		self._check_settings()
+
+		self.secret_key = os.getenv('SECRET_KEY', str(random.random()))
+
+	def get_account_info_update_interval(self):
+		InternalError.check('account-info-update-interval' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="account-info-update-interval configuration missing")
+		return self.original_settings[self.tomato_module]['account-info-update-interval']
+
+	def get_secret_key(self):
+		"""
+		get the secret key for signing things
+		:return: the secret key
+		:rtype: str
+		"""
+		return self.secret_key
 
 	def get_tomato_module_name(self):
 		"""
@@ -430,8 +473,28 @@ class SettingsProvider:
 		}
 
 	def get_external_url(self, external_url):
+		"""
+		get the url for the given external link.
+		:param external_url: link name (Config.EXTERNAL_URL_*)
+		:return: the url
+		:rtype: str
+		"""
 		InternalError.check(external_url in self.original_settings['external-urls'], code=InternalError.INVALID_PARAMETER, message="External URL does not exist", data={"external-url": external_url})
 		return self.original_settings['external-urls']
+
+	def get_interface(self, target_module, ssl, protocol):
+		"""
+		get an interface matching ssl and protocol
+		:param str target_module: module for which to get the interface
+		:param bool ssl: whether the interface should support ssl
+		:param str protocol: protocol the interface should use
+		:return: a matching element of self.get_interfaces(target_module). If none is available, returns None.
+		:rtype: NoneType | dict
+		"""
+		interfaces = filter(lambda x: (x.get('ssl', True) == ssl) and x['protocol'] == protocol,self.get_interfaces(target_module))
+		if not interfaces:
+			return None
+		return interfaces[0]
 
 	def get_interfaces(self, target_module):
 		"""
@@ -450,6 +513,7 @@ class SettingsProvider:
 					'protocol': interface['protocol'],
 					'ssl': interface['ssl']
 				})
+			return res
 		else:
 			return [{
 				'host': conf['host'],
@@ -683,7 +747,7 @@ class SettingsProvider:
 									print " using default port."
 									this_module_setting[sec][k]['port'] = v['port']
 
-		InternalError.check(not error_found, code=InternalError.CONFIGURATION_ERROR, message="fatal configuration error", todump=False)
+		InternalError.check(not error_found, code=InternalError.CONFIGURATION_ERROR, message="fatal configuration error", todump=False, data={'bad_paths': bad_paths})
 
 
 

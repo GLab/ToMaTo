@@ -30,8 +30,6 @@ from lib import wrap_rpc, AuthError, serverInfo
 from admin_common import BootstrapForm, Buttons
 from tomato.crispy_forms.layout import Layout
 
-from settings import default_executable_archives_list_url
-
 
 class ImportTopologyForm(BootstrapForm):
 	topologyfile = forms.FileField(label="Topology File")
