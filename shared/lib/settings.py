@@ -14,12 +14,6 @@ __author__ = 't-gerhard'
 #  }
 #})
 #
-#
-#
-#
-#
-#  ERROR_NOTIFY = []
-#  MAX_REQUESTS = 50
 #  MAX_WORKERS = 25
 #
 #
@@ -118,6 +112,7 @@ backend_core:
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_core.pem
+    key:  /etc/tomato/backend_core.pem
     ca:  /etc/tomato/ca.pem
   bittorrent:
     tracker-port: 8002
@@ -132,6 +127,9 @@ backend_core:
     availability-halftime: 7776000  # 90 days
     resource-sync-interval: 600
     component-timeout: 31104000  # 12 months
+    availability-factor: 0.9999946516564278  # (1/2) ^ (update_interval / availability_halftime)
+  tasks:
+    max-workers: 25
 
 backend_users:
   paths:
@@ -142,18 +140,22 @@ backend_users:
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_users.pem
+    key:  /etc/tomato/backend_users.pem
     ca:  /etc/tomato/ca.pem
   database:
     db-name: tomato
     server:
       host: localhost
       port: 27017
+  tasks:
+    max-workers: 25
 
 web:
   paths:
     log:  /var/log/tomato/main.log
   ssl:
-    cert:  /etc/tomato/backend_users.pem
+    cert:  /etc/tomato/web.pem
+    key:  /etc/tomato/web.pem
     ca:  /etc/tomato/ca.pem
   duration-log:
 
@@ -289,6 +291,26 @@ class Config:
 	EXTERNAL_URL_RSS_FEED = "rss-feed"
 	EXTERNAL_URL_BUGTRACKER = "bugtracker"
 
+	TOPOLOGY_TIMEOUT_INITIAL = 'timeout-initial'
+	TOPOLOGY_TIMEOUT_DEFAULT = 'timeout-default'
+	TOPOLOGY_TIMEOUT_MAX = 'timeout-max'
+	TOPOLOGY_TIMEOUT_WARNING = 'timeout-warning'
+	TOPOLOGY_TIMEOUT_REMOVE = 'timeout-remove'
+	TOPOLOGY_TIMEOUT_OPTIONS = 'timeout-options'
+
+	HOST_UPDATE_INTERVAL = 'update-interval'
+	HOST_AVAILABILITY_HALFTIME = 'availability-halftime'
+	HOST_RESOURCE_SYNC_INTERVAL = 'resource-sync-interval'
+	HOST_COMPONENT_TIMEOUT = 'component-timeout'
+	HOST_AVAILABILITY_FACTOR = 'availability-factor'
+
+	DUMPMANAGER_COLLECTION_INTERVAL = "collection-interval"
+	DUMPS_ENABLED = "enabled"
+	DUMPS_DIRECTORY = "directory"
+	DUMPS_LIFETIME = "lifetime"
+
+	TASKS_MAX_WORKERS = 'max-workers'
+
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
 		"""
@@ -299,16 +321,35 @@ class SettingsProvider:
 		:return: None
 		"""
 		self.tomato_module = tomato_module
+		self.filename = filename
 
-		InternalError.check(os.path.exists(filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': filename})
-		with open(filename, "r") as f:
-			print "reading settings file '%s'." % filename
+		self.reload()
+
+	def reload(self):
+		InternalError.check(os.path.exists(self.filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': self.filename})
+		with open(self.filename, "r") as f:
+			print "reading settings file '%s'." % self.filename
 			self.original_settings = yaml.load(f.read())
 		self._check_settings()
 
 		self.secret_key = os.getenv('SECRET_KEY', str(random.random()))
 
+
+	def get_tasks_settings(self):
+		"""
+		get the tasks settings of the current module
+		:return: dict containing Config.TASKS_MAX_WORKERS
+		:rtype: int
+		"""
+		InternalError.check('tasks' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="tasks configuration missing")
+		return self.original_settings[self.tomato_module]['tasks']
+
 	def get_account_info_update_interval(self):
+		"""
+		get the interval in which to update user account info
+		:return: interval in seconds
+		:rtype: int
+		"""
 		InternalError.check('account-info-update-interval' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="account-info-update-interval configuration missing")
 		return self.original_settings[self.tomato_module]['account-info-update-interval']
 
@@ -385,6 +426,14 @@ class SettingsProvider:
 		"""
 		return self.original_settings[self.tomato_module]['ssl']['ca']
 
+	def get_ssl_key_filename(self):
+		"""
+		get the ssl key filename
+		:return: path to ssl ca cert
+		:rtype: str
+		"""
+		return self.original_settings[self.tomato_module]['ssl']['key']
+
 	def get_ssl_cert_filename(self):
 		"""
 		get the ssl cert filename
@@ -423,7 +472,7 @@ class SettingsProvider:
 		"""
 		get the rpc timeout
 		:return: rpc timeout
-		:rtype: int|float
+		:rtype: int or float
 		"""
 		return self.original_settings['rpc-timeout']
 
@@ -444,6 +493,13 @@ class SettingsProvider:
 		:rtype: dict
 		"""
 		return {k: v for k, v in self.original_settings['topologies'].iteritems()}
+
+	def get_dump_config(self):
+		"""
+		get the dump config
+		:return: dict containing 'enabled', 'directory', 'lifetime'
+		"""
+		return {k: v for k, v in self.original_settings[self.tomato_module]['dumps'].iteritems()}
 
 	def get_dumpmanager_config(self):
 		"""
@@ -479,8 +535,8 @@ class SettingsProvider:
 		:return: the url
 		:rtype: str
 		"""
-		InternalError.check(external_url in self.original_settings['external-urls'], code=InternalError.INVALID_PARAMETER, message="External URL does not exist", data={"external-url": external_url})
-		return self.original_settings['external-urls']
+		InternalError.check(external_url in self.original_settings['external-urls'], code=InternalError.INVALID_PARAMETER, message="External URL does not exist", data={"external-url": external_url, 'existing': self.original_settings['external-urls'].keys()})
+		return self.original_settings['external-urls'][external_url]
 
 	def get_interface(self, target_module, ssl, protocol):
 		"""
@@ -489,7 +545,7 @@ class SettingsProvider:
 		:param bool ssl: whether the interface should support ssl
 		:param str protocol: protocol the interface should use
 		:return: a matching element of self.get_interfaces(target_module). If none is available, returns None.
-		:rtype: NoneType | dict
+		:rtype: NoneType or dict
 		"""
 		interfaces = filter(lambda x: (x.get('ssl', True) == ssl) and x['protocol'] == protocol,self.get_interfaces(target_module))
 		if not interfaces:
@@ -726,7 +782,7 @@ class SettingsProvider:
 			else:
 				if isinstance(default_sec_val, dict):
 					for k, v in default_sec_val.iteritems():
-						if not this_module_setting[sec].get(k, None):
+						if this_module_setting[sec].get(k, None) is None:
 							print "Configuration ERROR at /%s/%s/%s: is missing." % (self.tomato_module, sec, k)
 							if (sec == "database" and k == "server") or (sec in ('paths', 'ssl')) or (sec == 'duration-log' and k == 'location'):
 								print " this is fatal."

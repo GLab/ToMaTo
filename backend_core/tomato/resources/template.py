@@ -17,7 +17,7 @@
 
 from ..db import *
 from ..generic import *
-from .. import config
+from .. lib.settings import settings
 from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, os.path, base64, hashlib, shutil
@@ -144,7 +144,7 @@ class Template(Entity, BaseDocument):
 		self.modify_torrent_data(base64.b64encode(self.torrentData)) #might have been set before name or tech
 				
 	def getPath(self):
-		return os.path.join(config.TEMPLATE_PATH, PATTERNS[self.tech] % self.name)
+		return os.path.join(settings.get_template_dir(), PATTERNS[self.tech] % self.name)
 	
 	def getTorrentPath(self):
 		return self.getPath() + ".torrent"

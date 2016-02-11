@@ -21,4 +21,4 @@ def get(dump_id, include_data=False, compress_data=False, dump_on_error=False):
 
 
 def init():
-    dump_lib.init(envCmds, "backend_users", getVersionStr())
+    dump_lib.init(envCmds, getVersionStr())
