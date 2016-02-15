@@ -1,3 +1,9 @@
+tomato-updater (4.0) stable; urgency=medium
+
+  * Also updating ipspy, vpncloud-tomato and websockify
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 04 Feb 2016 09:36:26 +0100
+
 tomato-updater (3.0) stable; urgency=low
 
   * Initial version

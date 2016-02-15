@@ -330,7 +330,7 @@ def generate_default_config():
 			# enabled: True,
 			# is_database: True
 			'image': 'mongo:latest',
-			'ports': [27017],
+			'ports': ('localhost:27017', 27017),
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
