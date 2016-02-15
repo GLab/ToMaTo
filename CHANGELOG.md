@@ -20,6 +20,7 @@ Entries should be sorted by component and status with important entries and entr
 - [backend, fixed] Fixed problem when stopping external networks with inconsistent states
 - [backend_core, fixed] Fixed problem when generating vpncloud networkids (BSON 8 byte ints)
 - [backend, removed] Removed useless dump environment infos
+- [backend_core, fixed] Fixed problem with dumpmanager collecting errors
 - [web, fixed] Fixed small menu display issue for vpncloud switches
 
 
