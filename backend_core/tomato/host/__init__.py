@@ -17,7 +17,7 @@
 
 from ..db import *
 from ..generic import *
-from .. import config, currentUser, starttime, scheduler
+from .. import currentUser, starttime, scheduler
 from ..accounting import UsageStatistics
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
@@ -25,6 +25,7 @@ from ..lib.error import TransportError, InternalError, UserError, Error
 from ..lib import anyjson as json
 from ..dumpmanager import DumpSource
 import time, hashlib, threading, datetime, zlib, base64, sys
+from ..lib.settings import settings, Config
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -165,10 +166,10 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def getProxy(self):
 		if not _caching:
-			return RemoteWrapper(self.rpcurl, self.name, sslcert=config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
+			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), timeout=settings.get_rpc_timeout())
 		if not self.rpcurl in _proxies:
-			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=config.CERTIFICATE,
-												  timeout=config.RPC_TIMEOUT)
+			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(),
+												  timeout=settings.get_rpc_timeout())
 		return _proxies[self.rpcurl]
 
 	def incrementErrors(self):
@@ -179,7 +180,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		self.save()
 
 	def update(self):
-		self.availability *= config.HOST_AVAILABILITY_FACTOR
+		self.availability *= settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
 		self.save()
 		if not self.enabled:
 			return
@@ -198,7 +199,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		self.connectionTypes = caps["connections"]
 		self.componentErrors = max(0, self.componentErrors / 2)
 		if not self.problems():
-			self.availability += 1.0 - config.HOST_AVAILABILITY_FACTOR
+			self.availability += 1.0 - settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
 		self.save()
 		logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)
 		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
@@ -344,7 +345,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
 
 	def synchronizeResources(self):
-		if time.time() - self.lastResourcesSync < config.RESOURCES_SYNC_INTERVAL:
+		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL]:
 			return
 		if not self.enabled:
 			return
@@ -476,11 +477,11 @@ class Host(DumpSource, Entity, BaseDocument):
 		if not self.enabled:
 			problems.append("Manually disabled")
 		hi = self.hostInfo
-		if time.time() - self.hostInfoTimestamp > 2 * config.HOST_UPDATE_INTERVAL + 300:
+		if time.time() - self.hostInfoTimestamp > 2 * settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL] + 300:
 			problems.append("Host unreachable")
 		if problems:
 			return problems
-		if time.time() - self.lastResourcesSync > 2 * config.RESOURCES_SYNC_INTERVAL + 300:
+		if time.time() - self.lastResourcesSync > 2 * settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL] + 300:
 			problems.append("Host is not synchronized")
 		if not hi:
 			problems.append("Node info is missing")
@@ -529,7 +530,7 @@ class Host(DumpSource, Entity, BaseDocument):
 					Flags.OrgaHostContact) and user.organization == self.site.organization,
 								  "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self, ref=['host', self.name], subject_group="host failure")
 			self.problemAge = 0
-		if problems and (self.problemAge < time.time() - config.HOST_UPDATE_INTERVAL * 5):
+		if problems and (self.problemAge < time.time() - settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL] * 5):
 			if self.problemMailTime < self.problemAge:
 				# problem exists and no mail has been sent so far
 				self.problemMailTime = time.time()
@@ -809,7 +810,7 @@ def scheduleHostChecks():
 	syncTasks = {t.args[0]: tid for tid, t in scheduler.tasks.items() if t.fn == synchronizeHost}
 	syncing = set(syncTasks.keys())
 	for h in toSync - syncing:
-		scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronizeHost, h)
+		scheduler.scheduleRepeated(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL], synchronizeHost, h)
 	for h in syncing - toSync:
 		scheduler.cancelTask(syncTasks[h])
 
@@ -833,5 +834,5 @@ from ..auth import Flags, notifyFilteredUsers
 from .site import Site
 from .. import handleError
 
-scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, scheduleHostChecks)  # @UndefinedVariable
+scheduler.scheduleRepeated(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL], scheduleHostChecks)  # @UndefinedVariable
 scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable

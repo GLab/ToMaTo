@@ -1,5 +1,3 @@
-
-from ..config import EMAIL_FROM, EMAIL_SMTP, EMAIL_MESSAGE_TEMPLATE, EMAIL_SUBJECT_TEMPLATE
 from . import logging
 import smtplib
 from email.mime.text import MIMEText
@@ -8,6 +6,7 @@ from email.message import Message
 from email.utils import formataddr
 from .error import Error, ErrorType
 import sys, inspect
+from settings import settings, Config
 
 @ErrorType
 class MailError(Error):
@@ -23,14 +22,16 @@ def send(to_realname, to_addr, subject, message, from_realname=None, from_addr=N
 	MailError.check(subject, MailError.SUBJECT_MISSING, "E-mail subject is missing", todump=True)
 	MailError.check(message, MailError.MESSAGE_MISSING, "E-mail body is missing", todump=True)
 
+	mail_settings = settings.get_email_settings(Config.EMAIL_NOTIFICATION)
+
 	try:
-		msg = MIMEText(EMAIL_MESSAGE_TEMPLATE % {'realname': to_realname, 'message': message}, 'plain', 'utf-8')
-		msg['Subject'] = Header(EMAIL_SUBJECT_TEMPLATE % {'subject': subject}, 'utf-8')
+		msg = MIMEText(mail_settings['body'] % {'realname': to_realname, 'message': message}, 'plain', 'utf-8')
+		msg['Subject'] = Header(mail_settings['subject'] % {'subject': subject}, 'utf-8')
 		msg['From'] = "%s <%s>" %(Header(from_realname, 'utf-8'), from_addr) if from_realname and from_addr else EMAIL_FROM
 		msg['To'] = "%s <%s>" % (Header(to_realname, 'utf-8'), to_addr)
 
-		s = smtplib.SMTP(EMAIL_SMTP)
-		s.sendmail(from_addr or EMAIL_FROM, to_addr, msg.as_string())
+		s = smtplib.SMTP(mail_settings['smtp-server'])
+		s.sendmail(from_addr or mail_settings['from'], to_addr, msg.as_string())
 		s.quit()
 	except:
 		from .dump import dumpException

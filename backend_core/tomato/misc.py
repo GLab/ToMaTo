@@ -15,21 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from . import config
+from lib.settings import settings
 
 def getPublicKey():
 	lines = []
 	ignore = False
-	with open(config.CERTIFICATE) as key:
+	with open(settings.get_ssl_cert_filename()) as key:
 		for line in key:
 			if "PRIVATE" in line:
 				ignore = not ignore
 			elif not ignore:
 				lines.append(line)
 	return "".join(lines)
-
-def getExternalURLs():
-	return config.EXTERNAL_URLS
 
 
 	

@@ -13,7 +13,7 @@
 	height:250px;
 }
 </style>
-    {% if 'rss_feed'|externalurl %}<link rel="alternate" type="application/rss+xml" title="RSS" href="{%externalurl 'rss_feed' %}">{% endif %}
+    {% if 'rss-feed'|externalurl %}<link rel="alternate" type="application/rss+xml" title="RSS" href="{%externalurl 'rss-feed' %}">{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -270,7 +270,7 @@
 <div class="skip-sm"></div> 
 
 {% if news %}
-<h2>Latest news <a href="{%externalurl 'rss_feed'%}" class="btn btn-warning btn-sm pull-right"><span class="icomoon-rss"></span> RSS Feed</a></h2>
+<h2>Latest news <a href="{%externalurl 'rss-feed'%}" class="btn btn-warning btn-sm pull-right"><span class="icomoon-rss"></span> RSS Feed</a></h2>
 {% for item in news.items %}
 <div class="panel panel-default">
   <div class="panel-heading">

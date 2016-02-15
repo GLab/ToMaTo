@@ -25,12 +25,15 @@ from django.core.urlresolvers import reverse
 import uuid
 import urllib2, urllib
 from urlparse import urljoin
-from settings import tutorial_list_url
+
 from lib.error import UserError #@UnresolvedImport
 
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
+from lib.settings import get_settings, Config
+import settings as config_module
+settings = get_settings(config_module)
 
 
 
@@ -42,6 +45,7 @@ from django.core.exceptions import ValidationError
 
 @wrap_rpc
 def list(api, request):
+	tutorial_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_TUTORIAL_LIST)
 	tutorials = json.load(urllib2.urlopen(tutorial_list_url))
 	for tut in tutorials:
 		for attr in ["icon", "url"]:

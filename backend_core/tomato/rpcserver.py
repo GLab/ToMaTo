@@ -19,10 +19,10 @@
 
 import sys
 
-import config
 from . import currentUser, api, login, dump
 from .lib import util, rpc, logging #@UnresolvedImport
 from .lib.error import Error, UserError, InternalError
+from lib.settings import settings
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name if currentUser() else None)
@@ -63,11 +63,11 @@ def start():
 	print >>sys.stderr, "Starting RPC servers"
 	global servers
 	del servers[:]
-	for settings in config.SERVER:
-		server_address = ('', settings["PORT"])
+	for conf in settings.get_own_interface_config():
+		server_address = ('', conf['port'])
 		sslOpts = None
-		if settings["SSL"]:
-			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
+		if conf.get('ssl', False):
+			sslOpts = rpc.SSLOpts(private_key=settings.get_ssl_key_filename(), certificate=settings.get_ssl_cert_filename(), client_certs=None)
 		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=wrapError)
 		server.register(api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))

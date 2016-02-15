@@ -73,7 +73,7 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		if not attrs: attrs = {}
 		self.setRole(owner, Role.owner)
 		self.totalUsage = UsageStatistics.objects.create()
-		self.timeout = time.time() + config.TOPOLOGY_TIMEOUT_INITIAL
+		self.timeout = time.time() + settings.get_topology_settings()[Config.TOPOLOGY_TIMEOUT_INITIAL]
 		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
 		self.save()
 		self.name = "Topology [%s]" % self.idStr
@@ -130,11 +130,12 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 							 typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
 
 	def action_renew(self, timeout):
+		topology_config = settings.get_topology_settings()
 		timeout = float(timeout)
-		UserError.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX or currentUser().hasFlag(Flags.GlobalAdmin),
+		UserError.check(timeout <= topology_config[Config.TOPOLOGY_TIMEOUT_MAX] or currentUser().hasFlag(Flags.GlobalAdmin),
 			code=UserError.INVALID_VALUE, message="Timeout is greater than the maximum")
 		self.timeout = time.time() + timeout
-		self.timeoutStep = TimeoutStep.INITIAL if timeout > config.TOPOLOGY_TIMEOUT_WARNING else TimeoutStep.WARNED
+		self.timeoutStep = TimeoutStep.INITIAL if timeout > topology_config[Config.TOPOLOGY_TIMEOUT_WARNING] else TimeoutStep.WARNED
 		
 	def _compoundAction(self, action, stateFilter, typeOrder, typesExclude):
 		# execute action in order
@@ -283,9 +284,10 @@ def create(attrs=None):
 	
 @util.wrap_task
 def timeout_task():
+	topology_config = settings.get_topology_settings()
 	now = time.time()
 	setCurrentUser(True) #we are a global admin
-	for top in Topology.objects.filter(timeoutStep=TimeoutStep.INITIAL, timeout__lte=now+config.TOPOLOGY_TIMEOUT_WARNING):
+	for top in Topology.objects.filter(timeoutStep=TimeoutStep.INITIAL, timeout__lte=now+topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]):
 		try:
 			logging.logMessage("timeout warning", category="topology", id=top.idStr)
 			top.sendNotification(subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
@@ -301,7 +303,7 @@ def timeout_task():
 			top.save()
 		except Exception:
 			handleError()
-	for top in Topology.objects.filter(timeoutStep=TimeoutStep.STOPPED, timeout__lte=now-config.TOPOLOGY_TIMEOUT_WARNING):
+	for top in Topology.objects.filter(timeoutStep=TimeoutStep.STOPPED, timeout__lte=now-topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]):
 		try:
 			logging.logMessage("timeout destroy", category="topology", id=top.idStr)
 			top.action_destroy()
@@ -309,7 +311,7 @@ def timeout_task():
 			top.save()
 		except Exception:
 			handleError()
-	for top in Topology.objects.filter(timeoutStep=TimeoutStep.DESTROYED, timeout__lte=now-config.TOPOLOGY_TIMEOUT_REMOVE):
+	for top in Topology.objects.filter(timeoutStep=TimeoutStep.DESTROYED, timeout__lte=now-topology_config[Config.TOPOLOGY_TIMEOUT_REMOVE]):
 		try:
 			logging.logMessage("timeout remove", category="topology", id=top.idStr)
 			top.remove()
@@ -323,6 +325,7 @@ from .elements import Element
 from .connections import Connection
 from .auth import Flags
 from .auth.permissions import Permission
-from . import currentUser, config, setCurrentUser
+from . import currentUser, setCurrentUser
+from lib.settings import settings, Config
 from .host.site import Site
 from . import handleError

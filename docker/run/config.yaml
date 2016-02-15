@@ -1,0 +1,174 @@
+services:
+  backend_api:  # currently, this points to backend_core
+    host: dockerhost
+    interfaces:
+      - port: 8000
+        ssl: false
+        protocol: http
+      - port: 8001
+        ssl: true
+        protocol: https
+  backend_core:
+    host: dockerhost
+    port: 8000
+    protocol: http
+  backend_users:
+    host: dockerhost
+    port: 8002
+    protocol: sslrpc2
+  web:
+    host: dockerhost
+    port: 8080
+    protocol: http
+
+external-urls:
+  aup:        http://tomato-lab.org/aup
+  help:       http://github.com/GLab/ToMaTo/wiki
+  impressum:  http://tomato-lab.org/contact/
+  project:    http://tomato-lab.org
+  json-feed:  http://www.tomato-lab.org/feed.json
+  rss-feed:   http://tomato-lab.org/feed.xml
+  bugtracker: http://github.com/GLab/ToMaTo/issues
+
+github:
+  # access tokens can be created via GitHub settings -> My Personal Access Tokens
+  # The token needs the scope 'repo' or 'public_repo' (depending on whether the repository is private or not)
+  access-token:
+
+  repository-owner: GLab
+  repository-name:  ToMaTo
+
+backend_core:
+  paths:
+    templates:  /var/lib/tomato/templates
+    log:    /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
+  ssl:
+    cert:  /etc/tomato/backend_core.pem
+    key:  /etc/tomato/backend_core.pem
+    ca:  /etc/tomato/ca.pem
+  bittorrent:
+    tracker-port: 8002
+    bittorrent-restart: 1800  # 30 minutes
+  database:
+    db-name: tomato
+    server:
+      host: dockerhost
+      port: 27017
+  host-connections:
+    update-interval: 60
+    availability-halftime: 7776000  # 90 days
+    resource-sync-interval: 600
+    component-timeout: 31104000  # 12 months
+    availability-factor: 0.9999946516564278  # (1/2) ^ (update_interval / availability_halftime)
+  tasks:
+    max-workers: 25
+
+backend_users:
+  paths:
+    log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
+  ssl:
+    cert:  /etc/tomato/backend_users.pem
+    key:  /etc/tomato/backend_users.pem
+    ca:  /etc/tomato/ca.pem
+  database:
+    db-name: tomato
+    server:
+      host: dockerhost
+      port: 27017
+  tasks:
+    max-workers: 25
+
+web:
+  paths:
+    log:  /var/log/tomato/main.log
+  ssl:
+    cert:  /etc/tomato/web.pem
+    key:  /etc/tomato/web.pem
+    ca:  /etc/tomato/ca.pem
+  duration-log:
+
+    # this logs the duration of all API calls.
+    # however, this slows down the webfrontend in case of many HTTP requests.
+    enabled:  false
+
+    # for each API call, the duration log file is opened and closed.
+    # thus, to increase performance, this should be on tmpfs or similar.
+    # it doesn't need to be stored in a persistent file system.
+    location:  /tmp/webfrontend_api_duration_log.json
+
+    # the call duration is calculated as an average of the last n calls. (or all calls, if there weren't that many)
+    # a higher size means a better averaging, but while debugging, this means that changes take longer until they are effective.
+    size:    25
+
+  web-resources:
+    tutorial-list:        http://packages.tomato-lab.org/tutorials/index.json
+    default-executable-archive-list:
+
+  # specify how often user information is updated (seconds between updates).
+  # a longer interval improves performance for webfrontend and backend,
+  # but it means that it takes some time for user account changes to be applied.
+  # updates are only done when the user opens a page which uses the API.
+  account-info-update-interval: 120
+  
+rpc-timeout: 60
+
+email:
+  smtp-server: localhost
+  from: ToMaTo backend <tomato@localhost>
+  messages:
+    notification:
+      subject: "[ToMaTo] %(subject)s"
+      body: |
+        Dear %(realname)s
+
+        "%(message)s"
+
+        Sincerely,
+        Your ToMaTo backend
+    new-user-welcome:
+      subject: Registration at ToMaTo-Lab
+      body: |
+        Dear %s,
+
+        Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our administrators shortly. Until then, you can create a topology (but not start it).
+        You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.
+        
+        Best Wishes,
+        The ToMaTo Testbed
+    new-user-admin-inform:
+      subject: User Registration
+      body: |
+        Dear ToMaTo administrator,
+
+        A new user, %s, has just registered at the ToMaTo testbed.
+        You can review all pending user registrations at https://master.tomato-lab.org/account/registrations
+
+        Best Wishes,
+        The ToMaTo Testbed
+
+topologies:
+  timeout-initial: 3600
+  timeout-default: 259200  # 3 days
+  timeout-max: 2592000  # 30 days
+  timeout-warning: 86400  # 1 day
+  timeout-remove: 7776000  # 90 days
+  timeout-options: [86400, 259200, 1209600, 2592000]  # 1, 3, 14, 30 days
+
+user-quota:
+  default:
+    cputime: 12960000  # 5 cores * 90 days
+    memory: 1000000000  # 10GB * 90 days
+    diskspace: 100000000000  # 100GB * 90 days
+    traffic: 1620000000000  # 5Mbit/s all the time
+    continous-factor: 1
+
+dumpmanager:
+  collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.

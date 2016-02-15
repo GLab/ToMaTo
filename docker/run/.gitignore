@@ -1,4 +1,5 @@
 mongodb-data/*
 backend/*/*
 backend_core/*/*
+backend_users/*/*
 web/*/*

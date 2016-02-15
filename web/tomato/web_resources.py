@@ -2,7 +2,11 @@ __author__ = 't-gerhard'
 
 import json, urllib2
 from urlparse import urljoin
-from settings import default_executable_archives_list_url
+
+from lib.settings import get_settings, Config
+import settings as config_module
+settings = get_settings(config_module)
+
 from django.shortcuts import render
 import time
 from .lib import wrap_rpc
@@ -14,6 +18,7 @@ def web_resources():
 	}
 
 def executable_archives(split_alternatives=True, ignore_errors=True):
+	default_executable_archives_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST)
 	try:
 		default_archive_list = []
 		default_archive_list_imported = json.load(urllib2.urlopen(default_executable_archives_list_url))
@@ -82,6 +87,7 @@ def executable_archives(split_alternatives=True, ignore_errors=True):
 
 
 def executable_archive_list(request):
+	default_executable_archives_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST)
 	archives = executable_archives(False, True)
 	for archive in archives:
 		archive['alternatives'] = len(archive['alternatives'])
@@ -127,4 +133,5 @@ def executable_archive_info(api, request, name):
 					'tech': tech
 				})
 
+	default_executable_archives_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST)
 	return render(request, 'web_resources/default_executable_archive_info.html', {'archive': archive, 'default_executable_archives_list_url': default_executable_archives_list_url})

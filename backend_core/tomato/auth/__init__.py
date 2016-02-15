@@ -18,8 +18,9 @@
 import time, crypt, string, random, sys, hashlib
 from ..db import *
 from ..lib import logging, util, mail #@UnresolvedImport
-from .. import config, currentUser, setCurrentUser, scheduler, accounting
+from .. import config, currentUser, setCurrentUser, scheduler, accounting  # config needed for config.AUTH
 from ..lib.error import UserError
+from ..lib.settings import settings, Config
 
 class Flags:
 	Debug = "debug"
@@ -212,7 +213,7 @@ class User(BaseDocument):
 		user.storePassword(password)
 		user.lastLogin = time.time()
 		user.quota = Quota()
-		user.quota.init(**config.DEFAULT_QUOTA)
+		user.quota.init(**settings.get_user_quota(Config.USER_QUOTA_DEFAULT))
 		stats = UsageStatistics()
 		stats.init()
 		user.totalUsage = stats

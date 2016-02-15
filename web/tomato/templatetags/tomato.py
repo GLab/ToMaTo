@@ -7,8 +7,9 @@ from django.utils.safestring import mark_safe
 from ..lib import anyjson as json
 from ..lib.reference_library import tech_to_label as lib_tech_to_label
 
-from ..settings import enable_duration_log
-
+from ..lib.settings import get_settings
+from .. import settings as config_module
+settings = get_settings(config_module)
 
 register = template.Library()
 
@@ -22,7 +23,10 @@ def jsonify(o, pretty=False):
 @register.simple_tag
 @register.filter
 def externalurl(name):
-	return serverInfo()['external_urls'].get(name, "")
+	try:
+		return settings.get_external_url(name)
+	except:
+		return ""
 
 @register.filter
 def tech_to_label(value):
@@ -38,7 +42,7 @@ def frontend_version():
 
 @register.assignment_tag()
 def duration_log_enabled():
-	return enable_duration_log
+	return settings.get_duration_log_settings()['enabled']
 
 @register.simple_tag
 def button(style='default', icon=None, title=""):
