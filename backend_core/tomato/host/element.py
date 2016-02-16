@@ -1,6 +1,6 @@
 from ..db import *
 from ..lib import logging, error
-from .. import config
+from ..lib.settings import settings
 import time
 from . import HostObject
 
@@ -124,7 +124,7 @@ class HostElement(HostObject):
 			if not self.topologyElement and not self.topologyConnection:
 				self.remove()
 				return
-			self.modify({"timeout": time.time() + config.HOST_COMPONENT_TIMEOUT})
+			self.modify({"timeout": time.time() + settings.get_host_connections_settings()['component-timeout']})
 		except error.UserError, err:
 			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)

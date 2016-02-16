@@ -17,24 +17,25 @@
 
 from ..lib.cache import cached #@UnresolvedImport
 import time, sys, traceback
+from ..lib.versioninfo import getVersionStr
 
 @cached(timeout=3600, autoupdate=True)
 def server_info():
 	"""
 	undocumented
 	"""
+	topology_config = settings.get_topology_settings()
 	return {
-		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
-		'external_urls': misc.getExternalURLs(),
+		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port']),
 		'public_key': misc.getPublicKey(),
-		'version': misc.getVersion(),
-		'api_version': [4, 0, 0],
+		'version': getVersionStr(),
+		'api_version': [4, 0, 1],
 		'topology_timeout': {
-			'initial': config.TOPOLOGY_TIMEOUT_INITIAL,
-			'maximum': config.TOPOLOGY_TIMEOUT_MAX,
-			'options': config.TOPOLOGY_TIMEOUT_OPTIONS,
-			'default': config.TOPOLOGY_TIMEOUT_DEFAULT,
-			'warning': config.TOPOLOGY_TIMEOUT_WARNING
+			'initial': topology_config[Config.TOPOLOGY_TIMEOUT_INITIAL],
+			'maximum': topology_config[Config.TOPOLOGY_TIMEOUT_MAX],
+			'options': topology_config[Config.TOPOLOGY_TIMEOUT_OPTIONS],
+			'default': topology_config[Config.TOPOLOGY_TIMEOUT_DEFAULT],
+			'warning': topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]
 		}
 	}
 
@@ -115,6 +116,8 @@ def debug_stats():
 	stats["threads"] = map(traceback.extract_stack, sys._current_frames().values())
 	return stats
 
-from .. import misc, config, link, currentUser, topology, auth, elements, connections, scheduler
+from .. import misc, link, currentUser, topology, auth, elements, connections, scheduler
+from ..lib.settings import settings, Config
 from ..host import Host
 from ..lib.error import UserError
+from ..lib import get_public_ip_address

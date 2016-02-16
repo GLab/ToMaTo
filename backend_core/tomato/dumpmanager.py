@@ -2,11 +2,15 @@ import time, zlib, threading, base64
 from .db import *
 from .lib import anyjson as json
 
+from lib import service
+
 import host
-from . import scheduler, config, currentUser
+from . import scheduler, currentUser
 from .lib.error import InternalError, UserError, Error, TransportError  # @UnresolvedImport
 from .lib.rpc.sslrpc import RPCError
 from .lib import util
+
+from lib.settings import settings, Config
 
 from auth import User
 
@@ -315,8 +319,8 @@ class DumpSource(object):
 
 
 # fetches from this backend
-class BackendDumpSource(DumpSource):
-	keyvaluestore_key = "dumpmanager:lastBackendFetch"
+class LocalDumpSource(DumpSource):
+	keyvaluestore_key = "dumpmanager:last_%s_fetch" % "backend_core"
 
 	def dump_fetch_list(self, after):
 		import dump
@@ -326,16 +330,44 @@ class BackendDumpSource(DumpSource):
 	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
 		import dump
 
-		d = dump.get(dump_id, include_data=True, compress_data=True, dump_on_error=False)
+		dump = dump.get(dump_id, include_data=True, compress_data=True, dump_on_error=False)
 		if not keep_compressed:
-			d['data'] = json.loads(zlib.decompress(base64.b64decode(d['data'])))
-		return d
+			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
+		return dump
 
 	def dump_clock_offset(self):
 		return 0
 
 	def dump_source_name(self):
-		return "backend"
+		return "backend:backend_core"
+
+	def dump_set_last_fetch(self, last_fetch):
+		data.set(self.keyvaluestore_key, last_fetch)
+
+	def dump_get_last_fetch(self):
+		return data.get(self.keyvaluestore_key, 0)
+
+class APIDumpSource(DumpSource):
+
+	def __init__(self, component_name, proxy):
+		self.keyvaluestore_key = "dumpmanager:last_%s_fetch" % component_name
+		self.serverProxy = proxy
+		self.component_name = component_name
+
+	def dump_fetch_list(self, after):
+		return self.serverProxy.dump_list(after=after, list_only=False, include_data=False, compress_data=True)
+
+	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
+		dump = self.serverProxy.dump_info(dump_id, include_data=True, compress_data=True, dump_on_error=False)
+		if not keep_compressed:
+			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
+		return dump
+
+	def dump_clock_offset(self):
+		return 0  # fixme: actually determine this
+
+	def dump_source_name(self):
+		return "backend:%s" % self.component_name
 
 	def dump_set_last_fetch(self, last_fetch):
 		data.set(self.keyvaluestore_key, last_fetch)
@@ -344,11 +376,15 @@ class BackendDumpSource(DumpSource):
 		return data.get(self.keyvaluestore_key, 0)
 
 
-backend_dumpsource = BackendDumpSource()
+
+
+
+local_dumpsource = LocalDumpSource()
+api_dumpsources = []
 
 
 def getDumpSources(include_disabled=False):
-	sources = [backend_dumpsource]
+	sources = [local_dumpsource] + api_dumpsources
 	hosts = host.Host.getAll()
 	for h in hosts:
 		if include_disabled or h.enabled:
@@ -433,12 +469,20 @@ def scheduleUpdates():
 	syncTasks = {t.args[0]: tid for tid, t in scheduler.tasks.items() if t.fn == update_source}
 	syncing = set(syncTasks.keys())
 	for s in toSync - syncing:
-		scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, update_source, s)
+		scheduler.scheduleRepeated(settings.get_dumpmanager_config()[Config.DUMPMANAGER_COLLECTION_INTERVAL], update_source, s)
 	for s in syncing - toSync:
 		scheduler.cancelTask(syncTasks[s])
 
+def _create_api_dumpsource_for_module(tomato_module):
+	protocol = 'sslrpc2'
+	conf = settings.get_interface(tomato_module, True, protocol)
+	backend_users_address = "%s://%s:%s" % (protocol, conf['host'], conf['port'])
+	proxy = service.createProxy(backend_users_address, settings.get_ssl_cert_filename(), settings.get_ssl_ca_filename())
+	return APIDumpSource(tomato_module, proxy)
+
 def init():
-	scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, scheduleUpdates, immediate=True)
+	scheduler.scheduleRepeated(settings.get_dumpmanager_config()[Config.DUMPMANAGER_COLLECTION_INTERVAL], scheduleUpdates, immediate=True)
+	api_dumpsources.append(_create_api_dumpsource_for_module(Config.TOMATO_MODULE_BACKEND_USERS))
 
 
 # Second Part: Access to known dumps for API

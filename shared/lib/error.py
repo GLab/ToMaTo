@@ -4,7 +4,10 @@ import inspect, traceback
 
 from . import anyjson as json
 
-dumpError = None
+def dumpError(*args):
+	print "Warning: dump.py is not used."
+	print args
+	print args[0].trace
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
@@ -74,9 +77,9 @@ class Error(Exception):
 		else:
 			self.onscreenmessage = onscreenmessage
 		if todump is not None:
-			self.todump = todump or self.module != MODULE
+			self.todump = todump  # will be set to False by dump.py after dumping
 		else:
-			self.todump = not isinstance(self, UserError) and self.module == MODULE or self.module != MODULE
+			self.todump = not isinstance(self, UserError) or self.module != MODULE
 		if frame_trace is None:  # this must be last because it may call repr(self)
 			if frame is None:
 				self.frame_trace = generate_inspect_trace(inspect.currentframe())

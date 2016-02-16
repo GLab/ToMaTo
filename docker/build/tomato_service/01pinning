@@ -1,0 +1,35 @@
+Package: *
+Pin: release a=stable
+Pin-Priority: 900
+
+Package: *
+Pin: release a=unstable
+Pin-Priority: 800
+
+Package: pypy
+Pin: release a=unstable
+Pin-Priority: 1000
+
+Package: pypy-lib
+Pin: release a=unstable
+Pin-Priority: 1000
+
+Package: libncurses5
+Pin: release a=unstable
+Pin-Priority: 1000
+
+Package: libncursesw5
+Pin: release a=unstable
+Pin-Priority: 1000
+
+Package: libssl1.0.0
+Pin: release a=unstable
+Pin-Priority: 1000
+
+Package: libssl-dev
+Pin: release a=unstable
+Pin-Priority: 1000
+
+Package: libtinfo5
+Pin: release a=unstable
+Pin-Priority: 1000

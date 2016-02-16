@@ -17,15 +17,19 @@
 
 import os, sys, signal, time, thread
 
-os.environ['TOMATO_MODULE'] = "backend"
-
 import monkey
 monkey.patch_all()
 
-import config
+from lib import settings
+
+tomato_module = settings.Config.TOMATO_MODULE_BACKEND_CORE
+settings.init('/etc/tomato/config.yaml', tomato_module)
+os.environ['TOMATO_MODULE'] = tomato_module
+
 from mongoengine import connect
-database_connnection = connect(config.DATABASE, host=config.DATABASE_HOST)
-database_obj = getattr(database_connnection, config.DATABASE)
+database_settings = settings.settings.get_db_settings()
+database_connnection = connect(database_settings['database'], host=database_settings['host'], port=database_settings['port'])
+database_obj = getattr(database_connnection, database_settings['database'])
 
 def db_migrate():
 	def getMigration(version):
@@ -75,7 +79,7 @@ def handleError():
 	dump.dumpException()
 
 from lib import tasks #@UnresolvedImport
-scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=config.MAX_WORKERS)
+scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=settings.settings.get_tasks_settings()[settings.Config.TASKS_MAX_WORKERS])
 
 starttime = time.time()
 
@@ -83,7 +87,7 @@ from . import host, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import util, cache #@UnresolvedImport
 
-scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
+scheduler.scheduleRepeated(settings.settings.get_bittorrent_settings()['bittorrent-restart'], util.wrap_task(bittorrent.restartClient))
 
 stopped = threading.Event()
 
@@ -92,15 +96,15 @@ import dumpmanager
 import models
 
 def start():
-	logging.openDefault(config.LOG_FILE)
+	logging.openDefault(settings.settings.get_log_filename())
 	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
 		db_migrate()
 	else:
 		print >>sys.stderr, "Skipping migrations"
 	auth.init()
 	global starttime
-	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
-	bittorrent.startClient(config.TEMPLATE_PATH)
+	bittorrent.startTracker(settings.settings.get_bittorrent_settings()['tracker-port'], settings.settings.get_template_dir())
+	bittorrent.startClient(settings.settings.get_template_dir())
 	rpcserver.start()
 	starttime = time.time()
 	if not os.environ.has_key("TOMATO_NO_TASKS"):
@@ -114,8 +118,9 @@ def start():
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
 	logging.closeDefault()
-	reload(config)
-	logging.openDefault(config.LOG_FILE)
+	settings.settings.reload()
+	# fixme: all cached methods should be invalidated here
+	logging.openDefault(settings.settings.get_log_filename())
 	#stopRPCserver()
 	#startRPCserver()
 

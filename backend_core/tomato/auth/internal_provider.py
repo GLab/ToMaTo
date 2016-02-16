@@ -18,7 +18,7 @@
 from ..auth import User, Provider as AuthProvider, notifyFilteredUsers, Flags
 from .. import setCurrentUser
 from ..lib.error import UserError
-from ..config import NEW_USER_WELCOME_MESSAGE, NEW_USER_ADMIN_INFORM_MESSAGE
+from ..lib.settings import settings, Config
 
 class Provider(AuthProvider):
 	def parseOptions(self, allow_registration=True, default_flags=None, **kwargs):
@@ -45,10 +45,12 @@ class Provider(AuthProvider):
 	def register(self, username, password, organization, attrs):
 		UserError.check(self.getUsers(name=username).count()==0, code=UserError.ALREADY_EXISTS, message="Username already exists")
 		user = User.create(name=username, organization=organization, flags=self.default_flags, password=password, origin=self.name, **attrs)
+		adminmsg = settings.get_email_settings(Config.EMAIL_NEW_USER_ADMIN)
+		usermsg = settings.get_email_settings(Config.EMAIL_NEW_USER_WELCOME)
 		notifyFilteredUsers(lambda u: u.hasFlag(Flags.GlobalAdminContact)
 					or u.hasFlag(Flags.OrgaAdminContact) and user.organization == u.organization,
-		            NEW_USER_ADMIN_INFORM_MESSAGE['subject'], NEW_USER_ADMIN_INFORM_MESSAGE['body'] % username)
-		user.sendNotification(NEW_USER_WELCOME_MESSAGE['subject'], NEW_USER_WELCOME_MESSAGE['body'] % username, ref=['account', username])
+		            adminmsg['subject'], adminmsg['body'] % username, ref=['account', username])
+		user.sendNotification(usermsg['subject'], usermsg['body'] % username, ref=['account', username])
 		return user
 		
 def init(**kwargs):

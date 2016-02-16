@@ -1,7 +1,7 @@
 #!/bin/bash
 
 apt-get update >/dev/null
-for pkg in tomato-host-proxmox tomato-hostmanager tomato-repy tomato-updater; do
+for pkg in tomato-host-proxmox tomato-hostmanager tomato-repy tomato-updater ipspy websockify vpncloud-tomato; do
   if dpkg-query --status $pkg 2>/dev/null | fgrep -q installed; then
     apt-get install -y $pkg >/dev/null 2>&1
   fi
