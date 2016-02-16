@@ -79,7 +79,7 @@ services:
     protocol: http
   backend_users:
     host: dockerhost
-    port: 8002
+    port: 8003
     protocol: sslrpc2
   web:
     host: dockerhost
