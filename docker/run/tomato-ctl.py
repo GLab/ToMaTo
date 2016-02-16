@@ -311,7 +311,7 @@ def generate_default_config():
 		'backend_users': {
 			'enabled': True,
 			'image': 'tomato_backend_users',
-			'ports': [(8003, 8000)],
+			'ports': [8003],
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
@@ -330,7 +330,7 @@ def generate_default_config():
 			# enabled: True,
 			# is_database: True
 			'image': 'mongo:latest',
-			'ports': ('127.0.0.1:27017', 27017),
+			'ports': [27017],
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
