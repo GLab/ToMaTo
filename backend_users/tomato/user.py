@@ -19,9 +19,8 @@ import time, crypt, string, random, sys, hashlib
 from .generic import *
 from .db import *
 from .lib import logging, util, mail #@UnresolvedImport
-from . import config, scheduler
+from . import scheduler
 from .lib.error import UserError
-from .config import NEW_USER_WELCOME_MESSAGE, NEW_USER_ADMIN_INFORM_MESSAGE
 
 
 class Flags:

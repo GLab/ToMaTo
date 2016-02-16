@@ -25,7 +25,9 @@ os.environ['TOMATO_MODULE'] = tomato_module
 from lib import monkey
 monkey.patch_all()
 
-import config
+import socket
+socket.setdefaulttimeout(300)
+
 from mongoengine import connect
 database_connection = connect(settings.settings.get_db_settings()['database'], host=settings.settings.get_db_settings()['host'])
 database_obj = getattr(database_connection, settings.settings.get_db_settings()['database'])

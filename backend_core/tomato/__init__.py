@@ -26,6 +26,9 @@ tomato_module = settings.Config.TOMATO_MODULE_BACKEND_CORE
 settings.init('/etc/tomato/config.yaml', tomato_module)
 os.environ['TOMATO_MODULE'] = tomato_module
 
+import socket
+socket.setdefaulttimeout(1800)
+
 from mongoengine import connect
 database_settings = settings.settings.get_db_settings()
 database_connnection = connect(database_settings['database'], host=database_settings['host'], port=database_settings['port'])
