@@ -32,11 +32,13 @@ Created on Dec 4, 2014
 
 from django.shortcuts import render
 from django import forms
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
 
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc
-from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, \
+from . import AddEditForm, RemoveConfirmForm, append_empty_choice, \
 	site_name_list
 
 
@@ -49,11 +51,6 @@ class HostForm(AddEditForm):
 	description = forms.CharField(widget=forms.Textarea, label="Description", required=False)
 
 	buttons = Buttons.cancel_add
-
-	primary_key = "name"
-	create_keys = ['name', 'site']
-	create_dict_keys = ['rpcurl', 'address', 'enabled']
-	redirect_after = "tomato.admin.host.info"
 
 	def __init__(self, site_namelist, *args, **kwargs):
 		super(HostForm, self).__init__(*args, **kwargs)
@@ -68,11 +65,11 @@ class HostForm(AddEditForm):
 			self.buttons
 		)
 
+	def get_redirect_after(self):
+		return HttpResponseRedirect(reverse("tomato.admin.host.info", kwargs={"name": self.cleaned_data['name']}))
 
 class AddHostForm(HostForm):
 	title = "Add Host"
-	formaction = "tomato.admin.host.add"
-	formaction_haskeys = False
 
 	def __init__(self, site=None, publickey=None, *args, **kwargs):
 		super(AddHostForm, self).__init__(*args, **kwargs)
@@ -97,26 +94,30 @@ class AddHostForm(HostForm):
 		if site is not None:
 			self.fields['site'].initial = site
 
+	def submit(self, api):
+		formData = self.cleaned_data
+		api.host_create(formData['name'], formData['site'],
+											{k: v for k, v in formData.iteritems() if k not in ('name', 'site')})
+
+
+
 
 class EditHostForm(HostForm):
 	buttons = Buttons.cancel_save
 	title = "Editing Host '%(name)s'"
-	formaction = "tomato.admin.host.edit"
-	buttons = Buttons.cancel_save
 
 	def __init__(self, *args, **kwargs):
 		super(EditHostForm, self).__init__(*args, **kwargs)
 		self.fields["name"].widget = forms.TextInput(attrs={'readonly': 'readonly'})
 		self.fields["name"].help_text = None
 
+	def submit(self, api):
+		formData = self.cleaned_data
+		api.host_modify(formData['name'], {k: v for k, v in formData.iteritems() if k not in ('name',)})
 
 class RemoveHostForm(RemoveConfirmForm):
-	redirect_after_useargs = False
-	formaction = "tomato.admin.host.remove"
-	redirect_after = "tomato.admin.host.list"
 	message = "Are you sure you want to remove the host '%(name)s'?"
 	title = "Remove Host '%(name)s'"
-	primary_key = 'name'
 
 
 @wrap_rpc
@@ -149,33 +150,43 @@ def info(api, request, name):
 
 @wrap_rpc
 def add(api, request, site=None):
-	return add_function(request,
-		Form=AddHostForm,
-		create_function=api.host_create,
-		modify_function=api.host_modify,
-		clean_formkwargs=({'site': site} if site is not None else {}),
-		formkwargs={
-			'site_namelist': append_empty_choice(site_name_list(api)),
-			'publickey': api.server_info().get("public_key", "unknown")
-		}
-	)
+	if request.method == 'POST':
+		form = AddHostForm(data=request.POST,
+												site_namelist=append_empty_choice(site_name_list(api)),
+												publickey=api.server_info().get("public_key", "unknown"))
+		if form.is_valid():
+			form.submit(api)
+			return form.get_redirect_after()
+		else:
+			return form.create_response(request)
+	else:
+		form = AddHostForm(site=site,
+												site_namelist=append_empty_choice(site_name_list(api)),
+												publickey=api.server_info().get("public_key", "unknown"))
+		return form.create_response(request)
 
 
 @wrap_rpc
 def edit(api, request, name=None):
-	return edit_function(request,
-		Form=EditHostForm,
-		modify_function=api.host_modify,
-		primary_value=name,
-		clean_formargs=[api.host_info(name)],
-		formargs=[append_empty_choice(site_name_list(api))]
-	)
-
+	if request.method == 'POST':
+		form = EditHostForm(site_namelist=append_empty_choice(site_name_list(api)),
+												data=request.POST)
+		if form.is_valid():
+			form.submit(api)
+			return form.get_redirect_after()
+		else:
+			return form.create_response(request)
+	else:
+		form = EditHostForm(site_namelist=append_empty_choice(site_name_list(api)),
+												data=api.host_info(name))
+		return form.create_response(request)
 
 @wrap_rpc
 def remove(api, request, name):
-	return remove_function(request,
-		Form=RemoveHostForm,
-		delete_function=api.host_remove,
-		primary_value=name
-	)
+	if request.method == 'POST':
+		form = RemoveHostForm(name=name, data=request.POST)
+		if form.is_valid():
+			api.host_remove(name)
+			return HttpResponseRedirect(reverse('tomato.admin.host.list'))
+	form = RemoveHostForm(name=name)
+	return form.create_response(request)
