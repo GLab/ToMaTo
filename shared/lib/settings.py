@@ -58,6 +58,7 @@ __author__ = 't-gerhard'
 #  ( reading of config files)
 #
 
+
 import yaml, os, random
 from error import InternalError
 
@@ -78,7 +79,7 @@ services:
     protocol: http
   backend_users:
     host: dockerhost
-    port: 8002
+    port: 8003
     protocol: sslrpc2
   web:
     host: dockerhost
@@ -120,8 +121,8 @@ backend_core:
   database:
     db-name: tomato
     server:
-      host: localhost
-      port: 27017
+      host: dockerhost  # you may need to use %(OS__DB_PORT_27017_TCP_ADDR)s instead...
+      port: 27017  # you may need to use %(OS__DB_PORT_27017_TCP_PORT)s instead...
   host-connections:
     update-interval: 60
     availability-halftime: 7776000  # 90 days
@@ -145,8 +146,8 @@ backend_users:
   database:
     db-name: tomato
     server:
-      host: localhost
-      port: 27017
+      host: dockerhost  # you may need to use %(DB_PORT_27017_TCP_ADDR)s instead...
+      port: 27017  # you may need to use %(DB_PORT_27017_TCP_PORT)s instead...
   tasks:
     max-workers: 25
 
@@ -200,7 +201,7 @@ email:
     new-user-welcome:
       subject: Registration at ToMaTo-Lab
       body: |
-        Dear %s,
+        Dear %(username)s,
 
         Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our administrators shortly. Until then, you can create a topology (but not start it).
         You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.
@@ -212,7 +213,7 @@ email:
       body: |
         Dear ToMaTo administrator,
 
-        A new user, %s, has just registered at the ToMaTo testbed.
+        A new user, %(username)s, has just registered at the ToMaTo testbed.
         You can review all pending user registrations at https://master.tomato-lab.org/account/registrations
 
         Best Wishes,
@@ -267,6 +268,14 @@ def get_settings(config_module):
 	if settings is None:
 		init(config_module.CONFIG_YAML_PATH, config_module.TOMATO_MODULE)
 	return settings
+
+class OsFormatter(dict):
+	def __init__(self):
+		dict.__init__(self)
+		for key, value in os.environ.iteritems():
+			self["OS__%s" % key] = value
+	def __missing__(self, key):
+		return "%("+key+")s"
 
 class Config:
 	TOMATO_MODULE_WEB = "web"
@@ -329,8 +338,8 @@ class SettingsProvider:
 		InternalError.check(os.path.exists(self.filename), code=InternalError.CONFIGURATION_ERROR, message="configuration missing", todump=False, data={'filename': self.filename})
 		with open(self.filename, "r") as f:
 			print "reading settings file '%s'." % self.filename
-			self.original_settings = yaml.load(f.read())
-		self._check_settings()
+			settings_content = f.read()
+		self.original_settings = yaml.load(settings_content % OsFormatter())
 
 		self.secret_key = os.getenv('SECRET_KEY', str(random.random()))
 

@@ -330,7 +330,6 @@ def generate_default_config():
 			# enabled: True,
 			# is_database: True
 			'image': 'mongo:latest',
-			'ports': ('127.0.0.1:27017', 27017),
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
@@ -451,7 +450,7 @@ class Module:
 				else:
 					code_directories.append((directory, directory))
 
-		config_ports = module_config['ports']
+		config_ports = module_config.get('ports', [])
 		if not isinstance(config_ports, list):
 			config_ports = [config_ports]
 		ports = []
