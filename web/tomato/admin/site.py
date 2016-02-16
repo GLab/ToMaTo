@@ -37,7 +37,7 @@ from django.core.urlresolvers import reverse
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc
-from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm, append_empty_choice, \
+from . import AddEditForm, RemoveConfirmForm, append_empty_choice, \
 	organization_name_list
 
 geolocation_script = '<script>\n\
@@ -86,11 +86,10 @@ class SiteForm(AddEditForm):
 
 	buttons = Buttons.cancel_add
 
-	primary_key = "name"
-	create_keys = ['name', 'organization', 'label']
-	redirect_after = "tomato.admin.site.info"
-
 	message_after = geolocation_script
+
+	def get_redirect_after(self):
+		return HttpResponseRedirect(reverse("tomato.admin.site.info", kwargs={"name": self.cleaned_data['name']}))
 
 	def __init__(self, orga_namelist, *args, **kwargs):
 		super(SiteForm, self).__init__(*args, **kwargs)
@@ -106,51 +105,48 @@ class SiteForm(AddEditForm):
 			self.buttons
 		)
 
-	def get_values(self):
-		formData = super(SiteForm, self).get_values()
-		formData['geolocation'] = {'longitude': formData['geolocation_longitude'],
-								   'latitude': formData['geolocation_latitude']}
-		del formData['geolocation_longitude']
-		del formData['geolocation_latitude']
-
-		return formData
-
-	def input_values(self, formData):
-		if formData is not None and 'geolocation' in formData and formData['geolocation']:
-			formData['geolocation_longitude'] = formData['geolocation']['longitude']
-			formData['geolocation_latitude'] = formData['geolocation']['latitude']
-			del formData['geolocation']
-		return formData
-
 class AddSiteForm(SiteForm):
 	title = "Add Site"
-	formaction = "tomato.admin.site.add"
-	formaction_haskeys = False
 
 	def __init__(self, organization=None, *args, **kwargs):
 		super(AddSiteForm, self).__init__(*args, **kwargs)
 		if organization is not None:
 			self.fields['organization'].initial = organization
 
+	def submit(self, api):
+		formData = self.cleaned_data
+		formData['geolocation'] = {'longitude': formData['geolocation_longitude'],
+								   'latitude': formData['geolocation_latitude']}
+		del formData['geolocation_longitude']
+		del formData['geolocation_latitude']
+		api.site_create(formData['name'], formData['organization'], formData['label'],
+											{k: v for k, v in formData.iteritems() if k not in ('name', 'organization', 'label')})
+
 
 class EditSiteForm(SiteForm):
 	buttons = Buttons.cancel_save
 	title = "Editing Site '%(name)s'"
-	formaction = "tomato.admin.site.edit"
 
-	def __init__(self, *args, **kwargs):
-		super(EditSiteForm, self).__init__(*args, **kwargs)
+	def __init__(self, data, *args, **kwargs):
+		if data is not None and 'geolocation' in data and data['geolocation']:
+			data['geolocation_longitude'] = data['geolocation']['longitude']
+			data['geolocation_latitude'] = data['geolocation']['latitude']
+			del data['geolocation']
+		super(EditSiteForm, self).__init__(*args, data=data, **kwargs)
 		self.fields["name"].widget = forms.TextInput(attrs={'readonly': 'readonly'})
 		self.fields["name"].help_text = None
 
+	def submit(self, api):
+		formData = self.cleaned_data
+		formData['geolocation'] = {'longitude': formData['geolocation_longitude'],
+								   'latitude': formData['geolocation_latitude']}
+		del formData['geolocation_longitude']
+		del formData['geolocation_latitude']
+		api.site_modify(formData['name'], {k: v for k, v in formData.iteritems() if k not in ('name',)})
 
 class RemoveSiteForm(RemoveConfirmForm):
-	redirect_after_useargs = False
-	formaction = "tomato.admin.site.remove"
-	redirect_after = "tomato.admin.site.list"
 	message = "Are you sure you want to remove the site '%(name)s'?"
 	title = "Remove Site '%(name)s'"
-	primary_key = 'name'
 
 
 @wrap_rpc
@@ -166,31 +162,43 @@ def info(api, request, name):
 
 @wrap_rpc
 def add(api, request, organization=None):
-	return add_function(request,
-						Form=AddSiteForm,
-						create_function=api.site_create,
-						modify_function=api.site_modify,
-						clean_formkwargs=({'organization': organization} if organization is not None else {}),
-						formkwargs={'orga_namelist': append_empty_choice(organization_name_list(api))}
-						)
+	if request.method == 'POST':
+		form = AddSiteForm(data=request.POST,
+												orga_namelist=append_empty_choice(organization_name_list(api)))
+		if form.is_valid():
+			form.submit(api)
+			return form.get_redirect_after()
+		else:
+			return form.create_response(request)
+	else:
+		form = AddSiteForm(organization=organization,
+												orga_namelist=append_empty_choice(organization_name_list(api)))
+		return form.create_response(request)
 
 
 @wrap_rpc
 def edit(api, request, name=None):
-	return edit_function(request,
-						 Form=EditSiteForm,
-						 modify_function=api.site_modify,
-						 primary_value=name,
-						 clean_formargs=[api.site_info(name)],
-						 formargs=[append_empty_choice(organization_name_list(api))]
-						 )
-
+	if request.method == 'POST':
+		form = EditSiteForm(orga_namelist=append_empty_choice(organization_name_list(api)),
+													data=request.POST)
+		if form.is_valid():
+			form.submit(api)
+			return form.get_redirect_after()
+		else:
+			return form.create_response(request)
+	else:
+		form = EditSiteForm(orga_namelist=append_empty_choice(organization_name_list(api)),
+													data=api.site_info(name))
+		return form.create_response(request)
 
 @wrap_rpc
 def remove(api, request, name):
-	return remove_function(request,
-						   Form=RemoveSiteForm,
-						   delete_function=api.site_remove,
-						   primary_value=name
-						   )
+	if request.method == 'POST':
+		form = RemoveSiteForm(name=name)
+		if form.is_valid():
+			organization_name = api.site_info(name)['organization']
+			api.host_remove(name)
+			return HttpResponseRedirect('tomato.admin.organization.info', kwargs={'name': organization_name})
+	form = RemoveSiteForm(name=name)
+	return form.create_response(request)
 

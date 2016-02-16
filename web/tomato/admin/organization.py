@@ -26,11 +26,13 @@ Created on Dec 4, 2014
 
 from django.shortcuts import render
 from django import forms
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
 
 from tomato.crispy_forms.layout import Layout
 from ..admin_common import Buttons
 from ..lib import wrap_rpc
-from . import add_function, edit_function, remove_function, AddEditForm, RemoveConfirmForm
+from . import AddEditForm, RemoveConfirmForm
 
 
 
@@ -43,16 +45,6 @@ class OrganizationForm(AddEditForm):
     description = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     
     buttons = Buttons.cancel_add
-    
-    primary_key = "name"
-    create_keys = ['name', 'label']
-    redirect_after = "tomato.admin.organization.info"
-
-    def get_values(self):
-        values = AddEditForm.get_values(self)
-        values['homepage_url'] = values.get('homepage_url') or None
-        values['image_url'] = values.get('image_url') or None
-        return values
 
     def __init__(self, *args, **kwargs):
         super(OrganizationForm, self).__init__(*args, **kwargs)
@@ -64,14 +56,22 @@ class OrganizationForm(AddEditForm):
             'description',
             self.buttons
         )
+
+    def get_redirect_after(self):
+        return HttpResponseRedirect(reverse("tomato.admin.organization.info", kwargs={"name": self.cleaned_data['name']}))
+
         
 class AddOrganizationForm(OrganizationForm):
     title = "Add Organization"
-    formaction = "tomato.admin.organization.add"
-    formaction_haskeys = False
+
     def __init__(self, *args, **kwargs):
         super(AddOrganizationForm, self).__init__(*args, **kwargs)
-    
+
+    def submit(self, api):
+      formData = self.cleaned_data
+      api.organization_create(formData['name'], formData['label'],
+											{k: v for k, v in formData.iteritems() if k not in ('name', 'label')})
+
 class EditOrganizationForm(OrganizationForm):
     buttons = Buttons.cancel_save
     title = "Editing Organization '%(name)s'"
@@ -80,17 +80,16 @@ class EditOrganizationForm(OrganizationForm):
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
         self.fields["name"].help_text=None
-        
+
+    def submit(self, api):
+      formData = self.cleaned_data
+      api.organization_modify(formData['name'],
+			                         {k: v for k, v in formData.iteritems() if k not in ('name',)})
+
     
 class RemoveOrganizationForm(RemoveConfirmForm):
-    redirect_after_useargs = False
-    formaction = "tomato.admin.organization.remove"
-    redirect_after = "tomato.admin.organization.list"
     message="Are you sure you want to remove the organization '%(name)s'?"
     title="Remove Organization '%(name)s'"
-    primary_key = 'name'
-        
-    
 
 @wrap_rpc
 def list(api, request):
@@ -151,25 +150,37 @@ def info(api, request, name):
 
 @wrap_rpc
 def add(api, request):
-    return add_function(request,
-                        Form=AddOrganizationForm,
-                        create_function=api.organization_create,
-                        modify_function=api.organization_modify
-                        )
+	if request.method == 'POST':
+		form = AddOrganizationForm(data=request.POST)
+		if form.is_valid():
+			form.submit(api)
+			return form.get_redirect_after()
+		else:
+			return form.create_response(request)
+	else:
+		form = AddOrganizationForm()
+		return form.create_response(request)
+
 
 @wrap_rpc
 def edit(api, request, name=None):
-    return edit_function(request,
-                         Form=EditOrganizationForm,
-                         modify_function=api.organization_modify,
-                         primary_value=name,
-                         clean_formargs=[api.organization_info(name)]
-                         )
+	if request.method == 'POST':
+		form = EditOrganizationForm(data=request.POST)
+		if form.is_valid():
+			form.submit(api)
+			return form.get_redirect_after()
+		else:
+			return form.create_response(request)
+	else:
+		form = EditOrganizationForm(data=api.organization_info(name))
+		return form.create_response(request)
     
 @wrap_rpc
 def remove(api, request, name):
-    return remove_function(request,
-                           Form=RemoveOrganizationForm,
-                           delete_function=api.organization_remove,
-                           primary_value=name
-                           )
+	if request.method == 'POST':
+		form = RemoveOrganizationForm(name=name)
+		if form.is_valid():
+			api.host_remove(name)
+			return HttpResponseRedirect('tomato.admin.organization.list')
+	form = RemoveOrganizationForm(name=name)
+	return form.create_response(request)
