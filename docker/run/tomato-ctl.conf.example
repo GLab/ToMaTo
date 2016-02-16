@@ -19,7 +19,7 @@
         "enabled": false,
 		"docker_container": "mongodb",
 		"image": "mongo:latest",
-        "ports": 27017,
+        "ports": ("127.0.0.1:27017", 27017),
 		"additional_args": ["--dns", "8.8.8.8"],
 		"directories": {
 			"data": "/path/on/host/to/data",
@@ -66,5 +66,6 @@
   "docker_dir": "/home/user/work/ToMaTo/docker/run",
   "tomato_dir": "/home/user/work/ToMaTo",
   "docker_network_interface": "docker0",
-  "docker_conainer_namespace": 'tomato'
+  "docker_conainer_namespace": 'tomato',
+  "config.yaml_path": "/home/user/.tomato/config.yaml"
 }
