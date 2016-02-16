@@ -178,9 +178,9 @@ def edit(api, request, name=None):
 @wrap_rpc
 def remove(api, request, name):
 	if request.method == 'POST':
-		form = RemoveOrganizationForm(name=name)
+		form = RemoveOrganizationForm(name=name, data=request.POST)
 		if form.is_valid():
-			api.host_remove(name)
-			return HttpResponseRedirect('tomato.admin.organization.list')
+			api.organization_remove(name)
+			return HttpResponseRedirect(reverse('tomato.admin.organization.list'))
 	form = RemoveOrganizationForm(name=name)
 	return form.create_response(request)

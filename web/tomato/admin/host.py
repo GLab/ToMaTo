@@ -184,9 +184,9 @@ def edit(api, request, name=None):
 @wrap_rpc
 def remove(api, request, name):
 	if request.method == 'POST':
-		form = RemoveHostForm(name=name)
+		form = RemoveHostForm(name=name, data=request.POST)
 		if form.is_valid():
 			api.host_remove(name)
-			return HttpResponseRedirect('tomato.admin.host.list')
+			return HttpResponseRedirect(reverse('tomato.admin.host.list'))
 	form = RemoveHostForm(name=name)
 	return form.create_response(request)
