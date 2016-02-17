@@ -14,7 +14,7 @@ services:
     protocol: http
   backend_users:
     host: dockerhost
-    port: 8002
+    port: 8003
     protocol: sslrpc2
   web:
     host: dockerhost
@@ -56,8 +56,8 @@ backend_core:
   database:
     db-name: tomato
     server:
-      host: dockerhost
-      port: 27017
+      host: %(DB_PORT_27017_TCP_ADDR)s
+      port: %(DB_PORT_27017_TCP_PORT)s
   host-connections:
     update-interval: 60
     availability-halftime: 7776000  # 90 days
@@ -81,8 +81,8 @@ backend_users:
   database:
     db-name: tomato
     server:
-      host: dockerhost
-      port: 27017
+      host: %(DB_PORT_27017_TCP_ADDR)s
+      port: %(DB_PORT_27017_TCP_PORT)s
   tasks:
     max-workers: 25
 
@@ -136,7 +136,7 @@ email:
     new-user-welcome:
       subject: Registration at ToMaTo-Lab
       body: |
-        Dear %s,
+        Dear %(username)s,
 
         Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our administrators shortly. Until then, you can create a topology (but not start it).
         You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.
@@ -148,7 +148,7 @@ email:
       body: |
         Dear ToMaTo administrator,
 
-        A new user, %s, has just registered at the ToMaTo testbed.
+        A new user, %(username)s, has just registered at the ToMaTo testbed.
         You can review all pending user registrations at https://master.tomato-lab.org/account/registrations
 
         Best Wishes,

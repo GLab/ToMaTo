@@ -49,8 +49,8 @@ class Provider(AuthProvider):
 		usermsg = settings.get_email_settings(Config.EMAIL_NEW_USER_WELCOME)
 		notifyFilteredUsers(lambda u: u.hasFlag(Flags.GlobalAdminContact)
 					or u.hasFlag(Flags.OrgaAdminContact) and user.organization == u.organization,
-		            adminmsg['subject'], adminmsg['body'] % username, ref=['account', username])
-		user.sendNotification(usermsg['subject'], usermsg['body'] % username, ref=['account', username])
+		            adminmsg['subject'], adminmsg['body'] % {'username': username}, ref=['account', username])
+		user.sendNotification(usermsg['subject'], usermsg['body'] % {'username': username}, ref=['account', username])
 		return user
 		
 def init(**kwargs):

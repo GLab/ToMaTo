@@ -330,7 +330,6 @@ def generate_default_config():
 			# enabled: True,
 			# is_database: True
 			'image': 'mongo:latest',
-			'ports': [27017],
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
@@ -343,7 +342,11 @@ def generate_default_config():
 			'shell_cmd': ['/usr/bin/mongo', "localhost:27017/tomato"]
 		},
 		'docker_network_interface': 'docker0',
-		'docker_container_namespace': 'tomato'
+		'docker_container_namespace': 'tomato',
+		'certs': {
+			'ca_cert': 'ca.pem',
+			'ca_key': 'ca_key.pem'
+		}
 		# 'docker_dir'  (will be generated if not found in config)
 		# 'tomato_dir'  (will be generated if not found in config)
 		# 'config.yaml_path'   (will be generated if not found in config)
@@ -447,7 +450,7 @@ class Module:
 				else:
 					code_directories.append((directory, directory))
 
-		config_ports = module_config['ports']
+		config_ports = module_config.get('ports', [])
 		if not isinstance(config_ports, list):
 			config_ports = [config_ports]
 		ports = []
@@ -610,6 +613,35 @@ if len(args) == 2:
 		for module_name in sorted(stats.iterkeys()):
 			mod_name_print = append_to_str(module_name, ": ", stats.iterkeys())
 			print mod_name_print, stats[module_name]
+		exit(0)
+
+	if args[1] == "gencerts":
+		ca_key = config["certs"]["ca_key"]
+		ca_cert = config["certs"]["ca_cert"]
+		if not os.path.isabs(ca_key):
+			backup_dir = os.path.join(config['docker_dir'],ca_key)
+		if not os.path.isabs(ca_cert):
+			backup_dir = os.path.join(config['docker_dir'],ca_cert)
+		new_ca = False
+		if not os.path.exists(ca_key):
+			run_observing("openssl", "genrsa", "-out", ca_key, "2048")
+			run_observing("openssl", "req", "-x509", "-new", "-nodes", "-extensions", "v3_ca", "-key", ca_key, "-days", "10240", "-out", ca_cert, "-sha512", "-subj", '/CN=ToMaTo CA')
+			new_ca = True
+		for module_name, module in tomato_modules.iteritems():
+			dir = config[module_name]["directories"]["config"]
+			service_key = os.path.join(module_name + "_key.pem")
+			service_cert = os.path.join(module_name + "_cert.pem")
+			service_csr = os.path.join(module_name + "_csr.pem")
+			service_file = os.path.join(module_name + ".pem")
+			ca_file = os.path.join(dir, "ca.pem")
+			if not os.path.exists(service_key):
+				run_observing("openssl", "genrsa", "-out", service_key, "2048")
+				run_observing("openssl", "req", "-new", "-key", service_key, "-out", service_csr, "-sha512", "-subj", "/CN=ToMaTo %s" % module_name)
+			if not os.path.exists(service_file) or new_ca:
+				run_observing("openssl", "x509", "-req", "-in", service_csr, "-CA", ca_cert, "-CAkey", ca_key, "-CAcreateserial", "-out", service_cert, "-days", "10240", "-sha512")
+				run_observing("sh", "-c", "cat %s %s %s > %s" % (ca_cert, service_cert, service_key, service_file))
+			if not os.path.exists(ca_file) or new_ca:
+				shutil.copy(ca_cert, ca_file)
 		exit(0)
 
 	if args[1] in ('help-config', '--help-config'):
