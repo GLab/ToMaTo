@@ -222,11 +222,14 @@ def account_send_notification(name, subject, message, ref=None, from_support=Fal
 	"""
 	Sends an email to the account
 	"""
-	#fixme: move to backend_users
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	acc = _getAccount(name)
-	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
-	acc.sendNotification(subject, message, ref=ref, fromUser=(None if from_support else currentUser()), subject_group=subject_group)
+	api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+	if from_support:
+		fromUser = None
+	else:
+		fromUser = currentUserName()
+	#fixme: check permissions
+	api.send_message(name, subject, message, fromUser=fromUser, ref=ref, subject_group=subject_group)
 
 def broadcast_announcement(title, message, ref=None, show_sender=True):
 	#fixme: move to backend_users
@@ -236,7 +239,6 @@ def broadcast_announcement(title, message, ref=None, show_sender=True):
 
 
 def account_usage(name): #@ReservedAssignment
-	#fixme: move partly to backend_users
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	return acc.totalUsage.info()

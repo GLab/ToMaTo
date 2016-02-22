@@ -277,24 +277,24 @@ class User(Entity, BaseDocument):
 			if (is_set) and (flag not in self.flags):
 				self.flags.append(flag)
 
-	def send_message(self, fromUser, title, message, ref=None, subject_group=None):
+	def send_message(self, fromUser, subject, message, ref=None, subject_group=None):
 		# add notification
 		now = time.time()
 		notf_id = hashlib.sha256(repr({
-			'title': title,
+			'title': subject,
 			'message': message,
 			'ref': ref,
 			'fromUser': fromUser.name if fromUser else None,
 			'subject_group': subject_group,
 			'timestamp': now
 		})).hexdigest()
-		notf = Notification(title=title, message=message, timestamp=now, id=notf_id)
+		notf = Notification(title=subject, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
 
 		# send email
 		if not Flags.NoMails:
-			mail.send(self.realname, self.email, title, message, fromUser.realname)
+			mail.send(self.realname, self.email, subject, message, fromUser.realname)
 
 
 	def notification_list(self, include_read=False):
