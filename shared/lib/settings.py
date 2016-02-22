@@ -283,6 +283,10 @@ class Config:
 	TOMATO_MODULE_BACKEND_USERS = "backend_users"
 	TOMATO_MODULE_BACKEND_API = "backend_api"
 
+	TOMATO_MODULES = {TOMATO_MODULE_WEB,
+										TOMATO_MODULE_BACKEND_CORE,
+										TOMATO_MODULE_BACKEND_USERS}
+
 	EMAIL_NOTIFICATION = "notification"
 	EMAIL_NEW_USER_WELCOME = "new-user-welcome"
 	EMAIL_NEW_USER_ADMIN = "new-user-admin-inform"
@@ -329,6 +333,7 @@ class SettingsProvider:
 		:param str tomato_module: tomato module (e.g., "web" or "backend_core")
 		:return: None
 		"""
+		InternalError.check(tomato_module in Config.TOMATO_MODULES, code=InternalError.INVALID_PARAMETER, message="invalid tomato module %s" % tomato_module, todump=False, data={'tomato_module': tomato_module})
 		self.tomato_module = tomato_module
 		self.filename = filename
 
@@ -349,6 +354,10 @@ class SettingsProvider:
 			print >> sys.stderr, "Found old-style config at %s - This is no longer supported." % (path)
 
 
+
+	def get_dumpmanager_enabled(self, tomato_module):
+		InternalError.check(tomato_module in Config.TOMATO_MODULES, code=InternalError.INVALID_PARAMETER, message="invalid tomato module", todump=False, data={'tomato_module': tomato_module})
+		return self.original_settings[tomato_module]['dumps']['enabled']
 
 	def get_tasks_settings(self):
 		"""
@@ -573,7 +582,7 @@ class SettingsProvider:
 		:return: a list of interface configs. each config is a dict, containing host, port, protocol, and optionally ssl
 		:rtype: list(dict)
 		"""
-		InternalError.check(target_module in self.original_settings['services'], code=InternalError.INVALID_PARAMETER, message="invalid module", data={"target_module": target_module})
+		InternalError.check(tomato_module in Config.TOMATO_MODULES, code=InternalError.INVALID_PARAMETER, message="invalid tomato module", todump=False, data={'tomato_module': tomato_module})
 		conf = self.original_settings['services'][target_module]
 		if 'interfaces' in conf:
 			res = []
@@ -776,47 +785,50 @@ class SettingsProvider:
 					self.original_settings['dumpmanager'][k] = v
 
 
-		# this module's settings
-		this_module_setting = self.original_settings.get(self.tomato_module, None)
-		this_mosule_defaults = default_settings[self.tomato_module]
-		if this_module_setting is None:
-			print "Configuration ERROR at /%s: is missing." % self.tomato_module
-			print " this is fatal."
-			error_found = True
-			bad_paths.append('/%s' % self.tomato_module)
-		for sec, default_sec_val in this_mosule_defaults.iteritems():
-			if not this_module_setting.get(sec, None):
-				print "Configuration ERROR at /%s/%s: is missing." % (self.tomato_module, sec)
-				if sec in ('paths', 'ssl', 'database'):
-					print " this is fatal."
-					error_found = True
-					bad_paths.append('/%s/%s' % (self.tomato_module, sec))
+		# tomato modules' settings
+		for tomato_module in Config.TOMATO_MODULES:
+			module_settings = self.original_settings.get(tomato_module, None)
+			this_mosule_defaults = default_settings[tomato_module]
+			if module_settings is None:
+				print "Configuration ERROR at /%s: is missing." % tomato_module
+				print " this is fatal."
+				error_found = True
+				bad_paths.append('/%s' % tomato_module)
+			for sec, default_sec_val in this_mosule_defaults.iteritems():
+				if not module_settings.get(sec, None):
+					print "Configuration ERROR at /%s/%s: is missing." % (tomato_module, sec)
+					if sec in ('paths', 'ssl', 'database'):
+						print " this is fatal."
+						error_found = True
+						bad_paths.append('/%s/%s' % (tomato_module, sec))
+					else:
+						print " using default %s" % sec
+						module_settings[sec] = default_sec_val
 				else:
-					print " using default %s" % sec
-					this_module_setting[sec] = default_sec_val
-			else:
-				if isinstance(default_sec_val, dict):
-					for k, v in default_sec_val.iteritems():
-						if this_module_setting[sec].get(k, None) is None:
-							print "Configuration ERROR at /%s/%s/%s: is missing." % (self.tomato_module, sec, k)
-							if (sec == "database" and k == "server") or (sec in ('paths', 'ssl')) or (sec == 'duration-log' and k == 'location'):
-								print " this is fatal."
-								error_found = True
-								bad_paths.append('/%s/%s/%s' % (self.tomato_module, sec, k))
-							else:
-								print " using default."
-								this_module_setting[sec][k] = v
-						else:
-							if sec == "database" and k == 'server':
-								if not this_module_setting[sec][k].get('host', None):
-									print "Configuration ERROR at %s/%s/%s/host" % (self.tomato_module, sec, k)
+					if isinstance(default_sec_val, dict):
+						for k, v in default_sec_val.iteritems():
+							if module_settings[sec].get(k, None) is None:
+								print "Configuration ERROR at /%s/%s/%s: is missing." % (tomato_module, sec, k)
+								if (sec == "database" and k == "server") or (sec in ('paths', 'ssl')) or (sec == 'duration-log' and k == 'location'):
 									print " this is fatal."
 									error_found = True
-									bad_paths.append('%s/%s/%s/host' % (self.tomato_module, sec, k))
-								if not this_module_setting[sec][k].get('port', None):
-									print "Configuration ERROR at %s/%s/%s/port" % (self.tomato_module, sec, k)
-									print " using default port."
-									this_module_setting[sec][k]['port'] = v['port']
+									bad_paths.append('/%s/%s/%s' % (tomato_module, sec, k))
+								else:
+									print " using default."
+									module_settings[sec][k] = v
+							else:
+								if sec == "database" and k == 'server':
+									if not module_settings[sec][k].get('host', None):
+										print "Configuration ERROR at %s/%s/%s/host" % (tomato_module, sec, k)
+										print " this is fatal."
+										error_found = True
+										bad_paths.append('%s/%s/%s/host' % (tomato_module, sec, k))
+									if not module_settings[sec][k].get('port', None):
+										print "Configuration ERROR at %s/%s/%s/port" % (tomato_module, sec, k)
+										print " using default port."
+										module_settings[sec][k]['port'] = v['port']
+
+
 
 		InternalError.check(not error_found, code=InternalError.CONFIGURATION_ERROR, message="fatal configuration error", todump=False, data={'bad_paths': bad_paths})
 

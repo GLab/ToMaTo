@@ -379,12 +379,17 @@ class APIDumpSource(DumpSource):
 
 
 
-local_dumpsource = LocalDumpSource()
-api_dumpsources = []
+
+module_dumpsources = []
+"""
+after init(), this will contain all sources of Config.TOMATO_MODULES
+for which dumps are enabled.
+:type: list[DumpSource]
+"""
 
 
 def getDumpSources(include_disabled=False):
-	sources = [local_dumpsource] + api_dumpsources
+	sources = module_dumpsources
 	hosts = host.Host.getAll()
 	for h in hosts:
 		if include_disabled or h.enabled:
@@ -474,16 +479,22 @@ def scheduleUpdates():
 		scheduler.cancelTask(syncTasks[s])
 
 def _create_api_dumpsource_for_module(tomato_module):
-	protocol = 'sslrpc2'
-	conf = settings.get_interface(tomato_module, True, protocol)
-	backend_users_address = "%s://%s:%s" % (protocol, conf['host'], conf['port'])
-	proxy = service.createProxy(backend_users_address, settings.get_ssl_cert_filename(), settings.get_ssl_ca_filename())
+	proxy = service.create_tomato_inner_proxy(tomato_module)
 	return APIDumpSource(tomato_module, proxy)
 
-def init():
-	scheduler.scheduleRepeated(settings.get_dumpmanager_config()[Config.DUMPMANAGER_COLLECTION_INTERVAL], scheduleUpdates, immediate=True)
-	api_dumpsources.append(_create_api_dumpsource_for_module(Config.TOMATO_MODULE_BACKEND_USERS))
+def rebuild_dump_source_list():
+	while len(module_dumpsources) > 0:
+		module_dumpsources.pop()
+	for tomato_module in Config.TOMATO_MODULES:
+		if settings.get_dumpmanager_enabled(tomato_module):
+			if tomato_module == settings.get_tomato_module_name():
+				module_dumpsources.append(LocalDumpSource())
+			else:
+				module_dumpsources.append(_create_api_dumpsource_for_module(tomato_module))
 
+def init():
+	rebuild_dump_source_list()
+	scheduler.scheduleRepeated(settings.get_dumpmanager_config()[Config.DUMPMANAGER_COLLECTION_INTERVAL], scheduleUpdates, immediate=True)
 
 # Second Part: Access to known dumps for API
 

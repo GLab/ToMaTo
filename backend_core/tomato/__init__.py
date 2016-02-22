@@ -124,6 +124,7 @@ def reload_(*args):
 	settings.settings.reload()
 	# fixme: all cached methods should be invalidated here
 	logging.openDefault(settings.settings.get_log_filename())
+	dumpmanager.rebuild_dump_source_list()
 	#stopRPCserver()
 	#startRPCserver()
 
