@@ -13,12 +13,12 @@ class MailError(Error):
 	TYPE = "mail"
 	FAILED_TO_SEND = "failed_to_send"
 	FAILED_TO_BUILD = "failed_to_build"
-	SENDER_MISSING = "sender_missing"
+	RECEIVER_MISSING = "receiver"
 	SUBJECT_MISSING = "subject missing"
 	MESSAGE_MISSING = "message missing"
 
 def send(to_realname, to_addr, subject, message, from_realname=None, from_addr=None):
-	MailError.check(to_realname and to_addr, MailError.SENDER_MISSING, "E-Mail sender is missing", todump=False)
+	MailError.check(to_realname and to_addr, MailError.RECEIVER_MISSING, "E-Mail receiver is missing", todump=False)
 	MailError.check(subject, MailError.SUBJECT_MISSING, "E-mail subject is missing", todump=True)
 	MailError.check(message, MailError.MESSAGE_MISSING, "E-mail body is missing", todump=True)
 

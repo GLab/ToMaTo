@@ -166,7 +166,6 @@ class Notification(EmbeddedDocument):
 	def set_read(self, read):
 		self.read = read
 
-
 class User(Entity, BaseDocument):
 	"""
 	:type organization: organization.Organization
@@ -270,7 +269,16 @@ class User(Entity, BaseDocument):
 		self.password = User.hashPassword(password)
 		self.save()
 
-	def notification_add(self, fromUser, title, message, ref=None, subject_group=None):
+	def modify_flags(self, flags):
+		UserError.check(isinstance(flags, dict), code=UserError.INVALID_DATA, message="flags must be a dictionary")
+		for flag, is_set in flags.iteritems():
+			if (not is_set) and (flag in self.flags):
+				self.flags.remove(flag)
+			if (is_set) and (flag not in self.flags):
+				self.flags.append(flag)
+
+	def send_message(self, fromUser, title, message, ref=None, subject_group=None):
+		# add notification
 		now = time.time()
 		notf_id = hashlib.sha256(repr({
 			'title': title,
@@ -284,6 +292,11 @@ class User(Entity, BaseDocument):
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
 
+		# send email
+		if not Flags.NoMails:
+			mail.send(self.realname, self.email, title, message, fromUser.realname)
+
+
 	def notification_list(self, include_read=False):
 		return [n.info() for n in self.notifications if (include_read or not n.read)]
 
@@ -293,9 +306,9 @@ class User(Entity, BaseDocument):
 				return n
 		UserError.check(False, code=UserError.ENTITY_DOES_NOT_EXIST, message="Notification with that id does not exist", data={"id": notification_id, "user": self.name})
 
-	def notification_read(self, notification_id):
+	def notification_set_read(self, notification_id, read=True):
 		notif = self.notification_get(notification_id)
-		notif.read = True
+		notif.read = read
 		self.save()
 
 	ACTIONS = {

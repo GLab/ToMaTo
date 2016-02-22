@@ -11,5 +11,6 @@ def dummy():
 
 from auth import *
 from dump import *
+from notification import *
 from organization import *
 from user import *

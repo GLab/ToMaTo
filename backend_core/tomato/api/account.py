@@ -16,8 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 #from imaplib import Flags
 from ..auth import Flags
+from ..lib.service import get_tomato_inner_proxy
+from ..lib.settings import Config
 
-
+#fixme: should be obsolete after migration of user stuff to backend_users
 def _getAccount(name):
 	acc = currentUser()
 	if name and (not acc or name != acc.name):
@@ -63,9 +65,11 @@ def account_info(name=None):
 	Exceptions:
 	  If the given account does not exist an exception is raised.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	acc = _getAccount(name)
-	return acc.info(currentUser() == acc or currentUser().isAdminOf(acc))
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
+	if name is None:
+		name = currentUserName()
+	api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+	return api.user_info(name, asUser=currentUserName())
 
 def account_notifications(include_read=False):
 	"""
@@ -74,8 +78,9 @@ def account_notifications(include_read=False):
 	:param bool include_read: include read notifications. if False, only return unread ones.
 	:return: list of Notification
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	return currentUser().list_notifications(include_read)
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
+	api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+	api.notification_list(currentUserName(), include_read)
 
 def account_notification_set_read(notification_id, read):
 	"""
@@ -85,8 +90,9 @@ def account_notification_set_read(notification_id, read):
 	:param bool read: new read status of the notification
 	:return: None
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	currentUser().set_notification_read(notification_id, read)
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
+	api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+	api.notification_set_read(currentUserName(), read)
 
 def account_list(organization=None, with_flag=None):
 	"""
@@ -96,20 +102,11 @@ def account_list(organization=None, with_flag=None):
 	  A list with information entries of all accounts. Each list entry contains
 	  exactly the same information as returned by :py:func:`account_info`.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	if organization:
-		organization = _getOrganization(organization)
-	if currentUser().hasFlag(Flags.GlobalAdmin):
-		accounts = getAllUsers(organization=organization, with_flag=with_flag) if organization else getAllUsers(with_flag=with_flag)
-		return [acc.info(True) for acc in accounts]
-	elif currentUser().hasFlag(Flags.OrgaAdmin):
-		UserError.check(organization == currentUser().organization, code=UserError.DENIED,
-			message="Not enough permissions")
-		return [acc.info(True) for acc in getAllUsers(organization=currentUser().organization, with_flag=with_flag)]
-	else:
-		raise UserError(code=UserError.DENIED, message="Not enough permissions")
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
+	api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+	return api.user_list(organization, with_flag, asUser=currentUserName())
 
-def account_modify(name=None, attrs=None):
+def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, ignore_flag_on_unauthorized=False):
 	"""
 	Modifies the given account, configuring it with the given attributes.
 	
@@ -124,18 +121,51 @@ def account_modify(name=None, attrs=None):
 	  ``realname``, ``affiliation``, ``password`` and ``email``.
 	  Administrators (i.e. users with flag ``admin``) can additionally change
 	  these fields on all accounts: ``name``, ``origin`` and ``flags``.
+
+	  ``flags`` must be a dictionary of the form {flag_name: is_set}.
+	  if is_set is true, the respective flag will be set. if is_set is false, it will be unset.
+	  if a flag is not mentioned in the dict, it is left as it is.
+
+	Parameter *ignore_key_on_unauthorized*:
+	  Defines the behavior when ``attrs`` contains a key that the current user
+	  is not allowed to modify:
+	  If True, the key is simply skipped, and the other keys are still modified.
+	  If False, the whole operation will be cancelled.
+
+	Parameter *ignore_flag_on_unauthorized*:
+	  Similar to ``ingnore_key_on_unauthorized``, but with the ``flags`` attribute
 	  
 	Return value:
 	  This method returns the info dict of the account. All changes will be 
 	  reflected in this dict.
 	"""
 	if not attrs: attrs = {}
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	acc = _getAccount(name)
-	if acc != currentUser():
-		UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
-	acc.modify(attrs)
-	return acc.info(True)
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
+	api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+	if name is None:
+		name = currentUserName()
+	modify_allowed_list = api.allowed_modify_keys(currentUserName(), name)
+
+	# check authorization for keys
+	for k in attrs.iterkeys():
+		if k not in modify_allowed_list:
+			if ignore_key_on_unauthorized:
+				del attrs[k]
+			else:
+				UserError.check(False, code=UserError.DENIED, message="trying to modify a key that is not allowed", data={"allowed_keys": modify_allowed_list, "attrs.keys()": attrs.keys()})
+
+	# check authorization for flags
+	if 'flags' in attrs:
+		flags = attrs['flags']
+		allowed_flags = api.allowed_modify_flags(currentUserName(), name)
+		for k in flags.iterkeys():
+			if k not in allowed_flags:
+				if ignore_key_on_unauthorized:
+					del flags[k]
+				else:
+					UserError.check(False, code=UserError.DENIED, message="trying to modify a flag that is not allowed", data={"allowed_flags": allowed_flags, "flags.keys()": flags.keys()})
+
+	return api.user_modify(name, attrs)
 		
 def account_create(username, password, organization, attrs=None, provider=""):
 	"""
@@ -163,6 +193,7 @@ def account_create(username, password, organization, attrs=None, provider=""):
 	Return value:
 	  This method returns the info dict of the new account.
 	"""
+	# fixme: use backend_users
 	if not attrs: attrs = {}
 	user = register(username, password, organization, attrs, provider)
 	return user.info(True)
@@ -179,12 +210,39 @@ def account_remove(name=None):
 	Return value:
 	  This method returns nothing if the account has been deleted.
 	"""
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
+	api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+	if name is None:
+		name = currentUserName()
+	UserError.check(api.may_remove(currentUserName(), name), code=UserError.DENIED, message="Unauthorized")
+	api.user_remove(name)
+
+
+def account_send_notification(name, subject, message, ref=None, from_support=False, subject_group=None):
+	"""
+	Sends an email to the account
+	"""
+	#fixme: move to backend_users
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
-	if acc == currentUser() and acc.hasFlag(Flags.GlobalAdmin):
-		raise UserError(code=UserError.DENIED, message="Admins must not delete themselves")
-	remove(acc)
+	acc.sendNotification(subject, message, ref=ref, fromUser=(None if from_support else currentUser()), subject_group=subject_group)
+
+def broadcast_announcement(title, message, ref=None, show_sender=True):
+	#fixme: move to backend_users
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	sender = currentUser()
+	send_announcement(sender, title, message, ref, show_sender)
+
+
+def account_usage(name): #@ReservedAssignment
+	#fixme: move partly to backend_users
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	acc = _getAccount(name)
+	return acc.totalUsage.info()
+
+
+# the following functions should be removed, and moved to the config file if possible
 		
 def account_flags():
 	"""
@@ -211,27 +269,12 @@ def account_flag_configuration():
 		'categories': categories
 		}
 
-def account_send_notification(name, subject, message, ref=None, from_support=False, subject_group=None):
-	"""
-	Sends an email to the account
-	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	acc = _getAccount(name)
-	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
-	acc.sendNotification(subject, message, ref=ref, fromUser=(None if from_support else currentUser()), subject_group=subject_group)
 
-def broadcast_announcement(title, message, ref=None, show_sender=True):
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	sender = currentUser()
-	send_announcement(sender, title, message, ref, show_sender)
 
-	
-def account_usage(name): #@ReservedAssignment
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	acc = _getAccount(name)
-	return acc.totalUsage.info()	
+
+
 	
 from host import _getOrganization
-from .. import currentUser
+from .. import currentUser, currentUserName
 from ..lib.error import UserError
 from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags, send_announcement

@@ -476,7 +476,7 @@ def scheduleUpdates():
 		scheduler.cancelTask(syncTasks[s])
 
 def _create_api_dumpsource_for_module(tomato_module):
-	proxy = service.create_tomato_inner_proxy(tomato_module)
+	proxy = service.get_tomato_inner_proxy(tomato_module)
 	return APIDumpSource(tomato_module, proxy)
 
 def init():
