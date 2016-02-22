@@ -67,6 +67,12 @@ _currentUser = threading.local()
 
 def currentUser():
 	return _currentUser.user if hasattr(_currentUser, "user") else None  # fixme
+
+def currentUserName():
+	u = _currentUser
+	if _currentUser is None:
+		return None
+	return u["name"]
 	
 def setCurrentUser(user):
 	_currentUser.user = user
@@ -124,7 +130,6 @@ def reload_(*args):
 	settings.settings.reload()
 	# fixme: all cached methods should be invalidated here
 	logging.openDefault(settings.settings.get_log_filename())
-	dumpmanager.rebuild_dump_source_list()
 	#stopRPCserver()
 	#startRPCserver()
 
