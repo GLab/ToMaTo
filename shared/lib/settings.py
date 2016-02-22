@@ -64,7 +64,7 @@ from error import InternalError
 
 default_settings = yaml.load("""
 services:
-  backend_api:  # currently, this points to backend_core
+  backend_core:
     host: dockerhost
     interfaces:
       - port: 8000
@@ -73,10 +73,6 @@ services:
       - port: 8001
         ssl: true
         protocol: https
-  backend_core:
-    host: dockerhost
-    port: 8000
-    protocol: http
   backend_users:
     host: dockerhost
     port: 8003
@@ -281,7 +277,7 @@ class Config:
 	TOMATO_MODULE_WEB = "web"
 	TOMATO_MODULE_BACKEND_CORE = "backend_core"
 	TOMATO_MODULE_BACKEND_USERS = "backend_users"
-	TOMATO_MODULE_BACKEND_API = "backend_api"
+	TOMATO_MODULE_BACKEND_API = "backend_core"
 
 	TOMATO_MODULES = {TOMATO_MODULE_WEB,
 										TOMATO_MODULE_BACKEND_CORE,
@@ -582,7 +578,7 @@ class SettingsProvider:
 		:return: a list of interface configs. each config is a dict, containing host, port, protocol, and optionally ssl
 		:rtype: list(dict)
 		"""
-		InternalError.check(tomato_module in Config.TOMATO_MODULES, code=InternalError.INVALID_PARAMETER, message="invalid tomato module", todump=False, data={'tomato_module': tomato_module})
+		InternalError.check(target_module in Config.TOMATO_MODULES, code=InternalError.INVALID_PARAMETER, message="invalid tomato module", todump=False, data={'tomato_module': target_module})
 		conf = self.original_settings['services'][target_module]
 		if 'interfaces' in conf:
 			res = []
@@ -607,10 +603,7 @@ class SettingsProvider:
 		:return: a list of interface configs. each config is a dict, containing host, port, protocol, and optionally ssl
 		:rtype: list(dict)
 		"""
-		if self.tomato_module == "backend_core":
-			return self.get_interfaces('backend_api')
-		else:
-			return self.get_interfaces(self.tomato_module)
+		return self.get_interfaces(self.tomato_module)
 
 
 	def _check_settings(self):

@@ -1,13 +1,14 @@
 from ..user import User
 from _shared import _getUser, _getOrganization
 
-def user_list(organization=None, with_flag=None, asUser=asUser):
+def user_list(organization=None, with_flag=None, asUser=None):
 	if organization:
 		organization = _getOrganization(organization)
 		result = [u.info() for u in User.objects(organization=organization)]
 	else:
 		result = [u.info() for u in User.objects.all()]
-	#fixme: filter by flag
+	if with_flag:
+		filter(lambda u: with_flag in u['flags'], result)
 	#fixme: apply asUser as in user_info
 	return result
 	# old code from backend_core

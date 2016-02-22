@@ -1,5 +1,5 @@
 services:
-  backend_api:  # currently, this points to backend_core
+  backend_core:  # currently, this points to backend_core
     host: dockerhost
     interfaces:
       - port: 8000
@@ -8,10 +8,6 @@ services:
       - port: 8001
         ssl: true
         protocol: https
-  backend_core:
-    host: dockerhost
-    port: 8000
-    protocol: http
   backend_users:
     host: dockerhost
     port: 8003
