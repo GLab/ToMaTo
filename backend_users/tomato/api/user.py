@@ -30,6 +30,7 @@ def user_info(name, asUser=None):
 	return user.info()
 
 def user_create(**args):
+	#fixme: explicit arguments
 	user = User.create(**args)
 	return user.info()
 

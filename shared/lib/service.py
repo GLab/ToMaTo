@@ -21,7 +21,7 @@ def createProxy(address, sslcert, sslca):
 	return Proxy((address, port), certfile=sslcert, keyfile=sslcert, ca_certs=sslca, cert_reqs=ssl.CERT_REQUIRED, onError=_convertError)
 
 
-def create_tomato_inner_proxy(tomato_module):
+def get_tomato_inner_proxy(tomato_module):
 	protocol = 'sslrpc2'
 	conf = settings.get_interface(tomato_module, True, protocol)
 	backend_users_address = "%s://%s:%s" % (protocol, conf['host'], conf['port'])
