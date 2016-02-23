@@ -1,7 +1,7 @@
 from ..user import User
 from _shared import _getUser, _getOrganization
 
-def user_list(organization=None, with_flag=None, asUser=None):
+def user_list(organization=None, with_flag=None):
 	if organization:
 		organization = _getOrganization(organization)
 		result = [u.info() for u in User.objects(organization=organization)]
@@ -9,7 +9,6 @@ def user_list(organization=None, with_flag=None, asUser=None):
 		result = [u.info() for u in User.objects.all()]
 	if with_flag:
 		filter(lambda u: with_flag in u['flags'], result)
-	#fixme: apply asUser as in user_info
 	return result
 	# old code from backend_core
 	#
@@ -25,9 +24,8 @@ def user_list(organization=None, with_flag=None, asUser=None):
 	# else:
 	# 	raise UserError(code=UserError.DENIED, message="Not enough permissions")
 
-def user_info(name, asUser=None):
+def user_info(name):
 	user = _getUser(name)
-	#fixme: if asUser is set, remove info that user 'asUser' is not allowed to see
 	return user.info()
 
 def user_create(**args):
