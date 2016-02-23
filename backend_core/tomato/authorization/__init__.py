@@ -1,6 +1,7 @@
 from ..lib.service import get_tomato_inner_proxy
 from ..lib.settings import Config
 from ..lib.userflags import Flags
+from .. import scheduler
 
 class UserInfo:
 	def __init__(self, username):
@@ -8,9 +9,13 @@ class UserInfo:
 		self.api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
 		self._info = None
 
+	def invalidate_info(self):
+		self._info = None
+
 	def info(self):
 		if self._info is None:
 			self._info = self.api.user_info(self.name)
+			scheduler.scheduleOnce(60, self.invalidate_info)  # fixme: invalidation interval should be configurable
 		return self._info
 
 	def get_username(self):
@@ -193,6 +198,8 @@ class UserInfo:
 			return True
 		return False
 
+_user_infos = {}
+
 def get_user_info(username):
 	"""
 	get user info for this username
@@ -201,5 +208,7 @@ def get_user_info(username):
 	:return: UserInfo object for corresponding user
 	:rtype: UserInfo
 	"""
-	#todo: some caching
-	return UserInfo(username=username)
+	if username not in _user_infos:
+		user_info = UserInfo(username=username)
+		_user_infos[username] = user_info
+	return _user_infos[username]

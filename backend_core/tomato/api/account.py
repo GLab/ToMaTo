@@ -190,6 +190,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 				else:
 					_UserError.check(False, code=_UserError.DENIED, message="trying to modify a flag that is not allowed", data={"allowed_flags": allowed_flags, "flags.keys()": flags.keys()})
 
+	_get_user_info(name).invalidate_info()
 	return api.user_modify(name, attrs)
 		
 def account_create(username, password, organization, attrs=None, provider=""):
