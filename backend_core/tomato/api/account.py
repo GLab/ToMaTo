@@ -14,8 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
-#from imaplib import Flags
-from ..auth import Flags
+
 from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
 from ..lib.settings import Config as _Config
 from ..authorization import get_user_info as _get_user_info
