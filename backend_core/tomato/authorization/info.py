@@ -4,7 +4,7 @@ from ..lib.service import get_tomato_inner_proxy
 from ..lib.settings import Config
 
 class InfoObj(object):
-	def __init(self, cache_duration):
+	def __init__(self, cache_duration):
 		self._cache_duration = cache_duration
 		self._info = None
 
