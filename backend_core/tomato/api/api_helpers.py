@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .. import currentUser
+from .. import currentUser, currentUserName
 from ..lib.error import UserError  #@UnresolvedImport
+from ..authorization import get_user_info
 
 def checkauth(fn):
 	def call(*args, **kwargs):
@@ -27,3 +28,14 @@ def checkauth(fn):
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)
 	return call
+
+def _getCurrentUserInfo():
+	"""
+	get authorization.UserInfo object for current user
+	:return: PermissionChecker object for current user, or None if no user is logged in.
+	:rtype: PermissionChecker or NoneType
+	"""
+	if currentUser():
+		return get_user_info(currentUserName())
+	else:
+		return None

@@ -182,17 +182,58 @@ class PermissionChecker(UserInfo):
 			return True
 		return False
 
-_user_infos = {}
+	def may_create_organizations(self):
+		"""
+		check whether this user may create an organization
+		:return: whether this user may create an organization
+		:rtype: bool
+		"""
+		return Flags.GlobalAdmin in self.get_flags()
+
+	def may_modify_organization(self, organization):
+		"""
+		check whether this user may modify this organization
+		:param str organization: organization to be modified
+		:return: whether this user may modify this organization
+		:rtype: bool
+		"""
+		if Flags.GlobalAdmin in self.get_flags():
+			return True
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == organization:
+			return True
+		return False
+
+	def may_delete_organization(self, organization):
+		"""
+		check whether this user may delete this organization
+		:param str organization: organization to be deleted
+		:return: whether this user may delete this organization
+		:rtype: bool
+		"""
+		return Flags.GlobalAdmin in self.get_flags()
+
+
+
+
+_permission_checkers = {}
+
+def get_permission_checker(username):
+	"""
+	get PermissionChecker for this username
+	:param str username: username of user
+	:return: PermissionChecker object for corresponding user
+	:rtype: PermissionChecker
+	"""
+	if username not in _permission_checkers:
+		permission_checker = PermissionChecker(username=username)
+		_permission_checkers[username] = permission_checker
+	return _permission_checkers[username]
 
 def get_user_info(username):
 	"""
-	get user info for this username
-	This may be cached, or fresh.
+	return UserInfo object for this username
 	:param str username: username of user
-	:return: UserInfo object for corresponding user
-	:rtype: UserInfo
+	:return: PermissionChecker object for corresponding user
+	:rtype: PermissionChecker
 	"""
-	if username not in _user_infos:
-		user_info = UserInfo(username=username)
-		_user_infos[username] = user_info
-	return _user_infos[username]
+	return get_permission_checker(username)

@@ -15,9 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import checkauth
+from api_helpers import checkauth, _getCurrentUserInfo
 from ..lib.cache import cached, invalidates #@UnresolvedImport
+from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
+from ..lib.settings import Config as _Config
 
+#fixme: function won't be accessible after migration
 def _getOrganization(name):
 	o = Organization.get(name)
 	UserError.check(o, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": name})
@@ -38,7 +41,8 @@ def organization_list():
 	"""
 	undocumented
 	"""
-	return [o.info() for o in Organization.objects.all()]
+	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	return api.organization_list()
 
 @checkauth
 @invalidates(organization_list)
@@ -46,15 +50,17 @@ def organization_create(name, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	o = Organization.create(name, label, attrs)
-	return o.info()
+	UserError.check(_getCurrentUserInfo(), code=UserError.NOT_LOGGED_IN, message="unauthenticated")
+	UserError.check(_getCurrentUserInfo().may_create_organizations(), code=UserError.DENIED, message="unauthorized")
+	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	return api.organization_create(name, label, attrs)
 
 def organization_info(name):
 	"""
 	undocumented
 	"""
-	orga = _getOrganization(name)
-	return orga.info()
+	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	return api.organization_info()
 
 @checkauth
 @invalidates(organization_list)
@@ -62,9 +68,10 @@ def organization_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	orga = _getOrganization(name)
-	orga.modify(attrs)
-	return orga.info()
+	UserError.check(_getCurrentUserInfo(), code=UserError.NOT_LOGGED_IN, message="unauthenticated")
+	UserError.check(_getCurrentUserInfo().may_modify_organization(name), code=UserError.DENIED, message="unauthorized")
+	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	return api.organization_modify(name, attrs)
 
 @checkauth
 @invalidates(organization_list)
@@ -72,11 +79,14 @@ def organization_remove(name):
 	"""
 	undocumented
 	"""
-	orga = _getOrganization(name)
-	orga.remove()
+	UserError.check(_getCurrentUserInfo(), code=UserError.NOT_LOGGED_IN, message="unauthenticated")
+	UserError.check(_getCurrentUserInfo().may_delete_organization(name), code=UserError.DENIED, message="unauthorized")
+	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api.organization_remove(name)
 
 @checkauth
 def organization_usage(name): #@ReservedAssignment
+	#fixme: won't work when organizations are gone from backend_core
 	orga = _getOrganization(name)
 	return orga.totalUsage.info()	
 

@@ -18,6 +18,7 @@
 from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
 from ..lib.settings import Config as _Config
 from ..authorization import get_user_info as _get_user_info
+from api_helpers import _getCurrentUserInfo
 
 #fixme: should be obsolete after migration of user stuff to backend_users
 def _getAccount(name):
@@ -29,17 +30,7 @@ def _getAccount(name):
 
 
 
-# important function
-def _getCurrentUserInfo():
-	"""
-	get authorization.UserInfo object for current user
-	:return: UserInfo object for current user, or None if no user is logged in.
-	:rtype: UserInfo or NoneType
-	"""
-	if _currentUser():
-		return _get_user_info(_currentUserName())
-	else:
-		return None
+
 
 
 def account_info(name=None):
