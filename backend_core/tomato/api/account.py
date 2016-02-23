@@ -159,7 +159,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	if name is None:
 		name = _currentUserName()
-	modify_allowed_list = _getCurrentUserInfo().modify_allowed_keys(_get_user_info(name))
+	modify_allowed_list = _getCurrentUserInfo().modify_user_allowed_keys(_get_user_info(name))
 
 	# check authorization for keys
 	for k in attrs.iterkeys():
@@ -172,7 +172,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	# check authorization for flags
 	if 'flags' in attrs:
 		flags = attrs['flags']
-		allowed_flags = _getCurrentUserInfo().modify_allowed_flags(_get_user_info(name))
+		allowed_flags = _getCurrentUserInfo().modify_user_allowed_flags(_get_user_info(name))
 		for k in flags.iterkeys():
 			if k not in allowed_flags:
 				if ignore_key_on_unauthorized:
@@ -230,7 +230,7 @@ def account_remove(name=None):
 	if name is None:
 		name = _currentUserName()
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
-	_UserError.check(_getCurrentUserInfo().may_delete(_get_user_info(name)), code=_UserError.DENIED, message="Unauthorized")
+	_UserError.check(_getCurrentUserInfo().may_delete_user(_get_user_info(name)), code=_UserError.DENIED, message="Unauthorized")
 	api.user_remove(name)
 
 
@@ -244,7 +244,7 @@ def account_send_notification(name, subject, message, ref=None, from_support=Fal
 		fromUser = None
 	else:
 		fromUser = _currentUserName()
-	_UserError.check(_getCurrentUserInfo().may_send_message(_get_user_info(name)), code=_UserError.DENIED, message="not permission to send the message")
+	_UserError.check(_getCurrentUserInfo().may_send_message_to_user(_get_user_info(name)), code=_UserError.DENIED, message="not permission to send the message")
 	api.send_message(name, subject, message, fromUser=fromUser, ref=ref, subject_group=subject_group)
 
 def broadcast_announcement(title, message, ref=None, show_sender=True, subject_group=None, organization_filter=None):

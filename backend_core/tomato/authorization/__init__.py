@@ -44,7 +44,7 @@ class PermissionChecker(UserInfo):
 			res.update('email', 'flags', 'organization', 'quota', 'notification_count', 'client_data', 'last_login', 'password_hash')
 		return res
 
-	def modify_allowed_keys(self, userB):
+	def modify_user_allowed_keys(self, userB):
 		"""
 		return a list of key this user may modify in userB
 		note that although flags is always included here, only some flags may be changeble;
@@ -66,7 +66,7 @@ class PermissionChecker(UserInfo):
 				result.update("realname", "email")
 		return result
 
-	def modify_allowed_flags(self, userB):
+	def modify_user_allowed_flags(self, userB):
 		"""
 		return a list of flags this user may modify of userB.
 		:param UserInfo userB: user to be modified
@@ -119,7 +119,7 @@ class PermissionChecker(UserInfo):
 						])
 		return result
 
-	def may_reset_password(self, userB):
+	def may_reset_password_of_user(self, userB):
 		"""
 		check whether this user may reset the password for userB.
 		:param UserInfo userB: user whose password is to be resetted.
@@ -134,7 +134,7 @@ class PermissionChecker(UserInfo):
 			return True
 		return False
 
-	def may_delete(self, userB):
+	def may_delete_user(self, userB):
 		"""
 		check whether this user may delete userB
 		:param UserInfo userB: user to be deleted
@@ -167,7 +167,7 @@ class PermissionChecker(UserInfo):
 			return True
 		return False
 
-	def may_send_message(self, userB):
+	def may_send_message_to_user(self, userB):
 		"""
 		check whether this user may send a message to userB
 		:param UserInfo userB: receiver of the message
