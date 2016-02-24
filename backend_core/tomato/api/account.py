@@ -119,7 +119,7 @@ def account_list(organization=None, with_flag=None):
 	else:
 		_UserError.check(_getCurrentUserInfo().may_list_organization_users(organization), code=_UserError.DENIED, message="Unauthorized")
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
-	return api.user_list(organization, with_flag, asUser=_currentUserName())
+	return api.user_list(organization, with_flag)
 
 def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, ignore_flag_on_unauthorized=False):
 	"""
@@ -167,7 +167,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 			if ignore_key_on_unauthorized:
 				del attrs[k]
 			else:
-				_UserError.check(False, code=_UserError.DENIED, message="trying to modify a key that is not allowed", data={"allowed_keys": modify_allowed_list, "attrs.keys()": attrs.keys()})
+				_UserError.check(False, code=_UserError.DENIED, message="trying to modify a key that is not allowed", data={"allowed_keys": list(modify_allowed_list), "attributes_modifying": attrs.keys()})
 
 	# check authorization for flags
 	if 'flags' in attrs:
@@ -178,7 +178,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 				if ignore_key_on_unauthorized:
 					del flags[k]
 				else:
-					_UserError.check(False, code=_UserError.DENIED, message="trying to modify a flag that is not allowed", data={"allowed_flags": allowed_flags, "flags.keys()": flags.keys()})
+					_UserError.check(False, code=_UserError.DENIED, message="trying to modify a flag that is not allowed", data={"allowed_flags": list(allowed_flags), "flags_modifying": flags.keys()})
 
 	_get_user_info(name).invalidate_info()
 	return api.user_modify(name, attrs)

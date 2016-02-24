@@ -313,7 +313,7 @@ def edit(api, request, id):
 	if not api.user:
 		raise AuthError()
 	user = api.account_info(id)
-	if request.method=='POST':
+	if request.method == 'POST':
 		form = AccountChangeForm(api, request.REQUEST)
 		if form.is_valid():
 			data = form.cleaned_data
@@ -327,6 +327,19 @@ def edit(api, request, id):
 			send_mail = data.get("send_mail", False)
 			if "send_mail" in data:
 				del data["send_mail"]
+
+			if 'flags' in data:
+				old_flags = api.account_info(id)['flags']
+				newflags = {}
+				for flag in api.account_flags().iterkeys():
+					if flag in data['flags']:
+						if flag not in old_flags:
+							newflags[flag] = True
+					else:
+						if flag in old_flags:
+							newflags[flag] = False
+				data['flags'] = newflags
+
 			api.account_modify(id, attrs=data)
 			if send_mail:
 				api.account_send_notification(id, subject="Account modified", message="Your account has been modified by an administrator. Please check your account details for the changes.", from_support=True)
