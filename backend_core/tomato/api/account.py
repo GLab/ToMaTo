@@ -77,7 +77,7 @@ def account_info(name=None):
 	keys_to_show = _getCurrentUserInfo().info_visible_keys(_get_user_info(name))
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	info = api.user_info(name)
-	for k in info:
+	for k in info.keys():
 		if k not in keys_to_show:
 			del info[k]
 	return info
@@ -162,7 +162,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	modify_allowed_list = _getCurrentUserInfo().modify_user_allowed_keys(_get_user_info(name))
 
 	# check authorization for keys
-	for k in attrs.iterkeys():
+	for k in attrs.keys():
 		if k not in modify_allowed_list:
 			if ignore_key_on_unauthorized:
 				del attrs[k]
@@ -173,7 +173,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	if 'flags' in attrs:
 		flags = attrs['flags']
 		allowed_flags = _getCurrentUserInfo().modify_user_allowed_flags(_get_user_info(name))
-		for k in flags.iterkeys():
+		for k in flags.keys():
 			if k not in allowed_flags:
 				if ignore_key_on_unauthorized:
 					del flags[k]

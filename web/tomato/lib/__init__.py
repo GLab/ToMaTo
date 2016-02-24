@@ -280,7 +280,6 @@ class UserObj:
 		self.data = api.account_info()
 		self.name = self.data["name"]
 		self.flags = self.data["flags"]
-		self.origin = self.data["origin"]
 		self.organization = self.data["organization"]
 		self.realname = self.data["realname"]
 		self.id = self.data["id"]

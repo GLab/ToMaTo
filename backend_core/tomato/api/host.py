@@ -60,7 +60,7 @@ def organization_info(name):
 	undocumented
 	"""
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
-	return api.organization_info()
+	return api.organization_info(name)
 
 @checkauth
 @invalidates(organization_list)
