@@ -4,6 +4,11 @@ from .lib.error import UserError
 from .generic import *
 
 class Organization(Entity, BaseDocument):
+	from quota import UsageStatistics
+
+	#fixme: remove this after db migration (cannot load objects without this reference)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
+
 	name = StringField(unique=True, required=True)
 	label = StringField(required=True)
 	homepageUrl = URLField(db_field='homepage_url')

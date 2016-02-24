@@ -66,7 +66,11 @@ class User(Entity, BaseDocument):
 	:type notifications: list of Notification
 	"""
 	from .organization import Organization
-	from .quota import Quota
+	from .quota import Quota, UsageStatistics
+
+	#fixme: remove this after db migration (cannot load objects without this reference)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
+
 	name = StringField(required=True)
 	organization = ReferenceField(Organization, required=True, reverse_delete_rule=DENY)
 	password = StringField(required=True)
