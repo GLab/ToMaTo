@@ -214,7 +214,7 @@ class User(Entity, BaseDocument):
 		"name": Attribute(field=name, schema=schema.Identifier(minLength=3)),
 		"realname": Attribute(field=realname, schema=schema.String(minLength=3)),
 		"email": Attribute(field=email, schema=schema.Email()),
-		"flags": Attribute(field=flags, schema=schema.List(items=schema.Identifier())),
+		"flags": Attribute(field=flags, set=modify_flags),
 		"organization": Attribute(get=lambda self: self.organization.name, set=modify_organization),
 		"quota": Attribute(get=lambda self: self.quota.info(), set=modify_quota),
 		"notification_count": Attribute(get=lambda self: len(self.notifications)),

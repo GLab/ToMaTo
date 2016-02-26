@@ -43,4 +43,4 @@ def user_remove(name):
 
 def user_modify(name, attrs):
 	user = _getUser(name)
-	user.modify(attrs)
+	user.modify(**attrs)
