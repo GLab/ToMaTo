@@ -20,6 +20,7 @@ from .generic import *
 from .db import *
 from .lib import logging, util, mail #@UnresolvedImport
 from . import scheduler
+from settings import settings, Config
 from .lib.error import UserError
 
 
@@ -201,15 +202,16 @@ class User(Entity, BaseDocument):
 		if not password:
 			password = User.randomPassword()
 		from .quota import Quota, Usage
+		default_quota = settings.get_user_quota("default");
 		obj = cls(lastLogin=time.time(), quota=Quota(
 			used=Usage(cputime=0, memory=0, diskspace=0, traffic=0),
 			monthly=Usage(
-				cputime=config.DEFAULT_QUOTA["cputime"],
-				memory=config.DEFAULT_QUOTA["memory"],
-				diskspace=config.DEFAULT_QUOTA["diskspace"],
-				traffic=config.DEFAULT_QUOTA["traffic"],
+				cputime=default_quota["cputime"],
+				memory=default_quota["memory"],
+				diskspace=default_quota["diskspace"],
+				traffic=default_quota["traffic"],
 			),
-			continousFactor=config.DEFAULT_QUOTA["continous_factor"],
+			continousFactor=default_quota["continous-factor"],
 			usedTime=time.time()
 		))
 		try:

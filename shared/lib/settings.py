@@ -59,7 +59,7 @@ __author__ = 't-gerhard'
 #
 
 
-import yaml, os, random
+import yaml, os, random,sys
 from error import InternalError
 
 default_settings = yaml.load("""
