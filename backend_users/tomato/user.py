@@ -231,9 +231,13 @@ class User(Entity, BaseDocument):
 		"password_hash": Attribute(field=password)
 	}
 
+def clean_up_all_notifications():
+	for u in User.objects.all():
+		u.clean_up_notifications()
+
 def init():
 	for u in User.objects.all():
-		scheduler.scheduleRepeated(60*60*24, u.clean_up_notifications, random_offset=True)
+		scheduler.scheduleRepeated(60*60*24, clean_up_all_notifications, random_offset=True)
 
 """
 class Provider:
