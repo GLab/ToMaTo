@@ -206,6 +206,14 @@ class User(Entity, BaseDocument):
 		notif.read = read
 		self.save()
 
+	def clean_up_notifications(self):
+		border_read = time.time() - 60*60*24*30  # fixme: should be configurable
+		border_unread = time.time() - 60*60*24*180  # fixme: should be configurable
+		for n in list(self.notifications):
+			if n.timestamp < (border_read if n.read else border_unread):
+				self.notifications.remove(n)
+		self.save()
+
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(fn=_remove),
 	}
@@ -223,109 +231,11 @@ class User(Entity, BaseDocument):
 		"password_hash": Attribute(field=password)
 	}
 
+def init():
+	for u in User.objects.all():
+		scheduler.scheduleRepeated(60*60*24, u.clean_up_notifications, random_offset=True)
+
 """
-	def sendNotification(self, subject, message, ref=None, fromUser=None, send_email=True, subject_group=None):
-		self._addNotification(subject, message, ref, fromUser, subject_group=subject_group)
-		if send_email:
-			self._sendMail(subject, message, fromUser)
-
-	def _sendMail(self, subject, message, fromUser=None):
-		if not self.email or self.hasFlag(Flags.NoMails):
-			logging.logMessage("failed to send mail", category="user", subject=subject)
-			return
-
-		if fromUser:
-			fromuser_realname = fromUser.realname or fromUser.name
-			fromuser_addr = fromUser.email
-		else:
-			fromuser_realname = None
-			fromuser_addr = None
-
-		mail.send(self.realname or self.name, self.email, subject, message, fromuser_realname, fromuser_addr)
-
-	def _get_notification(self, notification_id):
-		for n in self.notifications:
-			if n.id == notification_id:
-				return n
-
-	def set_notification_read(self, notification_id, read):
-		notf = self._get_notification(notification_id)
-		UserError.check(notf, code=UserError.INVALID_VALUE, message="Notification does not exist", todump=False, data={'notification_id': notification_id})
-		notf.set_read(read)
-		self.save()
-
-	def clean_up_notifications(self):
-		border_read = time.time() - 60*60*24*30
-		border_unread = time.time() - 60*60*24*180
-		for n in list(self.notifications):
-			if n.timestamp < (border_read if n.read else border_unread):
-				self.notifications.remove(n)
-		self.save()
-
-	def loggedIn(self):
-		logging.logMessage("successful login", category="auth", user=self.name, origin=self.origin)
-		self.lastLogin = time.time()
-		self.save()
-
-	def hasFlag(self, flag):
-		return flag in self.flags
-
-	def addFlag(self, flag):
-		if self.hasFlag(flag):
-			return
-		logging.logMessage("add_flag", category="user", name=self.name, origin=self.origin, flag=flag)
-		self.flags.append(flag)
-		self.save()
-
-	def removeFlag(self, flag):
-		if not self.hasFlag(flag):
-			return
-		logging.logMessage("remove_flag", category="user", name=self.name, origin=self.origin, flag=flag)
-		self.flags.remove(flag)
-		self.save()
-
-	def modify_organization(self, value):
-		from .organization import Organization
-		orga = Organization.get(value)
-		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": value})
-		self.organization=orga
-
-	def modify_quota(self, value):
-		self.quota.modify(value)
-
-	def isAdminOf(self, user):
-		if self.hasFlag(Flags.GlobalAdmin):
-			return True
-		return self.hasFlag(Flags.OrgaAdmin) and self.organization == user.organization and not user.hasFlag(Flags.GlobalAdmin)
-
-	def can_modify(self, attr, value):
-		if attr.startswith("_"):
-			return True
-		if attr in USER_ATTRS:
-			return True
-		if user.hasFlag(Flags.GlobalAdmin):
-			if user == self and attr == "flags" and not Flags.GlobalAdmin in value:
-				# Admins must not delete their own admin flag
-				return False
-			return True
-		if user.isAdminOf(self):
-			if attr in ["name"]:
-				return True
-			if attr == "flags":
-				changedFlags = (set(value) - set(self.flags)) | (set(self.flags) - set(value))
-				for flag in changedFlags:
-					if not flag in orga_admin_changeable:
-						return False
-				return True
-		return False
-
-	def list_notifications(self, include_read=False):
-		return [n.info() for n in self.notifications if (include_read or not n.read)]
-
-	def get_notification(self, notification_id):
-		return self._get_notification(notification_id).info()
-
-
 class Provider:
 	def __init__(self, options):
 		self.options = options

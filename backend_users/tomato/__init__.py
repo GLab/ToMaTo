@@ -64,6 +64,7 @@ def start():
 	else:
 		print >>sys.stderr, "Running without tasks"
 	dump.init()
+	user.init()
 
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
