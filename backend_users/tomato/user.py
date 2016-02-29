@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time, crypt, string, random, sys, hashlib
+import time, crypt, string, random, sys, hashlib, random
 from .generic import *
 from .db import *
 from .lib import logging, util, mail #@UnresolvedImport
@@ -231,13 +231,17 @@ class User(Entity, BaseDocument):
 		"password_hash": Attribute(field=password)
 	}
 
+def clean_up_user_notifications(username):
+	user = User.get(username)
+	if user is not None:
+		user.clean_up_notifications()
+
 def clean_up_all_notifications():
 	for u in User.objects.all():
-		u.clean_up_notifications()
+		scheduler.scheduleOnce(random.random()*60*60*24, clean_up_user_notifications, username=u.name)
 
 def init():
-	for u in User.objects.all():
-		scheduler.scheduleRepeated(60*60*24, clean_up_all_notifications, random_offset=True)
+	scheduler.scheduleRepeated(60*60*24, clean_up_all_notifications, random_offset=False, immediate=True)
 
 """
 class Provider:
