@@ -59,7 +59,7 @@ __author__ = 't-gerhard'
 #
 
 
-import yaml, os, random
+import yaml, os, random,sys
 from error import InternalError
 
 default_settings = yaml.load("""
@@ -342,6 +342,12 @@ class SettingsProvider:
 		self.original_settings = yaml.load(settings_content % OsFormatter())
 
 		self.secret_key = os.getenv('SECRET_KEY', str(random.random()))
+
+		for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
+			print >> sys.stderr, "Found old-style config at %s - This is no longer supported." % (path)
+		for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):
+			print >> sys.stderr, "Found old-style config at %s - This is no longer supported." % (path)
+
 
 
 	def get_tasks_settings(self):

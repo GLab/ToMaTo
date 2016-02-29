@@ -311,7 +311,7 @@ def generate_default_config():
 		'backend_users': {
 			'enabled': True,
 			'image': 'tomato_backend_users',
-			'ports': [(8003, 8000)],
+			'ports': [8003],
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [

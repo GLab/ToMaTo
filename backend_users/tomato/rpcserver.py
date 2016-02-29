@@ -19,10 +19,11 @@
 
 import sys
 
-import config
 from . import api
 from .lib import util, sslrpc2, logging #@UnresolvedImport
 from .lib.error import Error, UserError, InternalError
+
+from lib.settings import settings
 
 import ssl
 
@@ -53,11 +54,12 @@ def start():
 	def wrapError(error, method, args, kwargs):
 		error = handleError(error, method, args, kwargs)
 		return sslrpc2.Failure(error.raw)
-	server = sslrpc2.Server(('0.0.0.0', config.SERVER_PORT), beforeExecute=logCall, onError=wrapError, keyfile=config.SERVER_CERT,
-		certfile=config.SERVER_CERT, ca_certs=config.SERVER_CA_CERTS, cert_reqs=ssl.CERT_REQUIRED)
-	server.registerContainer(api)
-	util.start_thread(server.serve_forever)
-	print >>sys.stderr, "done."
+	for config in settings.get_own_interface_config():
+		server = sslrpc2.Server(('0.0.0.0', config['port']), beforeExecute=logCall, onError=wrapError, keyfile=settings.get_ssl_key_filename(),
+							certfile=settings.get_ssl_cert_filename(), ca_certs=settings.get_ssl_ca_filename(), cert_reqs=ssl.CERT_REQUIRED)
+		server.registerContainer(api)
+		util.start_thread(server.serve_forever)
+		print >>sys.stderr, "done."
 
 def stop():
 	server.shutdown()

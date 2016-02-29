@@ -18,17 +18,19 @@
 import os, sys, signal, time, thread, threading
 from lib import settings
 
-tomato_module = settings.Config.TOMATO_MODULE_BACKEND_CORE
+tomato_module = settings.Config.TOMATO_MODULE_BACKEND_USERS
 settings.init('/etc/tomato/config.yaml', tomato_module)
 os.environ['TOMATO_MODULE'] = tomato_module
 
 from lib import monkey
 monkey.patch_all()
 
-import config
+import socket
+socket.setdefaulttimeout(300)
+
 from mongoengine import connect
-database_connection = connect(config.DATABASE, host=config.DATABASE_HOST)
-database_obj = getattr(database_connection, config.DATABASE)
+database_connection = connect(settings.settings.get_db_settings()['database'], host=settings.settings.get_db_settings()['host'])
+database_obj = getattr(database_connection, settings.settings.get_db_settings()['database'])
 
 from .lib import logging
 def handleError():
@@ -36,7 +38,7 @@ def handleError():
 	dump.dumpException()
 
 from .lib import tasks #@UnresolvedImport
-scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=config.MAX_WORKERS)
+scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=settings.settings.get_tasks_settings()['max-workers'])
 
 starttime = time.time()
 
@@ -48,7 +50,7 @@ import dump
 import models
 
 def start():
-	logging.openDefault(config.LOG_FILE)
+	logging.openDefault(settings.settings.get_log_filename())
 	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
 		db.migrate()
 	else:
@@ -66,8 +68,8 @@ def start():
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
 	logging.closeDefault()
-	reload(config)
-	logging.openDefault(config.LOG_FILE)
+	settings.settings.reload()
+	logging.openDefault(settings.settings.get_log_filename())
 
 def _printStackTraces():
 	import traceback

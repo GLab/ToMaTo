@@ -406,27 +406,26 @@ def insert_dump(dump, source):
 	# check whether the group ID already exists. If not, create it,
 	# remember to fetch dump data in the end, and email developer users
 	group = get_group(dump['group_id'])
+	if not group:
+		from auth import notifyFlaggedUsers, Flags
+		must_fetch_data = True
+		if isinstance(dump['description'], dict):
+			if 'subject' in dump['description'] and 'type' in dump['description']:
+				group_desc = str(dump['description']['type']) + ': ' + str(dump['description']['subject'])
+			else:
+				group_desc = str(dump['description'])
+		else:
+			group_desc = dump['description']
+		group = create_group(dump['group_id'], group_desc)
+		notifyFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
+						 "\n\n".join((
+							 "A new group of error has been found.",
+							 "Description: %s",
+							 "It has first been observed on %s.")) % (
+							 group_desc, source.dump_source_name()), ref=['errorgroup', dump['group_id']])
 	with group.lock:
 		group = group.reload()
-		if not group:
-			from auth import notifyFlaggedUsers, Flags
-			must_fetch_data = True
-			if isinstance(dump['description'], dict):
-				if 'subject' in dump['description'] and 'type' in dump['description']:
-					group_desc = str(dump['description']['type']) + ': ' + str(dump['description']['subject'])
-				else:
-					group_desc = str(dump['description'])
-			else:
-				group_desc = dump['description']
-			group = create_group(dump['group_id'], group_desc)
-			notifyFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
-							 "\n\n".join((
-								 "A new group of error has been found.",
-								 "Description: %s",
-								 "It has first been observed on %s.")) % (
-								 group_desc, source.dump_source_name()), ref=['errorgroup', dump['group_id']])
-
-			# insert the dump.
+		# insert the dump.
 		for d in group.dumps:
 			if d.dumpId == dump['dump_id'] and d.source == source_name:
 				return
