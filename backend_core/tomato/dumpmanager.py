@@ -88,6 +88,11 @@ class ErrorGroup(BaseDocument):
 	LOCKS = {}
 	LOCKS_LOCK = threading.RLock()
 
+	GROUP_LIST_LOCK = threading.RLock()
+	"""
+	to be used when accessing the list of groups (adding, deleting)
+	"""
+
 	@property
 	def lock(self):
 		key = self.groupId
@@ -205,16 +210,17 @@ class ErrorGroup(BaseDocument):
 
 
 def create_group(group_id, description=None):
-	desc = description or group_id
-	if isinstance(desc, dict) and "message" in desc:
-		desc = desc["message"]
-	if not isinstance(desc, str):
-		desc = str(desc)
-	if len(desc) > 100:
-		desc = desc[:100] + " ..."
-	if not desc:
-		desc = group_id
-	return ErrorGroup(groupId=group_id, description=desc).save()
+	with ErrorGroup.GROUP_LIST_LOCK:
+		desc = description or group_id
+		if isinstance(desc, dict) and "message" in desc:
+			desc = desc["message"]
+		if not isinstance(desc, str):
+			desc = str(desc)
+		if len(desc) > 100:
+			desc = desc[:100] + " ..."
+		if not desc:
+			desc = group_id
+		return ErrorGroup(groupId=group_id, description=desc).save()
 
 
 def get_group(group_id):
@@ -222,7 +228,8 @@ def get_group(group_id):
 	:rtype :ErrorGroup or None
 	"""
 	try:
-		return ErrorGroup.objects.get(groupId=group_id)
+		with ErrorGroup.GROUP_LIST_LOCK:
+			return ErrorGroup.objects.get(groupId=group_id)
 	except ErrorGroup.DoesNotExist:
 		return None
 
@@ -232,11 +239,13 @@ def getAll_group():
 
 
 def remove_group(group_id):
-	grp = get_group(group_id)
-	if grp is not None:
-		grp.remove()
-		return True
-	return False
+	with ErrorGroup.GROUP_LIST_LOCK:
+		grp = get_group(group_id)
+		if grp is not None:
+			grp.remove()
+			del ErrorGroup.LOCKS[group_id]
+			return True
+		return False
 
 
 def create_dump(dump, source, group_obj):
@@ -407,24 +416,25 @@ def insert_dump(dump, source):
 
 	# check whether the group ID already exists. If not, create it,
 	# remember to fetch dump data in the end, and email developer users
-	group = get_group(dump['group_id'])
-	if not group:
-		from auth import notifyFlaggedUsers, Flags
-		must_fetch_data = True
-		if isinstance(dump['description'], dict):
-			if 'subject' in dump['description'] and 'type' in dump['description']:
-				group_desc = str(dump['description']['type']) + ': ' + str(dump['description']['subject'])
+	with ErrorGroup.GROUP_LIST_LOCK:
+		group = get_group(dump['group_id'])
+		if not group:
+			from auth import notifyFlaggedUsers, Flags
+			must_fetch_data = True
+			if isinstance(dump['description'], dict):
+				if 'subject' in dump['description'] and 'type' in dump['description']:
+					group_desc = str(dump['description']['type']) + ': ' + str(dump['description']['subject'])
+				else:
+					group_desc = str(dump['description'])
 			else:
-				group_desc = str(dump['description'])
-		else:
-			group_desc = dump['description']
-		group = create_group(dump['group_id'], group_desc)
-		notifyFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
-						 "\n\n".join((
-							 "A new group of error has been found.",
-							 "Description: %s",
-							 "It has first been observed on %s.")) % (
-							 group_desc, source.dump_source_name()), ref=['errorgroup', dump['group_id']])
+				group_desc = dump['description']
+			group = create_group(dump['group_id'], group_desc)
+			notifyFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
+							 "\n\n".join((
+								 "A new group of error has been found.",
+								 "Description: %s",
+								 "It has first been observed on %s.")) % (
+								 group_desc, source.dump_source_name()), ref=['errorgroup', dump['group_id']])
 	with group.lock:
 		group = group.reload()
 		# insert the dump.
