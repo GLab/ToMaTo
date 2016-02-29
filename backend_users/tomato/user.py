@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time, crypt, string, random, sys, hashlib
+import time, crypt, string, random, sys, hashlib, random
 from .generic import *
 from .db import *
 from .lib import logging, util, mail #@UnresolvedImport
@@ -23,117 +23,8 @@ from . import scheduler
 from settings import settings, Config
 from .lib.error import UserError
 
+from .lib.userflags import Flags
 
-class Flags:
-	Debug = "debug"
-	ErrorNotify = "error_notify"
-	NoTopologyCreate = "no_topology_create"
-	OverQuota = "over_quota"
-	NewAccount = "new_account"
-	RestrictedProfiles = "restricted_profiles"
-	RestrictedTemplates ="restricted_templates"
-	RestrictedNetworks ="restricted_networks"
-	NoMails = "nomails"
-	GlobalAdmin = "global_admin" #alle rechte für alle vergeben
-	GlobalHostManager = "global_host_manager"
-	GlobalToplOwner = "global_topl_owner"
-	GlobalToplManager = "global_topl_manager"
-	GlobalToplUser = "global_topl_user"
-	GlobalHostContact = "global_host_contact"
-	GlobalAdminContact = "global_admin_contact"
-	OrgaAdmin = "orga_admin" #nicht "global-" rechte vergeben für eigene user (auch nicht debug)
-	OrgaHostManager = "orga_host_manager" # eigene orga, hosts und sites verwalten
-	OrgaToplOwner = "orga_topl_owner"
-	OrgaToplManager = "orga_topl_manager"
-	OrgaToplUser = "orga_topl_user"
-	OrgaHostContact = "orga_host_contact"
-	OrgaAdminContact = "orga_admin_contact"
-
-flags = {
-	Flags.Debug: "Debug: See everything",
-	Flags.ErrorNotify: "ErrorNotify: receive emails for new kinds of errors",
-	Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
-	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
-	Flags.NewAccount: "NewAccount: Account is new, just a tag",
-	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles",
-	Flags.RestrictedTemplates:"RestrictedTemplates: Can use restricted templates",
-	Flags.RestrictedNetworks:"RestrictedNetworks: Can use restricted Networks",
-	Flags.NoMails: "NoMails: Can not receive mails at all",
-	Flags.GlobalAdmin: "GlobalAdmin: Modify all accounts",
-	Flags.GlobalHostManager: "GlobalHostsManager: Can manage all hosts and sites",
-	Flags.GlobalToplOwner: "GlobalToplOwner: Owner for every topology",
-	Flags.GlobalToplManager: "GlobalToplManager: Manager for every topology",
-	Flags.GlobalToplUser: "GlobalToplUser: User for every topology",
-	Flags.GlobalHostContact: "GlobalHostContact: User receives mails about host problems",
-	Flags.GlobalAdminContact: "GlobalAdminContact: User receives mails to administrators",
-	Flags.OrgaAdmin: "OrgaAdmin: Modify all accounts of a specific organization",
-	Flags.OrgaHostManager: "OrgaHostsManager: Can manage all hosts and sites of a specific organization",
-	Flags.OrgaToplOwner: "OrgaToplOwner: Owner for every topology of a specific organization",
-	Flags.OrgaToplManager: "OrgaToplManager: Manager for every topology of a specific organization",
-	Flags.OrgaToplUser: "OrgaToplUser: User for every topology of a specific organization",
-	Flags.OrgaHostContact: "OrgaHostContact: User receives mails about host problems of a specific organization",
-	Flags.OrgaAdminContact: "OrgaAdminContact: User receives mails to a specific organization"
-}
-
-categories = [
-			{'title': 'manager_user_global',
-			 'onscreentitle': 'Global User Management',
-			 'flags': [
-						Flags.GlobalAdmin,
-						Flags.GlobalToplOwner,
-						Flags.GlobalToplManager,
-						Flags.GlobalToplUser,
-						Flags.GlobalAdminContact
-						]},
-			{'title': 'manager_user_orga',
-			 'onscreentitle': 'Organization-Internal User Management',
-			 'flags': [
-						Flags.OrgaAdmin,
-						Flags.OrgaToplOwner,
-						Flags.OrgaToplManager,
-						Flags.OrgaToplUser,
-						Flags.OrgaAdminContact
-						]},
-			{'title': 'manager_host_global',
-			 'onscreentitle': 'Global Host Management',
-			 'flags': [
-						Flags.GlobalHostManager,
-						Flags.GlobalHostContact
-						]},
-			{'title': 'manager_host_orga',
-			 'onscreentitle': 'Organization-Internal Host Management',
-			 'flags': [
-						Flags.OrgaHostManager,
-						Flags.OrgaHostContact
-						]},
-			{'title': 'error_management',
-			 'onscreentitle': 'Error Management',
-			 'flags': [
-						Flags.Debug,
-						Flags.ErrorNotify
-						]},
-			{'title': 'user',
-			 'onscreentitle': 'User Settings',
-			 'flags': [
-						Flags.NoTopologyCreate,
-						Flags.OverQuota,
-						Flags.RestrictedProfiles,
-						Flags.RestrictedTemplates,
-						Flags.RestrictedNetworks,
-						Flags.NewAccount,
-						Flags.NoMails
-						]}
-			]
-
-
-orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount,
-						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.RestrictedNetworks, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
-						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser,
-						Flags.OrgaHostContact, Flags.OrgaAdminContact]
-global_pi_flags = [Flags.GlobalAdmin, Flags.GlobalToplOwner, Flags.GlobalAdminContact]
-global_tech_flags = [Flags.GlobalHostManager, Flags.GlobalHostContact]
-orga_pi_flags = [Flags.OrgaAdmin, Flags.OrgaToplOwner, Flags.OrgaAdminContact]
-orga_tech_flags = [Flags.OrgaHostManager, Flags.OrgaHostContact]
 
 USER_ATTRS = ["realname", "email", "password"]
 
@@ -167,7 +58,6 @@ class Notification(EmbeddedDocument):
 	def set_read(self, read):
 		self.read = read
 
-
 class User(Entity, BaseDocument):
 	"""
 	:type organization: organization.Organization
@@ -177,7 +67,11 @@ class User(Entity, BaseDocument):
 	:type notifications: list of Notification
 	"""
 	from .organization import Organization
-	from .quota import Quota
+	from .quota import Quota, UsageStatistics
+
+	#fixme: remove this after db migration (cannot load objects without this reference)
+	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
+
 	name = StringField(required=True)
 	organization = ReferenceField(Organization, required=True, reverse_delete_rule=DENY)
 	password = StringField(required=True)
@@ -272,19 +166,33 @@ class User(Entity, BaseDocument):
 		self.password = User.hashPassword(password)
 		self.save()
 
-	def notification_add(self, fromUser, title, message, ref=None, subject_group=None):
+	def modify_flags(self, flags):
+		UserError.check(isinstance(flags, dict), code=UserError.INVALID_DATA, message="flags must be a dictionary")
+		for flag, is_set in flags.iteritems():
+			if (not is_set) and (flag in self.flags):
+				self.flags.remove(flag)
+			if (is_set) and (flag not in self.flags):
+				self.flags.append(flag)
+
+	def send_message(self, fromUser, subject, message, ref=None, subject_group=None):
+		# add notification
 		now = time.time()
 		notf_id = hashlib.sha256(repr({
-			'title': title,
+			'title': subject,
 			'message': message,
 			'ref': ref,
 			'fromUser': fromUser.name if fromUser else None,
 			'subject_group': subject_group,
 			'timestamp': now
 		})).hexdigest()
-		notf = Notification(title=title, message=message, timestamp=now, id=notf_id)
+		notf = Notification(title=subject, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
+
+		# send email
+		if not Flags.NoMails:
+			mail.send(self.realname, self.email, subject, message, fromUser.realname)
+
 
 	def notification_list(self, include_read=False):
 		return [n.info() for n in self.notifications if (include_read or not n.read)]
@@ -295,9 +203,17 @@ class User(Entity, BaseDocument):
 				return n
 		UserError.check(False, code=UserError.ENTITY_DOES_NOT_EXIST, message="Notification with that id does not exist", data={"id": notification_id, "user": self.name})
 
-	def notification_read(self, notification_id):
+	def notification_set_read(self, notification_id, read=True):
 		notif = self.notification_get(notification_id)
-		notif.read = True
+		notif.read = read
+		self.save()
+
+	def clean_up_notifications(self):
+		border_read = time.time() - 60*60*24*30  # fixme: should be configurable
+		border_unread = time.time() - 60*60*24*180  # fixme: should be configurable
+		for n in list(self.notifications):
+			if n.timestamp < (border_read if n.read else border_unread):
+				self.notifications.remove(n)
 		self.save()
 
 	ACTIONS = {
@@ -308,7 +224,7 @@ class User(Entity, BaseDocument):
 		"name": Attribute(field=name, schema=schema.Identifier(minLength=3)),
 		"realname": Attribute(field=realname, schema=schema.String(minLength=3)),
 		"email": Attribute(field=email, schema=schema.Email()),
-		"flags": Attribute(field=flags, schema=schema.List(items=schema.Identifier())),
+		"flags": Attribute(field=flags, set=modify_flags),
 		"organization": Attribute(get=lambda self: self.organization.name, set=modify_organization),
 		"quota": Attribute(get=lambda self: self.quota.info(), set=modify_quota),
 		"notification_count": Attribute(get=lambda self: len(self.notifications)),
@@ -317,109 +233,19 @@ class User(Entity, BaseDocument):
 		"password_hash": Attribute(field=password)
 	}
 
+def clean_up_user_notifications(username):
+	user = User.get(username)
+	if user is not None:
+		user.clean_up_notifications()
+
+def clean_up_all_notifications():
+	for u in User.objects.all():
+		scheduler.scheduleOnce(random.random()*60*60*24, clean_up_user_notifications, username=u.name)
+
+def init():
+	scheduler.scheduleRepeated(60*60*24, clean_up_all_notifications, random_offset=False, immediate=True)
+
 """
-	def sendNotification(self, subject, message, ref=None, fromUser=None, send_email=True, subject_group=None):
-		self._addNotification(subject, message, ref, fromUser, subject_group=subject_group)
-		if send_email:
-			self._sendMail(subject, message, fromUser)
-
-	def _sendMail(self, subject, message, fromUser=None):
-		if not self.email or self.hasFlag(Flags.NoMails):
-			logging.logMessage("failed to send mail", category="user", subject=subject)
-			return
-
-		if fromUser:
-			fromuser_realname = fromUser.realname or fromUser.name
-			fromuser_addr = fromUser.email
-		else:
-			fromuser_realname = None
-			fromuser_addr = None
-
-		mail.send(self.realname or self.name, self.email, subject, message, fromuser_realname, fromuser_addr)
-
-	def _get_notification(self, notification_id):
-		for n in self.notifications:
-			if n.id == notification_id:
-				return n
-
-	def set_notification_read(self, notification_id, read):
-		notf = self._get_notification(notification_id)
-		UserError.check(notf, code=UserError.INVALID_VALUE, message="Notification does not exist", todump=False, data={'notification_id': notification_id})
-		notf.set_read(read)
-		self.save()
-
-	def clean_up_notifications(self):
-		border_read = time.time() - 60*60*24*30
-		border_unread = time.time() - 60*60*24*180
-		for n in list(self.notifications):
-			if n.timestamp < (border_read if n.read else border_unread):
-				self.notifications.remove(n)
-		self.save()
-
-	def loggedIn(self):
-		logging.logMessage("successful login", category="auth", user=self.name, origin=self.origin)
-		self.lastLogin = time.time()
-		self.save()
-
-	def hasFlag(self, flag):
-		return flag in self.flags
-
-	def addFlag(self, flag):
-		if self.hasFlag(flag):
-			return
-		logging.logMessage("add_flag", category="user", name=self.name, origin=self.origin, flag=flag)
-		self.flags.append(flag)
-		self.save()
-
-	def removeFlag(self, flag):
-		if not self.hasFlag(flag):
-			return
-		logging.logMessage("remove_flag", category="user", name=self.name, origin=self.origin, flag=flag)
-		self.flags.remove(flag)
-		self.save()
-
-	def modify_organization(self, value):
-		from .organization import Organization
-		orga = Organization.get(value)
-		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": value})
-		self.organization=orga
-
-	def modify_quota(self, value):
-		self.quota.modify(value)
-
-	def isAdminOf(self, user):
-		if self.hasFlag(Flags.GlobalAdmin):
-			return True
-		return self.hasFlag(Flags.OrgaAdmin) and self.organization == user.organization and not user.hasFlag(Flags.GlobalAdmin)
-
-	def can_modify(self, attr, value):
-		if attr.startswith("_"):
-			return True
-		if attr in USER_ATTRS:
-			return True
-		if user.hasFlag(Flags.GlobalAdmin):
-			if user == self and attr == "flags" and not Flags.GlobalAdmin in value:
-				# Admins must not delete their own admin flag
-				return False
-			return True
-		if user.isAdminOf(self):
-			if attr in ["name"]:
-				return True
-			if attr == "flags":
-				changedFlags = (set(value) - set(self.flags)) | (set(self.flags) - set(value))
-				for flag in changedFlags:
-					if not flag in orga_admin_changeable:
-						return False
-				return True
-		return False
-
-	def list_notifications(self, include_read=False):
-		return [n.info() for n in self.notifications if (include_read or not n.read)]
-
-	def get_notification(self, notification_id):
-		return self._get_notification(notification_id).info()
-
-
 class Provider:
 	def __init__(self, options):
 		self.options = options
