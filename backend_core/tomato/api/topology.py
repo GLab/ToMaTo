@@ -252,7 +252,8 @@ def topology_usage(id): #@ReservedAssignment
 	return top.totalUsage.info()	
 
 
-#fixme: move import/export to the topology module
+#fixme: move actual import/export to the topology module
+#fixme: add authorization checks
 def topology_import(data):
 	# this function may change the values of data.
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
