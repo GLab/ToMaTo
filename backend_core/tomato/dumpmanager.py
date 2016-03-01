@@ -494,15 +494,7 @@ def init():
 
 # Second Part: Access to known dumps for API
 
-def checkPermissions():
-	from auth import Flags
-	user = currentUser()
-	UserError.check(user, code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(user.hasFlag(Flags.Debug), code=UserError.DENIED, message="Not enough permissions")
-
-
 def api_errorgroup_list(show_empty=False):
-	checkPermissions()
 	res = []
 	for grp in getAll_group():
 		with grp.lock:
@@ -514,7 +506,6 @@ def api_errorgroup_list(show_empty=False):
 
 
 def api_errorgroup_modify(group_id, attrs):
-	checkPermissions()
 	grp = get_group(group_id)
 	UserError.check(grp is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 					data={"group_id": group_id})
@@ -524,7 +515,6 @@ def api_errorgroup_modify(group_id, attrs):
 
 
 def api_errorgroup_info(group_id, include_dumps=False):
-	checkPermissions()
 	group = get_group(group_id)
 	UserError.check(group is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 					data={"group_id": group_id})
@@ -539,7 +529,6 @@ def api_errorgroup_info(group_id, include_dumps=False):
 
 
 def api_errordump_info(group_id, source, dump_id, include_data=False):
-	checkPermissions()
 	group = get_group(group_id)
 	UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 					data={"group_id": group_id})
@@ -556,7 +545,6 @@ def api_errordump_info(group_id, source, dump_id, include_data=False):
 
 
 def api_errorgroup_remove(group_id):
-	checkPermissions()
 	group = get_group(group_id)
 	with group.lock:
 		res = remove_group(group_id)
@@ -565,7 +553,6 @@ def api_errorgroup_remove(group_id):
 
 
 def api_errordump_list(group_id, source=None, data_available=None):
-	checkPermissions()
 	group = get_group(group_id)
 	UserError.check(group, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist",
 					data={"group_id": group_id})
@@ -584,14 +571,12 @@ def api_errordump_list(group_id, source=None, data_available=None):
 		return res
 
 def api_errorgroup_hide(group_id):
-	checkPermissions()
 	group = get_group(group_id)
 	with group.lock:
 		group = group.reload()
 		group.hide()
 
 def api_force_refresh():
-	checkPermissions()
 	return update_all(async=False)
 
 def api_errorgroup_favorite(group_id, is_favorite):

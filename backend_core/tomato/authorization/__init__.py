@@ -418,6 +418,15 @@ class PermissionChecker(UserInfo):
 
 
 
+	# debugging
+
+	def check_may_view_debugging_info(self):
+		auth_check(Flags.Debug in self.get_flags(), "you don't have debugging permissions")
+
+
+
+
+
 
 
 
