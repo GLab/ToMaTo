@@ -1,5 +1,5 @@
 from ..lib.userflags import Flags
-from info import UserInfo, TopologyInfo
+from info import UserInfo, TopologyInfo, SiteInfo, HostInfo
 from ..lib.topology_role import Role
 
 class PermissionChecker(UserInfo):
@@ -200,7 +200,7 @@ class PermissionChecker(UserInfo):
 		:return: whether this user may create an organization
 		:rtype: bool
 		"""
-		return Flags.GlobalAdmin in self.get_flags()
+		return (Flags.GlobalHostManager in self.get_flags()) or (Flags.GlobalAdmin in self.get_flags())
 
 	def may_modify_organization(self, organization):
 		"""
@@ -209,9 +209,9 @@ class PermissionChecker(UserInfo):
 		:return: whether this user may modify this organization
 		:rtype: bool
 		"""
-		if Flags.GlobalAdmin in self.get_flags():
+		if Flags.GlobalAdmin in self.get_flags() or Flags.GlobalHostManager in self.get_flags():
 			return True
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == organization:
+		if (Flags.OrgaAdmin in self.get_flags() or Flags.OrgaHostManager in self.get_flags()) and self.get_organization() == organization:
 			return True
 		return False
 
@@ -222,7 +222,95 @@ class PermissionChecker(UserInfo):
 		:return: whether this user may delete this organization
 		:rtype: bool
 		"""
-		return Flags.GlobalAdmin in self.get_flags()
+		if organization == self.get_organization():
+			return False  # you may not delete your own organization
+		return Flags.GlobalAdmin in self.get_flags() or Flags.GlobalHostManager in self.get_flags()
+
+
+
+	# sites
+
+	def _is_hostmanager_for_organization(self, organization):
+		"""
+		check whether this user is hostmanager for the given organization
+		:param str organization: target organization's name
+		:return: whether this user is hostmanager for the given organization
+		:rtype: bool
+		"""
+		if Flags.GlobalHostManager in self.get_flags():
+			return True
+		if Flags.OrgaHostManager in self.get_flags() and organization == self.get_organization():
+			return True
+		return False
+
+	def may_create_sites(self, organization):
+		"""
+		check whether this user may create sites for this organization
+		:param str organization: target site's organization
+		:return: whether this user may create a site for this organization
+		:rtype: bool
+		"""
+		return self._is_hostmanager_for_organization(organization)
+
+	def may_modify_site(self, site_info):
+		"""
+		check whether this user may modify this site
+		:param SiteInfo site_info: target site
+		:return: whether this user may modify this site
+		:rtype: bool
+		"""
+		return self._is_hostmanager_for_organization(site_info.get_organization())
+
+	def may_delete_site(self, site_info):
+		"""
+		check whether this user may delete this site
+		:param SiteInfo site_info: target site
+		:return: whether this user may delete this site
+		:rtype: bool
+		"""
+		return self._is_hostmanager_for_organization(site_info.get_organization())
+
+
+
+
+	# hosts
+
+	def may_create_hosts(self, site_info):
+		"""
+		check whether this user may create hosts for this site
+		:param SiteInfo site_info: target hosts's site
+		:return: whether this user may create a hosts for this site
+		:rtype: bool
+		"""
+		return self._is_hostmanager_for_organization(site_info.get_organization())
+
+	def may_modify_host(self, host_info):
+		"""
+		check whether this user may modify this host
+		:param HostInfo host_info: target host
+		:return: whether this user may modify this host
+		:rtype: bool
+		"""
+		return self._is_hostmanager_for_organization(host_info.get_organization())
+
+	def may_delete_host(self, host_info):
+		"""
+		check whether this user may delete this host
+		:param HostInfo host_info: target host
+		:return: whether this user may delete this host
+		:rtype: bool
+		"""
+		return self._is_hostmanager_for_organization(host_info.get_organization())
+
+	def may_list_host_users(self, host_info):
+		"""
+		check whether this user may list users of this host
+		:param HostInfo host_info: target host
+		:return: whether this user list users of this host
+		:rtype: bool
+		"""
+		return self._is_hostmanager_for_organization(host_info.get_organization())
+
 
 
 
@@ -365,3 +453,21 @@ def get_topology_info(topology_id):
 	:rtype: TopologyInfo
 	"""
 	return TopologyInfo(topology_id)
+
+def get_site_info(site_name):
+	"""
+	return SiteInfo object for the respective site
+	:param str site_name: name of the target site
+	:return: SiteInfo object
+	:rtype: SiteInfo
+	"""
+	return SiteInfo(site_name)
+
+def get_host_info(host_name):
+	"""
+	return HostInfo object for the respective host
+	:param str host_name: name of the target host
+	:return: HostInfo object
+	:rtype: HostInfo
+	"""
+	return HostInfo(host_name)
