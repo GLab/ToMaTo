@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from api_helpers import _getCurrentUserInfo
+
 def errordump_info(group_id, source, dump_id, include_data=False):
     """
     Returns details for the given dump.
@@ -59,6 +61,7 @@ def errordump_list(group_id, source=None, data_available=None):
     Return value:
       A list of dumps, filtered by the arguments.
     """
+    _getCurrentUserInfo().check_may_view_debugging_info()
     from ..dumpmanager import api_errordump_list
     return api_errordump_list(group_id, source, data_available)
 
@@ -75,6 +78,7 @@ def errorgroup_info(group_id, include_dumps=False):
     Return value:
       The return value of this method is the info dict of the group, maybe expanded by a list of dumps.
     """
+    _getCurrentUserInfo().check_may_view_debugging_info()
     from ..dumpmanager import api_errorgroup_info
     return api_errorgroup_info(group_id, include_dumps)
 
@@ -82,6 +86,7 @@ def errorgroup_list(show_empty=False):
     """
     Returns a list of all error groups.
     """
+    _getCurrentUserInfo().check_may_view_debugging_info()
     from ..dumpmanager import api_errorgroup_list
     return api_errorgroup_list(show_empty)
 
@@ -99,6 +104,7 @@ def errorgroup_modify(group_id, attrs):
     Return value:
       The return value of this method is the info dict of the group.
     """
+    _getCurrentUserInfo().check_may_view_debugging_info()
     from ..dumpmanager import api_errorgroup_modify
     return api_errorgroup_modify(group_id, attrs)
 
@@ -109,6 +115,7 @@ def errorgroup_remove(group_id):
     Parameter *dump_id*: 
       The unique identifier of the group to be removed.
     """
+    _getCurrentUserInfo().check_may_view_debugging_info()
     from ..dumpmanager import api_errorgroup_remove
     api_errorgroup_remove(group_id)
     
@@ -121,6 +128,7 @@ def errordumps_force_refresh():
     Return value:
       The time in seconds it takes until all dumps should be collected.
     """
+    _getCurrentUserInfo().check_may_view_debugging_info()
     from ..dumpmanager import api_force_refresh
     return api_force_refresh()
 
@@ -132,6 +140,7 @@ def errorgroup_hide(group_id):
 		:param group_id: the group ID
 		:return: None
 		"""
+		_getCurrentUserInfo().check_may_view_debugging_info()
 		from ..dumpmanager import api_errorgroup_hide
 		api_errorgroup_hide(group_id)
 
@@ -143,5 +152,6 @@ def errorgroup_favorite(group_id, is_favorite):
 		:param is_favorite: True to add, False to remove.
 		:return: None
 		"""
+		_getCurrentUserInfo().check_may_view_debugging_info()
 		from ..dumpmanager import api_errorgroup_favorite
 		api_errorgroup_favorite(group_id, is_favorite)

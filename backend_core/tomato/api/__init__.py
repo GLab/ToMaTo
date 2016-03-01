@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from api_helpers import _getCurrentUserInfo
+
 from account import *
 from topology import *
 from host import *
@@ -27,7 +29,7 @@ from misc import *
 from dumpmanager import *
 
 def debug(method, args=None, kwargs=None, profile=None):
-	UserError.check(currentUser().hasFlag(auth.Flags.Debug), code=UserError.DENIED, message="Not enough permissions")
+	_getCurrentUserInfo().check_may_view_debugging_info()
 	func = globals().get(method)
 	from ..lib import debug
 	result = debug.run(func, args, kwargs, profile)
