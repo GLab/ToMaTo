@@ -259,8 +259,16 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		"connections": Attribute(readOnly=True, schema=schema.List()),
 		"timeout": Attribute(field=timeout, readOnly=True, schema=schema.Number()),
 		"state_max": Attribute(field=maxState, readOnly=True, schema=schema.String()),
-		"name": Attribute(field=name, schema=schema.String())
+		"name": Attribute(field=name, schema=schema.String()),
+		"organization_permissions": Attribute(readOnly=True, get=lambda self: self.get_organization_permissions())
 	}
+
+	def get_organization_permissions(self):
+		#fixme: should be cached. invalidation on user changes, or when a user changes organization.
+		#fixme: to be implemented.
+		return {}
+
+
 
 
 def get(id_, **kwargs):
