@@ -45,14 +45,12 @@ def organization_list():
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	return api.organization_list()
 
-@checkauth
 @invalidates(organization_list)
 def organization_create(name, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo(), code=UserError.NOT_LOGGED_IN, message="unauthenticated")
-	UserError.check(_getCurrentUserInfo().may_create_organizations(), code=UserError.DENIED, message="unauthorized")
+	_getCurrentUserInfo().check_may_create_organizations()
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	return api.organization_create(name, label, attrs)
 
@@ -63,25 +61,21 @@ def organization_info(name):
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	return api.organization_info(name)
 
-@checkauth
 @invalidates(organization_list)
 def organization_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo(), code=UserError.NOT_LOGGED_IN, message="unauthenticated")
-	UserError.check(_getCurrentUserInfo().may_modify_organization(name), code=UserError.DENIED, message="unauthorized")
+	_getCurrentUserInfo().check_may_modify_organization(name)
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	return api.organization_modify(name, attrs)
 
-@checkauth
 @invalidates(organization_list)
 def organization_remove(name):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo(), code=UserError.NOT_LOGGED_IN, message="unauthenticated")
-	UserError.check(_getCurrentUserInfo().may_delete_organization(name), code=UserError.DENIED, message="unauthorized")
+	_getCurrentUserInfo().check_may_delete_organization(name)
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	api.organization_remove(name)
 
@@ -103,13 +97,12 @@ def site_list(organization=None):
 		sites = Site.objects
 	return [s.info() for s in sites]
 
-@checkauth
 @invalidates(site_list)
 def site_create(name, organization, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo().may_create_sites(organization), code=UserError.DENIED, message="you may not create sites for this organization")
+	_getCurrentUserInfo().check_may_create_sites(organization)
 	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
@@ -120,24 +113,22 @@ def site_info(name):
 	site = _getSite(name)
 	return site.info()
 
-@checkauth
 @invalidates(site_list)
 def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo().may_modify_site(_get_site_info(name)), code=UserError.DENIED, message="not enough permissions")
+	_getCurrentUserInfo().check_may_modify_site(_get_site_info(name))
 	site = _getSite(name)
 	site.modify(attrs)
 	return site.info()
 
-@checkauth
 @invalidates(site_list)
 def site_remove(name):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo().may_delete_site(_get_site_info(name)), code=UserError.DENIED, message="not enough permissions")
+	_getCurrentUserInfo().check_may_delete_site(_get_site_info(name))
 	site = _getSite(name)
 	site.remove()
 
@@ -157,13 +148,12 @@ def host_list(site=None, organization=None):
 		hosts = Host.objects
 	return [h.info() for h in hosts]
 
-@checkauth
 @invalidates(host_list)
 def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo().may_create_hosts(_get_site_info(site)), code=UserError.DENIED, message="you may not create hosts for this site")
+	_getCurrentUserInfo().check_may_create_hosts(_get_site_info(site))
 	if not attrs: attrs = {}
 	site = _getSite(site)
 	h = Host.create(name, site, attrs)
@@ -177,24 +167,22 @@ def host_info(name):
 	h = _getHost(name)
 	return h.info()
 
-@checkauth
 @invalidates(host_list)
 def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo().may_modify_host(_get_host_info(name)), code=UserError.DENIED, message="not enough permissions")
+	_getCurrentUserInfo().check_may_modify_host(_get_host_info(name))
 	h = _getHost(name)
 	h.modify(attrs)
 	return h.info()
 
-@checkauth
 @invalidates(host_list)
 def host_remove(name):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo().may_delete_host(_get_host_info(name)), code=UserError.DENIED, message="not enough permissions")
+	_getCurrentUserInfo().check_may_delete_host(_get_host_info(name))
 	h = _getHost(name)
 	h.remove()
 
@@ -203,7 +191,7 @@ def host_users(name):
 	"""
 	undocumented
 	"""
-	UserError.check(_getCurrentUserInfo().may_delete_host(_get_host_info(name)), code=UserError.DENIED, message="not enough permissions")
+	_getCurrentUserInfo().check_may_delete_host(_get_host_info(name))
 	h = _getHost(name)
 	return h.getUsers()
 

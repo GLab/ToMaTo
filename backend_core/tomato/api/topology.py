@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import _getCurrentUserInfo
+from api_helpers import _getCurrentUserInfo, _getCurrentUserName
 from ..authorization import get_topology_info as _get_topology_info, get_user_info as _get_user_info
 from ..lib.topology_role import role_descriptions as _role_descriptions
 
@@ -33,8 +33,7 @@ def topology_create():
 	  returned by :py:func:`topology_info`. This info dict also contains the
 	  topology id that is needed for further manipulation of that object.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(_getCurrentUserInfo().may_create_topologies(), code=UserError.DENIED, message="You are not allowed to create topologies.")
+	_getCurrentUserInfo().check_may_create_topologies()
 	return topology.create().info()
 
 def topology_permissions():
@@ -51,8 +50,7 @@ def topology_remove(id): #@ReservedAssignment
 	  The topology must not contain elements or connections, otherwise the call
 	  will fail.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(_getCurrentUserInfo().may_remove_topology(_get_topology_info(id)), code=UserError.DENIED, message="You are not allowed to remove this topology.")
+	_getCurrentUserInfo().check_may_remove_topology(_get_topology_info(id))
 	top = _getTopology(id)
 	top.remove()
 
@@ -78,8 +76,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  returned by :py:func:`topology_info`. This info dict will reflect all
 	  attribute changes.	
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(_getCurrentUserInfo().may_modify_topology(_get_topology_info(id)), code=UserError.DENIED, message="You are not allowed to modify this topology.")
+	_getCurrentUserInfo().check_may_modify_topology(_get_topology_info(id))
 	top = _getTopology(id)
 	top.modify(attrs)
 	return top.info()
@@ -129,9 +126,8 @@ def topology_action(id, action, params=None): #@ReservedAssignment
 	  of the action to the topology can be checked using 
 	  :py:func:`~topology_info`.	
 	"""
+	_getCurrentUserInfo().check_may_run_topology_actions(_get_topology_info(id))
 	if not params: params = {}
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(_getCurrentUserInfo().may_run_topology_actions(_get_topology_info(id)), code=UserError.DENIED, message="You are not allowed to run actions on this topology.")
 	top = _getTopology(id)
 	return top.action(action, params)
 
@@ -181,8 +177,7 @@ def topology_info(id, full=False): #@ReservedAssignment
 	``permissions``
 	  A dict with usernames as the keys and permission levels as values.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(_getCurrentUserInfo().may_view_topology(_get_topology_info(id)), code=UserError.DENIED, message="You are not allowed to view this topology.")
+	_getCurrentUserInfo().check_may_view_topology(_get_topology_info(id))
 	top = _getTopology(id)
 	return top.info(full)
 
@@ -198,18 +193,16 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	  contains exactly the same information as returned by 
 	  :py:func:`topology_info`. If no topologies exist, the list is empty. 
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	if organization:
-		UserError.check(_getCurrentUserInfo().may_list_organization_topologies(organization), code=UserError.DENIED, message="not enough permissions.")
+		_getCurrentUserInfo().check_may_list_organization_topologies(organization)
 		organization = _getOrganization(organization)
 		users = getAllUsers(organization)
 		tops = topology.getAll(permissions__user__in=users, permissions__role="owner")
 	elif showAll:
-		UserError.check(_getCurrentUserInfo().may_list_all_topologies(), code=UserError.DENIED, message="not enough permissions.")
+		_getCurrentUserInfo().check_may_list_all_topologies()
 		tops = topology.getAll()
 	else:
-		# no authorization check needed since topologies are filtered for current user
-		tops = topology.getAll(permissions__user=currentUser())
+		tops = topology.getAll(permissions__user=_getCurrentUserName())
 	return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
 
 def topology_permission(id, user, role): #@ReservedAssignment
@@ -229,8 +222,7 @@ def topology_permission(id, user, role): #@ReservedAssignment
 	  The name of the role for this user. If the user already has a role,
 	  if will be changed.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(_getCurrentUserInfo().may_grant_permission_for_topologies(_get_topology_info(id), role, _get_user_info(user)), code=UserError.DENIED, message="not allowed.")
+	_getCurrentUserInfo().check_may_grant_permission_for_topologies(_get_topology_info(id))
 	top = _getTopology(id)
 	user = _getAccount(user)
 	top.setRole(user, role)
@@ -246,8 +238,7 @@ def topology_usage(id): #@ReservedAssignment
 	  Usage statistics for the given topology according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	#fixme: check authorization
+	_getCurrentUserInfo().check_may_view_topology_usage(_get_topology_info(id))
 	top = _getTopology(id)
 	return top.totalUsage.info()	
 
