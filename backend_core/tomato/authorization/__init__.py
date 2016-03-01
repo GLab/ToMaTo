@@ -1,8 +1,9 @@
 from ..lib.userflags import Flags
 from info import UserInfo, TopologyInfo
-from ..auth.permissions import Role
+from ..lib.topology_role import Role
 
 class PermissionChecker(UserInfo):
+	__slots__ = ()
 	def __init__(self, username):
 		super(PermissionChecker, self).__init__(username)
 

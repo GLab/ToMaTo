@@ -2,9 +2,9 @@ from .. import scheduler
 from ..lib.error import InternalError, UserError
 from ..lib.service import get_tomato_inner_proxy
 from ..lib.settings import Config
+from ..lib.topology_role import Role
 
 from ..topology import Topology
-from ..auth.permissions import Role
 
 class InfoObj(object):
 	__slots__ = ("_cache_duration", "_info")
@@ -47,7 +47,7 @@ class UserInfo(InfoObj):
 
 
 
-class TopologyInfo:
+class TopologyInfo(object):
 	__slots__ = ("topology",)
 
 	def __init__(self, topology_id):
