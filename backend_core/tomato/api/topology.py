@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..auth import permissions
 from api_helpers import _getCurrentUserInfo
 from ..authorization import get_topology_info as _get_topology_info, get_user_info as _get_user_info
+from ..lib.topology_role import role_descriptions as _role_descriptions
 
 def _getTopology(id_):
 	top = topology.get(id_)
@@ -38,7 +38,7 @@ def topology_create():
 	return topology.create().info()
 
 def topology_permissions():
-	return permissions.role_descriptions()
+	return _role_descriptions()
 
 def topology_remove(id): #@ReservedAssignment
 	"""

@@ -23,6 +23,43 @@ class Flags:
 	OrgaHostContact = "orga_host_contact"
 	OrgaAdminContact = "orga_admin_contact"
 
+	@staticmethod
+	def getMaxTopologyFlags(flags):
+		"""
+		select the maximum permissions for topologies for global and organization-internal
+		:param list(str) flags: user flags
+		:return: maximum global permission, maximum orga-internal permission
+		:rtype: tuple(bool)
+		"""
+		#fixme: Role should be in an own shared library and used here
+		max_global = "null"
+		max_orga = "null"
+		for flag in [Flags.GlobalToplUser, Flags.GlobalToplManager, Flags.GlobalToplOwner]:
+			if flag in flags:
+				max_global = Flags.toTopologyRole(flag)
+		for flag in [Flags.OrgaToplUser, Flags.OrgaToplManager, Flags.OrgaToplOwner]:
+			if flag in flags:
+				max_orga = Flags.toTopologyRole(flag)
+		return max_global, max_orga
+
+	@staticmethod
+	def toTopologyRole(flag):
+		"""
+		convert a Topology permission flag (e.g., OrgaToplUser) to a topology Role
+		:param str flag: flag as in this class
+		:return: Role as in backend_core.auth.permissions.Role
+		:rtype: str
+		"""
+		#fixme: Role should be in an own shared library and used here
+		if flag in (Flags.GlobalToplOwner, Flags.OrgaToplOwner):
+			return "owner"
+		if flag in (Flags.GlobalToplManager, Flags.OrgaToplManager):
+			return "manager"
+		if flag in (Flags.GlobalToplUser, Flags.OrgaToplUser):
+			return "user"
+		return "null"
+
+
 flags = {
 	Flags.Debug: "Debug: See everything",
 	Flags.ErrorNotify: "ErrorNotify: receive emails for new kinds of errors",

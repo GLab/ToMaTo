@@ -2,9 +2,9 @@ from .. import scheduler
 from ..lib.error import InternalError, UserError
 from ..lib.service import get_tomato_inner_proxy
 from ..lib.settings import Config
+from ..lib.topology_role import Role
 
 from ..topology import Topology
-from ..auth.permissions import Role
 
 class InfoObj(object):
 	__slots__ = ("_cache_duration", "_info")
@@ -47,17 +47,17 @@ class UserInfo(InfoObj):
 
 
 
-class TopologyInfo:
+class TopologyInfo(object):
 	__slots__ = ("topology",)
 
 	def __init__(self, topology_id):
 		self.topology = Topology.get(topology_id)
 		UserError.check(self.topology, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"id": id_})
 
-	def hasRole(self, username, role):
+	def user_has_role(self, username, role):
 		"""
 		check if the user 'username' has the role 'role'.
-		This ignores user flags like
+		This ignores global or organization-internal permission flags of the given user.
 		:param str username: user to check
 		:param str role: role as in auth.permissions.Role
 		:return: whether the user has this role (or a higher one)
@@ -76,3 +76,15 @@ class TopologyInfo:
 		"""
 		#fixme: implement
 		return False
+
+	def organization_has_role(self, organization, role):
+		"""
+		check whether the organization has the given role.
+
+		:param str organization: target organization name
+		:param str role: maximum role as in auth.permissions.Role
+		:return: the role
+		:rtype: bool
+		"""
+		orga_role = self.topology.get_organization_permissions().get(organization, Role.null)
+		return Role.leq(role, orga_role)

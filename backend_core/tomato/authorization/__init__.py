@@ -1,8 +1,9 @@
 from ..lib.userflags import Flags
 from info import UserInfo, TopologyInfo
-from ..auth.permissions import Role
+from ..lib.topology_role import Role
 
 class PermissionChecker(UserInfo):
+	__slots__ = ()
 	def __init__(self, username):
 		super(PermissionChecker, self).__init__(username)
 
@@ -229,6 +230,29 @@ class PermissionChecker(UserInfo):
 
 	# topologies
 
+	def _has_topology_role(self, topology_info, role):
+		"""
+		check whether the user has a given role on the topology.
+		return True if the user has a higher role.
+		this also checks for user permission flags like GlobalToplManager.
+
+		:param TopologyInfo topology_info: target topology info
+		:param str role: target role
+		:return: whether this user has this role on this topology
+		:rtype: bool
+		"""
+		# first, try to resolve this without topology information
+		perm_global, perm_orga = Flags.getMaxTopologyFlags(self.get_flags())
+		if Role.leq(role, perm_global):
+			return True
+
+		if topology_info.user_has_role(self.get_username(), role):
+			return True
+		if Role.leq(role, perm_orga):  # user has role in organization
+			if topology_info.organization_has_role(self.get_organization(), role):  # organization has role on topology
+				return True
+		return False
+
 	def may_create_topologies(self):
 		"""
 		check whether this user may create topologies.
@@ -244,8 +268,7 @@ class PermissionChecker(UserInfo):
 		:return: whether this user may view this topology.
 		:rtype: bool
 		"""
-		return topology_info.hasRole(self.get_username(), Role.user)
-		#fixme: global or orga topology roles are not respected.
+		return self._has_topology_role(topology_info, Role.user)
 
 	def may_remove_topology(self, topology_info):
 		"""
@@ -254,8 +277,7 @@ class PermissionChecker(UserInfo):
 		:return: whether this user may remove this topology.
 		:rtype: bool
 		"""
-		return topology_info.hasRole(self.get_username(), Role.owner)
-		#fixme: global or orga topology roles are not respected.
+		return self._has_topology_role(topology_info, Role.owner)
 
 	def may_modify_topology(self, topology_info):
 		"""
@@ -264,8 +286,7 @@ class PermissionChecker(UserInfo):
 		:return: whether this user may modify this topology.
 		:rtype: bool
 		"""
-		return topology_info.hasRole(self.get_username(), Role.owner)
-		#fixme: global or orga topology roles are not respected.
+		return self._has_topology_role(topology_info, Role.owner)
 
 	def may_run_topology_actions(self, topology_info):
 		"""
@@ -274,8 +295,7 @@ class PermissionChecker(UserInfo):
 		:return: whether this user may run actions on this topology.
 		:rtype: bool
 		"""
-		return topology_info.hasRole(self.get_username(), Role.manager)
-		#fixme: global or orga topology roles are not respected.
+		return self._has_topology_role(topology_info, Role.manager)
 
 	def may_list_all_topologies(self):
 		"""
@@ -303,9 +323,7 @@ class PermissionChecker(UserInfo):
 		:return: whether this user may grant this permission on this topology.
 		:rtype: bool
 		"""
-		return topology_info.hasRole(self.get_username(), role) and not (username == self.get_username())
-		# fixme: todiscuss: may global/orga topl managers/etc grant permissions?
-
+		return self._has_topology_role(topology_info, role) and not (username == self.get_username())
 
 
 
