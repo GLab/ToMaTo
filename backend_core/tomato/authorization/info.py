@@ -5,6 +5,8 @@ from ..lib.settings import Config
 from ..lib.topology_role import Role
 
 from ..topology import Topology
+from ..host.site import Site
+from ..host import Host
 
 class InfoObj(object):
 	__slots__ = ("_cache_duration", "_info")
@@ -88,3 +90,26 @@ class TopologyInfo(object):
 		"""
 		orga_role = self.topology.get_organization_permissions().get(organization, Role.null)
 		return Role.leq(role, orga_role)
+
+
+class SiteInfo(object):
+	__slots__ = ("site",)
+
+	def __init__(self, site_name):
+		self.site = Site.objects.get(site_name)
+		UserError.check(self.site, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist", data={"site_name": site_name})
+
+	def get_organization(self):
+		return self.site.organization.name
+		#fixme: wont work when organization has been moved to backend_users... update
+
+class HostInfo(object):
+	__slots__ = ("host",)
+
+	def __init__(self, host_name):
+		self.host = Host.objects.get(host_name)
+		UserError.check(self.host, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"host_name": host_name})
+
+	def get_organization(self):
+		return self.host.site.organization.name
+		#fixme: wont work when organization has been moved to backend_users... update

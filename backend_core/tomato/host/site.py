@@ -99,8 +99,6 @@ class Site(Entity, BaseDocument):
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
 			data={"name": organization})
 		user = currentUser()
-		UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == orga,
-			code=UserError.DENIED, message="Not enough permissions")
 		logging.logMessage("create", category="site", name=name, label=label)
 		site = Site(name=name, organization=orga, label=label)
 		try:

@@ -19,6 +19,7 @@ from api_helpers import checkauth, _getCurrentUserInfo
 from ..lib.cache import cached, invalidates #@UnresolvedImport
 from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
 from ..lib.settings import Config as _Config
+from ..authorization import get_host_info as _get_host_info, get_site_info as _get_site_info
 
 #fixme: function won't be accessible after migration
 def _getOrganization(name):
@@ -108,6 +109,7 @@ def site_create(name, organization, label="", attrs={}):
 	"""
 	undocumented
 	"""
+	UserError.check(_getCurrentUserInfo().may_create_sites(organization), code=UserError.DENIED, message="you may not create sites for this organization")
 	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
@@ -124,6 +126,7 @@ def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
+	UserError.check(_getCurrentUserInfo().may_modify_site(_get_site_info(name)), code=UserError.DENIED, message="not enough permissions")
 	site = _getSite(name)
 	site.modify(attrs)
 	return site.info()
@@ -134,6 +137,7 @@ def site_remove(name):
 	"""
 	undocumented
 	"""
+	UserError.check(_getCurrentUserInfo().may_delete_site(_get_site_info(name)), code=UserError.DENIED, message="not enough permissions")
 	site = _getSite(name)
 	site.remove()
 
@@ -159,6 +163,7 @@ def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
+	UserError.check(_getCurrentUserInfo().may_create_hosts(_get_site_info(site)), code=UserError.DENIED, message="you may not create hosts for this site")
 	if not attrs: attrs = {}
 	site = _getSite(site)
 	h = Host.create(name, site, attrs)
@@ -178,6 +183,7 @@ def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
+	UserError.check(_getCurrentUserInfo().may_modify_host(_get_host_info(name)), code=UserError.DENIED, message="not enough permissions")
 	h = _getHost(name)
 	h.modify(attrs)
 	return h.info()
@@ -188,6 +194,7 @@ def host_remove(name):
 	"""
 	undocumented
 	"""
+	UserError.check(_getCurrentUserInfo().may_delete_host(_get_host_info(name)), code=UserError.DENIED, message="not enough permissions")
 	h = _getHost(name)
 	h.remove()
 
@@ -196,6 +203,7 @@ def host_users(name):
 	"""
 	undocumented
 	"""
+	UserError.check(_getCurrentUserInfo().may_delete_host(_get_host_info(name)), code=UserError.DENIED, message="not enough permissions")
 	h = _getHost(name)
 	return h.getUsers()
 
