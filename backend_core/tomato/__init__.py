@@ -67,12 +67,6 @@ _currentUser = threading.local()
 
 def currentUser():
 	return _currentUser.user if hasattr(_currentUser, "user") else None  # fixme
-
-def currentUserName():
-	u = currentUser()
-	if u is None:
-		return None
-	return u.name
 	
 def setCurrentUser(user):
 	_currentUser.user = user
