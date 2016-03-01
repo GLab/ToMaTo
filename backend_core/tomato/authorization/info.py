@@ -24,7 +24,6 @@ class InfoObj(object):
 	def info(self):
 		if self._info is None:
 			self._info = self._fetch_data()
-			scheduler.scheduleOnce(self._cache_duration, self.invalidate_info)
 		return self._info
 
 

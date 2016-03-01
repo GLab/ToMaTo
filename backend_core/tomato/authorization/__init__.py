@@ -1,6 +1,7 @@
 from ..lib.userflags import Flags
 from info import UserInfo, TopologyInfo, SiteInfo, HostInfo
 from ..lib.topology_role import Role
+from ..lib.cache import cached
 
 class PermissionChecker(UserInfo):
 	__slots__ = ()
@@ -422,8 +423,7 @@ class PermissionChecker(UserInfo):
 
 
 
-_permission_checkers = {}
-
+@cached(60)
 def get_permission_checker(username):
 	"""
 	get PermissionChecker for this username
@@ -431,10 +431,7 @@ def get_permission_checker(username):
 	:return: PermissionChecker object for corresponding user
 	:rtype: PermissionChecker
 	"""
-	if username not in _permission_checkers:
-		permission_checker = PermissionChecker(username=username)
-		_permission_checkers[username] = permission_checker
-	return _permission_checkers[username]
+	return PermissionChecker(username=username)
 
 def get_user_info(username):
 	"""
@@ -445,6 +442,7 @@ def get_user_info(username):
 	"""
 	return get_permission_checker(username)
 
+@cached(3600)
 def get_topology_info(topology_id):
 	"""
 	return TopologyInfo object for the respective topology
@@ -454,6 +452,7 @@ def get_topology_info(topology_id):
 	"""
 	return TopologyInfo(topology_id)
 
+@cached(3600)
 def get_site_info(site_name):
 	"""
 	return SiteInfo object for the respective site
@@ -463,6 +462,7 @@ def get_site_info(site_name):
 	"""
 	return SiteInfo(site_name)
 
+@cached(3600)
 def get_host_info(host_name):
 	"""
 	return HostInfo object for the respective host
