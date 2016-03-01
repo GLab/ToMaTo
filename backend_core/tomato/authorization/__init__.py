@@ -423,6 +423,9 @@ class PermissionChecker(UserInfo):
 	def check_may_view_debugging_info(self):
 		auth_check(Flags.Debug in self.get_flags(), "you don't have debugging permissions")
 
+	def check_may_execute_tasks(self):
+		#fixme: this is what was checked in api before. I think this should check for debug permissions...
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to execute tasks")
 
 
 

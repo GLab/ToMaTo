@@ -18,6 +18,8 @@
 from ..lib.cache import cached #@UnresolvedImport
 import time, sys, traceback
 from ..lib.versioninfo import getVersionStr
+from api_helpers import checkauth, _getCurrentUserInfo
+from ..authorization import get_user_info as _get_user_info
 
 @cached(timeout=3600, autoupdate=True)
 def server_info():
@@ -42,12 +44,12 @@ def server_info():
 def link_statistics(siteA, siteB):
 	return link.getStatistics(siteA, siteB)
 
+@checkauth
 def notifyAdmins(subject, text, global_contact = True, issue="admin"):
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	auth.notifyAdmins(subject, text, global_contact, issue)
-	
+
 def mailUser(user, subject, text):
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_send_message_to_user(_get_user_info(user))
 	auth.sendMessage(user, subject, text)
 
 @cached(timeout=3600)
@@ -96,18 +98,17 @@ def statistics():
 	usage['users_active_30days'] = auth.User.objects.filter(lastLogin__gte = time.time() - 30*24*60*60).count()
 	return stats
 
+@checkauth
 def task_list():
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	#fixme: should this check more authorization?
 	return scheduler.info()["tasks"]
 
 def task_execute(id):
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(currentUser().hasFlag(auth.Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
+	_getCurrentUserInfo().check_may_execute_tasks()
 	return scheduler.executeTask(id, force=True)
 
 def debug_stats():
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check(currentUser().hasFlag(auth.Flags.Debug), code=UserError.DENIED, message="Not enough permissions")
+	_getCurrentUserInfo().check_may_view_debugging_info()
 	from .. import database_obj
 	stats = {}
 	stats["db"] = database_obj.command("dbstats")
