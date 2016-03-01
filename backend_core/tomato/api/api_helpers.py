@@ -17,7 +17,7 @@
 
 from .. import currentUser, currentUserName
 from ..lib.error import UserError  #@UnresolvedImport
-from ..authorization import get_user_info
+from ..authorization import get_permission_checker
 
 def checkauth(fn):
 	def call(*args, **kwargs):
@@ -36,6 +36,6 @@ def _getCurrentUserInfo():
 	:rtype: PermissionChecker or NoneType
 	"""
 	if currentUser():
-		return get_user_info(currentUserName())
+		return get_permission_checker(currentUserName())
 	else:
 		return None

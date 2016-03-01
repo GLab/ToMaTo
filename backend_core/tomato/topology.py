@@ -274,8 +274,6 @@ def getAll(**kwargs):
 
 def create(attrs=None):
 	if not attrs: attrs = {}
-	UserError.check(not currentUser().hasFlag(Flags.NoTopologyCreate), code=UserError.DENIED,
-		message="User can not create new topologies")
 	top = Topology()
 	top.init(owner=currentUser(), attrs=attrs)
 	logging.logMessage("create", category="topology", id=top.idStr)

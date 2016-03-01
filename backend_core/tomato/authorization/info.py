@@ -1,9 +1,14 @@
 from .. import scheduler
-from ..lib.error import InternalError
+from ..lib.error import InternalError, UserError
 from ..lib.service import get_tomato_inner_proxy
 from ..lib.settings import Config
 
+from ..topology import Topology
+from ..auth.permissions import Role
+
 class InfoObj(object):
+	__slots__ = ("_cache_duration", "_info")
+
 	def __init__(self, cache_duration):
 		self._cache_duration = cache_duration
 		self._info = None
@@ -21,9 +26,9 @@ class InfoObj(object):
 		return self._info
 
 
-
-
 class UserInfo(InfoObj):
+	__slots__ = ("name",)
+
 	def __init__(self, username):
 		super(UserInfo, self).__init__(60)  # fixme: invalidation interval should be configurable
 		self.name = username
@@ -39,3 +44,35 @@ class UserInfo(InfoObj):
 
 	def get_organization(self):
 		return self.info()['organization']
+
+
+
+class TopologyInfo:
+	__slots__ = ("topology",)
+
+	def __init__(self, topology_id):
+		self.topology = Topology.get(topology_id)
+		UserError.check(self.topology, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"id": id_})
+
+	def hasRole(self, username, role):
+		"""
+		check if the user 'username' has the role 'role'.
+		This ignores user flags like
+		:param str username: user to check
+		:param str role: role as in auth.permissions.Role
+		:return: whether the user has this role (or a higher one)
+		:rtype: bool
+		"""
+		#fixme: implement
+		return False
+
+	def listUsers(self, minRole=Role.null):
+		"""
+		get a list of users that have at least the given role.
+
+		:param str minRole: role as in auth.permissions.Role
+		:return: list of usernames satisfying the role
+		:rtype: list(str)
+		"""
+		#fixme: implement
+		return False

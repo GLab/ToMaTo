@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..auth import permissions
+from api_helpers import _getCurrentUserInfo
+from ..authorization import get_topology_info as _get_topology_info, get_user_info as _get_user_info
 
 def _getTopology(id_):
 	top = topology.get(id_)
@@ -32,6 +34,7 @@ def topology_create():
 	  topology id that is needed for further manipulation of that object.
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check(_getCurrentUserInfo().may_create_topologies(), code=UserError.DENIED, message="You are not allowed to create topologies.")
 	return topology.create().info()
 
 def topology_permissions():
@@ -49,6 +52,7 @@ def topology_remove(id): #@ReservedAssignment
 	  will fail.
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check(_getCurrentUserInfo().may_remove_topology(_get_topology_info(id)), code=UserError.DENIED, message="You are not allowed to remove this topology.")
 	top = _getTopology(id)
 	top.remove()
 
@@ -75,6 +79,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  attribute changes.	
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check(_getCurrentUserInfo().may_modify_topology(_get_topology_info(id)), code=UserError.DENIED, message="You are not allowed to modify this topology.")
 	top = _getTopology(id)
 	top.modify(attrs)
 	return top.info()
@@ -126,6 +131,7 @@ def topology_action(id, action, params=None): #@ReservedAssignment
 	"""
 	if not params: params = {}
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check(_getCurrentUserInfo().may_run_topology_actions(_get_topology_info(id)), code=UserError.DENIED, message="You are not allowed to run actions on this topology.")
 	top = _getTopology(id)
 	return top.action(action, params)
 
@@ -176,6 +182,7 @@ def topology_info(id, full=False): #@ReservedAssignment
 	  A dict with usernames as the keys and permission levels as values.
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check(_getCurrentUserInfo().may_view_topology(_get_topology_info(id)), code=UserError.DENIED, message="You are not allowed to view this topology.")
 	top = _getTopology(id)
 	return top.info(full)
 
@@ -193,12 +200,15 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	if organization:
+		UserError.check(_getCurrentUserInfo().may_list_organization_topologies(organization), code=UserError.DENIED, message="not enough permissions.")
 		organization = _getOrganization(organization)
 		users = getAllUsers(organization)
 		tops = topology.getAll(permissions__user__in=users, permissions__role="owner")
 	elif showAll:
+		UserError.check(_getCurrentUserInfo().may_list_all_topologies(), code=UserError.DENIED, message="not enough permissions.")
 		tops = topology.getAll()
 	else:
+		# no authorization check needed since topologies are filtered for current user
 		tops = topology.getAll(permissions__user=currentUser())
 	return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
 
@@ -206,6 +216,8 @@ def topology_permission(id, user, role): #@ReservedAssignment
 	"""
 	Grants/changes permissions for a user on a topology. See :doc:`permissions`
 	for further information about available roles and their meanings.
+
+	You may not change your own role.
 	
 	Parameter *id*:
 	  The parameter *id* identifies the topology by giving its unique id.
@@ -218,6 +230,7 @@ def topology_permission(id, user, role): #@ReservedAssignment
 	  if will be changed.
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check(_getCurrentUserInfo().may_grant_permission_for_topologies(_get_topology_info(id), role, _get_user_info(user)), code=UserError.DENIED, message="not allowed.")
 	top = _getTopology(id)
 	user = _getAccount(user)
 	top.setRole(user, role)
@@ -234,9 +247,13 @@ def topology_usage(id): #@ReservedAssignment
 	  :doc:`/docs/accountingdata`.
 	"""
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	#fixme: check authorization
 	top = _getTopology(id)
 	return top.totalUsage.info()	
-	
+
+
+#fixme: move actual import/export to the topology module
+#fixme: add authorization checks
 def topology_import(data):
 	# this function may change the values of data.
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
