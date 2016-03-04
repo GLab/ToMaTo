@@ -1,5 +1,6 @@
 from ..lib.userflags import Flags
-from info import UserInfo, TopologyInfo, SiteInfo, HostInfo
+from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo,\
+	get_topology_info, get_host_info, get_site_info, get_element_info
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 from ..lib.error import UserError
@@ -421,21 +422,39 @@ class PermissionChecker(UserInfo):
 	# resources
 
 	def check_may_create_user_resources(self):
+		"""
+		check whether this user may create user resources (e.g. Templates, Profiles)
+		"""
 		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to create user resources.")
 
 	def check_may_modify_user_resources(self):
+		"""
+		check whether this user may modify user resources (e.g. Templates, Profiles)
+		"""
 		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to modify user resources.")
 
 	def check_may_remove_user_resources(self):
+		"""
+		check whether this user may delete user resources (e.g. Templates, Profiles)
+		"""
 		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to remove user resources.")
 
 	def check_may_create_technical_resources(self):
+		"""
+		check whether this user may create technical resources (e.g. Templates, Profiles)
+		"""
 		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to create technical resources.")
 
 	def check_may_modify_technical_resources(self):
+		"""
+		check whether this user may modify technical resources (e.g. Templates, Profiles)
+		"""
 		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to modify technical resources.")
 
 	def check_may_remove_technical_resources(self):
+		"""
+		check whether this user may delete technical resources (e.g. Templates, Profiles)
+		"""
 		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to remove technical resources.")
 
 
@@ -444,9 +463,48 @@ class PermissionChecker(UserInfo):
 
 	# elements
 
-	def check_may_create_element(self):
-		auth_check()
+	def check_may_create_element(self, topology_info):
+		"""
+		check whether this user may create elements on this topology
+		:param TopologyInfo topology_info: target topology
+		"""
+		auth_check(self._check_has_topology_role(topology_info, Role.manager), "You don't have permissions to create elements on this topology.")
 
+	def check_may_modify_element(self, element_info):
+		"""
+		check whether this user may modify this element
+		:param ElementInfo element_info: target element
+		"""
+		auth_check(self._check_has_topology_role(element_info.get_topology_info(), Role.manager), "You don't have permission to modify elements on this topology.")
+
+	def check_may_remove_element(self, element_info):
+		"""
+		check whether this user may delete this element
+		:param ElementInfo element_info: target element
+		"""
+		auth_check(self._check_has_topology_role(element_info.get_topology_info(), Role.manager), "You don't have permission to remove elements on this topology.")
+
+	def check_may_view_element(self, element_info):
+		"""
+		check whether this user may view this element
+		:param ElementInfo element_info: target element
+		"""
+		auth_check(self._check_has_topology_role(element_info.get_topology_info(), Role.user), "You don't have permission to remove elements on this topology.")
+
+	def check_may_run_element_action(self, element_info, action):
+		"""
+		check whether this user may run this action on the given element
+		:param ElementInfo element_info: target element
+		:param str action: action to run
+		"""
+		# step 1: make sure the user doesn't run any action that is not recognized by this.
+		# fixme: this is not complete. add more available actions.
+		UserError.check(action in ("start", "stop", "prepare", "destroy"),
+										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
+
+		# step 2: for each action, check permissions.
+		if action in ("start", "stop", "prepare", "destroy"):
+			auth_check(self._check_has_topology_role(element_info.get_topology_info(), Role.manager), "You don't have permission to run this action on this element.")
 
 
 
@@ -485,33 +543,3 @@ def get_user_info(username):
 	:rtype: PermissionChecker
 	"""
 	return get_permission_checker(username)
-
-@cached(3600)
-def get_topology_info(topology_id):
-	"""
-	return TopologyInfo object for the respective topology
-	:param topology_id: id of topology
-	:return: TopologyInfo object
-	:rtype: TopologyInfo
-	"""
-	return TopologyInfo(topology_id)
-
-@cached(3600)
-def get_site_info(site_name):
-	"""
-	return SiteInfo object for the respective site
-	:param str site_name: name of the target site
-	:return: SiteInfo object
-	:rtype: SiteInfo
-	"""
-	return SiteInfo(site_name)
-
-@cached(3600)
-def get_host_info(host_name):
-	"""
-	return HostInfo object for the respective host
-	:param str host_name: name of the target host
-	:return: HostInfo object
-	:rtype: HostInfo
-	"""
-	return HostInfo(host_name)

@@ -3,8 +3,10 @@ from ..lib.error import InternalError, UserError
 from ..lib.service import get_tomato_inner_proxy
 from ..lib.settings import Config
 from ..lib.topology_role import Role
+from ..lib.cache import cached
 
 from ..topology import Topology
+from ..elements import Element
 from ..host.site import Site
 from ..host import Host
 
@@ -112,3 +114,54 @@ class HostInfo(object):
 	def get_organization(self):
 		return self.host.site.organization.name
 		#fixme: wont work when organization has been moved to backend_users... update
+
+class ElementInfo(object):
+	__slots__ = ("element",)
+
+	def __init__(self, element_id):
+		self.element = Element.get(element_id)
+		UserError.check(self.element, code=UserError.ENTITY_DOES_NOT_EXIST, message="Element with that id does not exist", data={"element_id": element_id})
+
+	def get_topology_info(self):
+		return get_topology_info(self.element.topology.id)
+
+
+
+def get_element_info(element_id):
+	"""
+	return ElementInfo object for the respective topology
+	:param element_id: id of element
+	:return: ElementInfo object
+	:rtype: ElementInfo
+	"""
+	return ElementInfo(element_id)
+
+
+def get_topology_info(topology_id):
+	"""
+	return TopologyInfo object for the respective topology
+	:param topology_id: id of topology
+	:return: TopologyInfo object
+	:rtype: TopologyInfo
+	"""
+	return TopologyInfo(topology_id)
+
+
+def get_site_info(site_name):
+	"""
+	return SiteInfo object for the respective site
+	:param str site_name: name of the target site
+	:return: SiteInfo object
+	:rtype: SiteInfo
+	"""
+	return SiteInfo(site_name)
+
+
+def get_host_info(host_name):
+	"""
+	return HostInfo object for the respective host
+	:param str host_name: name of the target host
+	:return: HostInfo object
+	:rtype: HostInfo
+	"""
+	return HostInfo(host_name)

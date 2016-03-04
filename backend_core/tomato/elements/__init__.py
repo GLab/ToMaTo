@@ -376,7 +376,6 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		if parent:
 			UserError.check(parent.topology == top, code=UserError.INVALID_CONFIGURATION,
 				message="Parent must be from same topology")
-		top.checkRole(Role.manager)
 		UserError.check(type_ in TYPES, code=UserError.UNSUPPORTED_TYPE, message="Unsupported type", data={"type": type_})
 		el = TYPES[type_]()
 		try:
