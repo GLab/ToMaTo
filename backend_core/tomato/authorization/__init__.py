@@ -418,6 +418,29 @@ class PermissionChecker(UserInfo):
 
 
 
+	# resources
+
+	def check_may_create_user_resources(self):
+		auth_check(Flags.GlobalAdmin in self.get_flags())
+
+	def check_may_modify_user_resources(self):
+		auth_check(Flags.GlobalAdmin in self.get_flags())
+
+	def check_may_remove_user_resources(self):
+		auth_check(Flags.GlobalAdmin in self.get_flags())
+
+	def check_may_create_technical_resources(self):
+		auth_check(Flags.GlobalHostManager in self.get_flags())
+
+	def check_may_modify_technical_resources(self):
+		auth_check(Flags.GlobalHostManager in self.get_flags())
+
+	def check_may_remove_technical_resources(self):
+		auth_check(Flags.GlobalHostManager in self.get_flags())
+
+
+
+
 	# debugging
 
 	def check_may_view_debugging_info(self):
