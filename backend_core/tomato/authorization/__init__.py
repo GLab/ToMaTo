@@ -421,22 +421,33 @@ class PermissionChecker(UserInfo):
 	# resources
 
 	def check_may_create_user_resources(self):
-		auth_check(Flags.GlobalAdmin in self.get_flags())
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to create user resources.")
 
 	def check_may_modify_user_resources(self):
-		auth_check(Flags.GlobalAdmin in self.get_flags())
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to modify user resources.")
 
 	def check_may_remove_user_resources(self):
-		auth_check(Flags.GlobalAdmin in self.get_flags())
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to remove user resources.")
 
 	def check_may_create_technical_resources(self):
-		auth_check(Flags.GlobalHostManager in self.get_flags())
+		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to create technical resources.")
 
 	def check_may_modify_technical_resources(self):
-		auth_check(Flags.GlobalHostManager in self.get_flags())
+		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to modify technical resources.")
 
 	def check_may_remove_technical_resources(self):
-		auth_check(Flags.GlobalHostManager in self.get_flags())
+		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to remove technical resources.")
+
+
+
+
+
+	# elements
+
+	def check_may_create_element(self):
+		auth_check()
+
+
 
 
 
