@@ -1,6 +1,6 @@
 from ..lib.userflags import Flags
-from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo,\
-	get_topology_info, get_host_info, get_site_info, get_element_info
+from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo, ConnectionInfo,\
+	get_topology_info, get_host_info, get_site_info, get_element_info, get_connection_info
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 from ..lib.error import UserError
@@ -513,6 +513,58 @@ class PermissionChecker(UserInfo):
 		# step 2: for each action, check permissions.
 		if action in ("start", "stop", "prepare", "destroy"):
 			self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
+
+
+
+
+
+	# connections
+
+	def check_may_create_connection(self, element_info_1, element_info_2):
+		"""
+		check whether this user may run create a connection between the given elements
+		:param ElementInfo element_info_1: first target element
+		:param ElementInfo element_info_2: second target element
+		"""
+		el1_top_info = element_info_1.get_topology_info()
+		auth_check(el1_top_info.get_id() == element_info_2.get_topology_info().get_id(), "Elements must be from the same topology.")
+		self._check_has_topology_role(el1_top_info, Role.manager)  # element 2 has the same topology, so only one check needed
+
+	def check_may_modify_connection(self, connection_info):
+		"""
+		check whether this user may modify this connection
+		:param ConnectionInfo connection_info: target connection
+		"""
+		self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
+
+	def check_may_remove_connection(self, connection_info):
+		"""
+		check whether this user may remove this connection
+		:param ConnectionInfo connection_info: target connection
+		"""
+		self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
+
+	def check_may_view_connection(self, connection_info):
+		"""
+		check whether this user may view this connection
+		:param ConnectionInfo connection_info: target connection
+		"""
+		self._check_has_topology_role(connection_info.get_topology_info(), Role.user)
+
+	def check_may_run_connection_action(self, connection_info, action):
+		"""
+		check whether this user may run this action on the given connection
+		:param ConnectionInfo connection_info: target connection
+		:param str action: action to run
+		"""
+		# step 1: make sure the user doesn't run any action that is not recognized by this.
+		# fixme: is this complete? add more available actions.
+		UserError.check(action in ("start", "stop", "prepare", "destroy"),
+										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
+
+		# step 2: for each action, check permissions.
+		if action in ("start", "stop", "prepare", "destroy"):
+			self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
 
 
 

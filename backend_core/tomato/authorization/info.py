@@ -5,8 +5,9 @@ from ..lib.settings import Config
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 
-from ..topology import Topology
+from .. import topology
 from ..elements import Element
+from ..connections import Connection
 from ..host.site import Site
 from ..host import Host
 
@@ -51,11 +52,12 @@ class UserInfo(InfoObj):
 
 
 class TopologyInfo(object):
-	__slots__ = ("topology",)
+	__slots__ = ("topology", "topology_id")
 
 	def __init__(self, topology_id):
-		self.topology = Topology.get(topology_id)
-		UserError.check(self.topology, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"id": id_})
+		self.topology = topology.get(topology_id)
+		UserError.check(self.topology, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"topology_id": topology_id})
+		self.topology_id = topology_id
 
 	def user_has_role(self, username, role):
 		"""
@@ -92,6 +94,13 @@ class TopologyInfo(object):
 		orga_role = self.topology.get_organization_permissions().get(organization, Role.null)
 		return Role.leq(role, orga_role)
 
+	def get_id(self):
+		"""
+		return the topology id of this toppology
+		:return:
+		"""
+		return self.topology_id
+
 
 class SiteInfo(object):
 	__slots__ = ("site",)
@@ -125,11 +134,33 @@ class ElementInfo(object):
 	def get_topology_info(self):
 		return get_topology_info(self.element.topology.id)
 
+class ConnectionInfo(object):
+	__slots__ = ("connection",)
 
+	def __init__(self, connection_id):
+		self.connection = Connection.get(connection_id)
+		UserError.check(self.connection, code=UserError.ENTITY_DOES_NOT_EXIST, message="Connection with that id does not exist", data={"connection_id": connection_id})
+
+	def get_topology_info(self):
+		return get_topology_info(self.connection.topology.id)
+
+
+
+
+
+
+def get_connection_info(connection_id):
+	"""
+	return ConnectionInfo object for the respective topology
+	:param connection_id: id of connection
+	:return: ConnectionInfo object
+	:rtype: ConnectionInfo
+	"""
+	return ConnectionInfo(connection_id)
 
 def get_element_info(element_id):
 	"""
-	return ElementInfo object for the respective topology
+	return ElementInfo object for the respective element
 	:param element_id: id of element
 	:return: ElementInfo object
 	:rtype: ElementInfo
