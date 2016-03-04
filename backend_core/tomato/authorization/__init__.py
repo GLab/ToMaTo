@@ -354,12 +354,20 @@ class PermissionChecker(UserInfo):
 		"""
 		self._check_has_topology_role(topology_info, Role.owner)
 
-	def check_may_run_topology_actions(self, topology_info):
+	def check_may_run_topology_action(self, topology_info, action):
 		"""
-		check whether this user may run actions on this topology.
+		check whether this user may run this action on this topology.
 		:param TopologyInfo topology_info: target topology
+		:param str action: target action
 		"""
-		self._check_has_topology_role(topology_info, Role.manager)
+		# step 1: make sure the user doesn't run any unrecognized action
+		# fixme: is this complete? add more available actions.
+		UserError.check(action in ("start", "stop", "prepare", "destroy"),
+										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
+
+		# step 2: check permission for each individual action
+		if action in ("start", "stop", "prepare", "destroy"):
+			self._check_has_topology_role(topology_info, Role.manager)
 
 	def _may_list_all_topologies(self):
 		"""
@@ -468,28 +476,28 @@ class PermissionChecker(UserInfo):
 		check whether this user may create elements on this topology
 		:param TopologyInfo topology_info: target topology
 		"""
-		auth_check(self._check_has_topology_role(topology_info, Role.manager), "You don't have permissions to create elements on this topology.")
+		self._check_has_topology_role(topology_info, Role.manager)
 
 	def check_may_modify_element(self, element_info):
 		"""
 		check whether this user may modify this element
 		:param ElementInfo element_info: target element
 		"""
-		auth_check(self._check_has_topology_role(element_info.get_topology_info(), Role.manager), "You don't have permission to modify elements on this topology.")
+		self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
 
 	def check_may_remove_element(self, element_info):
 		"""
 		check whether this user may delete this element
 		:param ElementInfo element_info: target element
 		"""
-		auth_check(self._check_has_topology_role(element_info.get_topology_info(), Role.manager), "You don't have permission to remove elements on this topology.")
+		self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
 
 	def check_may_view_element(self, element_info):
 		"""
 		check whether this user may view this element
 		:param ElementInfo element_info: target element
 		"""
-		auth_check(self._check_has_topology_role(element_info.get_topology_info(), Role.user), "You don't have permission to remove elements on this topology.")
+		self._check_has_topology_role(element_info.get_topology_info(), Role.user)
 
 	def check_may_run_element_action(self, element_info, action):
 		"""
@@ -504,7 +512,7 @@ class PermissionChecker(UserInfo):
 
 		# step 2: for each action, check permissions.
 		if action in ("start", "stop", "prepare", "destroy"):
-			auth_check(self._check_has_topology_role(element_info.get_topology_info(), Role.manager), "You don't have permission to run this action on this element.")
+			self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
 
 
 
