@@ -65,16 +65,18 @@ def db_migrate():
 import threading
 _currentUser = threading.local()
 
-def currentUser():
-	return _currentUser.user if hasattr(_currentUser, "user") else None  # fixme
+def getCurrentUserInfo():
+	return _currentUser.user_info if hasattr(_currentUser, "user_info") else None  # fixme
 	
-def setCurrentUser(user):
-	_currentUser.user = user
+def setCurrentUserInfo(user_info):
+	_currentUser.user_info = user_info
+
+import authorization
 
 def login(credentials, sslCert):
-	user = auth.login(*credentials) if credentials else None
-	setCurrentUser(user)
-	return user or not credentials
+	user_info = authorization.login(*credentials) if credentials else None
+	setCurrentUserInfo(user_info)
+	return user_info or not credentials
 
 from lib import logging
 def handleError():
@@ -86,7 +88,7 @@ scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=setti
 
 starttime = time.time()
 
-from . import host, auth, rpcserver #@UnresolvedImport
+from . import host, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import util, cache #@UnresolvedImport
 
@@ -104,7 +106,6 @@ def start():
 		db_migrate()
 	else:
 		print >>sys.stderr, "Skipping migrations"
-	auth.init()
 	global starttime
 	bittorrent.startTracker(settings.settings.get_bittorrent_settings()['tracker-port'], settings.settings.get_template_dir())
 	bittorrent.startClient(settings.settings.get_template_dir())

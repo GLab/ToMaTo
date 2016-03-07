@@ -11,21 +11,32 @@ from ..connections import Connection
 from ..host.site import Site
 from ..host import Host
 
-class InfoObj(object):
-	__slots__ = ("_info")
+import time
 
-	def __init__(self):
+class InfoObj(object):
+	__slots__ = ("_info", "cache_duration", "last_update")
+
+	def __init__(self, cache_duration):
 		self._info = None
+		self.cache_duration = cache_duration,
+		self.last_update = 0
 
 	def invalidate_info(self):
 		self._info = None
+
+	def invalidate_info_if_old(self):
+		if self.info is not None:
+			if time.time() - self.last_update > self.cache_duration:
+				self.invalidate_info()
 
 	def _fetch_data(self):
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s._fetch_data' % repr(self.__class__)})
 
 	def info(self):
+		self.invalidate_info_if_old()
 		if self._info is None:
 			self._info = self._fetch_data()
+			self.last_update = time.time()
 		return self._info
 
 
@@ -33,7 +44,7 @@ class UserInfo(InfoObj):
 	__slots__ = ("name",)
 
 	def __init__(self, username):
-		super(UserInfo, self).__init__()  # fixme: invalidation interval should be configurable
+		super(UserInfo, self).__init__(60)  # fixme: invalidation interval should be configurable
 		self.name = username
 
 	def _fetch_data(self):

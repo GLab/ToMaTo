@@ -4,7 +4,10 @@ from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo, Connec
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 from ..lib.error import UserError
+from ..lib.service import get_tomato_inner_proxy
+from ..lib.settings import Config
 
+import time
 
 def auth_check(condition, message, data=None):
 	if not data:
@@ -16,10 +19,44 @@ def auth_fail(message, data=None):
 
 
 class PermissionChecker(UserInfo):
-	__slots__ = ()
+	__slots__ = ("success_password", "password_age")
 
 	def __init__(self, username):
 		super(PermissionChecker, self).__init__(username)
+		self.success_password = None
+		self.password_age = 0
+
+	def invalidate_info(self):
+		super(PermissionChecker, self).invalidate_info()
+		self.success_password = None
+
+
+
+
+
+	# authentication
+
+	def login(self, password):
+
+		# if password is cached, try to use the cached one if it isn't too old.
+		if self.success_password:
+			if time.time() - self.password_age > self.cache_duration:
+				self.success_password = None
+			else:
+				if password == self.success_password:
+					return True  # if false, this may be due to a recent password changed that hasn't been seen by the cache.
+											# in this case, try to get a fresh password.
+
+		api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+		result = api.user_check_password(self.get_username(), password)
+		if result:
+			self.password_age = time.time()
+			self.success_password = password
+		return result
+
+
+
+
 
 
 
@@ -658,6 +695,12 @@ class PseudoUser(UserInfo):
 
 
 
+def login(username, password):
+	user_info = get_permission_checker(username)
+	if user_info.login(password):
+		return user_info
+	else:
+		return None
 
 
 @cached(60)
