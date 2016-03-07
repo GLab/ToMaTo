@@ -24,6 +24,11 @@ def user_list(organization=None, with_flag=None):
 	# else:
 	# 	raise UserError(code=UserError.DENIED, message="Not enough permissions")
 
+def user_exists(name):
+	if _getUser(name):
+		return True
+	return False
+
 def user_info(name):
 	user = _getUser(name)
 	return user.info()

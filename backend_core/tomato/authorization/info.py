@@ -13,30 +13,43 @@ from ..host import Host
 
 import time
 
-class InfoObj(object):
-	__slots__ = ("_info", "cache_duration", "last_update")
+class ExistenceCheck(object):
+	__slots__ = ("_exists",)
 
-	def __init__(self, cache_duration):
+	def __init__(self):
+		self._exists = None
+
+	def invalidate_exists(self):
+		self._exists = None
+
+	def set_exists(self, exists):
+		self._exists = exists
+
+	def exists(self):
+		if self._exists is None:
+			self._exists = self._check_exists()
+		return self._exists
+
+	def _check_exists(self):
+		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s.exists' % repr(self.__class__)})
+
+class InfoObj(ExistenceCheck):
+	__slots__ = ("_info")
+
+	def __init__(self):
 		self._info = None
-		self.cache_duration = cache_duration,
-		self.last_update = 0
 
 	def invalidate_info(self):
 		self._info = None
-
-	def invalidate_info_if_old(self):
-		if self.info is not None:
-			if time.time() - self.last_update > self.cache_duration:
-				self.invalidate_info()
+		self.invalidate_exists()
 
 	def _fetch_data(self):
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s._fetch_data' % repr(self.__class__)})
 
 	def info(self):
-		self.invalidate_info_if_old()
 		if self._info is None:
 			self._info = self._fetch_data()
-			self.last_update = time.time()
+			self.set_exists(True)  # otherwise, fetch_data would have thrown an error
 		return self._info
 
 
@@ -44,7 +57,7 @@ class UserInfo(InfoObj):
 	__slots__ = ("name",)
 
 	def __init__(self, username):
-		super(UserInfo, self).__init__(60)  # fixme: invalidation interval should be configurable
+		super(UserInfo, self).__init__()
 		self.name = username
 
 	def _fetch_data(self):
@@ -56,12 +69,39 @@ class UserInfo(InfoObj):
 	def get_flags(self):
 		return self.info()['flags']
 
-	def get_organization(self):
+	def get_organization_name(self):
 		return self.info()['organization']
 
+	def _check_exists(self):
+		if self._info is not None:
+			return True
+		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).user_exists(self.name)
 
 
-class TopologyInfo(object):
+class OrganizationInfo(InfoObj):
+	__slots__ = ("name",)
+
+	def __init__(self, organization_name):
+		super(OrganizationInfo, self).__init__()
+		self.name = organization_name
+
+	def _fetch_data(self):
+		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).organization_info(self.name)
+
+	def get_organization_name(self):
+		return self.get_organization_name()
+
+	def _check_exists(self):
+		if self._info is not None:
+			return True
+		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).organization_exists(self.name)
+
+
+
+
+
+
+class TopologyInfo(ExistenceCheck):
 	"""
 	:type topology: Topology
 	"""
@@ -101,30 +141,40 @@ class TopologyInfo(object):
 		"""
 		return self.topology_id
 
+	def _check_exists(self):
+		# __init__ would throw an error if it didn't exist...
+		return True
 
-class SiteInfo(object):
+
+class SiteInfo(ExistenceCheck):
 	__slots__ = ("site",)
 
 	def __init__(self, site_name):
 		self.site = Site.objects.get(site_name)
 		UserError.check(self.site, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist", data={"site_name": site_name})
 
-	def get_organization(self):
-		return self.site.organization.name
-		#fixme: wont work when organization has been moved to backend_users... update
+	def get_organization_name(self):
+		return self.site.organization
 
-class HostInfo(object):
+	def _check_exists(self):
+		# __init__ would throw an error if it didn't exist...
+		return True
+
+class HostInfo(ExistenceCheck):
 	__slots__ = ("host",)
 
 	def __init__(self, host_name):
 		self.host = Host.objects.get(host_name)
 		UserError.check(self.host, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"host_name": host_name})
 
-	def get_organization(self):
-		return self.host.site.organization.name
-		#fixme: wont work when organization has been moved to backend_users... update
+	def get_organization_name(self):
+		return self.host.site.organization
 
-class ElementInfo(object):
+	def _check_exists(self):
+		# __init__ would throw an error if it didn't exist...
+		return True
+
+class ElementInfo(ExistenceCheck):
 	__slots__ = ("element",)
 
 	def __init__(self, element_id):
@@ -134,7 +184,11 @@ class ElementInfo(object):
 	def get_topology_info(self):
 		return get_topology_info(self.element.topology.id)
 
-class ConnectionInfo(object):
+	def _check_exists(self):
+		# __init__ would throw an error if it didn't exist...
+		return True
+
+class ConnectionInfo(ExistenceCheck):
 	__slots__ = ("connection",)
 
 	def __init__(self, connection_id):
@@ -143,6 +197,10 @@ class ConnectionInfo(object):
 
 	def get_topology_info(self):
 		return get_topology_info(self.connection.topology.id)
+
+	def _check_exists(self):
+		# __init__ would throw an error if it didn't exist...
+		return True
 
 
 
@@ -196,3 +254,13 @@ def get_host_info(host_name):
 	:rtype: HostInfo
 	"""
 	return HostInfo(host_name)
+
+@cached(60)
+def get_organization_info(organization_name):
+	"""
+	return OrganizationInfo object for the respective organization
+	:param str organization_name: name of the target organization
+	:return: OrganizationInfo object
+	:rtype: OrganizationInfo
+	"""
+	return OrganizationInfo(organization_name)

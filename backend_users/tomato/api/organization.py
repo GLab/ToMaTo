@@ -1,6 +1,11 @@
 from ..organization import Organization
 from _shared import _getOrganization
 
+def organization_exists(name):
+	if _getOrganization(name):
+		return True
+	return False
+
 def organization_create(**args):
 	org = Organization.create(**args)
 	return org.name

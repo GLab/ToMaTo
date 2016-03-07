@@ -78,7 +78,7 @@ class PermissionChecker(UserInfo):
 		# global admins and admins of the respective organization may do this.
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == organization:
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == organization:
 			return
 		auth_fail("operation requires global or organization-internal admin flag")
 
@@ -89,7 +89,7 @@ class PermissionChecker(UserInfo):
 		"""
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and user_info.get_organization() == self.get_organization():
+		if Flags.OrgaAdmin in self.get_flags() and user_info.get_organization_name() == self.get_organization_name():
 			return
 		auth_fail("You need admin permissions to create other users.")
 
@@ -108,7 +108,7 @@ class PermissionChecker(UserInfo):
 		if self.get_username() == userB.get_username():
 			res.update(['email', 'flags', 'organization', 'quota', 'client_data', 'last_login', 'password_hash'])
 		if Flags.GlobalAdmin in self.get_flags() or \
-				Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization():
+				Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
 			res.update(['email', 'flags', 'organization', 'quota', 'notification_count', 'client_data', 'last_login', 'password_hash'])
 		return res
 
@@ -130,7 +130,7 @@ class PermissionChecker(UserInfo):
 		else:
 			if Flags.GlobalAdmin in self.get_flags():
 				result.update(["realname", "email", "organization"])
-			if Flags.OrgaAdmin in self.get_flags() and self.info['organization'] == userB.get_organization():
+			if Flags.OrgaAdmin in self.get_flags() and self.info['organization'] == userB.get_organization_name():
 				result.update(["realname", "email"])
 		return result
 
@@ -166,7 +166,7 @@ class PermissionChecker(UserInfo):
 
 		# all flags except global flags.
 		if Flags.GlobalAdmin in self.get_flags() or \
-				(Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization()):
+				(Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name()):
 			if not is_self:
 				result.add(Flags.OrgaAdmin)  # may not remove own admin privileges. if GlobalAdmin, this has been added before.
 			result.update([
@@ -230,7 +230,7 @@ class PermissionChecker(UserInfo):
 			return
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization():
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
 			return
 		auth_fail("operation requires global or organization-internal admin flag")
 
@@ -245,7 +245,7 @@ class PermissionChecker(UserInfo):
 			return
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization():
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
 			if Flags.GlobalAdmin in userB.get_flags():
 				auth_fail("organization-internal admins may not delete global admins")
 			return
@@ -262,7 +262,7 @@ class PermissionChecker(UserInfo):
 		if organization is None:
 			auth_fail("operation requires global admin or hostmanager flag")
 
-		if (Flags.OrgaAdmin in flags or Flags.OrgaHostManager in flags) and self.get_organization() == organization:
+		if (Flags.OrgaAdmin in flags or Flags.OrgaHostManager in flags) and self.get_organization_name() == organization:
 			return
 		auth_fail("operation requires global or organization-internal admin or hostmanager flag")
 
@@ -275,7 +275,7 @@ class PermissionChecker(UserInfo):
 			return
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization():
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
 			return
 		auth_fail("operation requires global or organization-internal admin flag")
 
@@ -302,7 +302,7 @@ class PermissionChecker(UserInfo):
 		"""
 		if Flags.GlobalAdmin in self.get_flags() or Flags.GlobalHostManager in self.get_flags():
 			return
-		if (Flags.OrgaAdmin in self.get_flags() or Flags.OrgaHostManager in self.get_flags()) and self.get_organization() == organization:
+		if (Flags.OrgaAdmin in self.get_flags() or Flags.OrgaHostManager in self.get_flags()) and self.get_organization_name() == organization:
 			return
 		auth_fail("operation requires global or organization-internal admin or hostmanager flag")
 
@@ -311,7 +311,7 @@ class PermissionChecker(UserInfo):
 		check whether this user may delete this organization
 		:param str organization: organization to be deleted
 		"""
-		if organization == self.get_organization():
+		if organization == self.get_organization_name():
 			auth_fail("you may not delete your own organization")
 		if Flags.GlobalAdmin in self.get_flags():
 			return
@@ -330,7 +330,7 @@ class PermissionChecker(UserInfo):
 		"""
 		if Flags.GlobalHostManager in self.get_flags():
 			return
-		if Flags.OrgaHostManager in self.get_flags() and organization == self.get_organization():
+		if Flags.OrgaHostManager in self.get_flags() and organization == self.get_organization_name():
 			return
 		auth_fail("operation requires global or organization-internal hostmanager flag")
 
@@ -346,14 +346,14 @@ class PermissionChecker(UserInfo):
 		check whether this user may modify this site
 		:param SiteInfo site_info: target site
 		"""
-		self._check_is_hostmanager_for_organization(site_info.get_organization())
+		self._check_is_hostmanager_for_organization(site_info.get_organization_name())
 
 	def check_may_delete_site(self, site_info):
 		"""
 		check whether this user may delete this site
 		:param SiteInfo site_info: target site
 		"""
-		self._check_is_hostmanager_for_organization(site_info.get_organization())
+		self._check_is_hostmanager_for_organization(site_info.get_organization_name())
 
 
 
@@ -365,28 +365,28 @@ class PermissionChecker(UserInfo):
 		check whether this user may create hosts for this site
 		:param SiteInfo site_info: target hosts's site
 		"""
-		self._check_is_hostmanager_for_organization(site_info.get_organization())
+		self._check_is_hostmanager_for_organization(site_info.get_organization_name())
 
 	def check_may_modify_host(self, host_info):
 		"""
 		check whether this user may modify this host
 		:param HostInfo host_info: target host
 		"""
-		self._check_is_hostmanager_for_organization(host_info.get_organization())
+		self._check_is_hostmanager_for_organization(host_info.get_organization_name())
 
 	def check_may_delete_host(self, host_info):
 		"""
 		check whether this user may delete this host
 		:param HostInfo host_info: target host
 		"""
-		self._check_is_hostmanager_for_organization(host_info.get_organization())
+		self._check_is_hostmanager_for_organization(host_info.get_organization_name())
 
 	def check_may_list_host_users(self, host_info):
 		"""
 		check whether this user may list users of this host
 		:param HostInfo host_info: target host
 		"""
-		self._check_is_hostmanager_for_organization(host_info.get_organization())
+		self._check_is_hostmanager_for_organization(host_info.get_organization_name())
 
 
 
@@ -412,7 +412,7 @@ class PermissionChecker(UserInfo):
 		if topology_info.user_has_role(self.get_username(), role):
 			return
 		if Role.leq(role, perm_orga):  # user has role in organization
-			if topology_info.organization_has_role(self.get_organization(), role):  # organization has role on topology
+			if topology_info.organization_has_role(self.get_organization_name(), role):  # organization has role on topology
 				return
 		auth_fail("this operation requires %s permission on this toppology." % role)
 
@@ -485,7 +485,7 @@ class PermissionChecker(UserInfo):
 		"""
 		if self._may_list_all_topologies():
 			return
-		auth_check(self.get_organization() == organization, "no permissions to list all topologies of this organization")
+		auth_check(self.get_organization_name() == organization, "no permissions to list all topologies of this organization")
 		for flag in (Flags.OrgaToplUser, Flags.OrgaToplManager, Flags.OrgaToplOwner):
 			if flag in self.get_flags():
 				return
@@ -508,7 +508,7 @@ class PermissionChecker(UserInfo):
 			return
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if topology_info.organization_has_role(self.get_organization(), Role.user):
+		if topology_info.organization_has_role(self.get_organization_name(), Role.user):
 			if Flags.OrgaAdmin in self.get_flags():
 				return
 			if Flags.OrgaHostManager in self.get_flags():

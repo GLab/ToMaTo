@@ -210,7 +210,7 @@ class Topology(Entity, BaseDocument):
 		:rtype: bool
 		"""
 		for perm in self.permissions:
-			if get_user_info(perm.user).get_organization() == organization:
+			if get_user_info(perm.user).get_organization_name() == organization:
 				return Role.leq(role, perm.role)
 		return False
 

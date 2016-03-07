@@ -17,7 +17,7 @@
 
 from ..db import *
 from ..generic import *
-from .. import currentUser, starttime, scheduler
+from .. import starttime, scheduler
 from ..accounting import UsageStatistics
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
@@ -26,6 +26,7 @@ from ..lib import anyjson as json
 from ..dumpmanager import DumpSource
 import time, hashlib, threading, datetime, zlib, base64, sys
 from ..lib.settings import settings, Config
+from ..lib.userflags import Flags
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -515,6 +516,15 @@ class Host(DumpSource, Entity, BaseDocument):
 			problems += hi["problems"]
 		return problems
 
+	def sendMessageToHostManagers(self, title, message, ref, subject_group):
+		api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+		#fixme: HostContact should also receive this.
+		#fixme: better backend_users api to send batched messages (multiple groups of orga/flag filters?)
+		api.broadcast_message(title=title, message=message, ref=ref, subject_group=subject_group,
+			flag_filter=Flags.GlobalHostManager)
+		api.broadcast_message(title=title, message=message, ref=ref, subject_group=subject_group,
+			flag_filter=Flags.OrgaHostManager, organization_filter=self.site.organization)
+
 	def checkProblems(self):
 		if time.time() - starttime < 600:
 			return
@@ -525,33 +535,35 @@ class Host(DumpSource, Entity, BaseDocument):
 		if self.problemAge and not problems:
 			if self.problemMailTime >= self.problemAge:
 				# problem is resolved and mail has been sent for this problem
-				notifyFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
-											   or user.hasFlag(
-					Flags.OrgaHostContact) and user.organization == self.site.organization,
-								  "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self, ref=['host', self.name], subject_group="host failure")
+				self.sendMessageToHostManagers(
+					title="Host %s: Problems resolved" % self,
+					message="Problems on host %s have been resolved." % self,
+					ref=['host', self.name],
+					subject_group="host failure"
+				)
 			self.problemAge = 0
 		if problems and (self.problemAge < time.time() - settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL] * 5):
 			if self.problemMailTime < self.problemAge:
 				# problem exists and no mail has been sent so far
 				self.problemMailTime = time.time()
-				notifyFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
-											   or user.hasFlag(
-					Flags.OrgaHostContact) and user.organization == self.site.organization,
-								  "Host %s: Problems" % self,
-								  "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)), ref=['host', self.name], subject_group="host failure")
+				self.sendMessageToHostManagers(
+					title="Host %s: Problems" % self,
+					message="Host %s has the following problems:\n\n%s" % self,
+					ref=['host', self.name],
+					subject_group="host failure"
+				)
 			if self.problemAge < time.time() - 6 * 60 * 60:
 				# persistent problem older than 6h
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
 					import datetime
 					self.problemMailTime = time.time()
 					duration = datetime.timedelta(hours=int(time.time()-self.problemAge)/3600)
-					notifyFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
-												   or user.hasFlag(
-						Flags.OrgaHostContact) and user.organization == self.site.organization,
-									  "Host %s: Problems persist" % self,
-									  "Host %s has the following problems since %s:\n\n%s" % (
-										  self, duration, ", ".join(problems)), ref=['host', self.name], subject_group="host failure")
-
+					self.sendMessageToHostManagers(
+						title="Host %s: Problems persist" % self,
+						message="Host %s has the following problems since %s:\n\n%s" % (self, duration, ", ".join(problems)),
+						ref=['host', self.name],
+						subject_group="host failure"
+					)
 		self.save()
 
 	def getLoad(self):
@@ -619,10 +631,7 @@ class Host(DumpSource, Entity, BaseDocument):
 	@classmethod
 	def create(cls, name, site, attrs=None):
 		if not attrs: attrs = {}
-		user = currentUser()
 		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Host name may not include a '/'") #FIXME: find out if still used
-		UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
-			code=UserError.DENIED, message="Not enough permissions")
 		for attr in ["address", "rpcurl"]:
 			UserError.check(attr in attrs.keys(), code=UserError.INVALID_CONFIGURATION, message="Missing attribute for host: %s" % attr)
 		host = Host(name=name, site=site)
@@ -830,7 +839,7 @@ def synchronizeComponents():
 			handleError()
 
 
-from ..auth import Flags, notifyFilteredUsers
+from ..lib.service import get_tomato_inner_proxy
 from .site import Site
 from .. import handleError
 
