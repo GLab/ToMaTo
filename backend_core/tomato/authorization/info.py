@@ -12,10 +12,9 @@ from ..host.site import Site
 from ..host import Host
 
 class InfoObj(object):
-	__slots__ = ("_cache_duration", "_info")
+	__slots__ = ("_info")
 
-	def __init__(self, cache_duration):
-		self._cache_duration = cache_duration
+	def __init__(self):
 		self._info = None
 
 	def invalidate_info(self):
@@ -34,7 +33,7 @@ class UserInfo(InfoObj):
 	__slots__ = ("name",)
 
 	def __init__(self, username):
-		super(UserInfo, self).__init__(60)  # fixme: invalidation interval should be configurable
+		super(UserInfo, self).__init__()  # fixme: invalidation interval should be configurable
 		self.name = username
 
 	def _fetch_data(self):

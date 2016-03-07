@@ -28,9 +28,8 @@ def user_info(name):
 	user = _getUser(name)
 	return user.info()
 
-def user_create(**args):
-	#fixme: explicit arguments
-	user = User.create(**args)
+def user_create(name, organization, email, password=None, attrs=None):
+	user = User.create(name, organization, email, password, attrs)
 	return user.info()
 
 def user_modify_password(name, password):

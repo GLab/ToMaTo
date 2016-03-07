@@ -6,15 +6,18 @@ from ..lib.cache import cached
 from ..lib.error import UserError
 
 
-def auth_check(condition, message):
-	UserError.check(condition, code=UserError.DENIED, message=message)
+def auth_check(condition, message, data=None):
+	if not data:
+		data = {}
+	UserError.check(condition, code=UserError.DENIED, message=message, data=data)
 
-def auth_fail(message):
-	auth_check(False, message)
+def auth_fail(message, data=None):
+	auth_check(False, message, data)
 
 
 class PermissionChecker(UserInfo):
 	__slots__ = ()
+
 	def __init__(self, username):
 		super(PermissionChecker, self).__init__(username)
 
@@ -41,6 +44,21 @@ class PermissionChecker(UserInfo):
 		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == organization:
 			return
 		auth_fail("operation requires global or organization-internal admin flag")
+
+	def check_may_create_user(self, user_info):
+		"""
+		check whether this user may create a user for the given organization
+		:param UserInfo user_info: target user
+		"""
+		if Flags.GlobalAdmin in self.get_flags():
+			return
+		if Flags.OrgaAdmin in self.get_flags() and user_info.get_organization() == self.get_organization():
+			return
+		auth_fail("You need admin permissions to create other users.")
+
+	@staticmethod
+	def account_register_self_allowed_keys():
+		return {"name", "realname", "email", "password", "organization"}
 
 	def account_info_visible_keys(self, userB):
 		"""
@@ -131,6 +149,40 @@ class PermissionChecker(UserInfo):
 						Flags.NoMails
 						])
 		return result
+
+	@staticmethod
+	def reduce_keys_to_allowed(attrs, allowed_keys, allowed_flags, ignore_key_on_unauthorized=False, ignore_flag_on_unauthorized=False):
+		"""
+		check if all editing keys are correct.
+		if not, either throw an error, or ignore the key, depending on the settings in params
+
+		:param dict attrs: origninal attributes to check
+		:param list(str) allowed_keys: attrs keys that are allowed to be modified
+		:param list(str) allowed_flags: flags that are allowed to be set
+		:param bool ignore_key_on_unauthorized: if true, ignore unauthorized keys. if false, throw an error if an unauthorized key was found.
+		:param bool ignore_flag_on_unauthorized: if true, ignore unauthorized flags. if false, throw an error if an unauthorized flag was found.
+		:return: an updated version of attrs where only allowed keys are present
+		:rtype: dict
+		"""
+		res = {}
+		for k, v in attrs.iteritems():
+			if k in allowed_keys:
+				if k == "flags":
+					final_flags = {}
+					for flag, toset in v.iteritems():
+						if flag in allowed_flags:
+							final_flags[flag] = toset
+						else:
+							if not ignore_flag_on_unauthorized:
+								auth_fail("You are not allowed to set this flag", data={"flag": flag})
+					res[k] = final_flags
+				else:
+					res[k] = v
+			else:
+				if not ignore_key_on_unauthorized:
+					auth_fail("You are not allowed to set this key.", data={"key": k})
+		return res
+
 
 	def check_may_reset_password_of_user(self, userB):
 		"""
@@ -585,6 +637,29 @@ class PermissionChecker(UserInfo):
 
 
 
+
+class PseudoUser(UserInfo):
+	"""
+	UserInfo-like object for non-existing users.
+	"""
+	__slots__ = ("organization",)
+
+	def __init__(self, username, organization):
+		super(PseudoUser, self).__init__(username)
+		self.organization = organization
+
+	def _fetch_data(self):
+		return {
+			'organization': self.organization,
+			'name': self.name
+		}
+
+
+
+
+
+
+
 @cached(60)
 def get_permission_checker(username):
 	"""
@@ -603,3 +678,13 @@ def get_user_info(username):
 	:rtype: PermissionChecker
 	"""
 	return get_permission_checker(username)
+
+def get_pseudo_user_info(username, organization):
+	"""
+	return UserInfo object for a non-existing user
+	:param str username: username of user
+	:return: PermissionChecker object for corresponding user
+	:rtype: PermissionChecker
+	"""
+	return PseudoUser(username, organization)
+

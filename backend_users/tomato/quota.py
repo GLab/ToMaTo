@@ -41,6 +41,15 @@ class Usage(EmbeddedDocument):
 			"traffic": self.traffic
 		}
 
+	@classmethod
+	def from_settings(cls, settings_entry):
+		return cls(
+				cputime=settings_entry["cputime"],
+				memory=settings_entry["memory"],
+				diskspace=settings_entry["diskspace"],
+				traffic=settings_entry["traffic"],
+			)
+
 class Quota(EmbeddedDocument):
 	monthly = EmbeddedDocumentField(Usage, required=True)
 	used = EmbeddedDocumentField(Usage, required=True)
