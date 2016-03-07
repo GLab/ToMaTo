@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# ToMaTo (Topology management software) 
+# ToMaTo (Topology management software)
 # Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
 #
 # This program is free software: you can redistribute it and/or modify
@@ -187,7 +187,7 @@ class Quota(EmbeddedDocument):
 			self.used.traffic = 0.0
 			self.usedTime = start_of_month
 		recs = filter(lambda rec: rec.end > self.usedTime, usageStats.by5minutes)
-		factor = 300.0 / util.secondsInMonth(*util.getYearMonth(time.time())) 
+		factor = 300.0 / util.secondsInMonth(*util.getYearMonth(time.time()))
 		end = self.usedTime
 		for rec in recs:
 			if rec.usage.cputime > self.monthly.cputime * factor * self.continousFactor:
