@@ -1,28 +1,21 @@
 from ..user import User
 from _shared import _getUser, _getOrganization
 
-def user_list(organization=None, with_flag=None):
+def _user_list(organization=None, with_flag=None):
 	if organization:
 		organization = _getOrganization(organization)
-		result = [u.info() for u in User.objects(organization=organization)]
+		result = User.objects(organization=organization)
 	else:
-		result = [u.info() for u in User.objects.all()]
+		result = User.objects.all()
 	if with_flag:
-		filter(lambda u: with_flag in u['flags'], result)
+		result = filter(lambda u: with_flag in u.flags, result)
 	return result
-	# old code from backend_core
-	#
-	# if organization:
-	# 	organization = _getOrganization(organization)
-	# if currentUser().hasFlag(Flags.GlobalAdmin):
-	# 	accounts = getAllUsers(organization=organization, with_flag=with_flag) if organization else getAllUsers(with_flag=with_flag)
-	# 	return [acc.info(True) for acc in accounts]
-	# elif currentUser().hasFlag(Flags.OrgaAdmin):
-	# 	UserError.check(organization == currentUser().organization, code=UserError.DENIED,
-	# 		message="Not enough permissions")
-	# 	return [acc.info(True) for acc in getAllUsers(organization=currentUser().organization, with_flag=with_flag)]
-	# else:
-	# 	raise UserError(code=UserError.DENIED, message="Not enough permissions")
+
+def username_list(organization=None, with_flag=None):
+	return [u.name for u in _user_list(organization, with_flag)]
+
+def user_list(organization=None, with_flag=None):
+	return [u.info() for u in _user_list(organization, with_flag)]
 
 def user_exists(name):
 	if _getUser(name):
