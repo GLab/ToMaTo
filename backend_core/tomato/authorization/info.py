@@ -5,7 +5,7 @@ from ..lib.settings import Config
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 
-from .. import topology
+from ..topology import Topology
 from ..elements import Element
 from ..connections import Connection
 from ..host.site import Site
@@ -62,10 +62,13 @@ class UserInfo(InfoObj):
 
 
 class TopologyInfo(object):
+	"""
+	:type topology: Topology
+	"""
 	__slots__ = ("topology", "topology_id")
 
 	def __init__(self, topology_id):
-		self.topology = topology.get(topology_id)
+		self.topology = Topology.get(topology_id)
 		UserError.check(self.topology, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"topology_id": topology_id})
 		self.topology_id = topology_id
 
@@ -78,19 +81,7 @@ class TopologyInfo(object):
 		:return: whether the user has this role (or a higher one)
 		:rtype: bool
 		"""
-		#fixme: implement
-		return False
-
-	def listUsers(self, minRole=Role.null):
-		"""
-		get a list of users that have at least the given role.
-
-		:param str minRole: role as in auth.permissions.Role
-		:return: list of usernames satisfying the role
-		:rtype: list(str)
-		"""
-		#fixme: implement
-		return False
+		return self.topology.user_has_role(username, role)
 
 	def organization_has_role(self, organization, role):
 		"""
@@ -101,8 +92,7 @@ class TopologyInfo(object):
 		:return: the role
 		:rtype: bool
 		"""
-		orga_role = self.topology.get_organization_permissions().get(organization, Role.null)
-		return Role.leq(role, orga_role)
+		return self.topology.organization_has_role(organization, role)
 
 	def get_id(self):
 		"""
