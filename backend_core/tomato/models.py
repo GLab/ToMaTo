@@ -15,9 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .auth import User
-from .auth.permissions import Permission
-from .topology import Topology
+from .topology import Topology, Permission
 from .elements import Element
 from .elements.generic import VMElement, VMInterface
 from .elements.openvz import OpenVZ, OpenVZ_Interface
@@ -36,7 +34,6 @@ from .link import LinkMeasurement, LinkStatistics
 from .host import Host
 from .host.element import HostElement
 from .host.connection import HostConnection
-from .host.organization import Organization
 from .host.site import Site
 from .db import DataEntry
 from .dumpmanager import ErrorDump, ErrorGroup

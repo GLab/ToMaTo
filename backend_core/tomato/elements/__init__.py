@@ -17,8 +17,6 @@
 
 from ..generic import *
 from ..db import *
-from ..auth import Flags
-from ..auth.permissions import Permission, PermissionMixin, Role
 from ..topology import Topology
 from ..lib import logging
 from ..accounting import UsageStatistics
@@ -29,7 +27,7 @@ from ..connections import Connection
 
 TYPES = {}
 
-class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
+class Element(LockedStatefulEntity, BaseDocument):
 	"""
 	:type topology: Topology
 	:type parent: Element
@@ -46,7 +44,6 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	parentId = ReferenceFieldId(parent)
 	connection = ReferenceField(Connection, reverse_delete_rule=NULLIFY)
 	connectionId = ReferenceFieldId(connection)
-	permissions = ListField(EmbeddedDocumentField(Permission))
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	hostElements = ListField(ReferenceField('HostElement', reverse_delete_rule=PULL), db_field='host_elements')
 	hostConnections = ListField(ReferenceField('HostConnection', reverse_delete_rule=PULL), db_field='host_connections')
@@ -91,7 +88,6 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	
 	def init(self, topology, parent=None, attrs=None):
 		if not attrs: attrs = {}
-		topology.checkRole(Role.manager)
 		if parent:
 			UserError.check(parent.type in self.CAP_PARENT, code=UserError.INVALID_VALUE,
 				message="Parent type not allowed for this type", data={"parent_type": parent.type, "type": self.type})
@@ -132,7 +128,6 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		return attrs
 
 	def checkUnknownAttribute(self, key, value):
-		self.checkRole(Role.manager)
 		if key.startswith("_"):
 			return True
 		UserError.check(self.DIRECT_ATTRS and not key in self.DIRECT_ATTRS_EXCLUDE,
@@ -157,10 +152,6 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			self.mainElement.modify(remoteAttrs)
 
 	def checkUnknownAction(self, action, params=None):
-		self.checkRole(Role.manager)
-		if action in ["prepare", "start", "upload_grant"]:
-			UserError.check(not currentUser().hasFlag(Flags.OverQuota), code=UserError.DENIED, message="Over quota")
-			UserError.check(self.topology.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
 			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (no direct actions for this type)")
 		UserError.check(self.mainElement, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (not deployed)")
@@ -186,7 +177,6 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		return res
 
 	def checkRemove(self, recurse=True):
-		self.checkRole(Role.manager)
 		UserError.check(recurse or self.children.empty(), code=UserError.NOT_EMPTY, message="Cannot remove element with children")
 		for ch in self.children:
 			ch.checkRemove(recurse=recurse)
@@ -335,8 +325,6 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		# Speed optimization: use existing information to avoid database accesses
 		if not childrenIdsHint is None:
 			self._childrenIds = childrenIdsHint
-		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
-			self.checkRole(Role.user)
 		mel = self.mainElement
 		if isinstance(mel, HostElement):
 			info = mel.objectInfo.get("attrs", {})
@@ -435,7 +423,7 @@ class Element(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		"host_info": Attribute(field=host_info, readOnly=True),
 	}
 
-from .. import currentUser, host
+from .. import host
 from ..host.element import HostElement
 from ..host import HostObject
 

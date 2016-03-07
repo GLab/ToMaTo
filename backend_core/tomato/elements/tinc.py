@@ -158,10 +158,8 @@ class TincVPN(ConnectingElement, Element):
 	def _parallelChildActions(self, childList, action, params=None, maxThreads=10):
 		if not params: params = {}
 		lock = threading.RLock()
-		user = currentUser()
 		class WorkerThread(threading.Thread):
 			def run(self):
-				setCurrentUser(user)
 				while True:
 					with lock:
 						if not childList:
@@ -327,5 +325,3 @@ class TincEndpoint(ConnectingElement, Element):
 
 elements.TYPES[TincVPN.TYPE] = TincVPN
 elements.TYPES[TincEndpoint.TYPE] = TincEndpoint
-
-from .. import currentUser, setCurrentUser

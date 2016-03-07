@@ -88,7 +88,7 @@ def errorgroup_list(show_empty=False):
     """
     _getCurrentUserInfo().check_may_view_debugging_info()
     from ..dumpmanager import api_errorgroup_list
-    return api_errorgroup_list(show_empty)
+    return api_errorgroup_list(show_empty, as_user=_getCurrentUserInfo().get_username())
 
 def errorgroup_modify(group_id, attrs):
     """
@@ -154,4 +154,4 @@ def errorgroup_favorite(group_id, is_favorite):
 		"""
 		_getCurrentUserInfo().check_may_view_debugging_info()
 		from ..dumpmanager import api_errorgroup_favorite
-		api_errorgroup_favorite(group_id, is_favorite)
+		api_errorgroup_favorite(_getCurrentUserInfo().get_username(), group_id, is_favorite)

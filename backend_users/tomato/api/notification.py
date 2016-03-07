@@ -10,7 +10,7 @@ def send_message(toUser, subject, message, fromUser=None, ref=None, subject_grou
 														 	ref=ref, subject_group=subject_group)
 
 def broadcast_message(title, message, fromUser=None, ref=None, subject_group=None,
-											  organization_filter=None, flag_filter=None, limit_range_to_fromUser_permissions=True):
+											  organization_filter=None, flag_filter=None):
 	if organization_filter:
 		organization = _getOrganization(organization_filter)
 		receivers = User.objects(organization=organization)

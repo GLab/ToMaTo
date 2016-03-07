@@ -27,6 +27,3 @@ def getPublicKey():
 			elif not ignore:
 				lines.append(line)
 	return "".join(lines)
-
-
-	

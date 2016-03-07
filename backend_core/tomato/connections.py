@@ -20,8 +20,6 @@ import time
 from .db import *
 from .generic import *
 from .topology import Topology
-from .auth import Flags
-from .auth.permissions import Permission, PermissionMixin, Role
 from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
 from .accounting import UsageStatistics
@@ -51,7 +49,7 @@ starting_list_lock = threading.RLock()
 stopping_list = set()
 stopping_list_lock = threading.RLock()
 
-class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
+class Connection(LockedStatefulEntity, BaseDocument):
 	"""
 	:type topology: Topology
 	:type clientData: dict
@@ -66,7 +64,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	topology = ReferenceField(Topology, required=True, reverse_delete_rule=DENY)
 	topologyId = ReferenceFieldId(topology)
 	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
-	permissions = ListField(EmbeddedDocumentField(Permission))
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	elementFrom = ReferenceField('Element', db_field='element_from', required=True) #reverse_delete_rule=DENY defined at bottom of element/__init__.py
 	elementFromId = ReferenceFieldId(elementFrom)
@@ -102,7 +99,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 	def init(self, topology, el1, el2, attrs=None):
 		if not attrs: attrs = {}
 		self.topology = topology
-		self.permissions = topology.permissions
 		self.state = ST_CREATED
 		self.totalUsage = UsageStatistics.objects.create()
 		self.elementFrom = el1
@@ -149,7 +145,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		return attrs
 
 	def checkUnknownAttribute(self, key, value):
-		self.checkRole(Role.manager)
 		if key.startswith("_"):
 			return True
 		UserError.check(self.DIRECT_ATTRS and not key in self.DIRECT_ATTRS_EXCLUDE,
@@ -174,9 +169,7 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			self.mainConnection.modify(self._remoteAttrs)
 
 	def checkUnknownAction(self, action, params=None):
-		self.checkRole(Role.manager)
 		if action in ["prepare", "start", "upload_grant"]:
-			UserError.check(not currentUser().hasFlag(Flags.OverQuota), code=UserError.DENIED, message="Over quota")
 			UserError.check(self.topology.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
 			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
@@ -203,7 +196,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		return res
 
 	def checkRemove(self):
-		self.checkRole(Role.manager)
 		return True
 
 	def _remove(self):
@@ -427,8 +419,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		# Speed optimization: use existing information to avoid database accesses
 		if not elementsHint is None:
 			self._elementsHint = elementsHint
-		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
-			self.checkRole(Role.user)
 		mcon = self.mainConnection
 		if isinstance(mcon, HostConnection):
 			info = mcon.objectInfo.get("attrs", {})
@@ -497,7 +487,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 			data={"element": el2.id})
 		UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
 			message="Can only connect elements from same topology")
-		el1.topology.checkRole(Role.manager)
 		con = cls()
 		con.init(el1.topology, el1, el2, attrs)
 		con.save()
@@ -510,7 +499,6 @@ class Connection(LockedStatefulEntity, PermissionMixin, BaseDocument):
 		logging.logMessage("info", category="connection", id=con.idStr, info=con.info())
 		return con
 
-from . import currentUser
 from .host import getConnectionCapabilities, select
 from .host.connection import HostConnection
 from .host import HostObject

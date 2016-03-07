@@ -22,8 +22,6 @@ from ..host.element import HostElement
 from .. import host, elements
 from ..resources.network import Network, NetworkInstance
 from .generic import ST_CREATED, ST_STARTED, ConnectingElement
-from .. import currentUser
-from ..auth import Flags
 from ..lib.error import UserError
 
 class ExternalNetwork(Element):
@@ -52,8 +50,6 @@ class ExternalNetwork(Element):
 	def check_kind(self, val):
 		network = Network.get(val)
 		UserError.check(network, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network not found")
-		if network.restricted and not self.kind == val:
-			UserError.check(currentUser().hasFlag(Flags.RestrictedNetworks), code=UserError.DENIED, message="Network is restricted")
 		return True
 
 	def modify_kind(self, val):

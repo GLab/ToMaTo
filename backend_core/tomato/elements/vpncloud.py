@@ -74,10 +74,8 @@ class VpnCloud(ConnectingElement, Element):
 	def _parallelChildActions(self, childList, action, params=None, maxThreads=10):
 		if not params: params = {}
 		lock = threading.RLock()
-		user = currentUser()
 		class WorkerThread(threading.Thread):
 			def run(self):
-				setCurrentUser(user)
 				while True:
 					with lock:
 						if not childList:
@@ -237,5 +235,3 @@ class VpnCloudEndpoint(ConnectingElement, Element):
 
 elements.TYPES[VpnCloud.TYPE] = VpnCloud
 elements.TYPES[VpnCloudEndpoint.TYPE] = VpnCloudEndpoint
-
-from .. import currentUser, setCurrentUser

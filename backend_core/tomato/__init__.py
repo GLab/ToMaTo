@@ -65,13 +65,18 @@ def db_migrate():
 import threading
 _currentUser = threading.local()
 
+import authorization
+
 def getCurrentUserInfo():
+	"""
+	get the current user's UserInfo object
+	:return: current user's UserInfo object
+	:rtype: authorization.UserInfo
+	"""
 	return _currentUser.user_info if hasattr(_currentUser, "user_info") else None  # fixme
 	
 def setCurrentUserInfo(user_info):
 	_currentUser.user_info = user_info
-
-import authorization
 
 def login(credentials, sslCert):
 	user_info = authorization.login(*credentials) if credentials else None
