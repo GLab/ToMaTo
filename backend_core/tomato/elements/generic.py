@@ -25,10 +25,11 @@ from ..resources.template import Template
 from .. import elements, host
 from ..lib.error import UserError, InternalError
 import time
+from ..lib.constants import State, Action
 
-ST_CREATED = "created"
-ST_PREPARED = "prepared"
-ST_STARTED = "started"
+ST_CREATED = State.CREATED
+ST_PREPARED = State.PREPARED
+ST_STARTED = State.STARTED
 
 class VMElement(Element):
 	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
@@ -176,13 +177,13 @@ class VMElement(Element):
 		self.save()
 		for iface in self.children:
 			iface._create()
-		self.element.action("prepare")
+		self.element.action(Action.PREPARE)
 		self.setState(ST_PREPARED, True)
 		
 	def action_destroy(self):
 		if isinstance(self.element, HostElement):
 			try:
-				self.element.action("destroy")
+				self.element.action(Action.DESTROY)
 			except UserError:
 				if self.element.state != ST_CREATED:
 					raise
@@ -195,7 +196,7 @@ class VMElement(Element):
 		
 	def action_stop(self):
 		if isinstance(self.element, HostElement):
-			self.element.action("stop")
+			self.element.action(Action.STOP)
 		self.setState(ST_PREPARED, True)
 		for ch in self.children:
 			ch.triggerConnectionStop()
@@ -225,10 +226,10 @@ class VMElement(Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
-		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
-		"destroy": StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
-		"change_template": StatefulAction(action_change_template, allowedStates=[ST_CREATED, ST_PREPARED])
+		Action.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
+		Action.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		Action.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+		Action.CHANGE_TEMPLATE: StatefulAction(action_change_template, allowedStates=[ST_CREATED, ST_PREPARED])
 	})
 
 

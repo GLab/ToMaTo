@@ -6,6 +6,7 @@ from ..lib.cache import cached
 from ..lib.error import UserError
 from ..lib.service import get_tomato_inner_proxy
 from ..lib.settings import Config
+from ..lib.constants import Action
 
 import time
 
@@ -451,14 +452,14 @@ class PermissionChecker(UserInfo):
 		"""
 		# step 1: make sure the user doesn't run any unrecognized action
 		# fixme: is this complete? add more available actions.
-		UserError.check(action in ("start", "stop", "prepare", "destroy",
-															 "renew"),
+		UserError.check(action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY,
+															 Action.RENEW),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
 		# step 2: check permission for each individual action
-		if action in ("start", "stop", "prepare", "destroy", "renew"):
+		if action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY, Action.RENEW):
 			self._check_has_topology_role(topology_info, Role.manager)
-		if action in ("prepare", "start"):
+		if action in (Action.PREPARE, Action.START):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
 
 	def _may_list_all_topologies(self):
@@ -598,19 +599,23 @@ class PermissionChecker(UserInfo):
 		:param str action: action to run
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
-		# fixme: this is not complete. add more available actions.
-		UserError.check(action in ("start", "stop", "prepare", "destroy",
-															 "upload_grant", "upload_use",
-															 "rextfv_upload_grant", "rextfv_upload_use"),
+		UserError.check(action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY,
+															 Action.UPLOAD_GRANT, Action.UPLOAD_USE,
+															 Action.REXTFV_UPLOAD_GRANT, Action.REXTFV_UPLOAD_USE,
+															 Action.CHANGE_TEMPLATE),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
-		# step 2: for each action, check permissions.
-		if action in ("start", "stop", "prepare", "destroy"):
-			self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
-		if action in ("prepare", "start", "upload_grant"):
+		# step 2: for each action, check topology role.
+		required_role = Role.user
+		if action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY,
+									Action.UPLOAD_USE, Action.UPLOAD_GRANT, Action.CHANGE_TEMPLATE):
+			required_role = Role.manager
+		self._check_has_topology_role(element_info.get_topology_info(), required_role)
+
+		if action in (Action.PREPARE, Action.START, Action.UPLOAD_GRANT):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
 
-
+		# fixme: on change_template, check permission for template
 
 
 
@@ -655,12 +660,11 @@ class PermissionChecker(UserInfo):
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
 		# fixme: is this complete? add more available actions.
-		UserError.check(action in ("start", "stop", "prepare", "destroy"),
+		UserError.check(action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
 		# step 2: for each action, check permissions.
-		if action in ("start", "stop", "prepare", "destroy"):
-			self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
+		self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
 
 
 

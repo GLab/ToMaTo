@@ -24,6 +24,7 @@ from ..host.element import HostElement
 from .generic import ConnectingElement
 from .generic import ST_CREATED, ST_PREPARED, ST_STARTED
 from ..lib.error import UserError, assert_
+from ..lib.constants import Action, Type
 
 class TincVPN(ConnectingElement, Element):
 	name = StringField()
@@ -34,11 +35,11 @@ class TincVPN(ConnectingElement, Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 
-	TYPE = "tinc_vpn"
+	TYPE = Type.TINC_VPN
 	HOST_TYPE = None
 	DIRECT_ACTIONS = False
 	DIRECT_ACTIONS_EXCLUDE = []
-	CAP_CHILDREN = {"tinc_endpoint": [ST_CREATED, ST_PREPARED]}
+	CAP_CHILDREN = {Type.TINC_ENDPOINT: [ST_CREATED, ST_PREPARED]}
 	
 	def init(self, *args, **kwargs):
 		self.state = ST_CREATED
@@ -49,12 +50,12 @@ class TincVPN(ConnectingElement, Element):
 	
 	def onChildAdded(self, iface):
 		if self.state == ST_PREPARED: #self is correct
-			iface.action("prepare", {})
+			iface.action(Action.PREPARE, {})
 			self._crossConnect()
 
 	def onChildRemoved(self, iface):
 		if iface.state == ST_PREPARED: #iface is correct
-			iface.action("destroy", {})
+			iface.action(Action.DESTROY, {})
 			self._crossConnect()
 
 	def modify_mode(self, val):
@@ -182,7 +183,7 @@ class TincVPN(ConnectingElement, Element):
 		return childs
 
 	def action_prepare(self):
-		self._parallelChildActions(self._childsByState[ST_CREATED], "prepare")
+		self._parallelChildActions(self._childsByState[ST_CREATED], Action.PREPARE)
 		self.setState(ST_PREPARED)
 		try:
 			self._crossConnect()
@@ -191,17 +192,17 @@ class TincVPN(ConnectingElement, Element):
 			raise
 		
 	def action_destroy(self):
-		self._parallelChildActions(self._childsByState[ST_STARTED], "stop")
-		self._parallelChildActions(self._childsByState[ST_PREPARED], "destroy")
+		self._parallelChildActions(self._childsByState[ST_STARTED], Action.STOP)
+		self._parallelChildActions(self._childsByState[ST_PREPARED], Action.DESTROY)
 		self.setState(ST_CREATED)
 
 	def action_stop(self):
-		self._parallelChildActions(self._childsByState[ST_STARTED], "stop")
+		self._parallelChildActions(self._childsByState[ST_STARTED], Action.STOP)
 		self.setState(ST_PREPARED)
 
 	def action_start(self):
-		self._parallelChildActions(self._childsByState[ST_CREATED], "prepare")
-		self._parallelChildActions(self._childsByState[ST_PREPARED], "start")
+		self._parallelChildActions(self._childsByState[ST_CREATED], Action.PREPARE)
+		self._parallelChildActions(self._childsByState[ST_PREPARED], Action.START)
 		self.setState(ST_STARTED)
 
 	def _nextName(self, baseName):
@@ -220,10 +221,10 @@ class TincVPN(ConnectingElement, Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		"start": StatefulAction(action_start, allowedStates=[ST_PREPARED], stateChange=ST_STARTED),
-		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
-		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
-		"destroy": StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+		Action.START: StatefulAction(action_start, allowedStates=[ST_PREPARED], stateChange=ST_STARTED),
+		Action.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
+		Action.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		Action.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
 	})
 
 
@@ -232,13 +233,13 @@ class TincEndpoint(ConnectingElement, Element):
 	name = StringField()
 	mode = StringField(choices=['switch', 'hub'])
 
-	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy"]
+	DIRECT_ACTIONS_EXCLUDE = [Action.PREPARE, Action.DESTROY]
 	DIRECT_ATTRS_EXCLUDE = ["timeout"]
 	CAP_PARENT = [None, TincVPN.TYPE]
 	DEFAULT_ATTRS = {}
 
-	TYPE = "tinc_endpoint"
-	HOST_TYPE = "tinc"
+	TYPE = Type.TINC_ENDPOINT
+	HOST_TYPE = Type.TINC
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 	
@@ -296,7 +297,7 @@ class TincEndpoint(ConnectingElement, Element):
 
 	def action_stop(self):
 		if self.element:
-			self.element.action("stop")
+			self.element.action(Action.STOP)
 		self.setState(ST_PREPARED, True)
 		self.triggerConnectionStop()
 
@@ -316,9 +317,9 @@ class TincEndpoint(ConnectingElement, Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
-		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
-		"destroy": StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+		Action.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
+		Action.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		Action.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
 	})
 
 

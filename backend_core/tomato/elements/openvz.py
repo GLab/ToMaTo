@@ -20,12 +20,13 @@ from .. import elements, scheduler
 from .generic import ST_CREATED, ST_PREPARED, VMInterface, VMElement
 import time
 from ..lib import util #@UnresolvedImport
+from ..lib.constants import Type
 
 class OpenVZ(VMElement):
-	TYPE = "openvz"
+	TYPE = Type.OPENVZ
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
-		"openvz_interface": [ST_CREATED, ST_PREPARED],
+		Type.OPENVZ_INTERFACE: [ST_CREATED, ST_PREPARED],
 	}
 	PROFILE_ATTRS = ["ram", "diskspace", "cpus"]
 	
@@ -43,7 +44,7 @@ class OpenVZ(VMElement):
 	})
 
 class OpenVZ_Interface(VMInterface):
-	TYPE = "openvz_interface"
+	TYPE = Type.OPENVZ_INTERFACE
 	CAP_PARENT = [OpenVZ.TYPE]
 	#TODO: add /24, /64
 

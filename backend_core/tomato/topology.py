@@ -26,7 +26,7 @@ from .lib import util
 from .lib.topology_role import Role
 from authorization import get_user_info
 from .lib.service import get_tomato_inner_proxy
-from .lib.settings import Config
+from .lib.constants import State, Action
 
 class TimeoutStep:
 	INITIAL = 0
@@ -258,10 +258,10 @@ class Topology(Entity, BaseDocument):
 	@property
 	def maxState(self):
 		states = self.elements.distinct('state')
-		for state in ['started', 'prepared', 'created']:
+		for state in [State.STARTED, State.PREPARED, State.CREATED]:
 			if state in states:
 				return state
-		return 'created'
+		return State.CREATED
 
 	def info(self, full=False):
 		info = Entity.info(self)
@@ -299,11 +299,11 @@ class Topology(Entity, BaseDocument):
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(_remove, check=checkRemove),
-		"start": Action(action_start, check=lambda self: self.checkAction('start'), paramSchema=schema.Constant({})),
-		"stop": Action(action_stop, check=lambda self: self.checkAction('stop'), paramSchema=schema.Constant({})),
-		"prepare": Action(action_prepare, check=lambda self: self.checkAction('prepare'), paramSchema=schema.Constant({})),
-		"destroy": Action(action_destroy, check=lambda self: self.checkAction('destroy'), paramSchema=schema.Constant({})),
-		"renew": Action(action_renew, check=lambda self, timeout: self.checkAction('renew'),
+		Action.START: Action(action_start, check=lambda self: self.checkAction(Action.START), paramSchema=schema.Constant({})),
+		Action.STOP: Action(action_stop, check=lambda self: self.checkAction(Action.STOP), paramSchema=schema.Constant({})),
+		Action.PREPARE: Action(action_prepare, check=lambda self: self.checkAction(Action.PREPARE), paramSchema=schema.Constant({})),
+		Action.DESTROY: Action(action_destroy, check=lambda self: self.checkAction(Action.DESTROY), paramSchema=schema.Constant({})),
+		Action.RENEW: Action(action_renew, check=lambda self, timeout: self.checkAction(Action.RENEW),
 			paramSchema=schema.StringMap(items={'timeout': schema.Number(minValue=0.0)}, required=['timeout'])),
 	}
 	ATTRIBUTES = {
