@@ -643,7 +643,10 @@ class PermissionChecker(UserInfo):
 		if action in (Action.PREPARE, Action.START, Action.UPLOAD_GRANT):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
 
-		# fixme: on change_template, check permission for template
+		if action == Action.CHANGE_TEMPLATE:
+			assert "template" in params
+			self.check_may_use_template(get_template_info(element_info.get_type(), params['template']))
+
 
 
 
