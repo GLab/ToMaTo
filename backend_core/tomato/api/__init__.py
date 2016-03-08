@@ -44,5 +44,7 @@ from resources import resources_map, network_create, network_info, network_insta
 	network_remove, profile_create, profile_info, profile_list, profile_modify, profile_remove, template_info,\
 	template_create, template_list, template_modify, template_remove
 
-from topology import topology_action, topology_create, topology_export, topology_import, topology_info,\
+from topology import topology_action, topology_create, topology_info,\
 	topology_list, topology_modify, topology_permission, topology_permissions, topology_remove, topology_usage
+
+from orchestration.topology_export_import import topology_export, topology_import
