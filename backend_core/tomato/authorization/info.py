@@ -195,6 +195,9 @@ class ElementInfo(ExistenceCheck):
 		# __init__ would throw an error if it didn't exist...
 		return True
 
+	def get_type(self):
+		return self.element.type
+
 class ConnectionInfo(ExistenceCheck):
 	__slots__ = ("connection",)
 

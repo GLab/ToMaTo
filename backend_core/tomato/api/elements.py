@@ -61,6 +61,10 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	"""
 	_getCurrentUserInfo().check_may_create_element(_get_topology_info(top))
 	if not attrs: attrs = {}
+	if "template" in attrs:
+		_getCurrentUserInfo().check_may_use_template(_get_template_info(_get_element_info(id).get_type(), attrs['template']))
+	if "profile" in attrs:
+		_getCurrentUserInfo().check_may_use_profile(_get_profile_info(_get_element_info(id).get_type(), attrs['profile']))
 	top = _getTopology(top)
 	if parent:
 		parent = _getElement(parent)
@@ -97,7 +101,10 @@ def element_modify(id, attrs): #@ReservedAssignment
 	  and state.
 	"""
 	_getCurrentUserInfo().check_may_modify_element(_get_element_info(id))
-	# fixme: check resource permissions for restricted resources
+	if "template" in attrs:
+		_getCurrentUserInfo().check_may_use_template(_get_template_info(_get_element_info(id).get_type(), attrs['template']))
+	if "profile" in attrs:
+		_getCurrentUserInfo().check_may_use_profile(_get_profile_info(_get_element_info(id).get_type(), attrs['profile']))
 	el = _getElement(id)
 	el.modify(attrs)
 	return el.info()
@@ -300,9 +307,9 @@ def element_usage(id): #@ReservedAssignment
 	el = _getElement(id)
 	return el.totalUsage.info()	
 
-from .. import currentUser
 from ..elements import Element
 from .topology import _getTopology
 from ..lib.error import UserError
 from api_helpers import _getCurrentUserInfo
-from ..authorization import get_topology_info as _get_topology_info, get_element_info as _get_element_info
+from ..authorization import get_topology_info as _get_topology_info, get_element_info as _get_element_info,\
+	get_profile_info as _get_profile_info, get_template_info as _get_template_info

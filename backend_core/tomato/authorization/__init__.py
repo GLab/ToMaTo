@@ -577,6 +577,7 @@ class PermissionChecker(UserInfo):
 		if profile_info.is_restricted():
 			auth_check(Flags.RestrictedTemplates in self.get_flags(), "You don't have the permission to use restricted profiles.")
 
+	#fixme: this is never used...
 	def check_may_use_network(self, network_info):
 		"""
 		check whether this user may use this network
