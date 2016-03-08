@@ -15,22 +15,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import _getCurrentUserInfo
+from account import account_create, account_info, account_list, account_modify, account_remove, account_usage,\
+	account_notifications, account_notification_set_read, account_send_notification, broadcast_announcement,\
+	account_flag_categories, account_flag_configuration, account_flags
 
-from account import *
-from topology import *
-from host import *
-from elements import *
-from connections import *
-from resources import *
-from docs import *
-from capabilities import *
-from misc import *
-from dumpmanager import *
+from capabilities import capabilities, capabilities_connection, capabilities_element
 
-def debug(method, args=None, kwargs=None, profile=None):
-	_getCurrentUserInfo().check_may_view_debugging_info()
-	func = globals().get(method)
-	from ..lib import debug
-	result = debug.run(func, args, kwargs, profile)
-	return result.marshal()
+from connections import connection_create, connection_info, connection_modify, connection_remove,\
+	connection_action, connection_usage
+
+from debug import debug, debug_stats
+
+from docs import docs, role_list
+
+from dumpmanager import errordump_info, errordump_list, errordumps_force_refresh, errorgroup_favorite,\
+	errorgroup_hide, errorgroup_info, errorgroup_list, errorgroup_modify, errorgroup_remove
+
+from elements import element_info, element_action, element_create, element_modify, element_remove, element_usage
+
+from host import organization_create, organization_info, organization_list, organization_modify,\
+	organization_remove, organization_usage, site_create, site_info, site_list, site_modify, site_remove,\
+	host_modify, host_create, host_info, host_list, host_remove, host_usage, host_users
+
+from misc import link_statistics, notifyAdmins, server_info, statistics, task_execute, task_list
+
+from resources import resources_map, network_create, network_info, network_instance_create, network_instance_info,\
+	network_instance_list, network_instance_modify, network_instance_remove, network_list, network_modify,\
+	network_remove, profile_create, profile_info, profile_list, profile_modify, profile_remove, template_info,\
+	template_create, template_list, template_modify, template_remove
+
+from topology import topology_action, topology_create, topology_export, topology_import, topology_info,\
+	topology_list, topology_modify, topology_permission, topology_permissions, topology_remove, topology_usage

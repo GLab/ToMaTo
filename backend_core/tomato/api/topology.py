@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import _getCurrentUserInfo, _getCurrentUserName
-from ..authorization import get_topology_info as _get_topology_info, get_user_info as _get_user_info
-from ..lib.topology_role import role_descriptions as _role_descriptions
+from api_helpers import getCurrentUserInfo, getCurrentUserName
+from ..authorization import get_topology_info
+from ..lib.topology_role import role_descriptions
 
 def _getTopology(id_):
 	top = topology.get(id_)
@@ -33,11 +33,11 @@ def topology_create():
 	  returned by :py:func:`topology_info`. This info dict also contains the
 	  topology id that is needed for further manipulation of that object.
 	"""
-	_getCurrentUserInfo().check_may_create_topologies()
+	getCurrentUserInfo().check_may_create_topologies()
 	return topology.create().info()
 
 def topology_permissions():
-	return _role_descriptions()
+	return role_descriptions()
 
 def topology_remove(id): #@ReservedAssignment
 	"""
@@ -50,7 +50,7 @@ def topology_remove(id): #@ReservedAssignment
 	  The topology must not contain elements or connections, otherwise the call
 	  will fail.
 	"""
-	_getCurrentUserInfo().check_may_remove_topology(_get_topology_info(id))
+	getCurrentUserInfo().check_may_remove_topology(get_topology_info(id))
 	top = _getTopology(id)
 	top.remove()
 
@@ -76,7 +76,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  returned by :py:func:`topology_info`. This info dict will reflect all
 	  attribute changes.	
 	"""
-	_getCurrentUserInfo().check_may_modify_topology(_get_topology_info(id))
+	getCurrentUserInfo().check_may_modify_topology(get_topology_info(id))
 	top = _getTopology(id)
 	top.modify(attrs)
 	return top.info()
@@ -127,7 +127,7 @@ def topology_action(id, action, params=None): #@ReservedAssignment
 	  :py:func:`~topology_info`.	
 	"""
 	if not params: params = {}
-	_getCurrentUserInfo().check_may_run_topology_action(_get_topology_info(id), action, params)
+	getCurrentUserInfo().check_may_run_topology_action(get_topology_info(id), action, params)
 	top = _getTopology(id)
 	return top.action(action, params)
 
@@ -177,7 +177,7 @@ def topology_info(id, full=False): #@ReservedAssignment
 	``permissions``
 	  A dict with usernames as the keys and permission levels as values.
 	"""
-	_getCurrentUserInfo().check_may_view_topology(_get_topology_info(id))
+	getCurrentUserInfo().check_may_view_topology(get_topology_info(id))
 	top = _getTopology(id)
 	return top.info(full)
 
@@ -194,15 +194,14 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	  :py:func:`topology_info`. If no topologies exist, the list is empty. 
 	"""
 	if organization:
-		_getCurrentUserInfo().check_may_list_organization_topologies(organization)
-		organization = _getOrganization(organization)
-		users = getAllUsers(organization)
+		getCurrentUserInfo().check_may_list_organization_topologies(organization)
+		# fixme: organization filer is broken
 		tops = topology.getAll(permissions__user__in=users, permissions__role="owner")
 	elif showAll:
-		_getCurrentUserInfo().check_may_list_all_topologies()
+		getCurrentUserInfo().check_may_list_all_topologies()
 		tops = topology.getAll()
 	else:
-		tops = topology.getAll(permissions__user=_getCurrentUserName())
+		tops = topology.getAll(permissions__user=getCurrentUserName())
 	return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
 
 def topology_permission(id, user, role): #@ReservedAssignment
@@ -222,9 +221,8 @@ def topology_permission(id, user, role): #@ReservedAssignment
 	  The name of the role for this user. If the user already has a role,
 	  if will be changed.
 	"""
-	_getCurrentUserInfo().check_may_grant_permission_for_topologies(_get_topology_info(id))
+	getCurrentUserInfo().check_may_grant_permission_for_topologies(get_topology_info(id))
 	top = _getTopology(id)
-	user = _getAccount(user)
 	top.setRole(user, role)
 	
 def topology_usage(id): #@ReservedAssignment
@@ -238,7 +236,7 @@ def topology_usage(id): #@ReservedAssignment
 	  Usage statistics for the given topology according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	_getCurrentUserInfo().check_may_view_topology_usage(_get_topology_info(id))
+	getCurrentUserInfo().check_may_view_topology_usage(get_topology_info(id))
 	top = _getTopology(id)
 	return top.totalUsage.info()	
 
@@ -247,7 +245,6 @@ def topology_usage(id): #@ReservedAssignment
 #fixme: add authorization checks
 def topology_import(data):
 	# this function may change the values of data.
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	UserError.check('file_information' in data, code=UserError.INVALID_VALUE, message="Data lacks field file_information")
 	info = data['file_information']
 	UserError.check('version' in info, code=UserError.INVALID_VALUE, message="File information lacks field version")
@@ -283,7 +280,7 @@ def _topology_import_v3(top):
 	return _topology_import_v4(top)
 
 def _topology_import_v4(top):
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	#this uses api stuff, so authorization is checked.
 	top_id = None
 	elementIds = {}   
 	connectionIds = {}
@@ -376,16 +373,13 @@ def topology_export(id): #@ReservedAssignment
 		data['elements'] = reduceData_rec(data['elements'], blacklist_elements)
 		data['connections'] = reduceData_rec(data['connections'], blacklist_connections)
 		return data
-	
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+
+	#topology_info will handle authorization check
 	top_full = topology_info(id, True)
 	top = reduceData(top_full)
 	return {'file_information': {'version': 4}, 'topology': top}
-		
-from host import _getOrganization
-from account import _getAccount
-from .. import topology, currentUser
+
+from .. import topology
 from elements import element_create, element_modify 
 from connections import connection_create, connection_modify
 from ..lib.error import UserError
-from ..auth import getAllUsers

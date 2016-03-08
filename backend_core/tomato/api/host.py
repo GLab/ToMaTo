@@ -15,17 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import checkauth, _getCurrentUserInfo
-from ..lib.cache import cached, invalidates #@UnresolvedImport
+from api_helpers import checkauth, getCurrentUserInfo
+from ..lib.cache import cached, invalidates
 from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
 from ..lib.settings import Config as _Config
-from ..authorization import get_host_info as _get_host_info, get_site_info as _get_site_info
+from ..authorization import get_host_info, get_site_info
 
-#fixme: function won't be accessible after migration
-def _getOrganization(name):
-	o = Organization.get(name)
-	UserError.check(o, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": name})
-	return o
+from ..host import Host, Site
+from ..lib.error import UserError
 
 def _getSite(name):
 	s = Site.get(name)
@@ -50,7 +47,7 @@ def organization_create(name, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_create_organizations()
+	getCurrentUserInfo().check_may_create_organizations()
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	return api.organization_create(name, label, attrs)
 
@@ -66,7 +63,7 @@ def organization_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_modify_organization(name)
+	getCurrentUserInfo().check_may_modify_organization(name)
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	return api.organization_modify(name, attrs)
 
@@ -75,13 +72,13 @@ def organization_remove(name):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_delete_organization(name)
+	getCurrentUserInfo().check_may_delete_organization(name)
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	api.organization_remove(name)
 
 @checkauth
 def organization_usage(name): #@ReservedAssignment
-	#fixme: won't work when organizations are gone from backend_core
+	#fixme: broken
 	orga = _getOrganization(name)
 	return orga.totalUsage.info()	
 
@@ -91,10 +88,9 @@ def site_list(organization=None):
 	undocumented
 	"""
 	if organization:
-		organization = _getOrganization(organization)
 		sites = Site.objects(organization=organization)
 	else:
-		sites = Site.objects
+		sites = Site.objects.all()
 	return [s.info() for s in sites]
 
 @invalidates(site_list)
@@ -102,7 +98,7 @@ def site_create(name, organization, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_create_sites(organization)
+	getCurrentUserInfo().check_may_create_sites(organization)
 	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
@@ -118,7 +114,7 @@ def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_modify_site(_get_site_info(name))
+	getCurrentUserInfo().check_may_modify_site(get_site_info(name))
 	site = _getSite(name)
 	site.modify(attrs)
 	return site.info()
@@ -128,7 +124,7 @@ def site_remove(name):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_delete_site(_get_site_info(name))
+	getCurrentUserInfo().check_may_delete_site(get_site_info(name))
 	site = _getSite(name)
 	site.remove()
 
@@ -141,7 +137,6 @@ def host_list(site=None, organization=None):
 		site = Site.get(site)
 		hosts = Host.objects(site=site)
 	elif organization:
-		organization = _getOrganization(organization)
 		sites = Site.objects(organization=organization)
 		hosts = Host.objects(site__in=sites)
 	else:
@@ -153,7 +148,7 @@ def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_create_hosts(_get_site_info(site))
+	getCurrentUserInfo().check_may_create_hosts(get_site_info(site))
 	if not attrs: attrs = {}
 	site = _getSite(site)
 	h = Host.create(name, site, attrs)
@@ -172,7 +167,7 @@ def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_modify_host(_get_host_info(name))
+	getCurrentUserInfo().check_may_modify_host(get_host_info(name))
 	h = _getHost(name)
 	h.modify(attrs)
 	return h.info()
@@ -182,7 +177,7 @@ def host_remove(name):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_delete_host(_get_host_info(name))
+	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
 	h = _getHost(name)
 	h.remove()
 
@@ -191,15 +186,12 @@ def host_users(name):
 	"""
 	undocumented
 	"""
-	_getCurrentUserInfo().check_may_delete_host(_get_host_info(name))
+	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
 	h = _getHost(name)
 	return h.getUsers()
 
 @checkauth
 def host_usage(name): #@ReservedAssignment
 	h = _getHost(name)
-	return h.totalUsage.info()	
+	return h.totalUsage.info()
 
-from ..host import Host, Site
-from ..host.organization import Organization
-from ..lib.error import UserError

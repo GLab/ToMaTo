@@ -29,7 +29,7 @@ def checkauth(fn):
 	call.__dict__.update(fn.__dict__)
 	return call
 
-def _getCurrentUserName():
+def getCurrentUserName():
 	"""
 	get the current user name.
 	throws a UserError.NOT_LOGGED_IN error if no user is logged in.
@@ -40,7 +40,7 @@ def _getCurrentUserName():
 	UserError.check(u is not None, code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
 	return u.get_username()
 
-def _getCurrentUserInfo():
+def getCurrentUserInfo():
 	"""
 	get authorization.UserInfo object for current user
 	throws a UserError.NOT_LOGGED_IN error if no user is logged in.

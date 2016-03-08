@@ -17,21 +17,8 @@
 
 from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
 from ..lib.settings import Config as _Config
-from ..authorization import get_user_info as _get_user_info, PermissionChecker, get_pseudo_user_info as _get_pseudo_user_info
-from api_helpers import _getCurrentUserInfo, _getCurrentUserName
-
-#fixme: should be obsolete after migration of user stuff to backend_users
-def _getAccount(name):
-	acc = _currentUser()
-	if name and (not acc or name != acc.name):
-		acc = getUser(name)
-	_UserError.check(acc, code=_UserError.DENIED, message="No such user")
-	return acc
-
-
-
-
-
+from ..authorization import get_user_info, PermissionChecker, get_pseudo_user_info
+from api_helpers import getCurrentUserInfo, getCurrentUserName
 
 def account_info(name=None):
 	"""
@@ -72,8 +59,8 @@ def account_info(name=None):
 	  If the given account does not exist an exception is raised.
 	"""
 	if name is None:
-		name = _getCurrentUserName()
-	keys_to_show = _getCurrentUserInfo().account_info_visible_keys(_get_user_info(name))
+		name = getCurrentUserName()
+	keys_to_show = getCurrentUserInfo().account_info_visible_keys(get_user_info(name))
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	info = api.user_info(name)
 	for k in info.keys():
@@ -88,7 +75,7 @@ def account_notifications(include_read=False):
 	:param bool include_read: include read notifications. if False, only return unread ones.
 	:return: list of Notification
 	"""
-	username = _getCurrentUserName()
+	username = getCurrentUserName()
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	api.notification_list(username, include_read)
 
@@ -100,7 +87,7 @@ def account_notification_set_read(notification_id, read):
 	:param bool read: new read status of the notification
 	:return: None
 	"""
-	username = _getCurrentUserName()
+	username = getCurrentUserName()
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	api.notification_set_read(username, read)
 
@@ -113,9 +100,9 @@ def account_list(organization=None, with_flag=None):
 	  exactly the same information as returned by :py:func:`account_info`.
 	"""
 	if organization is None:
-		_getCurrentUserInfo().check_may_list_all_users()
+		getCurrentUserInfo().check_may_list_all_users()
 	else:
-		_getCurrentUserInfo().check_may_list_organization_users(organization)
+		getCurrentUserInfo().check_may_list_organization_users(organization)
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	return api.user_list(organization, with_flag)
 
@@ -154,9 +141,9 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	"""
 	if not attrs: attrs = {}
 	if name is None:
-		name = _getCurrentUserName()
-	modify_keys_allowed_list = _getCurrentUserInfo().modify_user_allowed_keys(_get_user_info(name))
-	modify_flags_allowed = _getCurrentUserInfo().modify_user_allowed_flags(_get_user_info(name))
+		name = getCurrentUserName()
+	modify_keys_allowed_list = getCurrentUserInfo().modify_user_allowed_keys(get_user_info(name))
+	modify_flags_allowed = getCurrentUserInfo().modify_user_allowed_flags(get_user_info(name))
 
 	attrs = PermissionChecker.reduce_keys_to_allowed(attrs, modify_keys_allowed_list, modify_flags_allowed,
 																									 ignore_key_on_unauthorized, ignore_flag_on_unauthorized)
@@ -164,7 +151,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	info = api.user_modify(name, attrs)
 
-	_get_user_info(name).invalidate_info()
+	get_user_info(name).invalidate_info()
 	return info
 		
 def account_create(username, password, organization, attrs=None):
@@ -193,16 +180,16 @@ def account_create(username, password, organization, attrs=None):
 	Return value:
 	  This method returns the info dict of the new account.
 	"""
-	if _getCurrentUserName() is None:
+	if getCurrentUserName() is None:
 		attrs = PermissionChecker.reduce_keys_to_allowed(attrs,
 																												PermissionChecker.account_register_self_allowed_keys(),
 																												[])
 	else:
-		target_user = _get_pseudo_user_info(username, organization)
-		_getCurrentUserInfo().check_may_create_user(target_user)
+		target_user = get_pseudo_user_info(username, organization)
+		getCurrentUserInfo().check_may_create_user(target_user)
 		attrs = PermissionChecker.reduce_keys_to_allowed(attrs,
-																												_getCurrentUserInfo().modify_user_allowed_keys(target_user),
-																												_getCurrentUserInfo().modify_user_allowed_flags(target_user))
+																										 getCurrentUserInfo().modify_user_allowed_keys(target_user),
+																										 getCurrentUserInfo().modify_user_allowed_flags(target_user))
 	email = attrs.get('email', None)
 	del attrs['email']  # fixme: email should be an api parameter here
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
@@ -221,8 +208,8 @@ def account_remove(name=None):
 	  This method returns nothing if the account has been deleted.
 	"""
 	if name is None:
-		name = _getCurrentUserName()
-	_getCurrentUserInfo().check_may_delete_user(_get_user_info(name))
+		name = getCurrentUserName()
+	getCurrentUserInfo().check_may_delete_user(get_user_info(name))
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	api.user_remove(name)
 
@@ -234,15 +221,15 @@ def account_send_notification(name, subject, message, ref=None, from_support=Fal
 	if from_support:
 		fromUser = None
 	else:
-		fromUser = _getCurrentUserName()
-	_getCurrentUserInfo().check_may_send_message_to_user(_get_user_info(name))
+		fromUser = getCurrentUserName()
+	getCurrentUserInfo().check_may_send_message_to_user(get_user_info(name))
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
 	api.send_message(name, subject, message, fromUser=fromUser, ref=ref, subject_group=subject_group)
 
 def broadcast_announcement(title, message, ref=None, show_sender=True, subject_group=None, organization_filter=None):
-	_getCurrentUserInfo().check_may_broadcast_messages(organization_filter)
+	getCurrentUserInfo().check_may_broadcast_messages(organization_filter)
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
-	api.broadcast_message(title, message, fromUser=(_getCurrentUserName() if show_sender else None), ref=ref,
+	api.broadcast_message(title, message, fromUser=(getCurrentUserName() if show_sender else None), ref=ref,
 												subject_group=subject_group, organization_filter=organization_filter)
 
 def account_usage(name): #@ReservedAssignment

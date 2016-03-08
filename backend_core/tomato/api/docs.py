@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import elements, connections
-from ..lib.cache import cached #@UnresolvedImport
+from ..lib.cache import cached
 
 @cached(timeout=3600)
 def docs():
