@@ -1,6 +1,8 @@
 from ..lib.userflags import Flags
 from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo, ConnectionInfo,\
-	get_topology_info, get_host_info, get_site_info, get_element_info, get_connection_info
+	TemplateInfo, NetworkInfo, ProfileInfo,\
+	get_topology_info, get_host_info, get_site_info, get_element_info, get_connection_info,\
+	get_template_info, get_network_info, get_profile_info
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 from ..lib.error import UserError
@@ -559,6 +561,29 @@ class PermissionChecker(UserInfo):
 		"""
 		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to remove technical resources.")
 
+	def check_may_use_template(self, template_info):
+		"""
+		check whether this user may use this template
+		:param TemplateInfo template_info: target template info
+		"""
+		if template_info.is_restricted():
+			auth_check(Flags.RestrictedTemplates in self.get_flags(), "You don't have the permission to use restricted templates.")
+
+	def check_may_use_profile(self, profile_info):
+		"""
+		check whether this user may use this profile
+		:param ProfileInfo profile_info: target profile info
+		"""
+		if profile_info.is_restricted():
+			auth_check(Flags.RestrictedTemplates in self.get_flags(), "You don't have the permission to use restricted profiles.")
+
+	def check_may_use_network(self, network_info):
+		"""
+		check whether this user may use this network
+		:param NetworkInfo network_info: target network info
+		"""
+		if network_info.is_restricted():
+			auth_check(Flags.RestrictedTemplates in self.get_flags(), "You don't have the permission to use restricted networks.")
 
 
 

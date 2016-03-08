@@ -10,6 +10,9 @@ from ..elements import Element
 from ..connections import Connection
 from ..host.site import Site
 from ..host import Host
+from ..resources.template import Template
+from ..resources.profile import Profile
+from ..resources.network import Network
 
 import time
 
@@ -101,6 +104,7 @@ class OrganizationInfo(InfoObj):
 
 
 
+
 class TopologyInfo(ExistenceCheck):
 	"""
 	:type topology: Topology
@@ -150,6 +154,7 @@ class SiteInfo(ExistenceCheck):
 	__slots__ = ("site",)
 
 	def __init__(self, site_name):
+		super(SiteInfo, self).__init__()
 		self.site = Site.objects.get(site_name)
 		UserError.check(self.site, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist", data={"site_name": site_name})
 
@@ -164,6 +169,7 @@ class HostInfo(ExistenceCheck):
 	__slots__ = ("host",)
 
 	def __init__(self, host_name):
+		super(HostInfo, self).__init__()
 		self.host = Host.objects.get(host_name)
 		UserError.check(self.host, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"host_name": host_name})
 
@@ -178,6 +184,7 @@ class ElementInfo(ExistenceCheck):
 	__slots__ = ("element",)
 
 	def __init__(self, element_id):
+		super(ElementInfo, self).__init__()
 		self.element = Element.get(element_id)
 		UserError.check(self.element, code=UserError.ENTITY_DOES_NOT_EXIST, message="Element with that id does not exist", data={"element_id": element_id})
 
@@ -192,6 +199,7 @@ class ConnectionInfo(ExistenceCheck):
 	__slots__ = ("connection",)
 
 	def __init__(self, connection_id):
+		super(ConnectionInfo, self).__init__()
 		self.connection = Connection.get(connection_id)
 		UserError.check(self.connection, code=UserError.ENTITY_DOES_NOT_EXIST, message="Connection with that id does not exist", data={"connection_id": connection_id})
 
@@ -202,6 +210,38 @@ class ConnectionInfo(ExistenceCheck):
 		# __init__ would throw an error if it didn't exist...
 		return True
 
+class TemplateInfo(object):
+	__slots__ = ("template",)
+
+	def __init__(self, tech, name):
+		super(TemplateInfo, self).__init__()
+		self.template = Template.get(tech, name)
+		UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="Template with that name and tech does not exist", data={"name": name, "tech": tech})
+
+	def is_restricted(self):
+		return self.temlate.restricted
+
+class ProfileInfo(object):
+	__slots__ = ("profile",)
+
+	def __init__(self, tech, name):
+		super(ProfileInfo, self).__init__()
+		self.profile = Profile.get(tech, name)
+		UserError.check(self.profile, code=UserError.ENTITY_DOES_NOT_EXIST, message="Profile with that name and tech does not exist", data={"name": name, "tech": tech})
+
+	def is_restricted(self):
+		return self.profile.restricted
+
+class NetworkInfo(object):
+	__slots__ = ("network",)
+
+	def __init__(self, kind):
+		super(NetworkInfo, self).__init__()
+		self.network = Network.get(kind)
+		UserError.check(self.network, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network of that kind does not exist", data={"kind": kind})
+
+	def is_restricted(self):
+		return self.network.restricted
 
 
 
@@ -254,6 +294,35 @@ def get_host_info(host_name):
 	:rtype: HostInfo
 	"""
 	return HostInfo(host_name)
+
+def get_template_info(tech, name):
+	"""
+	return TemplateInfo object for the respective template
+	:param str tech: tech of the target template
+	:param str name: name of the target template
+	:return: TemplateInfo object
+	:rtype: TemplateInfo
+	"""
+	return TemplateInfo(tech, name)
+
+def get_profile_info(tech, name):
+	"""
+	return ProfileInfo object for the respective profile
+	:param str tech: tech of the target profile
+	:param str name: name of the target profile
+	:return: ProfileInfo object
+	:rtype: ProfileInfo
+	"""
+	return ProfileInfo(tech, name)
+
+def get_network_info(kind):
+	"""
+	return NetworkInfo object for the respective network
+	:param str kind: kind of the target network
+	:return: NetworkInfo object
+	:rtype: NetworkInfo
+	"""
+	return NetworkInfo(kind)
 
 @cached(60)
 def get_organization_info(organization_name):
