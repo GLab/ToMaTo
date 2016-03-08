@@ -444,11 +444,12 @@ class PermissionChecker(UserInfo):
 		"""
 		self._check_has_topology_role(topology_info, Role.owner)
 
-	def check_may_run_topology_action(self, topology_info, action):
+	def check_may_run_topology_action(self, topology_info, action, params):
 		"""
 		check whether this user may run this action on this topology.
 		:param TopologyInfo topology_info: target topology
 		:param str action: target action
+		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any unrecognized action
 		# fixme: is this complete? add more available actions.
@@ -592,11 +593,12 @@ class PermissionChecker(UserInfo):
 		"""
 		self._check_has_topology_role(element_info.get_topology_info(), Role.user)
 
-	def check_may_run_element_action(self, element_info, action):
+	def check_may_run_element_action(self, element_info, action, params):
 		"""
 		check whether this user may run this action on the given element
 		:param ElementInfo element_info: target element
 		:param str action: action to run
+		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
 		UserError.check(action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY,
@@ -652,11 +654,12 @@ class PermissionChecker(UserInfo):
 		"""
 		self._check_has_topology_role(connection_info.get_topology_info(), Role.user)
 
-	def check_may_run_connection_action(self, connection_info, action):
+	def check_may_run_connection_action(self, connection_info, action, params):
 		"""
 		check whether this user may run this action on the given connection
 		:param ConnectionInfo connection_info: target connection
 		:param str action: action to run
+		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
 		# fixme: is this complete? add more available actions.

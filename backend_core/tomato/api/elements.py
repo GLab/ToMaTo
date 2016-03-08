@@ -133,8 +133,8 @@ def element_action(id, action, params=None): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	_getCurrentUserInfo().check_may_run_element_action(_get_element_info(id), action)
 	if not params: params = {}
+	_getCurrentUserInfo().check_may_run_element_action(_get_element_info(id), action, params)
 	el = _getElement(id)
 	return el.action(action, params)
 

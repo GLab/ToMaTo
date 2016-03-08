@@ -126,8 +126,8 @@ def topology_action(id, action, params=None): #@ReservedAssignment
 	  of the action to the topology can be checked using 
 	  :py:func:`~topology_info`.	
 	"""
-	_getCurrentUserInfo().check_may_run_topology_action(_get_topology_info(id), action)
 	if not params: params = {}
+	_getCurrentUserInfo().check_may_run_topology_action(_get_topology_info(id), action, params)
 	top = _getTopology(id)
 	return top.action(action, params)
 

@@ -134,8 +134,8 @@ def connection_action(id, action, params=None): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection type 
 	  and state.
 	"""
-	_getCurrentUserInfo().check_may_run_connection_action(_get_connection_info(id), action)
 	if not params: params = {}
+	_getCurrentUserInfo().check_may_run_connection_action(_get_connection_info(id), action, params)
 	con = _getConnection(id)
 	return con.action(action, params)
 
