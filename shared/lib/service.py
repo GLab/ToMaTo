@@ -44,4 +44,4 @@ def is_self(tomato_module):
 	return tomato_module == settings.get_tomato_module_name()
 
 def list_other_modules():
-	return [module for module in Config.TOMATO_MODULES if not is_self(module)]
+	return [module for module in Config.TOMATO_BACKEND_MODULES if not is_self(module)]
