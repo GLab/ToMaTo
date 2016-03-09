@@ -1,11 +1,10 @@
 from ..lib.userflags import Flags
-from remote_info import UserInfo
+from ..lib.remote_info import UserInfo, get_user_info
 from ..lib.topology_role import Role
-from ..lib.cache import cached
 from ..lib.error import UserError
 from ..lib.service import get_backend_users_proxy
 from ..lib.constants import ActionName
-# important: do not import from the info module here.
+from info import get_template_info
 
 import time
 
@@ -21,6 +20,7 @@ def auth_fail(message, data=None):
 class PermissionChecker(UserInfo):
 	__slots__ = ("success_password", "password_age")
 
+
 	def __init__(self, username):
 		super(PermissionChecker, self).__init__(username)
 		self.success_password = None
@@ -29,6 +29,11 @@ class PermissionChecker(UserInfo):
 	def invalidate_info(self):
 		super(PermissionChecker, self).invalidate_info()
 		self.success_password = None
+
+	def _fetch_data(self):
+		return get_user_info(self.get_username()).info()
+	def _check_exists(self):
+		return get_user_info(self.get_username()).exists()
 
 
 
@@ -649,7 +654,6 @@ class PermissionChecker(UserInfo):
 
 		if action == ActionName.CHANGE_TEMPLATE:
 			assert "template" in params
-			from info import get_template_info
 			self.check_may_use_template(get_template_info(element_info.get_type(), params['template']))
 
 
@@ -758,7 +762,6 @@ def login(username, password):
 		return None
 
 
-@cached(60)
 def get_permission_checker(username):
 	"""
 	get PermissionChecker for this username
@@ -766,16 +769,8 @@ def get_permission_checker(username):
 	:return: PermissionChecker object for corresponding user
 	:rtype: PermissionChecker
 	"""
-	return PermissionChecker(username=username)
 
-def get_user_info(username):
-	"""
-	return UserInfo object for this username
-	:param str username: username of user
-	:return: PermissionChecker object for corresponding user
-	:rtype: PermissionChecker
-	"""
-	return get_permission_checker(username)
+	return PermissionChecker(username=username)
 
 def get_pseudo_user_info(username, organization):
 	"""

@@ -1,6 +1,6 @@
-from ..lib.error import InternalError
-from ..lib.service import get_backend_users_proxy
-from ..lib.cache import cached
+from error import InternalError
+from service import get_backend_users_proxy
+from cache import cached
 
 class ExistenceCheck(object):
 	__slots__ = ("_exists",)
@@ -84,6 +84,17 @@ class OrganizationInfo(InfoObj):
 		if self._info is not None:
 			return True
 		return get_backend_users_proxy().organization_exists(self.name)
+
+
+@cached(60)
+def get_user_info(username):
+	"""
+	return UserInfo object for this username
+	:param str username: username of user
+	:return: UserInfo object for corresponding user
+	:rtype: UserInfo
+	"""
+	return UserInfo(username)
 
 @cached(60)
 def get_organization_info(organization_name):

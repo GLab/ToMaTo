@@ -2,7 +2,7 @@ from ..db import *
 from ..lib import logging
 from ..lib.error import UserError
 from ..generic import *
-from ..authorization.remote_info import get_organization_info
+from ..lib.remote_info import get_organization_info
 
 class Site(Entity, BaseDocument):
 	name = StringField(unique=True, required=True)

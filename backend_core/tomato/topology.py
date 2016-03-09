@@ -24,7 +24,7 @@ from . import scheduler
 from .lib.error import UserError #@UnresolvedImport
 from .lib import util
 from .lib.topology_role import Role
-from authorization import get_user_info
+from .lib.remote_info import get_user_info
 from .lib.service import get_backend_users_proxy
 from .lib.constants import StateName, ActionName
 

@@ -1,6 +1,6 @@
 from ..lib.error import UserError
 
-from .remote_info import ExistenceCheck
+from ..lib.remote_info import ExistenceCheck
 
 from ..topology import Topology
 from ..elements import Element
