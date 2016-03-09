@@ -32,7 +32,7 @@ def get_tomato_inner_proxy(tomato_module):
 # shortcuts and helpers
 
 def get_backend_users_proxy():
-	return get_backend_users_proxy()
+	return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
 
 def is_reachable(tomato_module):
 	if is_self(tomato_module):
