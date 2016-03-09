@@ -11,7 +11,7 @@ def debug(method, args=None, kwargs=None, profile=None):
 	result = debug.run(func, args, kwargs, profile)
 	return result.marshal()
 
-def debug_stats():
+def debug_stats(tomato_module):
 	getCurrentUserInfo().check_may_view_debugging_info()
 	from .. import database_obj
 	stats = {}
@@ -22,4 +22,4 @@ def debug_stats():
 	return stats
 
 def debug_services_reachable():
-	return {module: is_reachable(module) for module in Config.TOMATO_MODULES}
+	return {module: is_reachable(module) for module in Config.TOMATO_BACKEND_MODULES}
