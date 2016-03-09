@@ -1,4 +1,8 @@
+from .. import scheduler
+import traceback, sys
 from api_helpers import getCurrentUserInfo
+from ..lib.settings import Config
+from ..lib.service import is_reachable
 
 def debug(method, args=None, kwargs=None, profile=None):
 	getCurrentUserInfo().check_may_view_debugging_info()
@@ -16,3 +20,6 @@ def debug_stats():
 	stats["scheduler"] = scheduler.info()
 	stats["threads"] = map(traceback.extract_stack, sys._current_frames().values())
 	return stats
+
+def debug_services_reachable():
+	return {module: is_reachable(module) for module in Config.TOMATO_MODULES}
