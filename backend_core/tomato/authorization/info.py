@@ -1,8 +1,5 @@
-from .. import scheduler
 from ..lib.error import InternalError, UserError
-from ..lib.service import get_tomato_inner_proxy
-from ..lib.settings import Config
-from ..lib.topology_role import Role
+from ..lib.service import get_backend_users_proxy
 from ..lib.cache import cached
 
 from ..topology import Topology
@@ -64,7 +61,7 @@ class UserInfo(InfoObj):
 		self.name = username
 
 	def _fetch_data(self):
-		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).user_info(self.name)
+		return get_backend_users_proxy().user_info(self.name)
 
 	def get_username(self):
 		return self.name
@@ -78,7 +75,7 @@ class UserInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).user_exists(self.name)
+		return get_backend_users_proxy().user_exists(self.name)
 
 
 class OrganizationInfo(InfoObj):
@@ -89,7 +86,7 @@ class OrganizationInfo(InfoObj):
 		self.name = organization_name
 
 	def _fetch_data(self):
-		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).organization_info(self.name)
+		return get_backend_users_proxy().organization_info(self.name)
 
 	def get_organization_name(self):
 		return self.get_organization_name()
@@ -97,7 +94,7 @@ class OrganizationInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).organization_exists(self.name)
+		return get_backend_users_proxy().organization_exists(self.name)
 
 
 

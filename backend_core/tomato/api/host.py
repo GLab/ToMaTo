@@ -17,7 +17,7 @@
 
 from api_helpers import checkauth, getCurrentUserInfo
 from ..lib.cache import cached, invalidates
-from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
+from ..lib.service import get_backend_users_proxy
 from ..lib.settings import Config as _Config
 from ..authorization import get_host_info, get_site_info
 
@@ -39,7 +39,7 @@ def organization_list():
 	"""
 	undocumented
 	"""
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	return api.organization_list()
 
 @invalidates(organization_list)
@@ -48,14 +48,14 @@ def organization_create(name, label="", attrs={}):
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_create_organizations()
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	return api.organization_create(name, label, attrs)
 
 def organization_info(name):
 	"""
 	undocumented
 	"""
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	return api.organization_info(name)
 
 @invalidates(organization_list)
@@ -64,7 +64,7 @@ def organization_modify(name, attrs):
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_modify_organization(name)
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	return api.organization_modify(name, attrs)
 
 @invalidates(organization_list)
@@ -73,7 +73,7 @@ def organization_remove(name):
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_delete_organization(name)
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	api.organization_remove(name)
 
 @checkauth

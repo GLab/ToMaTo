@@ -517,7 +517,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		return problems
 
 	def sendMessageToHostManagers(self, title, message, ref, subject_group):
-		api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+		api = get_backend_users_proxy()
 		#fixme: HostContact should also receive this.
 		#fixme: better backend_users api to send batched messages (multiple groups of orga/flag filters?)
 		api.broadcast_message(title=title, message=message, ref=ref, subject_group=subject_group,
@@ -839,7 +839,6 @@ def synchronizeComponents():
 			handleError()
 
 
-from ..lib.service import get_tomato_inner_proxy
 from .site import Site
 from .. import handleError
 

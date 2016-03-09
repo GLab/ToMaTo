@@ -69,9 +69,9 @@ import authorization
 
 def getCurrentUserInfo():
 	"""
-	get the current user's UserInfo object
-	:return: current user's UserInfo object
-	:rtype: authorization.UserInfo
+	get the current user's PermissionChecker object
+	:return: current user's PermissionChecker object
+	:rtype: authorization.PermissionChecker
 	"""
 	return _currentUser.user_info if hasattr(_currentUser, "user_info") else None  # fixme
 	

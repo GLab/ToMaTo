@@ -25,7 +25,7 @@ from .lib.error import UserError #@UnresolvedImport
 from .lib import util
 from .lib.topology_role import Role
 from authorization import get_user_info
-from .lib.service import get_tomato_inner_proxy
+from .lib.service import get_backend_users_proxy
 from .lib.constants import State, Action
 
 class TimeoutStep:
@@ -250,7 +250,7 @@ class Topology(Entity, BaseDocument):
 		self.set_role(user, role)
 			
 	def sendNotification(self, role, subject, message, fromUser=None):
-		user_api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+		user_api = get_backend_users_proxy()
 		for permission in self.permissions:
 			if Role.leq(role, permission.role):
 				user_api.send_message(permission.user, subject, message, fromUser, ref=['topology', self.idStr])

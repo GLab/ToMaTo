@@ -6,8 +6,7 @@ from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo, Connec
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 from ..lib.error import UserError
-from ..lib.service import get_tomato_inner_proxy
-from ..lib.settings import Config
+from ..lib.service import get_backend_users_proxy
 from ..lib.constants import Action
 
 import time
@@ -50,7 +49,7 @@ class PermissionChecker(UserInfo):
 					return True  # if false, this may be due to a recent password changed that hasn't been seen by the cache.
 											# in this case, try to get a fresh password.
 
-		api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+		api = get_backend_users_proxy()
 		result = api.user_check_password(self.get_username(), password)
 		if result:
 			self.password_age = time.time()
@@ -739,6 +738,13 @@ class PseudoUser(UserInfo):
 
 
 def login(username, password):
+	"""
+	check credentials. on success, return permission checker object
+	:param username: provided username
+	:param password: provided password
+	:return: PermissionChecker object belonging to the user
+	:rtype: PermissionChecker
+	"""
 	user_info = get_permission_checker(username)
 	if user_info.login(password):
 		return user_info

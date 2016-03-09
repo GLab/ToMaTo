@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
+from ..lib.service import get_backend_users_proxy
 from ..lib.settings import Config as _Config
 from ..authorization import get_user_info, PermissionChecker, get_pseudo_user_info
 from api_helpers import getCurrentUserInfo, getCurrentUserName
@@ -61,7 +61,7 @@ def account_info(name=None):
 	if name is None:
 		name = getCurrentUserName()
 	keys_to_show = getCurrentUserInfo().account_info_visible_keys(get_user_info(name))
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	info = api.user_info(name)
 	for k in info.keys():
 		if k not in keys_to_show:
@@ -76,7 +76,7 @@ def account_notifications(include_read=False):
 	:return: list of Notification
 	"""
 	username = getCurrentUserName()
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	api.notification_list(username, include_read)
 
 def account_notification_set_read(notification_id, read):
@@ -88,7 +88,7 @@ def account_notification_set_read(notification_id, read):
 	:return: None
 	"""
 	username = getCurrentUserName()
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	api.notification_set_read(username, read)
 
 def account_list(organization=None, with_flag=None):
@@ -103,7 +103,7 @@ def account_list(organization=None, with_flag=None):
 		getCurrentUserInfo().check_may_list_all_users()
 	else:
 		getCurrentUserInfo().check_may_list_organization_users(organization)
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	return api.user_list(organization, with_flag)
 
 def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, ignore_flag_on_unauthorized=False):
@@ -148,7 +148,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	attrs = PermissionChecker.reduce_keys_to_allowed(attrs, modify_keys_allowed_list, modify_flags_allowed,
 																									 ignore_key_on_unauthorized, ignore_flag_on_unauthorized)
 
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	info = api.user_modify(name, attrs)
 
 	get_user_info(name).invalidate_info()
@@ -192,7 +192,7 @@ def account_create(username, password, organization, attrs=None):
 																										 getCurrentUserInfo().modify_user_allowed_flags(target_user))
 	email = attrs.get('email', None)
 	del attrs['email']  # fixme: email should be an api parameter here
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	return api.user_create(username, organization, email, password, attrs)
 
 def account_remove(name=None):
@@ -210,7 +210,7 @@ def account_remove(name=None):
 	if name is None:
 		name = getCurrentUserName()
 	getCurrentUserInfo().check_may_delete_user(get_user_info(name))
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	api.user_remove(name)
 
 
@@ -223,12 +223,12 @@ def account_send_notification(name, subject, message, ref=None, from_support=Fal
 	else:
 		fromUser = getCurrentUserName()
 	getCurrentUserInfo().check_may_send_message_to_user(get_user_info(name))
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	api.send_message(name, subject, message, fromUser=fromUser, ref=ref, subject_group=subject_group)
 
 def broadcast_announcement(title, message, ref=None, show_sender=True, subject_group=None, organization_filter=None):
 	getCurrentUserInfo().check_may_broadcast_messages(organization_filter)
-	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	api.broadcast_message(title, message, fromUser=(getCurrentUserName() if show_sender else None), ref=ref,
 												subject_group=subject_group, organization_filter=organization_filter)
 
@@ -270,8 +270,5 @@ def account_flag_configuration():
 
 
 
-	
-from host import _getOrganization
-from .. import currentUser as _currentUser
+from ..lib.userflags import flags, categories
 from ..lib.error import UserError as _UserError
-from ..auth import getUser, flags, categories, register

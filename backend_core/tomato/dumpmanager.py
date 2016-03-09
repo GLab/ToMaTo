@@ -427,7 +427,7 @@ def insert_dump(dump, source):
 			else:
 				group_desc = dump['description']
 			group = create_group(dump['group_id'], group_desc)
-			api = service.get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+			api = service.get_backend_users_proxy()
 			api.broadcast_message(
 				title="[ToMaTo Devs] New Error Group",  # fixme: this message should be configurable
 				message="\n\n".join((

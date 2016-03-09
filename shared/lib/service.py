@@ -1,6 +1,6 @@
 from .sslrpc2 import Proxy
 from .error import Error, TransportError
-from .settings import settings
+from .settings import settings, Config
 
 import ssl
 
@@ -26,3 +26,6 @@ def get_tomato_inner_proxy(tomato_module):
 	conf = settings.get_interface(tomato_module, True, protocol)
 	backend_users_address = "%s://%s:%s" % (protocol, conf['host'], conf['port'])
 	return createProxy(backend_users_address, settings.get_ssl_cert_filename(), settings.get_ssl_ca_filename())
+
+def get_backend_users_proxy():
+	return get_backend_users_proxy()
