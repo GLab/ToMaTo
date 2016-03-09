@@ -37,8 +37,10 @@ def get_backend_users_proxy():
 def is_reachable(tomato_module):
 	if is_self(tomato_module):
 		return True
-	# fixme: implement
-	return True
+	try:
+		return get_tomato_inner_proxy(tomato_module).ping()
+	except:
+		return False
 
 def is_self(tomato_module):
 	return tomato_module == settings.get_tomato_module_name()

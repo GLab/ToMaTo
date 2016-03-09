@@ -1,17 +1,8 @@
-
-def debug(method, args=None, kwargs=None, profile=None):
-	func = globals().get(method)
-	from ..lib import debug
-	result = debug.run(func, args, kwargs, profile)
-	return result.marshal()
-
-def dummy():
-	# todo: this should be obsolete...
-	return "Hello world!"
-
 from auth import user_check_password
 
 from dump import dump_count, dump_info, dump_list
+
+from debug import debug_stats, debug, ping
 
 from notification import notification_get, notification_list, notification_set_read, send_message, broadcast_message
 
