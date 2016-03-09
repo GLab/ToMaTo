@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..connections import Connection
+#from ..connections import Connection
+# fixme: import not working...
 from elements import _getElement
 from api_helpers import getCurrentUserInfo
 from ..authorization.info import get_connection_info, get_element_info

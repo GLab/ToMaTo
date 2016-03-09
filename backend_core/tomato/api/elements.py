@@ -307,7 +307,8 @@ def element_usage(id): #@ReservedAssignment
 	el = _getElement(id)
 	return el.totalUsage.info()	
 
-from ..elements import Element
+#from ..elements import Element
+# fixme: import not working...
 from .topology import _getTopology
 from ..lib.error import UserError
 from api_helpers import getCurrentUserInfo

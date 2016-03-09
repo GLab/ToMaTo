@@ -46,6 +46,7 @@ def capabilities():
 	return res
 
 
-from .. import elements, connections
+#from .. import elements, connections
+# fixme: import not working...
 from ..host import Host, select
 from ..lib.error import UserError
