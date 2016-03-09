@@ -16,7 +16,7 @@
 
 {% for module_result in reachability_stats %}
     <tr>
-        <td><a href="{%url "tomato.debug.stats" module_result.module%}">module_result.module</a></td>
+        <td><a href="{%url "tomato.debug.stats" module_result.module%}">{{module_result.module}}</a></td>
 
         {% if module_result.reachable %}
             <td class="stddev_high good_high">Yes</td>

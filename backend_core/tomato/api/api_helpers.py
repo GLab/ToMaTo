@@ -46,4 +46,6 @@ def getCurrentUserInfo():
 	:return: PermissionChecker object for current user
 	:rtype: PermissionChecker
 	"""
-	return _getLoggedInUserInfo()
+	u = _getLoggedInUserInfo()
+	UserError.check(u is not None, code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
+	return u

@@ -26,5 +26,4 @@ def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
 		return api.debug_stats()
 
 def debug_services_reachable():
-	getCurrentUserInfo().check_may_view_debugging_info()
 	return {module: is_reachable(module) for module in Config.TOMATO_BACKEND_MODULES}
