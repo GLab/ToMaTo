@@ -34,7 +34,10 @@ def tech_to_label(value):
 	
 @register.simple_tag
 def backend_version():
-	return serverInfo()['version']
+	try:
+		return serverInfo()['version']
+	except:
+		return "[unknown]"
 
 @register.simple_tag
 def frontend_version():

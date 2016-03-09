@@ -17,7 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.shortcuts import render
+
 from lib import wrap_rpc, api_duration_log
+from lib.settings import Config
 
 @wrap_rpc
 def host_users(api, request, name):
@@ -40,9 +42,17 @@ def connection(api, request, id):
 	return render(request, "debug/json.html", {'title': "Information on connection #%s" % id, 'data': data})
 
 @wrap_rpc
-def stats(api, request):
-	stats = api.debug_stats()
-	return render(request, "debug/stats.html", {'stats': stats})
+def stats(api, request, tomato_module=None):
+	if tomato_module is None:
+		try:
+			v = api.debug_services_reachable()
+		except:
+			v = {Config.TOMATO_MODULE_BACKEND_API: False}
+		values = [{'module': module, 'reachable': reachable} for module, reachable in v.iteritems()]
+		return render(request, "debug/backend_overview.html", {"reachability_stats": values})
+	else:
+		stats = api.debug_stats(tomato_module)
+		return render(request, "debug/stats.html", {'stats': stats})
 
 def api_call_stats(request):
 	original_data = api_duration_log().get_api_durations()
