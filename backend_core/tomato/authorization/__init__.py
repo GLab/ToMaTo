@@ -73,7 +73,7 @@ class PermissionChecker(UserInfo):
 		:param str organization: name of the organization
 		"""
 		# only global admins may do this.
-		auth_check(Flags.GlobalAdmin not in self.get_flags(), "operation requires global admin permission.")
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "operation requires global admin permission.")
 
 	def check_may_list_organization_users(self, organization):
 		"""
