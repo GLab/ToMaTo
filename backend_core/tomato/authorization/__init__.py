@@ -40,7 +40,7 @@ class PermissionChecker(UserInfo):
 
 		# if password is cached, try to use the cached one if it isn't too old.
 		if self.success_password:
-			if time.time() - self.password_age > self.cache_duration:
+			if time.time() - self.password_age > 60:  # fixme: make this configurable
 				self.success_password = None
 			else:
 				if password == self.success_password:
