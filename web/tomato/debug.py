@@ -52,7 +52,7 @@ def stats(api, request, tomato_module=None):
 		return render(request, "debug/backend_overview.html", {"reachability_stats": values})
 	else:
 		stats = api.debug_stats(tomato_module)
-		return render(request, "debug/stats.html", {'stats': stats})
+		return render(request, "debug/stats.html", {'stats': stats, 'tomato_module': tomato_module})
 
 def api_call_stats(request):
 	original_data = api_duration_log().get_api_durations()
