@@ -29,7 +29,7 @@ from .connections import Connection
 from .resources.template import Template
 from .resources.network import Network, NetworkInstance
 from .resources.profile import Profile
-from .accounting import Usage, UsageStatistics, UsageRecord, Quota
+from .accounting.quota import Usage, UsageStatistics, UsageRecord, Quota
 from .link import LinkMeasurement, LinkStatistics
 from .host import Host
 from .host.element import HostElement

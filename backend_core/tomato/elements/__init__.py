@@ -19,7 +19,7 @@ from ..generic import *
 from ..db import *
 from ..topology import Topology
 from ..lib import logging
-from ..accounting import UsageStatistics
+from ..accounting.quota import UsageStatistics
 from ..lib.decorators import *
 from ..lib.cache import cached
 from ..lib.error import UserError

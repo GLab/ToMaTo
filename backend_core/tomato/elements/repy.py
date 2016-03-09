@@ -19,7 +19,7 @@ from ..generic import *
 from .. import elements, host
 from .generic import ST_CREATED, ST_PREPARED, VMElement, VMInterface
 from ..lib.error import UserError
-from ..lib.constants import TypeName, Action
+from ..lib.constants import TypeName, ActionName
 
 class Repy(VMElement):
 	TYPE = TypeName.REPY
