@@ -18,7 +18,7 @@
 from ..db import *
 from ..generic import *
 from .. import starttime, scheduler
-from ..accounting import UsageStatistics
+from ..accounting.quota import UsageStatistics
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error

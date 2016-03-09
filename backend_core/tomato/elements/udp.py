@@ -22,7 +22,7 @@ from . import Element
 from .. import elements, host
 from .generic import ST_CREATED, ST_PREPARED, ST_STARTED
 from ..lib.error import UserError
-from ..lib.constants import Action, Type
+from ..lib.constants import ActionName, TypeName
 
 class UDPEndpoint(Element):
 	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
@@ -33,8 +33,8 @@ class UDPEndpoint(Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 
-	TYPE = Type.UDP_ENDPOINT
-	HOST_TYPE = Type.UDP_TUNNEL
+	TYPE = TypeName.UDP_ENDPOINT
+	HOST_TYPE = TypeName.UDP_TUNNEL
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 
@@ -109,9 +109,9 @@ class UDPEndpoint(Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		Action.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
-		Action.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
-		Action.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
+		ActionName.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
 	})
 
 

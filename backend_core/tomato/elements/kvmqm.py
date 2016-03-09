@@ -19,13 +19,13 @@ from .. import elements, scheduler
 from .generic import VMElement, VMInterface, ST_CREATED, ST_PREPARED
 import time
 from ..lib import util #@UnresolvedImport
-from ..lib.constants import Type
+from ..lib.constants import TypeName
 
 class KVMQM(VMElement):
-	TYPE = Type.KVMQM
+	TYPE = TypeName.KVMQM
 	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
-		Type.KVMQM_INTERFACE: [ST_CREATED, ST_PREPARED],
+		TypeName.KVMQM_INTERFACE: [ST_CREATED, ST_PREPARED],
 	}
 	PROFILE_ATTRS = ["ram", "cpus"]
 
@@ -40,7 +40,7 @@ class KVMQM(VMElement):
 			self.modify({"kblang": self.template.kblang})
 
 class KVMQM_Interface(VMInterface):
-	TYPE = Type.KVMQM_INTERFACE
+	TYPE = TypeName.KVMQM_INTERFACE
 	CAP_PARENT = [KVMQM.TYPE]
 
 

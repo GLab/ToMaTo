@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import getCurrentUserInfo, getCurrentUserName
-from ..authorization import get_topology_info
+from ..authorization.info import get_topology_info
 from ..lib.topology_role import role_descriptions
 
 def _getTopology(id_):
@@ -241,6 +241,4 @@ def topology_usage(id): #@ReservedAssignment
 	return top.totalUsage.info()
 
 from .. import topology
-from elements import element_create, element_modify 
-from connections import connection_create, connection_modify
 from ..lib.error import UserError

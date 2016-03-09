@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.service import get_backend_users_proxy
-from ..lib.settings import Config as _Config
 from ..authorization import get_user_info, PermissionChecker, get_pseudo_user_info
 from api_helpers import getCurrentUserInfo, getCurrentUserName
 

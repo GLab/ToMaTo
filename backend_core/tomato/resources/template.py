@@ -21,8 +21,6 @@ from .. lib.settings import settings
 from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, os.path, base64, hashlib, shutil
-from .. import currentUser
-from ..auth import Flags
 
 
 kblang_options = {
@@ -179,11 +177,6 @@ class Template(Entity, BaseDocument):
 
 	def info(self, include_torrent_data = False):
 		info = Entity.info(self)
-		if include_torrent_data:
-			if self.restricted:
-				UserError.check(currentUser().hasFlag(Flags.RestrictedTemplates), UserError.DENIED, "You need access to restricted templates in order to access this one.", data={'id':self.id})
-		else:
-			del info["torrent_data"]
 		return info
 
 	@classmethod

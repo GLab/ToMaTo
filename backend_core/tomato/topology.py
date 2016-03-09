@@ -19,14 +19,14 @@ from .db import *
 from .generic import *
 import time
 from lib import logging #@UnresolvedImport
-from accounting import UsageStatistics
+from accounting.quota import UsageStatistics
 from . import scheduler
 from .lib.error import UserError #@UnresolvedImport
 from .lib import util
 from .lib.topology_role import Role
 from authorization import get_user_info
 from .lib.service import get_backend_users_proxy
-from .lib.constants import State, Action
+from .lib.constants import StateName, ActionName
 
 class TimeoutStep:
 	INITIAL = 0
@@ -258,10 +258,10 @@ class Topology(Entity, BaseDocument):
 	@property
 	def maxState(self):
 		states = self.elements.distinct('state')
-		for state in [State.STARTED, State.PREPARED, State.CREATED]:
+		for state in [StateName.STARTED, StateName.PREPARED, StateName.CREATED]:
 			if state in states:
 				return state
-		return State.CREATED
+		return StateName.CREATED
 
 	def info(self, full=False):
 		info = Entity.info(self)
@@ -299,11 +299,11 @@ class Topology(Entity, BaseDocument):
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(_remove, check=checkRemove),
-		Action.START: Action(action_start, check=lambda self: self.checkAction(Action.START), paramSchema=schema.Constant({})),
-		Action.STOP: Action(action_stop, check=lambda self: self.checkAction(Action.STOP), paramSchema=schema.Constant({})),
-		Action.PREPARE: Action(action_prepare, check=lambda self: self.checkAction(Action.PREPARE), paramSchema=schema.Constant({})),
-		Action.DESTROY: Action(action_destroy, check=lambda self: self.checkAction(Action.DESTROY), paramSchema=schema.Constant({})),
-		Action.RENEW: Action(action_renew, check=lambda self, timeout: self.checkAction(Action.RENEW),
+		ActionName.START: Action(action_start, check=lambda self: self.checkAction(ActionName.START), paramSchema=schema.Constant({})),
+		ActionName.STOP: Action(action_stop, check=lambda self: self.checkAction(ActionName.STOP), paramSchema=schema.Constant({})),
+		ActionName.PREPARE: Action(action_prepare, check=lambda self: self.checkAction(ActionName.PREPARE), paramSchema=schema.Constant({})),
+		ActionName.DESTROY: Action(action_destroy, check=lambda self: self.checkAction(ActionName.DESTROY), paramSchema=schema.Constant({})),
+		ActionName.RENEW: Action(action_renew, check=lambda self, timeout: self.checkAction(ActionName.RENEW),
 			paramSchema=schema.StringMap(items={'timeout': schema.Number(minValue=0.0)}, required=['timeout'])),
 	}
 	ATTRIBUTES = {

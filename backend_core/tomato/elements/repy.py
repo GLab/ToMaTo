@@ -19,13 +19,13 @@ from ..generic import *
 from .. import elements, host
 from .generic import ST_CREATED, ST_PREPARED, VMElement, VMInterface
 from ..lib.error import UserError
-from ..lib.constants import Type, Action
+from ..lib.constants import TypeName, Action
 
 class Repy(VMElement):
-	TYPE = Type.REPY
+	TYPE = TypeName.REPY
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "bandwidth", "timeout", "template"]
 	CAP_CHILDREN = {
-		Type.REPY_INTERFACE: [ST_CREATED, ST_PREPARED],
+		TypeName.REPY_INTERFACE: [ST_CREATED, ST_PREPARED],
 	}
 	PROFILE_ATTRS = ["ram", "cpus", "bandwidth"]
 	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy"]
@@ -55,12 +55,12 @@ class Repy(VMElement):
 
 	ACTIONS = VMElement.ACTIONS.copy()
 	ACTIONS.update({
-		Action.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
-		Action.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+		ActionName.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
 	})
 	
 class Repy_Interface(VMInterface):
-	TYPE = Type.REPY_INTERFACE
+	TYPE = TypeName.REPY_INTERFACE
 	CAP_PARENT = [Repy.TYPE]
 
 elements.TYPES[Repy.TYPE] = Repy

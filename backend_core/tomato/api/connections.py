@@ -18,7 +18,7 @@
 from ..connections import Connection
 from elements import _getElement
 from api_helpers import getCurrentUserInfo
-from ..authorization import get_connection_info, get_element_info
+from ..authorization.info import get_connection_info, get_element_info
 from ..lib.error import UserError
 
 def _getConnection(id_):

@@ -1,13 +1,11 @@
 from ..lib.userflags import Flags
-from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo, ConnectionInfo,\
-	TemplateInfo, NetworkInfo, ProfileInfo,\
-	get_topology_info, get_host_info, get_site_info, get_element_info, get_connection_info,\
-	get_template_info, get_network_info, get_profile_info
+from remote_info import UserInfo
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 from ..lib.error import UserError
 from ..lib.service import get_backend_users_proxy
-from ..lib.constants import Action
+from ..lib.constants import ActionName
+# important: do not import from the info module here.
 
 import time
 
@@ -454,14 +452,14 @@ class PermissionChecker(UserInfo):
 		"""
 		# step 1: make sure the user doesn't run any unrecognized action
 		# fixme: is this complete? add more available actions.
-		UserError.check(action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY,
-															 Action.RENEW),
+		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
+															 ActionName.RENEW),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
 		# step 2: check permission for each individual action
-		if action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY, Action.RENEW):
+		if action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY, ActionName.RENEW):
 			self._check_has_topology_role(topology_info, Role.manager)
-		if action in (Action.PREPARE, Action.START):
+		if action in (ActionName.PREPARE, ActionName.START):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
 
 	def _may_list_all_topologies(self):
@@ -585,6 +583,13 @@ class PermissionChecker(UserInfo):
 		if network_info.is_restricted():
 			auth_check(Flags.RestrictedTemplates in self.get_flags(), "You don't have the permission to use restricted networks.")
 
+	def check_may_get_template_torrent_data(self, template_info):
+		"""
+		check whether this user may see torrent data for this template
+		:param TemplateInfo template_info: target template info
+		"""
+		auth_check((not template_info.is_restricted()) or (Flags.RestrictedTemplates) in self.get_flags(),
+							 "You don't have permissions to receive this template's torrent data")
 
 
 
@@ -626,24 +631,25 @@ class PermissionChecker(UserInfo):
 		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
-		UserError.check(action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY,
-															 Action.UPLOAD_GRANT, Action.UPLOAD_USE,
-															 Action.REXTFV_UPLOAD_GRANT, Action.REXTFV_UPLOAD_USE,
-															 Action.CHANGE_TEMPLATE),
+		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
+															 ActionName.UPLOAD_GRANT, ActionName.UPLOAD_USE,
+															 ActionName.REXTFV_UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_USE,
+															 ActionName.CHANGE_TEMPLATE),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
 		# step 2: for each action, check topology role.
 		required_role = Role.user
-		if action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY,
-									Action.UPLOAD_USE, Action.UPLOAD_GRANT, Action.CHANGE_TEMPLATE):
+		if action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
+									ActionName.UPLOAD_USE, ActionName.UPLOAD_GRANT, ActionName.CHANGE_TEMPLATE):
 			required_role = Role.manager
 		self._check_has_topology_role(element_info.get_topology_info(), required_role)
 
-		if action in (Action.PREPARE, Action.START, Action.UPLOAD_GRANT):
+		if action in (ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
 
-		if action == Action.CHANGE_TEMPLATE:
+		if action == ActionName.CHANGE_TEMPLATE:
 			assert "template" in params
+			from info import get_template_info
 			self.check_may_use_template(get_template_info(element_info.get_type(), params['template']))
 
 
@@ -691,7 +697,7 @@ class PermissionChecker(UserInfo):
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
 		# fixme: is this complete? add more available actions.
-		UserError.check(action in (Action.START, Action.STOP, Action.PREPARE, Action.DESTROY),
+		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
 		# step 2: for each action, check permissions.

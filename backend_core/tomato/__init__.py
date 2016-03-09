@@ -65,8 +65,6 @@ def db_migrate():
 import threading
 _currentUser = threading.local()
 
-import authorization
-
 def getCurrentUserInfo():
 	"""
 	get the current user's PermissionChecker object
@@ -181,3 +179,5 @@ def run():
 			stopped.wait(1.0)
 	except KeyboardInterrupt:
 		stop()
+
+import authorization

@@ -311,4 +311,4 @@ from ..elements import Element
 from .topology import _getTopology
 from ..lib.error import UserError
 from api_helpers import getCurrentUserInfo
-from ..authorization import get_topology_info, get_element_info, get_profile_info, get_template_info
+from ..authorization.info import get_topology_info, get_element_info, get_profile_info, get_template_info

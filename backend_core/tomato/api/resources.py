@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import checkauth, getCurrentUserInfo
+from ..authorization.info import get_template_info
 from ..lib.cache import cached, invalidates
 
 def _getTemplate(id_):
@@ -172,6 +173,8 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	  exist* is raised.
 	"""
 	res = _getTemplate(id)
+	if include_torrent_data:
+		getCurrentUserInfo().check_may_get_template_torrent_data(get_template_info(res.tech, res.name))
 	return res.info(include_torrent_data=include_torrent_data)
 
 @cached(timeout=6*3600, autoupdate=True)

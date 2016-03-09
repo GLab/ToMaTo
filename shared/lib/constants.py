@@ -1,4 +1,4 @@
-class Action:
+class ActionName:
 	START = "start"
 	STOP = "stop"
 	PREPARE = "prepare"
@@ -12,12 +12,12 @@ class Action:
 	REXTFV_UPLOAD_USE = "rextfv_upload_use"
 	CHANGE_TEMPLATE = "change_template"
 
-class State:
+class StateName:
 	CREATED = "created"
 	PREPARED = "prepared"
 	STARTED = "started"
 
-class Type:
+class TypeName:
 	OPENVZ = "openvz"
 	OPENVZ_INTERFACE = "openvz_interface"
 

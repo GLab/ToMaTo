@@ -18,8 +18,7 @@
 from api_helpers import checkauth, getCurrentUserInfo
 from ..lib.cache import cached, invalidates
 from ..lib.service import get_backend_users_proxy
-from ..lib.settings import Config as _Config
-from ..authorization import get_host_info, get_site_info
+from ..authorization.info import get_host_info, get_site_info
 
 from ..host import Host, Site
 from ..lib.error import UserError

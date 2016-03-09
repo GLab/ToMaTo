@@ -23,7 +23,7 @@ from .. import host, elements
 from ..resources.network import Network, NetworkInstance
 from .generic import ST_CREATED, ST_STARTED, ConnectingElement
 from ..lib.error import UserError
-from ..lib.constants import Action, Type
+from ..lib.constants import ActionName, TypeName
 
 class ExternalNetwork(Element):
 	name = StringField()
@@ -36,10 +36,10 @@ class ExternalNetwork(Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"state": ST_CREATED}
 
-	TYPE = Type.EXTERNAL_NETWORK
+	TYPE = TypeName.EXTERNAL_NETWORK
 	DIRECT_ACTIONS = False
 	DIRECT_ACTION_EXCLUDE = []
-	CAP_CHILDREN = {Type.EXTERNAL_NETWORK_ENDPOINT: [ST_CREATED]}
+	CAP_CHILDREN = {TypeName.EXTERNAL_NETWORK_ENDPOINT: [ST_CREATED]}
 	
 	def init(self, *args, **kwargs):
 		self.state = ST_CREATED
@@ -60,7 +60,7 @@ class ExternalNetwork(Element):
 
 	def action_stop(self):
 		for ch in self.children:
-			ch.action(Action.STOP, {})
+			ch.action(ActionName.STOP, {})
 		self.setState(ST_CREATED)
 
 	def action_start(self):
@@ -68,7 +68,7 @@ class ExternalNetwork(Element):
 			self.network = Network.get(self.kind)
 		for ch in self.children:
 			if not ch.state == ST_STARTED:
-				ch.action(Action.START, {})
+				ch.action(ActionName.START, {})
 		self.setState(ST_STARTED)
 
 	def _nextName(self, baseName):
@@ -87,8 +87,8 @@ class ExternalNetwork(Element):
 	})
 
 	ACTIONS = {
-		Action.START: StatefulAction(action_start, allowedStates=[ST_CREATED], stateChange=ST_STARTED),
-		Action.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_CREATED),
+		ActionName.START: StatefulAction(action_start, allowedStates=[ST_CREATED], stateChange=ST_STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_CREATED),
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED])
 	}
 
@@ -104,8 +104,8 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	name = StringField()
 	network = ReferenceField(NetworkInstance, reverse_delete_rule=DENY)
 
-	TYPE = Type.EXTERNAL_NETWORK_ENDPOINT
-	HOST_TYPE = Type.EXTERNAL_NETWORK
+	TYPE = TypeName.EXTERNAL_NETWORK_ENDPOINT
+	HOST_TYPE = TypeName.EXTERNAL_NETWORK
 	CAP_CHILDREN = {}
 	
 	DIRECT_ATTRS_EXCLUDE = ["network", "timeout"]
@@ -148,7 +148,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	def action_start(self):
 		hPref, sPref = self.getLocationPrefs()
 		kind = self.parent.network.kind if self.parent and self.parent.samenet else self.parent.kind
-		_host = host.select(elementTypes=[Type.EXTERNAL_NETWORK], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
+		_host = host.select(elementTypes=[TypeName.EXTERNAL_NETWORK], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE})
 		if self.parent and self.parent.samenet:
@@ -156,7 +156,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 		else:
 			self.network = NetworkInstance.get(_host, self.parent.kind)
 		attrs = {"network": self.network.network.kind}
-		self.element = _host.createElement(Type.EXTERNAL_NETWORK, parent=None, attrs=attrs, ownerElement=self)
+		self.element = _host.createElement(TypeName.EXTERNAL_NETWORK, parent=None, attrs=attrs, ownerElement=self)
 		self.setState(ST_STARTED)
 		self.triggerConnectionStart()
 		
@@ -179,8 +179,8 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		Action.START: StatefulAction(action_start, allowedStates=[ST_CREATED, "default"], stateChange=ST_STARTED),
-		Action.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED, ST_CREATED, "default"], stateChange=ST_CREATED)
+		ActionName.START: StatefulAction(action_start, allowedStates=[ST_CREATED, "default"], stateChange=ST_STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED, ST_CREATED, "default"], stateChange=ST_CREATED)
 	})
 
 elements.TYPES[ExternalNetwork.TYPE] = ExternalNetwork

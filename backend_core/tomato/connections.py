@@ -22,14 +22,14 @@ from .generic import *
 from .topology import Topology
 from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
-from .accounting import UsageStatistics
+from .accounting.quota import UsageStatistics
 from .lib.cache import cached #@UnresolvedImport
-from .lib.constants import Action, State
+from .lib.constants import ActionName, StateName
 
 REMOVE_ACTION = "(remove)"
 
-ST_CREATED = State.CREATED
-ST_STARTED = State.STARTED
+ST_CREATED = StateName.CREATED
+ST_STARTED = StateName.STARTED
 
 LOCKS = {}
 LOCKS_LOCK = threading.RLock()
@@ -85,7 +85,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	}
 
 	DIRECT_ACTIONS = True
-	DIRECT_ACTIONS_EXCLUDE = [Action.START, Action.STOP, Action.PREPARE, Action.DESTROY, REMOVE_ACTION]
+	DIRECT_ACTIONS_EXCLUDE = [ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY, REMOVE_ACTION]
 	CUSTOM_ACTIONS = {REMOVE_ACTION: [ST_CREATED]}
 	
 	DIRECT_ATTRS = True
@@ -274,7 +274,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			# simple case: both elements are on same host
 			self.connectionFrom = el1.connectWith(el2, attrs={}, ownerConnection=self)
 			if self.connectionFrom.state == ST_CREATED:
-				self.connectionFrom.action(Action.START)
+				self.connectionFrom.action(ActionName.START)
 		else:
 			# complex case: helper elements needed to connect elements on different hosts
 			self.connectionElementFrom = el1.host.createElement("udp_tunnel", ownerConnection=self)
@@ -286,12 +286,12 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			if "emulation" in self.connectionTo.getAllowedAttributes():
 				self.connectionTo.modify({"emulation": False})
 			self.save()
-			self.connectionElementFrom.action(Action.START)
-			self.connectionElementTo.action(Action.START)
+			self.connectionElementFrom.action(ActionName.START)
+			self.connectionElementTo.action(ActionName.START)
 			if self.connectionFrom.state == ST_CREATED:
-				self.connectionFrom.action(Action.START)
+				self.connectionFrom.action(ActionName.START)
 			if self.connectionTo.state == ST_CREATED:
-				self.connectionTo.action(Action.START)
+				self.connectionTo.action(ActionName.START)
 		# Find out and set allowed attributes
 		allowed = self.connectionFrom.getAllowedAttributes()
 		attrs = dict(filter(lambda (k, v): k in allowed, self._remoteAttrs.items()))
@@ -305,25 +305,25 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	def _stop(self):
 		if self.connectionFrom:
 			if self.connectionFrom.state == ST_STARTED:
-				self.connectionFrom.action(Action.STOP)
+				self.connectionFrom.action(ActionName.STOP)
 			self.connectionFrom.remove()
 			self.connectionFrom = None
 			self.save()
 		if self.connectionTo:
 			if self.connectionTo.state == ST_STARTED:
-				self.connectionTo.action(Action.STOP)
+				self.connectionTo.action(ActionName.STOP)
 			self.connectionTo.remove()
 			self.connectionTo = None
 			self.save()
 		if self.connectionElementFrom:
 			if self.connectionElementFrom.state == ST_STARTED:
-				self.connectionElementFrom.action(Action.STOP)
+				self.connectionElementFrom.action(ActionName.STOP)
 			self.connectionElementFrom.remove()
 			self.connectionElementFrom = None
 			self.save()
 		if self.connectionElementTo:
 			if self.connectionElementTo.state == ST_STARTED:
-				self.connectionElementTo.action(Action.STOP)
+				self.connectionElementTo.action(ActionName.STOP)
 			self.connectionElementTo.remove()
 			self.connectionElementTo = None
 			self.save()
