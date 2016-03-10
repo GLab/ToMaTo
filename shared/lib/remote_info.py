@@ -26,6 +26,7 @@ class InfoObj(ExistenceCheck):
 	__slots__ = ("_info")
 
 	def __init__(self):
+		super(InfoObj, self).__init__()
 		self._info = None
 
 	def invalidate_info(self):

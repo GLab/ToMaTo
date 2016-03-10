@@ -1,4 +1,4 @@
-from lib.settings import settings
+from ..lib.settings import settings
 from ..lib.userflags import Flags
 from ..lib.remote_info import UserInfo, get_user_info
 from ..lib.topology_role import Role

@@ -57,7 +57,7 @@ class Site(Entity, BaseDocument):
 			set=lambda obj, value: obj.modify_geolocation(value)
 		),
 		"organization": Attribute(
-			get=lambda obj: obj.organization.name,
+			get=lambda obj: obj.organization,
 			set=lambda obj, value: obj.modify_organization(value),
 			schema=schema.Identifier()
 		),
