@@ -27,6 +27,7 @@ from ..dumpmanager import DumpSource
 import time, hashlib, threading, datetime, zlib, base64, sys
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
+from ..lib.service import get_backend_users_proxy
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -518,12 +519,13 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def sendMessageToHostManagers(self, title, message, ref, subject_group):
 		api = get_backend_users_proxy()
-		#fixme: HostContact should also receive this.
-		#fixme: better backend_users api to send batched messages (multiple groups of orga/flag filters?)
-		api.broadcast_message(title=title, message=message, ref=ref, subject_group=subject_group,
-			flag_filter=Flags.GlobalHostManager)
-		api.broadcast_message(title=title, message=message, ref=ref, subject_group=subject_group,
-			flag_filter=Flags.OrgaHostManager, organization_filter=self.site.organization)
+		api.broadcast_message_multifilter(title=title, message=message, ref=ref, subject_group=subject_group,
+																			filters = [
+																				(None, Flags.GlobalHostManager),
+																				(self.site.organization, Flags.OrgaHostManager),
+																				(None, Flags.GlobalHostContact),
+																				(self.site.organization, Flags.OrgaHostContact)
+																			])
 
 	def checkProblems(self):
 		if time.time() - starttime < 600:

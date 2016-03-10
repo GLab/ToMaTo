@@ -400,26 +400,41 @@ class PermissionChecker(UserInfo):
 
 	# topologies
 
+	def _has_topology_role(self, topology_info, role):
+		"""
+		check whether the user has a given role on the topology.
+		return True if the user has this or a higher role.
+		this also checks for user permission flags like GlobalToplManager.
+
+		:param TopologyInfo topology_info: target topology info
+		:param str role: target role
+		:return: whether the user has this role
+		:rtype: bool
+		"""
+		# first, try to resolve this without topology information
+		perm_global, perm_orga = Flags.get_max_topology_flags(self.get_flags())
+		if Role.leq(role, perm_global):
+			return True
+
+		if topology_info.user_has_role(self.get_username(), role):
+			return True
+
+		if Role.leq(role, perm_orga):  # user has role in organization
+			if topology_info.organization_has_role(self.get_organization_name(), role):  # organization has role on topology
+				return True
+
+		return False
+
 	def _check_has_topology_role(self, topology_info, role):
 		"""
 		check whether the user has a given role on the topology.
-		return True if the user has a higher role.
+		throw an error if not.
 		this also checks for user permission flags like GlobalToplManager.
 
 		:param TopologyInfo topology_info: target topology info
 		:param str role: target role
 		"""
-		# first, try to resolve this without topology information
-		perm_global, perm_orga = Flags.getMaxTopologyFlags(self.get_flags())
-		if Role.leq(role, perm_global):
-			return
-
-		if topology_info.user_has_role(self.get_username(), role):
-			return
-		if Role.leq(role, perm_orga):  # user has role in organization
-			if topology_info.organization_has_role(self.get_organization_name(), role):  # organization has role on topology
-				return
-		auth_fail("this operation requires %s permission on this toppology." % role)
+		auth_check(self._has_topology_role(topology_info, role), "this operation requires %s permission on this toppology." % role)
 
 	def check_may_create_topologies(self):
 		"""
@@ -456,7 +471,6 @@ class PermissionChecker(UserInfo):
 		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any unrecognized action
-		# fixme: is this complete? add more available actions.
 		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
 															 ActionName.RENEW),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
@@ -700,7 +714,6 @@ class PermissionChecker(UserInfo):
 		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
-		# fixme: is this complete? add more available actions.
 		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
