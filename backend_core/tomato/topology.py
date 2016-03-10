@@ -85,7 +85,7 @@ class Topology(Entity, BaseDocument):
 		:type owner: auth.User
 		"""
 		if not attrs: attrs = {}
-		self.setRole(owner, Role.owner)
+		self.set_role(owner, Role.owner, skip_save=True)
 		self.totalUsage = UsageStatistics.objects.create()
 		self.timeout = time.time() + settings.get_topology_settings()[Config.TOPOLOGY_TIMEOUT_INITIAL]
 		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
@@ -98,6 +98,11 @@ class Topology(Entity, BaseDocument):
 	
 	def setBusy(self, busy):
 		self._busy = busy
+
+
+	def checkUnknownAttribute(self, key, value):
+		UserError.check(key.startswith("_"), code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
+		return True
 
 	def setUnknownAttributes(self, attrs):
 		for key, value in attrs.items():
@@ -158,11 +163,12 @@ class Topology(Entity, BaseDocument):
 
 
 
-	def set_role(self, username, role):
+	def set_role(self, username, role, skip_save=False):
 		"""
-		set the role of the current user
+		set the role of a user
 		:param str username: target user
 		:param str role: target role
+		:param bool skip_save: skip saving of the current object
 		:return: Nothing
 		:rtype: NoneType
 		"""
@@ -176,14 +182,17 @@ class Topology(Entity, BaseDocument):
 				return
 			else:
 				self.permissions.append(Permission(user=username, role=role))
-				self.save()
+				if not skip_save:
+					self.save()
 		else:
 			if role == Role.null:
 				self.permissions.remove(target_permission)
-				self.save()
+				if not skip_save:
+					self.save()
 			else:
 				target_permission.role = role
-				self.save()
+				if not skip_save:
+					self.save()
 
 
 	def user_has_role(self, username, role):

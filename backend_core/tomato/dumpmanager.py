@@ -391,7 +391,7 @@ def getDumpSources(include_disabled=False):
 	sources = []
 	for tomato_module in Config.TOMATO_MODULES:
 		if include_disabled or settings.get_dumpmanager_enabled(tomato_module):
-			if tomato_module == settings.get_tomato_module_name():
+			if service.is_self(tomato_module):
 				sources.append(LocalDumpSource())
 			else:
 				sources.append(_create_api_dumpsource_for_module(tomato_module))

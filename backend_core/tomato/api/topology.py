@@ -18,6 +18,7 @@
 from api_helpers import getCurrentUserInfo, getCurrentUserName
 from ..authorization.info import get_topology_info
 from ..lib.topology_role import role_descriptions
+from ..lib.service import get_backend_users_proxy
 
 def _getTopology(id_):
 	top = topology.get(id_)
@@ -34,7 +35,7 @@ def topology_create():
 	  topology id that is needed for further manipulation of that object.
 	"""
 	getCurrentUserInfo().check_may_create_topologies()
-	return topology.create().info()
+	return topology.create(getCurrentUserName()).info()
 
 def topology_permissions():
 	return role_descriptions()
@@ -195,14 +196,14 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	"""
 	if organization:
 		getCurrentUserInfo().check_may_list_organization_topologies(organization)
-		# fixme: organization filer is broken
+		users = get_backend_users_proxy().username_list(organization=organization)
 		tops = topology.getAll(permissions__user__in=users, permissions__role="owner")
 	elif showAll:
 		getCurrentUserInfo().check_may_list_all_topologies()
 		tops = topology.getAll()
 	else:
 		tops = topology.getAll(permissions__user=getCurrentUserName())
-	return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
+	return [top.info(full) for top in tops]
 
 def topology_permission(id, user, role): #@ReservedAssignment
 	"""
