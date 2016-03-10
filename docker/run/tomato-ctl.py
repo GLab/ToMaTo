@@ -9,6 +9,7 @@ import json
 import shutil
 import socket, fcntl, struct
 from datetime import date
+from threading import Thread
 
 
 TOMATO_MODULES = ['web', 'backend_core', 'backend_users']
@@ -595,26 +596,43 @@ tomato_modules = {module_name: Module(module_name, config) for module_name in TO
 
 args = sys.argv
 
+
+
+# shortcuts
+def start_all(modules):
+	threads = set()
+	for module in modules:
+		t = Thread(target=module.start)
+		t.start()
+		threads.add(t)
+	for t in threads:
+		t.join()
+
+def stop_all(modules):
+	threads = set()
+	for module in modules:
+		t = Thread(target=module.stop)
+		t.start()
+		threads.add(t)
+	for t in threads:
+		t.join()
+
 if len(args) == 2:
 	if args[1] == "start":
 		db_module.start()
-		for module in tomato_modules.itervalues():
-			module.start()
+		start_all(tomato_modules.itervalues())
 		exit(0)
 
 	if args[1] == "stop":
-		for module in tomato_modules.itervalues():
-			module.stop()
+		stop_all(tomato_modules.itervalues())
 		db_module.stop()
 		exit(0)
 
 	if args[1] == "restart":
 		modules_started = [mod for mod in tomato_modules.itervalues() if mod.is_started()]
-		for module in modules_started:
-			module.stop()
+		stop_all(modules_started)
 		db_module.restart()
-		for module in modules_started:
-			module.start()
+		start_all(modules_started)
 		exit(0)
 
 	if args[1] == "status":
