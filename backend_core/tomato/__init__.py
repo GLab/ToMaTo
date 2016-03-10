@@ -71,7 +71,7 @@ def getCurrentUserInfo():
 	:return: current user's PermissionChecker object
 	:rtype: authorization.PermissionChecker
 	"""
-	return _currentUser.user_info if hasattr(_currentUser, "user_info") else None  # fixme
+	return _currentUser.user_info if hasattr(_currentUser, "user_info") else None  # fixme: _currentuser should have another name, shouldn't it?
 	
 def setCurrentUserInfo(user_info):
 	_currentUser.user_info = user_info

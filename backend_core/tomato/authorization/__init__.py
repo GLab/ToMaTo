@@ -1,3 +1,4 @@
+from lib.settings import settings
 from ..lib.userflags import Flags
 from ..lib.remote_info import UserInfo, get_user_info
 from ..lib.topology_role import Role
@@ -478,8 +479,13 @@ class PermissionChecker(UserInfo):
 		# step 2: check permission for each individual action
 		if action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY, ActionName.RENEW):
 			self._check_has_topology_role(topology_info, Role.manager)
+
 		if action in (ActionName.PREPARE, ActionName.START):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
+
+		if action == ActionName.RENEW:
+			auth_check(params['timeout'] <= settings.get_topology_settings() or Flags.GlobalAdmin in self.get_flags(),
+								 "Timout is greather than the maximum")
 
 	def _may_list_all_topologies(self):
 		"""

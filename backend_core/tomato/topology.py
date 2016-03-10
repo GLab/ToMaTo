@@ -135,9 +135,6 @@ class Topology(Entity, BaseDocument):
 	def action_renew(self, timeout):
 		topology_config = settings.get_topology_settings()
 		timeout = float(timeout)
-		# fixme: check renew in api
-		#UserError.check(timeout <= topology_config[Config.TOPOLOGY_TIMEOUT_MAX] or currentUser().hasFlag(Flags.GlobalAdmin),
-		#	code=UserError.INVALID_VALUE, message="Timeout is greater than the maximum")
 		self.timeout = time.time() + timeout
 		self.timeoutStep = TimeoutStep.INITIAL if timeout > topology_config[Config.TOPOLOGY_TIMEOUT_WARNING] else TimeoutStep.WARNED
 		
