@@ -617,6 +617,9 @@ def stop_all(modules):
 	for t in threads:
 		t.join()
 
+
+
+
 if len(args) == 2:
 	if args[1] == "start":
 		db_module.start()
