@@ -52,6 +52,7 @@ print ""
 # stop tomato
 print "Stopping ToMaTo..."
 subprocess.call(["./tomato-ctl.py", "stop"])
+time.sleep(5)
 print ""
 
 # remove mongodb data
@@ -65,12 +66,19 @@ if os.path.exists(mongodb_path):
 		cmd = ["sudo", "rm", "-rf", mongodb_path]
 		print " [%s]" % " ".join(cmd)
 		subprocess.call(cmd)
+time.sleep(1)
+print ""
+
+# recreate missing certs
+print "Gnerating Certs..."
+subprocess.call(["./tomato-ctl.py", "gencerts"])
+time.sleep(5)
 print ""
 
 # start tomato
 print "Starting ToMaTo..."
 subprocess.call(["./tomato-ctl.py", "start"])
-time.sleep(5)  # give tomato some time to open ports
+time.sleep(10)  # give tomato some time to open ports
 print ""
 
 

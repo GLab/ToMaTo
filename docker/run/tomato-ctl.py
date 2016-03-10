@@ -639,10 +639,10 @@ if len(args) == 2:
 			new_ca = True
 		for module_name, module in tomato_modules.iteritems():
 			dir = config[module_name]["directories"]["config"]
-			service_key = os.path.join(module_name + "_key.pem")
-			service_cert = os.path.join(module_name + "_cert.pem")
-			service_csr = os.path.join(module_name + "_csr.pem")
-			service_file = os.path.join(module_name + ".pem")
+			service_key = os.path.join(dir, module_name + "_key.pem")
+			service_cert = os.path.join(dir, module_name + "_cert.pem")
+			service_csr = os.path.join(dir, module_name + "_csr.pem")
+			service_file = os.path.join(dir, module_name + ".pem")
 			ca_file = os.path.join(dir, "ca.pem")
 			if not os.path.exists(service_key):
 				run_observing("openssl", "genrsa", "-out", service_key, "2048")
