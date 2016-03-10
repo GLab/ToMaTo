@@ -45,7 +45,6 @@ def server_info():
 def link_statistics(siteA, siteB):
 	return link.getStatistics(siteA, siteB)
 
-@checkauth
 def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 	api = get_backend_users_proxy()
 	if issue == "admin":
