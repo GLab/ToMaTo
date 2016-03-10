@@ -18,7 +18,9 @@
 from ..lib.cache import cached
 import time
 from ..lib.versioninfo import getVersionStr
-from api_helpers import checkauth, getCurrentUserInfo
+from api_helpers import checkauth, getCurrentUserInfo, getCurrentUserName
+from ..lib.service import get_backend_users_proxy
+from ..lib.userflags import Flags
 
 @cached(timeout=3600, autoupdate=True)
 def server_info():
@@ -45,8 +47,23 @@ def link_statistics(siteA, siteB):
 
 @checkauth
 def notifyAdmins(subject, text, global_contact = True, issue="admin"):
-	#fixme: broken
-	auth.notifyAdmins(subject, text, global_contact, issue)
+	api = get_backend_users_proxy()
+	if issue == "admin":
+		if global_contact:
+			target_flag = Flags.GlobalAdminContact
+			target_organization = None
+		else:
+			target_flag = Flags.OrgaAdminContact
+			target_organization = getCurrentUserInfo().get_organization_name()
+	else:
+		if global_contact:
+			target_flag = Flags.GlobalHostContact
+			target_organization = None
+		else:
+			target_flag = Flags.OrgaHostContact
+			target_organization = getCurrentUserInfo().get_organization_name()
+	api.broadcast_message(subject, text, fromUser=getCurrentUserName(),
+											  organization_filter=target_organization, flag_filter=target_flag)
 
 @cached(timeout=3600)
 def statistics():
