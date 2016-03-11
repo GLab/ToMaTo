@@ -43,7 +43,7 @@
 				<p class="tutorialExplanation">\
 					Until this is finished you can already download the following executable archive we need for our next step. We will run it on one of our devices, so please download the following archive:\
 			<ul>\
-			<li><a href="'+tutorial_base_url+'simulation_installer.tar.gz" class="download" download="simulation_installer.tar.gz">Simulation</a></li>\
+			<li><a href="'+tutorial_base_url+'simulation.tar.gz" class="download" download="simulation.tar.gz">Simulation</a></li>\
 			</ul>\
 					It will install a litte &quot;simulation&quot; for us in order to create some data.</p>\
 				<p class="tutorialCommand">\
