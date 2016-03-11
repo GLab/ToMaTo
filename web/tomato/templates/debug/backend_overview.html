@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{title}}</h1>
+
+<div class="skip-sm"></div>
+
+<script src="/js/enhancetable.js"></script>
+<table class="sortable,filterable, table table-striped"><tbody>
+
+<tr>
+    <th>Backend Module</th>
+    <th>Reachable</th>
+</tr>
+
+{% for module_result in reachability_stats %}
+    <tr>
+        <td><a href="{%url "tomato.debug.stats" module_result.module%}">{{module_result.module}}</a></td>
+
+        {% if module_result.reachable %}
+            <td class="stddev_high good_high">Yes</td>
+        {% else %}
+            <td class="stddev_low good_high">No</td>
+        {% endif %}
+    </tr>
+{% endfor %}
+
+</tbody></table>
+
+<div class="skip-sm"></div>
+
+{% endblock %}

@@ -1,11 +1,11 @@
+from ..lib.settings import settings
 from ..lib.userflags import Flags
-from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo, ConnectionInfo,\
-	get_topology_info, get_host_info, get_site_info, get_element_info, get_connection_info
+from ..lib.remote_info import UserInfo, get_user_info
 from ..lib.topology_role import Role
-from ..lib.cache import cached
 from ..lib.error import UserError
-from ..lib.service import get_tomato_inner_proxy
-from ..lib.settings import Config
+from ..lib.service import get_backend_users_proxy
+from ..lib.constants import ActionName
+from info import get_template_info
 
 import time
 
@@ -21,6 +21,7 @@ def auth_fail(message, data=None):
 class PermissionChecker(UserInfo):
 	__slots__ = ("success_password", "password_age")
 
+
 	def __init__(self, username):
 		super(PermissionChecker, self).__init__(username)
 		self.success_password = None
@@ -29,6 +30,11 @@ class PermissionChecker(UserInfo):
 	def invalidate_info(self):
 		super(PermissionChecker, self).invalidate_info()
 		self.success_password = None
+
+	def _fetch_data(self):
+		return get_user_info(self.get_username()).info()
+	def _check_exists(self):
+		return get_user_info(self.get_username()).exists()
 
 
 
@@ -40,14 +46,14 @@ class PermissionChecker(UserInfo):
 
 		# if password is cached, try to use the cached one if it isn't too old.
 		if self.success_password:
-			if time.time() - self.password_age > self.cache_duration:
+			if time.time() - self.password_age > 60:  # fixme: make this configurable
 				self.success_password = None
 			else:
 				if password == self.success_password:
 					return True  # if false, this may be due to a recent password changed that hasn't been seen by the cache.
 											# in this case, try to get a fresh password.
 
-		api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+		api = get_backend_users_proxy()
 		result = api.user_check_password(self.get_username(), password)
 		if result:
 			self.password_age = time.time()
@@ -68,7 +74,7 @@ class PermissionChecker(UserInfo):
 		:param str organization: name of the organization
 		"""
 		# only global admins may do this.
-		auth_check(Flags.GlobalAdmin not in self.get_flags(), "operation requires global admin permission.")
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "operation requires global admin permission.")
 
 	def check_may_list_organization_users(self, organization):
 		"""
@@ -395,26 +401,41 @@ class PermissionChecker(UserInfo):
 
 	# topologies
 
+	def _has_topology_role(self, topology_info, role):
+		"""
+		check whether the user has a given role on the topology.
+		return True if the user has this or a higher role.
+		this also checks for user permission flags like GlobalToplManager.
+
+		:param TopologyInfo topology_info: target topology info
+		:param str role: target role
+		:return: whether the user has this role
+		:rtype: bool
+		"""
+		# first, try to resolve this without topology information
+		perm_global, perm_orga = Flags.get_max_topology_flags(self.get_flags())
+		if Role.leq(role, perm_global):
+			return True
+
+		if topology_info.user_has_role(self.get_username(), role):
+			return True
+
+		if Role.leq(role, perm_orga):  # user has role in organization
+			if topology_info.organization_has_role(self.get_organization_name(), role):  # organization has role on topology
+				return True
+
+		return False
+
 	def _check_has_topology_role(self, topology_info, role):
 		"""
 		check whether the user has a given role on the topology.
-		return True if the user has a higher role.
+		throw an error if not.
 		this also checks for user permission flags like GlobalToplManager.
 
 		:param TopologyInfo topology_info: target topology info
 		:param str role: target role
 		"""
-		# first, try to resolve this without topology information
-		perm_global, perm_orga = Flags.getMaxTopologyFlags(self.get_flags())
-		if Role.leq(role, perm_global):
-			return
-
-		if topology_info.user_has_role(self.get_username(), role):
-			return
-		if Role.leq(role, perm_orga):  # user has role in organization
-			if topology_info.organization_has_role(self.get_organization_name(), role):  # organization has role on topology
-				return
-		auth_fail("this operation requires %s permission on this toppology." % role)
+		auth_check(self._has_topology_role(topology_info, role), "this operation requires %s permission on this toppology." % role)
 
 	def check_may_create_topologies(self):
 		"""
@@ -451,16 +472,20 @@ class PermissionChecker(UserInfo):
 		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any unrecognized action
-		# fixme: is this complete? add more available actions.
-		UserError.check(action in ("start", "stop", "prepare", "destroy",
-															 "renew"),
+		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
+															 ActionName.RENEW),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
 		# step 2: check permission for each individual action
-		if action in ("start", "stop", "prepare", "destroy", "renew"):
+		if action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY, ActionName.RENEW):
 			self._check_has_topology_role(topology_info, Role.manager)
-		if action in ("prepare", "start"):
+
+		if action in (ActionName.PREPARE, ActionName.START):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
+
+		if action == ActionName.RENEW:
+			auth_check(params['timeout'] <= settings.get_topology_settings() or Flags.GlobalAdmin in self.get_flags(),
+								 "Timout is greather than the maximum")
 
 	def _may_list_all_topologies(self):
 		"""
@@ -558,7 +583,38 @@ class PermissionChecker(UserInfo):
 		"""
 		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to remove technical resources.")
 
+	def check_may_use_template(self, template_info):
+		"""
+		check whether this user may use this template
+		:param TemplateInfo template_info: target template info
+		"""
+		if template_info.is_restricted():
+			auth_check(Flags.RestrictedTemplates in self.get_flags(), "You don't have the permission to use restricted templates.")
 
+	def check_may_use_profile(self, profile_info):
+		"""
+		check whether this user may use this profile
+		:param ProfileInfo profile_info: target profile info
+		"""
+		if profile_info.is_restricted():
+			auth_check(Flags.RestrictedTemplates in self.get_flags(), "You don't have the permission to use restricted profiles.")
+
+	#fixme: this is never used...
+	def check_may_use_network(self, network_info):
+		"""
+		check whether this user may use this network
+		:param NetworkInfo network_info: target network info
+		"""
+		if network_info.is_restricted():
+			auth_check(Flags.RestrictedTemplates in self.get_flags(), "You don't have the permission to use restricted networks.")
+
+	def check_may_get_template_torrent_data(self, template_info):
+		"""
+		check whether this user may see torrent data for this template
+		:param TemplateInfo template_info: target template info
+		"""
+		auth_check((not template_info.is_restricted()) or (Flags.RestrictedTemplates) in self.get_flags(),
+							 "You don't have permissions to receive this template's torrent data")
 
 
 
@@ -600,18 +656,25 @@ class PermissionChecker(UserInfo):
 		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
-		# fixme: this is not complete. add more available actions.
-		UserError.check(action in ("start", "stop", "prepare", "destroy",
-															 "upload_grant", "upload_use",
-															 "rextfv_upload_grant", "rextfv_upload_use"),
+		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
+															 ActionName.UPLOAD_GRANT, ActionName.UPLOAD_USE,
+															 ActionName.REXTFV_UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_USE,
+															 ActionName.CHANGE_TEMPLATE),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
-		# step 2: for each action, check permissions.
-		if action in ("start", "stop", "prepare", "destroy"):
-			self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
-		if action in ("prepare", "start", "upload_grant"):
+		# step 2: for each action, check topology role.
+		required_role = Role.user
+		if action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
+									ActionName.UPLOAD_USE, ActionName.UPLOAD_GRANT, ActionName.CHANGE_TEMPLATE):
+			required_role = Role.manager
+		self._check_has_topology_role(element_info.get_topology_info(), required_role)
+
+		if action in (ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
 
+		if action == ActionName.CHANGE_TEMPLATE:
+			assert "template" in params
+			self.check_may_use_template(get_template_info(element_info.get_type(), params['template']))
 
 
 
@@ -657,13 +720,11 @@ class PermissionChecker(UserInfo):
 		:param dict params: action params
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
-		# fixme: is this complete? add more available actions.
-		UserError.check(action in ("start", "stop", "prepare", "destroy"),
+		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
 		# step 2: for each action, check permissions.
-		if action in ("start", "stop", "prepare", "destroy"):
-			self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
+		self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
 
 
 
@@ -706,6 +767,13 @@ class PseudoUser(UserInfo):
 
 
 def login(username, password):
+	"""
+	check credentials. on success, return permission checker object
+	:param username: provided username
+	:param password: provided password
+	:return: PermissionChecker object belonging to the user
+	:rtype: PermissionChecker
+	"""
 	user_info = get_permission_checker(username)
 	if user_info.login(password):
 		return user_info
@@ -713,7 +781,6 @@ def login(username, password):
 		return None
 
 
-@cached(60)
 def get_permission_checker(username):
 	"""
 	get PermissionChecker for this username
@@ -721,16 +788,8 @@ def get_permission_checker(username):
 	:return: PermissionChecker object for corresponding user
 	:rtype: PermissionChecker
 	"""
-	return PermissionChecker(username=username)
 
-def get_user_info(username):
-	"""
-	return UserInfo object for this username
-	:param str username: username of user
-	:return: PermissionChecker object for corresponding user
-	:rtype: PermissionChecker
-	"""
-	return get_permission_checker(username)
+	return PermissionChecker(username=username)
 
 def get_pseudo_user_info(username, organization):
 	"""

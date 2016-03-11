@@ -24,6 +24,7 @@ from ..host.element import HostElement
 from .generic import ConnectingElement
 from .generic import ST_CREATED, ST_PREPARED, ST_STARTED
 from ..lib.error import UserError
+from ..lib.constants import ActionName, TypeName
 
 class VpnCloud(ConnectingElement, Element):
 	name = StringField()
@@ -34,11 +35,11 @@ class VpnCloud(ConnectingElement, Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 
-	TYPE = "vpncloud"
+	TYPE = TypeName.VPNCLOUD
 	HOST_TYPE = None
 	DIRECT_ACTIONS = False
 	DIRECT_ACTIONS_EXCLUDE = []
-	CAP_CHILDREN = {"vpncloud_endpoint": [ST_CREATED, ST_PREPARED]}
+	CAP_CHILDREN = {TypeName.VPNCLOUD_ENDPOINT: [ST_CREATED, ST_PREPARED]}
 	
 	def init(self, *args, **kwargs):
 		self.state = ST_CREATED
@@ -50,12 +51,12 @@ class VpnCloud(ConnectingElement, Element):
 	
 	def onChildAdded(self, iface):
 		if self.state == ST_PREPARED: #self is correct
-			iface.action("prepare", {})
+			iface.action(ActionName.PREPARE, {})
 			self._crossConnect()
 
 	def onChildRemoved(self, iface):
 		if iface.state == ST_PREPARED: #iface is correct
-			iface.action("destroy", {})
+			iface.action(ActionName.DESTROY, {})
 			self._crossConnect()
 
 	def _crossConnect(self):
@@ -98,7 +99,7 @@ class VpnCloud(ConnectingElement, Element):
 		return childs
 
 	def action_prepare(self):
-		self._parallelChildActions(self._childsByState[ST_CREATED], "prepare")
+		self._parallelChildActions(self._childsByState[ST_CREATED], ActionName.PREPARE)
 		self.setState(ST_PREPARED)
 		try:
 			self._crossConnect()
@@ -107,17 +108,17 @@ class VpnCloud(ConnectingElement, Element):
 			raise
 		
 	def action_destroy(self):
-		self._parallelChildActions(self._childsByState[ST_STARTED], "stop")
-		self._parallelChildActions(self._childsByState[ST_PREPARED], "destroy")
+		self._parallelChildActions(self._childsByState[ST_STARTED], ActionName.STOP)
+		self._parallelChildActions(self._childsByState[ST_PREPARED], ActionName.DESTROY)
 		self.setState(ST_CREATED)
 
 	def action_stop(self):
-		self._parallelChildActions(self._childsByState[ST_STARTED], "stop")
+		self._parallelChildActions(self._childsByState[ST_STARTED], ActionName.STOP)
 		self.setState(ST_PREPARED)
 
 	def action_start(self):
-		self._parallelChildActions(self._childsByState[ST_CREATED], "prepare")
-		self._parallelChildActions(self._childsByState[ST_PREPARED], "start")
+		self._parallelChildActions(self._childsByState[ST_CREATED], ActionName.PREPARE)
+		self._parallelChildActions(self._childsByState[ST_PREPARED], ActionName.START)
 		self.setState(ST_STARTED)
 
 	def _nextName(self, baseName):
@@ -135,10 +136,10 @@ class VpnCloud(ConnectingElement, Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		"start": StatefulAction(action_start, allowedStates=[ST_PREPARED], stateChange=ST_STARTED),
-		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
-		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
-		"destroy": StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+		ActionName.START: StatefulAction(action_start, allowedStates=[ST_PREPARED], stateChange=ST_STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
+		ActionName.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
 	})
 
 
@@ -150,13 +151,13 @@ class VpnCloudEndpoint(ConnectingElement, Element):
 	element = ReferenceField(HostElement, reverse_delete_rule=NULLIFY)
 	name = StringField()
 
-	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy"]
+	DIRECT_ACTIONS_EXCLUDE = [ActionName.PREPARE, ActionName.DESTROY]
 	DIRECT_ATTRS_EXCLUDE = ["timeout", "network_id"]
 	CAP_PARENT = [None, VpnCloud.TYPE]
 	DEFAULT_ATTRS = {}
 
-	TYPE = "vpncloud_endpoint"
-	HOST_TYPE = "vpncloud"
+	TYPE = TypeName.VPNCLOUD_ENDPOINT
+	HOST_TYPE = TypeName.VPNCLOUD
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 	
@@ -207,7 +208,7 @@ class VpnCloudEndpoint(ConnectingElement, Element):
 
 	def action_stop(self):
 		if self.element:
-			self.element.action("stop")
+			self.element.action(Action.STOP)
 		self.setState(ST_PREPARED, True)
 		self.triggerConnectionStop()
 
@@ -226,9 +227,9 @@ class VpnCloudEndpoint(ConnectingElement, Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		"stop": StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
-		"prepare": StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
-		"destroy": StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
+		ActionName.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
 	})
 
 

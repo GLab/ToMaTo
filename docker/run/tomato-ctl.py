@@ -9,6 +9,7 @@ import json
 import shutil
 import socket, fcntl, struct
 from datetime import date
+from threading import Thread
 
 
 TOMATO_MODULES = ['web', 'backend_core', 'backend_users']
@@ -102,6 +103,7 @@ def show_help():
 Usage: %(cmd)s [COMMAND]
   or:  %(cmd)s [MODULE] [COMMAND]
   or:  %(cmd)s db [BACKUP|RESTORE] [BACKUP_NAME]
+  or:  %(cmd)s gencerts
   or:  %(cmd)s help
   or:  %(cmd)s help-config
 
@@ -160,6 +162,11 @@ Additional commands for the %(DB_MODULE)s module:
    You have to pass the backup name as additional argument.
    If the database is not running, it will be started and stopped afterwards.
 
+Other commands:
+
+ gencerts:
+   generate certs for the tomato inner communication.
+
 examples:
  %(cmd)s db stop
  %(cmd)s start
@@ -198,6 +205,9 @@ The following settings can be set in the root dict:
    container names will start with this string, and a _.
    eg, if this is set to 'tomato', the 'backend_core' module will run in the container 'tomato_backend_core'.
    default: '%(default_docker_namespace)s'
+
+ certs:
+   used for the gencerts command. This contains CA and CA key to generate certs for all tomato modules.
 
 The configuration of a modules is specified as a subdictionary, where its key is the module name.
  available modules: %(modules)s
@@ -410,6 +420,11 @@ def read_config():
 			additional_dirs_new.append((directory, additional_dir[1]))
 		config[module]['additional_directories'] = additional_dirs_new
 
+	if not os.path.isabs(config["certs"]["ca_key"]):
+		config["certs"]["ca_key"] = os.path.join(config['docker_dir'], config["certs"]["ca_key"])
+	if not os.path.isabs(config["certs"]["ca_cert"]):
+		config["certs"]["ca_cert"] = os.path.join(config['docker_dir'], config["certs"]["ca_cert"])
+
 	# step 3: fill in missing data
 	config[DB_MODULE]['enabled'] = True
 	config[DB_MODULE]['is_database'] = True
@@ -581,26 +596,46 @@ tomato_modules = {module_name: Module(module_name, config) for module_name in TO
 
 args = sys.argv
 
+
+
+# shortcuts
+def start_all(modules):
+	threads = set()
+	for module in modules:
+		t = Thread(target=module.start)
+		t.start()
+		threads.add(t)
+	for t in threads:
+		t.join()
+
+def stop_all(modules):
+	threads = set()
+	for module in modules:
+		t = Thread(target=module.stop)
+		t.start()
+		threads.add(t)
+	for t in threads:
+		t.join()
+
+
+
+
 if len(args) == 2:
 	if args[1] == "start":
 		db_module.start()
-		for module in tomato_modules.itervalues():
-			module.start()
+		start_all(tomato_modules.itervalues())
 		exit(0)
 
 	if args[1] == "stop":
-		for module in tomato_modules.itervalues():
-			module.stop()
+		stop_all(tomato_modules.itervalues())
 		db_module.stop()
 		exit(0)
 
 	if args[1] == "restart":
 		modules_started = [mod for mod in tomato_modules.itervalues() if mod.is_started()]
-		for module in modules_started:
-			module.stop()
+		stop_all(modules_started)
 		db_module.restart()
-		for module in modules_started:
-			module.start()
+		start_all(modules_started)
 		exit(0)
 
 	if args[1] == "status":
@@ -618,10 +653,6 @@ if len(args) == 2:
 	if args[1] == "gencerts":
 		ca_key = config["certs"]["ca_key"]
 		ca_cert = config["certs"]["ca_cert"]
-		if not os.path.isabs(ca_key):
-			backup_dir = os.path.join(config['docker_dir'],ca_key)
-		if not os.path.isabs(ca_cert):
-			backup_dir = os.path.join(config['docker_dir'],ca_cert)
 		new_ca = False
 		if not os.path.exists(ca_key):
 			run_observing("openssl", "genrsa", "-out", ca_key, "2048")
@@ -629,10 +660,10 @@ if len(args) == 2:
 			new_ca = True
 		for module_name, module in tomato_modules.iteritems():
 			dir = config[module_name]["directories"]["config"]
-			service_key = os.path.join(module_name + "_key.pem")
-			service_cert = os.path.join(module_name + "_cert.pem")
-			service_csr = os.path.join(module_name + "_csr.pem")
-			service_file = os.path.join(module_name + ".pem")
+			service_key = os.path.join(dir, module_name + "_key.pem")
+			service_cert = os.path.join(dir, module_name + "_cert.pem")
+			service_csr = os.path.join(dir, module_name + "_csr.pem")
+			service_file = os.path.join(dir, module_name + ".pem")
 			ca_file = os.path.join(dir, "ca.pem")
 			if not os.path.exists(service_key):
 				run_observing("openssl", "genrsa", "-out", service_key, "2048")

@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..db import *
-from lib.decorators import *
+from ..lib.decorators import *
 import time
-from .. import scheduler
+from ..lib.service import get_backend_users_proxy
 
 from quota import TYPES, KEEP_RECORDS
 
@@ -47,7 +47,7 @@ def aggregate():
 
 @util.wrap_task
 def updateQuota():
-	api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+	api = get_backend_users_proxy()
 	username_list = api.username_list()
 	# step 1: remove quota entries for nonexistent users
 	# step 2: create empty quota entries for users that haven't been updated yet
@@ -55,10 +55,7 @@ def updateQuota():
 	# fixme: implement this.
 
 # fixme: I am not sure if the db/js functions need to be changed, and what does what.
+from .. import scheduler
 scheduler.scheduleRepeated(60, housekeep) #every minute @UndefinedVariable
 scheduler.scheduleRepeated(60, aggregate) #every minute @UndefinedVariable
 scheduler.scheduleRepeated(60, updateQuota) #every minute @UndefinedVariable
-
-
-from ..lib.service import get_tomato_inner_proxy
-from ..lib.settings import Config

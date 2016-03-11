@@ -391,7 +391,7 @@ def getDumpSources(include_disabled=False):
 	sources = []
 	for tomato_module in Config.TOMATO_MODULES:
 		if include_disabled or settings.get_dumpmanager_enabled(tomato_module):
-			if tomato_module == settings.get_tomato_module_name():
+			if service.is_self(tomato_module):
 				sources.append(LocalDumpSource())
 			else:
 				sources.append(_create_api_dumpsource_for_module(tomato_module))
@@ -427,7 +427,7 @@ def insert_dump(dump, source):
 			else:
 				group_desc = dump['description']
 			group = create_group(dump['group_id'], group_desc)
-			api = service.get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+			api = service.get_backend_users_proxy()
 			api.broadcast_message(
 				title="[ToMaTo Devs] New Error Group",  # fixme: this message should be configurable
 				message="\n\n".join((

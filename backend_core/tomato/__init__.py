@@ -65,15 +65,13 @@ def db_migrate():
 import threading
 _currentUser = threading.local()
 
-import authorization
-
 def getCurrentUserInfo():
 	"""
-	get the current user's UserInfo object
-	:return: current user's UserInfo object
-	:rtype: authorization.UserInfo
+	get the current user's PermissionChecker object
+	:return: current user's PermissionChecker object
+	:rtype: authorization.PermissionChecker
 	"""
-	return _currentUser.user_info if hasattr(_currentUser, "user_info") else None  # fixme
+	return _currentUser.user_info if hasattr(_currentUser, "user_info") else None  # fixme: _currentuser should have another name, shouldn't it?
 	
 def setCurrentUserInfo(user_info):
 	_currentUser.user_info = user_info
@@ -181,3 +179,5 @@ def run():
 			stopped.wait(1.0)
 	except KeyboardInterrupt:
 		stop()
+
+import authorization

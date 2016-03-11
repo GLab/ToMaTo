@@ -2,7 +2,7 @@ from ..db import *
 from ..lib import logging
 from ..lib.error import UserError
 from ..generic import *
-from ..authorization.info import get_organization_info
+from ..lib.remote_info import get_organization_info
 
 class Site(Entity, BaseDocument):
 	name = StringField(unique=True, required=True)
@@ -57,7 +57,7 @@ class Site(Entity, BaseDocument):
 			set=lambda obj, value: obj.modify_geolocation(value)
 		),
 		"organization": Attribute(
-			get=lambda obj: obj.organization.name,
+			get=lambda obj: obj.organization,
 			set=lambda obj, value: obj.modify_organization(value),
 			schema=schema.Identifier()
 		),

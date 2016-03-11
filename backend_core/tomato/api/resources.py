@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import checkauth, _getCurrentUserInfo
+from api_helpers import checkauth, getCurrentUserInfo
+from ..authorization.info import get_template_info
 from ..lib.cache import cached, invalidates
 
 def _getTemplate(id_):
@@ -84,7 +85,7 @@ def template_create(tech, name, attrs=None):
 	  The return value of this method is the info dict of the new template as
 	  returned by :py:func:`resource_info`.
 	"""
-	_getCurrentUserInfo().check_may_create_user_resources()
+	getCurrentUserInfo().check_may_create_user_resources()
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	attrs.update(name=name, tech=tech)
@@ -116,7 +117,7 @@ def template_modify(id, attrs):
 	  If the given template does not exist an exception *template does not
 	  exist* is raised.
 	"""
-	_getCurrentUserInfo().check_may_modify_user_resources()
+	getCurrentUserInfo().check_may_modify_user_resources()
 	res = _getTemplate(id)
 	res.modify(attrs)
 	return res.info()
@@ -141,7 +142,7 @@ def template_remove(id):
 	  If the given template does not exist an exception *template does not
 	  exist* is raised.
 	"""
-	_getCurrentUserInfo().check_may_remove_user_resources()
+	getCurrentUserInfo().check_may_remove_user_resources()
 	res = _getTemplate(id)
 	res.remove()
 	return {}
@@ -172,6 +173,8 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	  exist* is raised.
 	"""
 	res = _getTemplate(id)
+	if include_torrent_data:
+		getCurrentUserInfo().check_may_get_template_torrent_data(get_template_info(res.tech, res.name))
 	return res.info(include_torrent_data=include_torrent_data)
 
 @cached(timeout=6*3600, autoupdate=True)
@@ -212,7 +215,7 @@ def profile_create(tech, name, attrs=None):
 	  The return value of this method is the info dict of the new profile as
 	  returned by :py:func:`resource_info`.
 	"""
-	_getCurrentUserInfo().check_may_create_user_resources()
+	getCurrentUserInfo().check_may_create_user_resources()
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	attrs.update(name=name, tech=tech)
@@ -245,7 +248,7 @@ def profile_modify(id, attrs):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	_getCurrentUserInfo().check_may_modify_user_resources()
+	getCurrentUserInfo().check_may_modify_user_resources()
 	res = _getProfile(id)
 	res.modify(attrs)
 	return res.info()
@@ -270,7 +273,7 @@ def profile_remove(id):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	_getCurrentUserInfo().check_may_remove_user_resources()
+	getCurrentUserInfo().check_may_remove_user_resources()
 	res = _getProfile(id)
 	res.remove()
 	return {}
@@ -331,7 +334,7 @@ def network_create(kind, attrs=None):
 	  The return value of this method is the info dict of the new network as
 	  returned by :py:func:`resource_info`.
 	"""
-	_getCurrentUserInfo().check_may_create_technical_resources()
+	getCurrentUserInfo().check_may_create_technical_resources()
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	attrs.update(kind=kind)
@@ -360,7 +363,7 @@ def network_modify(id, attrs):
 	  If the given network does not exist an exception *network does not
 	  exist* is raised.
 	"""
-	_getCurrentUserInfo().check_may_modify_technical_resources()
+	getCurrentUserInfo().check_may_modify_technical_resources()
 	res = _getNetwork(id)
 	res.modify(attrs)
 	return res.info()
@@ -381,7 +384,7 @@ def network_remove(id):
 	  If the given network does not exist an exception *network does not
 	  exist* is raised.
 	"""
-	_getCurrentUserInfo().check_may_remove_technical_resources()
+	getCurrentUserInfo().check_may_remove_technical_resources()
 	res = _getNetwork(id)
 	res.remove()
 	return {}
@@ -450,7 +453,7 @@ def network_instance_create(network, host, attrs=None):
 	  The return value of this method is the info dict of the new network_instance as
 	  returned by :py:func:`resource_info`.
 	"""
-	_getCurrentUserInfo().check_may_create_technical_resources()
+	getCurrentUserInfo().check_may_create_technical_resources()
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	attrs.update(host=host, network=network)
@@ -483,7 +486,7 @@ def network_instance_modify(id, attrs):
 	  If the given network_instance does not exist an exception *network_instance does not
 	  exist* is raised.
 	"""
-	_getCurrentUserInfo().check_may_modify_technical_resources()
+	getCurrentUserInfo().check_may_modify_technical_resources()
 	res = _getNetworkInstance(id)
 	res.modify(attrs)
 	return res.info()
@@ -508,7 +511,7 @@ def network_instance_remove(id):
 	  If the given network_instance does not exist an exception *network_instance does not
 	  exist* is raised.
 	"""
-	_getCurrentUserInfo().check_may_remove_technical_resources()
+	getCurrentUserInfo().check_may_remove_technical_resources()
 	res = _getNetworkInstance(id)
 	res.remove()
 	return {}

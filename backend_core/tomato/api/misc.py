@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.cache import cached #@UnresolvedImport
-import time, sys, traceback
+from ..lib.cache import cached
+import time
 from ..lib.versioninfo import getVersionStr
-from api_helpers import checkauth, _getCurrentUserInfo
-from ..authorization import get_user_info as _get_user_info
+from api_helpers import checkauth, getCurrentUserInfo, getCurrentUserName
+from ..lib.service import get_backend_users_proxy
+from ..lib.userflags import Flags
 
 @cached(timeout=3600, autoupdate=True)
 def server_info():
@@ -44,16 +45,28 @@ def server_info():
 def link_statistics(siteA, siteB):
 	return link.getStatistics(siteA, siteB)
 
-@checkauth
 def notifyAdmins(subject, text, global_contact = True, issue="admin"):
-	auth.notifyAdmins(subject, text, global_contact, issue)
-
-def mailUser(user, subject, text):
-	_getCurrentUserInfo().check_may_send_message_to_user(_get_user_info(user))
-	auth.sendMessage(user, subject, text)
+	api = get_backend_users_proxy()
+	if issue == "admin":
+		if global_contact:
+			target_flag = Flags.GlobalAdminContact
+			target_organization = None
+		else:
+			target_flag = Flags.OrgaAdminContact
+			target_organization = getCurrentUserInfo().get_organization_name()
+	else:
+		if global_contact:
+			target_flag = Flags.GlobalHostContact
+			target_organization = None
+		else:
+			target_flag = Flags.OrgaHostContact
+			target_organization = getCurrentUserInfo().get_organization_name()
+	api.broadcast_message(subject, text, fromUser=getCurrentUserName(),
+											  organization_filter=target_organization, flag_filter=target_flag)
 
 @cached(timeout=3600)
 def statistics():
+	#fixme: broken
 	stats = {}
 	resources = {}
 	stats['resources'] = resources
@@ -104,20 +117,10 @@ def task_list():
 	return scheduler.info()["tasks"]
 
 def task_execute(id):
-	_getCurrentUserInfo().check_may_execute_tasks()
+	getCurrentUserInfo().check_may_execute_tasks()
 	return scheduler.executeTask(id, force=True)
 
-def debug_stats():
-	_getCurrentUserInfo().check_may_view_debugging_info()
-	from .. import database_obj
-	stats = {}
-	stats["db"] = database_obj.command("dbstats")
-	stats["db"]["collections"] = {name: database_obj.command("collstats", name) for name in database_obj.collection_names()}
-	stats["scheduler"] = scheduler.info()
-	stats["threads"] = map(traceback.extract_stack, sys._current_frames().values())
-	return stats
-
-from .. import misc, link, currentUser, topology, auth, elements, connections, scheduler
+from .. import misc, link, topology, elements, connections, scheduler
 from ..lib.settings import settings, Config
 from ..host import Host
 from ..lib.error import UserError

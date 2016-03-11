@@ -11,16 +11,39 @@ def send_message(toUser, subject, message, fromUser=None, ref=None, subject_grou
 
 def broadcast_message(title, message, fromUser=None, ref=None, subject_group=None,
 											  organization_filter=None, flag_filter=None):
-	if organization_filter:
-		organization = _getOrganization(organization_filter)
-		receivers = User.objects(organization=organization)
-	else:
-		receivers = User.objects.all()
-	if flag_filter:
-		filter(lambda u: flag_filter in u['flags'], receivers)
+	broadcast_message_multifilter(title=title, message=message, ref=ref, subject_group=subject_group,
+																filters=[(organization_filter, flag_filter)])
 
-	for user in receivers:
-		user.send_message(toUser=user, fromUser=fromUser, title=title, message=message,
+def broadcast_message_multifilter(title, message, fromUser=None, ref=None, subject_group=None,
+																	filters=None):
+	"""
+	takes a list of filters to broadcast a message.
+	sends one message to each user who matches at least one filter.
+	:param str title: message subject
+	:param str message: message body
+	:param NoneType or str fromUser: sending user
+	:param NoneType or tuple(str, str) ref: ref pair
+	:param NoneType or str subject_group: subject group
+	:param NoneType or list(tuple) filters: list of pairs (organization, flag). if this is None, send to every user.
+	"""
+	if filters is None:
+		filters = [(None, None)]
+
+	target_users = set()
+	for filter_pair in filters:
+
+		if filter_pair[0]:
+			users = User.objects(organization=filter_pair[0])
+		else:
+			users = User.objects.all()
+
+		if filter_pair[1]:
+			users = filter(lambda u: filter_pair[1] in u.flags, users)
+
+		target_users.update([u.name for u in users])
+
+	for username in target_users:
+		_getUser(username).send_message(fromUser=fromUser, title=title, message=message,
 												ref=ref, subject_group=subject_group)
 
 def notification_list(username, includeRead=False):

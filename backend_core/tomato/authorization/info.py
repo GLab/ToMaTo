@@ -1,100 +1,18 @@
-from .. import scheduler
-from ..lib.error import InternalError, UserError
-from ..lib.service import get_tomato_inner_proxy
-from ..lib.settings import Config
-from ..lib.topology_role import Role
-from ..lib.cache import cached
+from ..lib.error import UserError
+
+from ..lib.remote_info import ExistenceCheck
 
 from ..topology import Topology
 from ..elements import Element
 from ..connections import Connection
 from ..host.site import Site
 from ..host import Host
-
-import time
-
-class ExistenceCheck(object):
-	__slots__ = ("_exists",)
-
-	def __init__(self):
-		self._exists = None
-
-	def invalidate_exists(self):
-		self._exists = None
-
-	def set_exists(self, exists):
-		self._exists = exists
-
-	def exists(self):
-		if self._exists is None:
-			self._exists = self._check_exists()
-		return self._exists
-
-	def _check_exists(self):
-		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s.exists' % repr(self.__class__)})
-
-class InfoObj(ExistenceCheck):
-	__slots__ = ("_info")
-
-	def __init__(self):
-		self._info = None
-
-	def invalidate_info(self):
-		self._info = None
-		self.invalidate_exists()
-
-	def _fetch_data(self):
-		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s._fetch_data' % repr(self.__class__)})
-
-	def info(self):
-		if self._info is None:
-			self._info = self._fetch_data()
-			self.set_exists(True)  # otherwise, fetch_data would have thrown an error
-		return self._info
+from ..resources.template import Template
+from ..resources.profile import Profile
+from ..resources.network import Network
 
 
-class UserInfo(InfoObj):
-	__slots__ = ("name",)
 
-	def __init__(self, username):
-		super(UserInfo, self).__init__()
-		self.name = username
-
-	def _fetch_data(self):
-		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).user_info(self.name)
-
-	def get_username(self):
-		return self.name
-
-	def get_flags(self):
-		return self.info()['flags']
-
-	def get_organization_name(self):
-		return self.info()['organization']
-
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).user_exists(self.name)
-
-
-class OrganizationInfo(InfoObj):
-	__slots__ = ("name",)
-
-	def __init__(self, organization_name):
-		super(OrganizationInfo, self).__init__()
-		self.name = organization_name
-
-	def _fetch_data(self):
-		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).organization_info(self.name)
-
-	def get_organization_name(self):
-		return self.get_organization_name()
-
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS).organization_exists(self.name)
 
 
 
@@ -150,6 +68,7 @@ class SiteInfo(ExistenceCheck):
 	__slots__ = ("site",)
 
 	def __init__(self, site_name):
+		super(SiteInfo, self).__init__()
 		self.site = Site.objects.get(site_name)
 		UserError.check(self.site, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist", data={"site_name": site_name})
 
@@ -164,6 +83,7 @@ class HostInfo(ExistenceCheck):
 	__slots__ = ("host",)
 
 	def __init__(self, host_name):
+		super(HostInfo, self).__init__()
 		self.host = Host.objects.get(host_name)
 		UserError.check(self.host, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"host_name": host_name})
 
@@ -178,6 +98,7 @@ class ElementInfo(ExistenceCheck):
 	__slots__ = ("element",)
 
 	def __init__(self, element_id):
+		super(ElementInfo, self).__init__()
 		self.element = Element.get(element_id)
 		UserError.check(self.element, code=UserError.ENTITY_DOES_NOT_EXIST, message="Element with that id does not exist", data={"element_id": element_id})
 
@@ -188,10 +109,14 @@ class ElementInfo(ExistenceCheck):
 		# __init__ would throw an error if it didn't exist...
 		return True
 
+	def get_type(self):
+		return self.element.type
+
 class ConnectionInfo(ExistenceCheck):
 	__slots__ = ("connection",)
 
 	def __init__(self, connection_id):
+		super(ConnectionInfo, self).__init__()
 		self.connection = Connection.get(connection_id)
 		UserError.check(self.connection, code=UserError.ENTITY_DOES_NOT_EXIST, message="Connection with that id does not exist", data={"connection_id": connection_id})
 
@@ -202,6 +127,38 @@ class ConnectionInfo(ExistenceCheck):
 		# __init__ would throw an error if it didn't exist...
 		return True
 
+class TemplateInfo(object):
+	__slots__ = ("template",)
+
+	def __init__(self, tech, name):
+		super(TemplateInfo, self).__init__()
+		self.template = Template.get(tech, name)
+		UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="Template with that name and tech does not exist", data={"name": name, "tech": tech})
+
+	def is_restricted(self):
+		return self.temlate.restricted
+
+class ProfileInfo(object):
+	__slots__ = ("profile",)
+
+	def __init__(self, tech, name):
+		super(ProfileInfo, self).__init__()
+		self.profile = Profile.get(tech, name)
+		UserError.check(self.profile, code=UserError.ENTITY_DOES_NOT_EXIST, message="Profile with that name and tech does not exist", data={"name": name, "tech": tech})
+
+	def is_restricted(self):
+		return self.profile.restricted
+
+class NetworkInfo(object):
+	__slots__ = ("network",)
+
+	def __init__(self, kind):
+		super(NetworkInfo, self).__init__()
+		self.network = Network.get(kind)
+		UserError.check(self.network, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network of that kind does not exist", data={"kind": kind})
+
+	def is_restricted(self):
+		return self.network.restricted
 
 
 
@@ -255,12 +212,31 @@ def get_host_info(host_name):
 	"""
 	return HostInfo(host_name)
 
-@cached(60)
-def get_organization_info(organization_name):
+def get_template_info(tech, name):
 	"""
-	return OrganizationInfo object for the respective organization
-	:param str organization_name: name of the target organization
-	:return: OrganizationInfo object
-	:rtype: OrganizationInfo
+	return TemplateInfo object for the respective template
+	:param str tech: tech of the target template
+	:param str name: name of the target template
+	:return: TemplateInfo object
+	:rtype: TemplateInfo
 	"""
-	return OrganizationInfo(organization_name)
+	return TemplateInfo(tech, name)
+
+def get_profile_info(tech, name):
+	"""
+	return ProfileInfo object for the respective profile
+	:param str tech: tech of the target profile
+	:param str name: name of the target profile
+	:return: ProfileInfo object
+	:rtype: ProfileInfo
+	"""
+	return ProfileInfo(tech, name)
+
+def get_network_info(kind):
+	"""
+	return NetworkInfo object for the respective network
+	:param str kind: kind of the target network
+	:return: NetworkInfo object
+	:rtype: NetworkInfo
+	"""
+	return NetworkInfo(kind)

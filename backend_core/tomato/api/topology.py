@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import _getCurrentUserInfo, _getCurrentUserName
-from ..authorization import get_topology_info as _get_topology_info, get_user_info as _get_user_info
-from ..lib.topology_role import role_descriptions as _role_descriptions
+from api_helpers import getCurrentUserInfo, getCurrentUserName
+from ..authorization.info import get_topology_info
+from ..lib.topology_role import role_descriptions
+from ..lib.service import get_backend_users_proxy
 
 def _getTopology(id_):
 	top = topology.get(id_)
@@ -33,11 +34,11 @@ def topology_create():
 	  returned by :py:func:`topology_info`. This info dict also contains the
 	  topology id that is needed for further manipulation of that object.
 	"""
-	_getCurrentUserInfo().check_may_create_topologies()
-	return topology.create().info()
+	getCurrentUserInfo().check_may_create_topologies()
+	return topology.create(getCurrentUserName()).info()
 
 def topology_permissions():
-	return _role_descriptions()
+	return role_descriptions()
 
 def topology_remove(id): #@ReservedAssignment
 	"""
@@ -50,7 +51,7 @@ def topology_remove(id): #@ReservedAssignment
 	  The topology must not contain elements or connections, otherwise the call
 	  will fail.
 	"""
-	_getCurrentUserInfo().check_may_remove_topology(_get_topology_info(id))
+	getCurrentUserInfo().check_may_remove_topology(get_topology_info(id))
 	top = _getTopology(id)
 	top.remove()
 
@@ -76,7 +77,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  returned by :py:func:`topology_info`. This info dict will reflect all
 	  attribute changes.	
 	"""
-	_getCurrentUserInfo().check_may_modify_topology(_get_topology_info(id))
+	getCurrentUserInfo().check_may_modify_topology(get_topology_info(id))
 	top = _getTopology(id)
 	top.modify(attrs)
 	return top.info()
@@ -127,7 +128,7 @@ def topology_action(id, action, params=None): #@ReservedAssignment
 	  :py:func:`~topology_info`.	
 	"""
 	if not params: params = {}
-	_getCurrentUserInfo().check_may_run_topology_action(_get_topology_info(id), action, params)
+	getCurrentUserInfo().check_may_run_topology_action(get_topology_info(id), action, params)
 	top = _getTopology(id)
 	return top.action(action, params)
 
@@ -177,7 +178,7 @@ def topology_info(id, full=False): #@ReservedAssignment
 	``permissions``
 	  A dict with usernames as the keys and permission levels as values.
 	"""
-	_getCurrentUserInfo().check_may_view_topology(_get_topology_info(id))
+	getCurrentUserInfo().check_may_view_topology(get_topology_info(id))
 	top = _getTopology(id)
 	return top.info(full)
 
@@ -194,16 +195,15 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	  :py:func:`topology_info`. If no topologies exist, the list is empty. 
 	"""
 	if organization:
-		_getCurrentUserInfo().check_may_list_organization_topologies(organization)
-		organization = _getOrganization(organization)
-		users = getAllUsers(organization)
+		getCurrentUserInfo().check_may_list_organization_topologies(organization)
+		users = get_backend_users_proxy().username_list(organization=organization)
 		tops = topology.getAll(permissions__user__in=users, permissions__role="owner")
 	elif showAll:
-		_getCurrentUserInfo().check_may_list_all_topologies()
+		getCurrentUserInfo().check_may_list_all_topologies()
 		tops = topology.getAll()
 	else:
-		tops = topology.getAll(permissions__user=_getCurrentUserName())
-	return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
+		tops = topology.getAll(permissions__user=getCurrentUserName())
+	return [top.info(full) for top in tops]
 
 def topology_permission(id, user, role): #@ReservedAssignment
 	"""
@@ -222,9 +222,8 @@ def topology_permission(id, user, role): #@ReservedAssignment
 	  The name of the role for this user. If the user already has a role,
 	  if will be changed.
 	"""
-	_getCurrentUserInfo().check_may_grant_permission_for_topologies(_get_topology_info(id))
+	getCurrentUserInfo().check_may_grant_permission_for_topologies(get_topology_info(id))
 	top = _getTopology(id)
-	user = _getAccount(user)
 	top.setRole(user, role)
 	
 def topology_usage(id): #@ReservedAssignment
@@ -238,154 +237,9 @@ def topology_usage(id): #@ReservedAssignment
 	  Usage statistics for the given topology according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	_getCurrentUserInfo().check_may_view_topology_usage(_get_topology_info(id))
+	getCurrentUserInfo().check_may_view_topology_usage(get_topology_info(id))
 	top = _getTopology(id)
-	return top.totalUsage.info()	
+	return top.totalUsage.info()
 
-
-#fixme: move actual import/export to the topology module
-#fixme: add authorization checks
-def topology_import(data):
-	# this function may change the values of data.
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	UserError.check('file_information' in data, code=UserError.INVALID_VALUE, message="Data lacks field file_information")
-	info = data['file_information']
-	UserError.check('version' in info, code=UserError.INVALID_VALUE, message="File information lacks field version")
-	version = info['version']
-	
-	if version == 3:
-		UserError.check('topology' in data, code=UserError.INVALID_VALUE, message="Data lacks field topology")
-		return _topology_import_v3(data["topology"])
-	elif version == 4:
-		UserError.check('topology' in data, code=UserError.INVALID_VALUE, message="Data lacks field topology")
-		return _topology_import_v4(data['topology'])
-	else:
-		raise UserError(code=UserError.INVALID_VALUE, message="Unsuported topology version", data={"version": version})
-
-def _topology_import_v3(top):
-	# changes in data model from 3 to 4:
-	# everything which was in the 'attrs' subdict is now directly in the root.
-	# this is for the topology, all elements, and all connections.
-	# thus, v3 topology data can easily be transformed to v4 data, and then the v4 data can be imported:
-
-	for key, value in top['attrs'].iteritems():
-		top[key] = value
-	del top['attrs']
-	for el in top['elements']:
-		for key, value in el['attrs'].iteritems():
-			el[key] = value
-		del el['attrs']
-	for conn in top['connections']:
-		for key, value in conn['attrs'].iteritems():
-			conn[key] = value
-		del conn['attrs']
-
-	return _topology_import_v4(top)
-
-def _topology_import_v4(top):
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	top_id = None
-	elementIds = {}   
-	connectionIds = {}
-	errors = [] 
-	try:
-		# step 0: create new topology
-		top_id = topology_create()['id']
-
-		# step 1: apply all topology attributes
-		attributes = {key: value for key, value in top.iteritems() if key != "elements" and key != "connections"}
-		try:
-			topology_modify(top_id, attributes)
-		except:
-			for key, value in attributes.iteritems():
-				try:
-					topology_modify(top_id, {key: value})
-				except Exception, ex:
-					errors.append(("topology", None, key, value, str(ex)))
-
-		# step 2: create elements
-		elements = [e for e in top["elements"]]
-		maxRepeats = len(elements) * len(elements)  # assume: one element added per round. takes less than n^2 steps
-		while len(elements) > 0 and maxRepeats > 0:
-			maxRepeats -= 1
-			el = elements.pop(0)
-			if el['parent'] is None or el['parent'] in elementIds:  # the parent of this element exists (or there is no parent needed)
-
-				parentId = elementIds.get(el.get('parent'))
-				elId = element_create(top_id, el['type'], parent=parentId)['id']
-				elementIds[el['id']] = elId
-				attributes = {key: value for key, value in el.iteritems() if key != "parent" and key != "id" and key != "type"}
-				try:
-					element_modify(elId, attributes)
-				except:
-					for key, value in attributes.iteritems():
-						try:
-							element_modify(elId, {key: value})
-						except Exception, ex:
-							errors.append(("element", el['id'], key, value, str(ex)))
-
-			else:  # append at the end of the list if parent isn't there yet
-				elements.append(el)
-		if len(elements) > 0:  # there are elements left where the parent has never been created
-			for el in elements:
-				errors.append(("element", el['id'], 'parent', el['parent'], "parent cannot be created."))
-
-		for con in top["connections"]:
-			el1 = elementIds.get(con["elements"][0])
-			el2 = elementIds.get(con["elements"][1])
-			conId = connection_create(el1, el2)['id']
-			connectionIds[con['id']] = conId
-			attributes = {key: value for key, value in con.iteritems() if key != "elements" and key != "id"}
-			try:
-				connection_modify(conId, attributes)
-			except:
-				for key, value in attributes.iteritems():
-					try:
-						connection_modify(conId, {key: value})
-					except Exception, ex:
-						errors.append(("connection", con['id'], key, value, str(ex)))
-	except:
-		topology_remove(top_id)
-		raise
-	return (top_id, elementIds.items(), connectionIds.items(), errors)
-	
-
-def topology_export(id): #@ReservedAssignment
-	def reduceData(data):
-		def reduceData_rec(data, blacklist):
-			if isinstance(data, list):
-				return [reduceData_rec(el, blacklist) for el in data]
-			if isinstance(data, dict):
-				return dict(filter(lambda (k, v): k not in blacklist, [(k, reduceData_rec(v, blacklist)) for k, v in data.iteritems()]))
-			return data
-		
-		del data['id']
-		del data['permissions']
-		
-		blacklist = ['usage', 'debug', 'bridge', 'capture_port', 'websocket_pid', 'vmid', 'vncpid',
-					 'host', 'websocket_port', 'vncport', 'peers', 'pubkey', 'path', 'port', 
-					 'host_fileserver_port', 'capture_pid', 'topology', 'state', 'vncpassword', 
-					 'host_info', 'custom_template', 'timeout',
-					 'ipspy_pid', 'last_sync',
-					 'rextfv_supported', 'rextfv_status', 'rextfv_max_size', 'info_last_sync',
-					 'diskspace', 'ram', 'cpus', 'restricted', 'state_max',
-						'_debug_mode', '_initialized']
-		blacklist_elements = ['children', 'connection']
-		blacklist_connections = ['type']
-		data = reduceData_rec(data, blacklist)
-		data['elements'] = reduceData_rec(data['elements'], blacklist_elements)
-		data['connections'] = reduceData_rec(data['connections'], blacklist_connections)
-		return data
-	
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
-	top_full = topology_info(id, True)
-	top = reduceData(top_full)
-	return {'file_information': {'version': 4}, 'topology': top}
-		
-from host import _getOrganization
-from account import _getAccount
-from .. import topology, currentUser
-from elements import element_create, element_modify 
-from connections import connection_create, connection_modify
+from .. import topology
 from ..lib.error import UserError
-from ..auth import getAllUsers

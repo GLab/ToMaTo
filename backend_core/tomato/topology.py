@@ -19,14 +19,14 @@ from .db import *
 from .generic import *
 import time
 from lib import logging #@UnresolvedImport
-from accounting import UsageStatistics
+from accounting.quota import UsageStatistics
 from . import scheduler
 from .lib.error import UserError #@UnresolvedImport
 from .lib import util
 from .lib.topology_role import Role
-from authorization import get_user_info
-from .lib.service import get_tomato_inner_proxy
-from .lib.settings import Config
+from .lib.remote_info import get_user_info
+from .lib.service import get_backend_users_proxy
+from .lib.constants import StateName, ActionName
 
 class TimeoutStep:
 	INITIAL = 0
@@ -85,7 +85,7 @@ class Topology(Entity, BaseDocument):
 		:type owner: auth.User
 		"""
 		if not attrs: attrs = {}
-		self.setRole(owner, Role.owner)
+		self.set_role(owner, Role.owner, skip_save=True)
 		self.totalUsage = UsageStatistics.objects.create()
 		self.timeout = time.time() + settings.get_topology_settings()[Config.TOPOLOGY_TIMEOUT_INITIAL]
 		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
@@ -98,6 +98,11 @@ class Topology(Entity, BaseDocument):
 	
 	def setBusy(self, busy):
 		self._busy = busy
+
+
+	def checkUnknownAttribute(self, key, value):
+		UserError.check(key.startswith("_"), code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
+		return True
 
 	def setUnknownAttributes(self, attrs):
 		for key, value in attrs.items():
@@ -130,9 +135,6 @@ class Topology(Entity, BaseDocument):
 	def action_renew(self, timeout):
 		topology_config = settings.get_topology_settings()
 		timeout = float(timeout)
-		# fixme: check renew in api
-		#UserError.check(timeout <= topology_config[Config.TOPOLOGY_TIMEOUT_MAX] or currentUser().hasFlag(Flags.GlobalAdmin),
-		#	code=UserError.INVALID_VALUE, message="Timeout is greater than the maximum")
 		self.timeout = time.time() + timeout
 		self.timeoutStep = TimeoutStep.INITIAL if timeout > topology_config[Config.TOPOLOGY_TIMEOUT_WARNING] else TimeoutStep.WARNED
 		
@@ -158,11 +160,12 @@ class Topology(Entity, BaseDocument):
 
 
 
-	def set_role(self, username, role):
+	def set_role(self, username, role, skip_save=False):
 		"""
-		set the role of the current user
+		set the role of a user
 		:param str username: target user
 		:param str role: target role
+		:param bool skip_save: skip saving of the current object
 		:return: Nothing
 		:rtype: NoneType
 		"""
@@ -176,14 +179,17 @@ class Topology(Entity, BaseDocument):
 				return
 			else:
 				self.permissions.append(Permission(user=username, role=role))
-				self.save()
+				if not skip_save:
+					self.save()
 		else:
 			if role == Role.null:
 				self.permissions.remove(target_permission)
-				self.save()
+				if not skip_save:
+					self.save()
 			else:
 				target_permission.role = role
-				self.save()
+				if not skip_save:
+					self.save()
 
 
 	def user_has_role(self, username, role):
@@ -250,7 +256,7 @@ class Topology(Entity, BaseDocument):
 		self.set_role(user, role)
 			
 	def sendNotification(self, role, subject, message, fromUser=None):
-		user_api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+		user_api = get_backend_users_proxy()
 		for permission in self.permissions:
 			if Role.leq(role, permission.role):
 				user_api.send_message(permission.user, subject, message, fromUser, ref=['topology', self.idStr])
@@ -258,10 +264,10 @@ class Topology(Entity, BaseDocument):
 	@property
 	def maxState(self):
 		states = self.elements.distinct('state')
-		for state in ['started', 'prepared', 'created']:
+		for state in [StateName.STARTED, StateName.PREPARED, StateName.CREATED]:
 			if state in states:
 				return state
-		return 'created'
+		return StateName.CREATED
 
 	def info(self, full=False):
 		info = Entity.info(self)
@@ -299,11 +305,11 @@ class Topology(Entity, BaseDocument):
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(_remove, check=checkRemove),
-		"start": Action(action_start, check=lambda self: self.checkAction('start'), paramSchema=schema.Constant({})),
-		"stop": Action(action_stop, check=lambda self: self.checkAction('stop'), paramSchema=schema.Constant({})),
-		"prepare": Action(action_prepare, check=lambda self: self.checkAction('prepare'), paramSchema=schema.Constant({})),
-		"destroy": Action(action_destroy, check=lambda self: self.checkAction('destroy'), paramSchema=schema.Constant({})),
-		"renew": Action(action_renew, check=lambda self, timeout: self.checkAction('renew'),
+		ActionName.START: Action(action_start, check=lambda self: self.checkAction(ActionName.START), paramSchema=schema.Constant({})),
+		ActionName.STOP: Action(action_stop, check=lambda self: self.checkAction(ActionName.STOP), paramSchema=schema.Constant({})),
+		ActionName.PREPARE: Action(action_prepare, check=lambda self: self.checkAction(ActionName.PREPARE), paramSchema=schema.Constant({})),
+		ActionName.DESTROY: Action(action_destroy, check=lambda self: self.checkAction(ActionName.DESTROY), paramSchema=schema.Constant({})),
+		ActionName.RENEW: Action(action_renew, check=lambda self, timeout: self.checkAction(ActionName.RENEW),
 			paramSchema=schema.StringMap(items={'timeout': schema.Number(minValue=0.0)}, required=['timeout'])),
 	}
 	ATTRIBUTES = {
