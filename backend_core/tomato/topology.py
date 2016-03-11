@@ -20,10 +20,13 @@ from .generic import *
 import time
 from lib import logging #@UnresolvedImport
 from accounting import UsageStatistics
-from .auth.permissions import PermissionMixin, Role
 from . import scheduler
 from .lib.error import UserError #@UnresolvedImport
 from .lib import util
+from .lib.topology_role import Role
+from authorization import get_user_info
+from .lib.service import get_tomato_inner_proxy
+from .lib.settings import Config
 
 class TimeoutStep:
 	INITIAL = 0
@@ -31,15 +34,26 @@ class TimeoutStep:
 	STOPPED = 10
 	DESTROYED = 20
 
+class Permission(ExtDocument, EmbeddedDocument):
+	"""
+	:type user: auth.User
+	:type role: str
+	"""
+	user = StringField(required=True)
+	role = StringField(choices=[Role.owner, Role.manager, Role.user], required=True)
 
-class Topology(Entity, PermissionMixin, BaseDocument):
+
+
+
+
+
+class Topology(Entity, BaseDocument):
 	"""
 	:type permissions: list of Permission
 	:type totalUsage: UsageStatistics
 	:type site: Site
 	:type clientData: dict
 	"""
-	from .auth.permissions import Permission
 	from .host import Site
 	permissions = ListField(EmbeddedDocumentField(Permission))
 	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
@@ -85,26 +99,10 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 	def setBusy(self, busy):
 		self._busy = busy
 
-	def checkUnknownAttribute(self, key, value):
-		self.checkRole(Role.manager)
-		UserError.check(key.startswith("_"), code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
-		return True
-
 	def setUnknownAttributes(self, attrs):
 		for key, value in attrs.items():
 			if key.startswith("_"):
 				self.clientData[key[1:]] = value
-
-	def checkModify(self, attr):
-		self.checkRole(Role.manager)
-		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
-
-	def checkAction(self, action):
-		self.checkRole(Role.manager)
-		if action in ["start", "prepare"]:
-			UserError.check(self.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
-		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
-		return True
 
 	def action_prepare(self):
 		self._compoundAction(action="prepare", stateFilter=lambda state: state=="created", 
@@ -132,8 +130,9 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 	def action_renew(self, timeout):
 		topology_config = settings.get_topology_settings()
 		timeout = float(timeout)
-		UserError.check(timeout <= topology_config[Config.TOPOLOGY_TIMEOUT_MAX] or currentUser().hasFlag(Flags.GlobalAdmin),
-			code=UserError.INVALID_VALUE, message="Timeout is greater than the maximum")
+		# fixme: check renew in api
+		#UserError.check(timeout <= topology_config[Config.TOPOLOGY_TIMEOUT_MAX] or currentUser().hasFlag(Flags.GlobalAdmin),
+		#	code=UserError.INVALID_VALUE, message="Timeout is greater than the maximum")
 		self.timeout = time.time() + timeout
 		self.timeoutStep = TimeoutStep.INITIAL if timeout > topology_config[Config.TOPOLOGY_TIMEOUT_WARNING] else TimeoutStep.WARNED
 		
@@ -155,8 +154,70 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 				continue
 			con.action(action)
 
+
+
+
+
+	def set_role(self, username, role):
+		"""
+		set the role of the current user
+		:param str username: target user
+		:param str role: target role
+		:return: Nothing
+		:rtype: NoneType
+		"""
+		target_permission = None
+		for perm in self.permissions:
+			if perm.user == username:
+				target_permission = perm
+				break
+		if target_permission is None:
+			if role == Role.null:
+				return
+			else:
+				self.permissions.append(Permission(user=username, role=role))
+				self.save()
+		else:
+			if role == Role.null:
+				self.permissions.remove(target_permission)
+				self.save()
+			else:
+				target_permission.role = role
+				self.save()
+
+
+	def user_has_role(self, username, role):
+		"""
+		check whether the given user has at least this role
+		:param str username: target user
+		:param str role: target role
+		:return: Whether the user has at least this role (or a more-permissions-granting one)
+		:rtype: bool
+		"""
+		for perm in self.permissions:
+			if perm.user == username:
+				return Role.leq(role, perm.role)
+		return False
+
+	def organization_has_role(self, organization, role):
+		"""
+		check whether the given organization has at least this role.
+		if true, this means that OrgaTopl* may access the topology as this role.
+
+		:param str organization: target organization
+		:param str role: target role
+		:return: Whether the organization has at least this role (or a more-permissions-granting one)
+		:rtype: bool
+		"""
+		for perm in self.permissions:
+			if get_user_info(perm.user).get_organization_name() == organization:
+				return Role.leq(role, perm.role)
+		return False
+
+
+
+
 	def checkRemove(self, recurse=True):
-		self.checkRole(Role.owner)
 		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
 		UserError.check(recurse or self.elements.count()==0, code=UserError.NOT_EMPTY,
 			message="Cannot remove topology with elements")
@@ -185,15 +246,14 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 	def modifyRole(self, user, role):
 		UserError.check(role in Role.RANKING or not role, code=UserError.INVALID_VALUE, message="Invalid role",
 			data={"roles": Role.RANKING})
-		self.checkRole(Role.owner)
-		UserError.check(user != currentUser(), code=UserError.INVALID_VALUE, message="Must not set permissions for yourself")
 		logging.logMessage("permission", category="topology", id=self.idStr, user=user.name, role=role)
-		self.setRole(user, role)
+		self.set_role(user, role)
 			
-	def sendNotification(self, role=Role.manager, **kwargs):
+	def sendNotification(self, role, subject, message, fromUser=None):
+		user_api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
 		for permission in self.permissions:
-			if Role.RANKING.index(permission.role) >= Role.RANKING.index(role):
-				permission.user.sendNotification(ref=['topology', self.idStr], **kwargs)
+			if Role.leq(role, permission.role):
+				user_api.send_message(permission.user, subject, message, fromUser, ref=['topology', self.idStr])
 
 	@property
 	def maxState(self):
@@ -204,8 +264,6 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		return 'created'
 
 	def info(self, full=False):
-		if not currentUser() is True and not currentUser().hasFlag(Flags.Debug):
-			self.checkRole(Role.user)
 		info = Entity.info(self)
 		if full:
 			# Speed optimization: use existing information to avoid database accesses
@@ -259,31 +317,29 @@ class Topology(Entity, PermissionMixin, BaseDocument):
 		"connections": Attribute(readOnly=True, schema=schema.List()),
 		"timeout": Attribute(field=timeout, readOnly=True, schema=schema.Number()),
 		"state_max": Attribute(field=maxState, readOnly=True, schema=schema.String()),
-		"name": Attribute(field=name, schema=schema.String()),
-		"organization_permissions": Attribute(readOnly=True, get=lambda self: self.get_organization_permissions())
+		"name": Attribute(field=name, schema=schema.String())
 	}
 
-	def get_organization_permissions(self):
-		#fixme: should be cached. invalidation on user changes, or when a user changes organization.
-		#fixme: to be implemented.
-		return {}
+	@classmethod
+	def get(cls, id_, **kwargs):
+		try:
+			return cls.objects.get(id=id_, **kwargs)
+		except cls.DoesNotExist:
+			return None
 
 
 
 
 def get(id_, **kwargs):
-	try:
-		return Topology.objects.get(id=id_, **kwargs)
-	except Topology.DoesNotExist:
-		return None
+	return Topology.get(id_, **kwargs)
 
 def getAll(**kwargs):
 	return list(Topology.objects.filter(**kwargs))
 
-def create(attrs=None):
+def create(owner, attrs=None):
 	if not attrs: attrs = {}
 	top = Topology()
-	top.init(owner=currentUser(), attrs=attrs)
+	top.init(owner=owner, attrs=attrs)
 	logging.logMessage("create", category="topology", id=top.idStr)
 	logging.logMessage("info", category="topology", id=top.idStr, info=top.info())
 	return top
@@ -292,7 +348,6 @@ def create(attrs=None):
 def timeout_task():
 	topology_config = settings.get_topology_settings()
 	now = time.time()
-	setCurrentUser(True) #we are a global admin
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.INITIAL, timeout__lte=now+topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]):
 		try:
 			logging.logMessage("timeout warning", category="topology", id=top.idStr)
@@ -329,9 +384,6 @@ scheduler.scheduleRepeated(600, timeout_task)
 
 from .elements import Element
 from .connections import Connection
-from .auth import Flags
-from .auth.permissions import Permission
-from . import currentUser, setCurrentUser
 from lib.settings import settings, Config
 from .host.site import Site
 from . import handleError

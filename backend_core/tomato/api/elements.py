@@ -59,8 +59,8 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	  an exception *element does not exist* is raised.
 	  Various other exceptions can be raised, depending on the given type.
 	"""
+	_getCurrentUserInfo().check_may_create_element(_get_topology_info(top))
 	if not attrs: attrs = {}
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(top)
 	if parent:
 		parent = _getElement(parent)
@@ -96,7 +96,8 @@ def element_modify(id, attrs): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_modify_element(_get_element_info(id))
+	# fixme: check resource permissions for restricted resources
 	el = _getElement(id)
 	el.modify(attrs)
 	return el.info()
@@ -133,7 +134,7 @@ def element_action(id, action, params=None): #@ReservedAssignment
 	  and state.
 	"""
 	if not params: params = {}
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_run_element_action(_get_element_info(id), action, params)
 	el = _getElement(id)
 	return el.action(action, params)
 
@@ -172,7 +173,7 @@ def element_remove(id): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_remove_element(_get_element_info(id))
 	el = _getElement(id)
 	el.remove()
 
@@ -278,7 +279,7 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	  If the given element does not exist or belongs to another owner
 	  an exception *element does not exist* is raised.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_view_element(_get_element_info(id))
 	el = _getElement(id)
 	if fetch:
 		el.fetchInfo()
@@ -295,6 +296,7 @@ def element_usage(id): #@ReservedAssignment
 	  Usage statistics for the given element according to 
 	  :doc:`/docs/accountingdata`.
 	"""
+	_getCurrentUserInfo().check_may_view_element(_get_element_info(id))
 	el = _getElement(id)
 	return el.totalUsage.info()	
 
@@ -302,3 +304,5 @@ from .. import currentUser
 from ..elements import Element
 from .topology import _getTopology
 from ..lib.error import UserError
+from api_helpers import _getCurrentUserInfo
+from ..authorization import get_topology_info as _get_topology_info, get_element_info as _get_element_info

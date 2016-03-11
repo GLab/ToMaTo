@@ -1,21 +1,62 @@
 from ..lib.userflags import Flags
-from info import UserInfo, TopologyInfo, SiteInfo, HostInfo
+from info import UserInfo, TopologyInfo, SiteInfo, HostInfo, ElementInfo, ConnectionInfo,\
+	get_topology_info, get_host_info, get_site_info, get_element_info, get_connection_info
 from ..lib.topology_role import Role
 from ..lib.cache import cached
 from ..lib.error import UserError
+from ..lib.service import get_tomato_inner_proxy
+from ..lib.settings import Config
 
+import time
 
-def auth_check(condition, message):
-	UserError.check(condition, code=UserError.DENIED, message=message)
+def auth_check(condition, message, data=None):
+	if not data:
+		data = {}
+	UserError.check(condition, code=UserError.DENIED, message=message, data=data)
 
-def auth_fail(message):
-	auth_check(False, message)
+def auth_fail(message, data=None):
+	auth_check(False, message, data)
 
 
 class PermissionChecker(UserInfo):
-	__slots__ = ()
+	__slots__ = ("success_password", "password_age")
+
 	def __init__(self, username):
 		super(PermissionChecker, self).__init__(username)
+		self.success_password = None
+		self.password_age = 0
+
+	def invalidate_info(self):
+		super(PermissionChecker, self).invalidate_info()
+		self.success_password = None
+
+
+
+
+
+	# authentication
+
+	def login(self, password):
+
+		# if password is cached, try to use the cached one if it isn't too old.
+		if self.success_password:
+			if time.time() - self.password_age > self.cache_duration:
+				self.success_password = None
+			else:
+				if password == self.success_password:
+					return True  # if false, this may be due to a recent password changed that hasn't been seen by the cache.
+											# in this case, try to get a fresh password.
+
+		api = get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+		result = api.user_check_password(self.get_username(), password)
+		if result:
+			self.password_age = time.time()
+			self.success_password = password
+		return result
+
+
+
+
 
 
 
@@ -37,9 +78,24 @@ class PermissionChecker(UserInfo):
 		# global admins and admins of the respective organization may do this.
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == organization:
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == organization:
 			return
 		auth_fail("operation requires global or organization-internal admin flag")
+
+	def check_may_create_user(self, user_info):
+		"""
+		check whether this user may create a user for the given organization
+		:param UserInfo user_info: target user
+		"""
+		if Flags.GlobalAdmin in self.get_flags():
+			return
+		if Flags.OrgaAdmin in self.get_flags() and user_info.get_organization_name() == self.get_organization_name():
+			return
+		auth_fail("You need admin permissions to create other users.")
+
+	@staticmethod
+	def account_register_self_allowed_keys():
+		return {"name", "realname", "email", "password", "organization"}
 
 	def account_info_visible_keys(self, userB):
 		"""
@@ -52,7 +108,7 @@ class PermissionChecker(UserInfo):
 		if self.get_username() == userB.get_username():
 			res.update(['email', 'flags', 'organization', 'quota', 'client_data', 'last_login', 'password_hash'])
 		if Flags.GlobalAdmin in self.get_flags() or \
-				Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization():
+				Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
 			res.update(['email', 'flags', 'organization', 'quota', 'notification_count', 'client_data', 'last_login', 'password_hash'])
 		return res
 
@@ -74,7 +130,7 @@ class PermissionChecker(UserInfo):
 		else:
 			if Flags.GlobalAdmin in self.get_flags():
 				result.update(["realname", "email", "organization"])
-			if Flags.OrgaAdmin in self.get_flags() and self.info['organization'] == userB.get_organization():
+			if Flags.OrgaAdmin in self.get_flags() and self.info['organization'] == userB.get_organization_name():
 				result.update(["realname", "email"])
 		return result
 
@@ -110,7 +166,7 @@ class PermissionChecker(UserInfo):
 
 		# all flags except global flags.
 		if Flags.GlobalAdmin in self.get_flags() or \
-				(Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization()):
+				(Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name()):
 			if not is_self:
 				result.add(Flags.OrgaAdmin)  # may not remove own admin privileges. if GlobalAdmin, this has been added before.
 			result.update([
@@ -131,6 +187,40 @@ class PermissionChecker(UserInfo):
 						])
 		return result
 
+	@staticmethod
+	def reduce_keys_to_allowed(attrs, allowed_keys, allowed_flags, ignore_key_on_unauthorized=False, ignore_flag_on_unauthorized=False):
+		"""
+		check if all editing keys are correct.
+		if not, either throw an error, or ignore the key, depending on the settings in params
+
+		:param dict attrs: origninal attributes to check
+		:param list(str) allowed_keys: attrs keys that are allowed to be modified
+		:param list(str) allowed_flags: flags that are allowed to be set
+		:param bool ignore_key_on_unauthorized: if true, ignore unauthorized keys. if false, throw an error if an unauthorized key was found.
+		:param bool ignore_flag_on_unauthorized: if true, ignore unauthorized flags. if false, throw an error if an unauthorized flag was found.
+		:return: an updated version of attrs where only allowed keys are present
+		:rtype: dict
+		"""
+		res = {}
+		for k, v in attrs.iteritems():
+			if k in allowed_keys:
+				if k == "flags":
+					final_flags = {}
+					for flag, toset in v.iteritems():
+						if flag in allowed_flags:
+							final_flags[flag] = toset
+						else:
+							if not ignore_flag_on_unauthorized:
+								auth_fail("You are not allowed to set this flag", data={"flag": flag})
+					res[k] = final_flags
+				else:
+					res[k] = v
+			else:
+				if not ignore_key_on_unauthorized:
+					auth_fail("You are not allowed to set this key.", data={"key": k})
+		return res
+
+
 	def check_may_reset_password_of_user(self, userB):
 		"""
 		check whether this user may reset the password for userB.
@@ -140,7 +230,7 @@ class PermissionChecker(UserInfo):
 			return
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization():
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
 			return
 		auth_fail("operation requires global or organization-internal admin flag")
 
@@ -155,7 +245,7 @@ class PermissionChecker(UserInfo):
 			return
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization():
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
 			if Flags.GlobalAdmin in userB.get_flags():
 				auth_fail("organization-internal admins may not delete global admins")
 			return
@@ -172,7 +262,7 @@ class PermissionChecker(UserInfo):
 		if organization is None:
 			auth_fail("operation requires global admin or hostmanager flag")
 
-		if (Flags.OrgaAdmin in flags or Flags.OrgaHostManager in flags) and self.get_organization() == organization:
+		if (Flags.OrgaAdmin in flags or Flags.OrgaHostManager in flags) and self.get_organization_name() == organization:
 			return
 		auth_fail("operation requires global or organization-internal admin or hostmanager flag")
 
@@ -185,7 +275,7 @@ class PermissionChecker(UserInfo):
 			return
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if Flags.OrgaAdmin in self.get_flags() and self.get_organization() == userB.get_organization():
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
 			return
 		auth_fail("operation requires global or organization-internal admin flag")
 
@@ -212,7 +302,7 @@ class PermissionChecker(UserInfo):
 		"""
 		if Flags.GlobalAdmin in self.get_flags() or Flags.GlobalHostManager in self.get_flags():
 			return
-		if (Flags.OrgaAdmin in self.get_flags() or Flags.OrgaHostManager in self.get_flags()) and self.get_organization() == organization:
+		if (Flags.OrgaAdmin in self.get_flags() or Flags.OrgaHostManager in self.get_flags()) and self.get_organization_name() == organization:
 			return
 		auth_fail("operation requires global or organization-internal admin or hostmanager flag")
 
@@ -221,7 +311,7 @@ class PermissionChecker(UserInfo):
 		check whether this user may delete this organization
 		:param str organization: organization to be deleted
 		"""
-		if organization == self.get_organization():
+		if organization == self.get_organization_name():
 			auth_fail("you may not delete your own organization")
 		if Flags.GlobalAdmin in self.get_flags():
 			return
@@ -240,7 +330,7 @@ class PermissionChecker(UserInfo):
 		"""
 		if Flags.GlobalHostManager in self.get_flags():
 			return
-		if Flags.OrgaHostManager in self.get_flags() and organization == self.get_organization():
+		if Flags.OrgaHostManager in self.get_flags() and organization == self.get_organization_name():
 			return
 		auth_fail("operation requires global or organization-internal hostmanager flag")
 
@@ -256,14 +346,14 @@ class PermissionChecker(UserInfo):
 		check whether this user may modify this site
 		:param SiteInfo site_info: target site
 		"""
-		self._check_is_hostmanager_for_organization(site_info.get_organization())
+		self._check_is_hostmanager_for_organization(site_info.get_organization_name())
 
 	def check_may_delete_site(self, site_info):
 		"""
 		check whether this user may delete this site
 		:param SiteInfo site_info: target site
 		"""
-		self._check_is_hostmanager_for_organization(site_info.get_organization())
+		self._check_is_hostmanager_for_organization(site_info.get_organization_name())
 
 
 
@@ -275,28 +365,28 @@ class PermissionChecker(UserInfo):
 		check whether this user may create hosts for this site
 		:param SiteInfo site_info: target hosts's site
 		"""
-		self._check_is_hostmanager_for_organization(site_info.get_organization())
+		self._check_is_hostmanager_for_organization(site_info.get_organization_name())
 
 	def check_may_modify_host(self, host_info):
 		"""
 		check whether this user may modify this host
 		:param HostInfo host_info: target host
 		"""
-		self._check_is_hostmanager_for_organization(host_info.get_organization())
+		self._check_is_hostmanager_for_organization(host_info.get_organization_name())
 
 	def check_may_delete_host(self, host_info):
 		"""
 		check whether this user may delete this host
 		:param HostInfo host_info: target host
 		"""
-		self._check_is_hostmanager_for_organization(host_info.get_organization())
+		self._check_is_hostmanager_for_organization(host_info.get_organization_name())
 
 	def check_may_list_host_users(self, host_info):
 		"""
 		check whether this user may list users of this host
 		:param HostInfo host_info: target host
 		"""
-		self._check_is_hostmanager_for_organization(host_info.get_organization())
+		self._check_is_hostmanager_for_organization(host_info.get_organization_name())
 
 
 
@@ -322,7 +412,7 @@ class PermissionChecker(UserInfo):
 		if topology_info.user_has_role(self.get_username(), role):
 			return
 		if Role.leq(role, perm_orga):  # user has role in organization
-			if topology_info.organization_has_role(self.get_organization(), role):  # organization has role on topology
+			if topology_info.organization_has_role(self.get_organization_name(), role):  # organization has role on topology
 				return
 		auth_fail("this operation requires %s permission on this toppology." % role)
 
@@ -353,12 +443,24 @@ class PermissionChecker(UserInfo):
 		"""
 		self._check_has_topology_role(topology_info, Role.owner)
 
-	def check_may_run_topology_actions(self, topology_info):
+	def check_may_run_topology_action(self, topology_info, action, params):
 		"""
-		check whether this user may run actions on this topology.
+		check whether this user may run this action on this topology.
 		:param TopologyInfo topology_info: target topology
+		:param str action: target action
+		:param dict params: action params
 		"""
-		self._check_has_topology_role(topology_info, Role.manager)
+		# step 1: make sure the user doesn't run any unrecognized action
+		# fixme: is this complete? add more available actions.
+		UserError.check(action in ("start", "stop", "prepare", "destroy",
+															 "renew"),
+										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
+
+		# step 2: check permission for each individual action
+		if action in ("start", "stop", "prepare", "destroy", "renew"):
+			self._check_has_topology_role(topology_info, Role.manager)
+		if action in ("prepare", "start"):
+			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
 
 	def _may_list_all_topologies(self):
 		"""
@@ -384,7 +486,7 @@ class PermissionChecker(UserInfo):
 		"""
 		if self._may_list_all_topologies():
 			return
-		auth_check(self.get_organization() == organization, "no permissions to list all topologies of this organization")
+		auth_check(self.get_organization_name() == organization, "no permissions to list all topologies of this organization")
 		for flag in (Flags.OrgaToplUser, Flags.OrgaToplManager, Flags.OrgaToplOwner):
 			if flag in self.get_flags():
 				return
@@ -407,12 +509,161 @@ class PermissionChecker(UserInfo):
 			return
 		if Flags.GlobalAdmin in self.get_flags():
 			return
-		if topology_info.organization_has_role(self.get_organization(), Role.user):
+		if topology_info.organization_has_role(self.get_organization_name(), Role.user):
 			if Flags.OrgaAdmin in self.get_flags():
 				return
 			if Flags.OrgaHostManager in self.get_flags():
 				return
 		self._check_has_topology_role(topology_info, Role.user)
+
+
+
+
+
+	# resources
+
+	def check_may_create_user_resources(self):
+		"""
+		check whether this user may create user resources (e.g. Templates, Profiles)
+		"""
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to create user resources.")
+
+	def check_may_modify_user_resources(self):
+		"""
+		check whether this user may modify user resources (e.g. Templates, Profiles)
+		"""
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to modify user resources.")
+
+	def check_may_remove_user_resources(self):
+		"""
+		check whether this user may delete user resources (e.g. Templates, Profiles)
+		"""
+		auth_check(Flags.GlobalAdmin in self.get_flags(), "you don't have permissions to remove user resources.")
+
+	def check_may_create_technical_resources(self):
+		"""
+		check whether this user may create technical resources (e.g. Templates, Profiles)
+		"""
+		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to create technical resources.")
+
+	def check_may_modify_technical_resources(self):
+		"""
+		check whether this user may modify technical resources (e.g. Templates, Profiles)
+		"""
+		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to modify technical resources.")
+
+	def check_may_remove_technical_resources(self):
+		"""
+		check whether this user may delete technical resources (e.g. Templates, Profiles)
+		"""
+		auth_check(Flags.GlobalHostManager in self.get_flags(), "you don't have permissions to remove technical resources.")
+
+
+
+
+
+	# elements
+
+	def check_may_create_element(self, topology_info):
+		"""
+		check whether this user may create elements on this topology
+		:param TopologyInfo topology_info: target topology
+		"""
+		self._check_has_topology_role(topology_info, Role.manager)
+
+	def check_may_modify_element(self, element_info):
+		"""
+		check whether this user may modify this element
+		:param ElementInfo element_info: target element
+		"""
+		self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
+
+	def check_may_remove_element(self, element_info):
+		"""
+		check whether this user may delete this element
+		:param ElementInfo element_info: target element
+		"""
+		self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
+
+	def check_may_view_element(self, element_info):
+		"""
+		check whether this user may view this element
+		:param ElementInfo element_info: target element
+		"""
+		self._check_has_topology_role(element_info.get_topology_info(), Role.user)
+
+	def check_may_run_element_action(self, element_info, action, params):
+		"""
+		check whether this user may run this action on the given element
+		:param ElementInfo element_info: target element
+		:param str action: action to run
+		:param dict params: action params
+		"""
+		# step 1: make sure the user doesn't run any action that is not recognized by this.
+		# fixme: this is not complete. add more available actions.
+		UserError.check(action in ("start", "stop", "prepare", "destroy",
+															 "upload_grant", "upload_use",
+															 "rextfv_upload_grant", "rextfv_upload_use"),
+										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
+
+		# step 2: for each action, check permissions.
+		if action in ("start", "stop", "prepare", "destroy"):
+			self._check_has_topology_role(element_info.get_topology_info(), Role.manager)
+		if action in ("prepare", "start", "upload_grant"):
+			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
+
+
+
+
+
+	# connections
+
+	def check_may_create_connection(self, element_info_1, element_info_2):
+		"""
+		check whether this user may run create a connection between the given elements
+		:param ElementInfo element_info_1: first target element
+		:param ElementInfo element_info_2: second target element
+		"""
+		el1_top_info = element_info_1.get_topology_info()
+		auth_check(el1_top_info.get_id() == element_info_2.get_topology_info().get_id(), "Elements must be from the same topology.")
+		self._check_has_topology_role(el1_top_info, Role.manager)  # element 2 has the same topology, so only one check needed
+
+	def check_may_modify_connection(self, connection_info):
+		"""
+		check whether this user may modify this connection
+		:param ConnectionInfo connection_info: target connection
+		"""
+		self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
+
+	def check_may_remove_connection(self, connection_info):
+		"""
+		check whether this user may remove this connection
+		:param ConnectionInfo connection_info: target connection
+		"""
+		self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
+
+	def check_may_view_connection(self, connection_info):
+		"""
+		check whether this user may view this connection
+		:param ConnectionInfo connection_info: target connection
+		"""
+		self._check_has_topology_role(connection_info.get_topology_info(), Role.user)
+
+	def check_may_run_connection_action(self, connection_info, action, params):
+		"""
+		check whether this user may run this action on the given connection
+		:param ConnectionInfo connection_info: target connection
+		:param str action: action to run
+		:param dict params: action params
+		"""
+		# step 1: make sure the user doesn't run any action that is not recognized by this.
+		# fixme: is this complete? add more available actions.
+		UserError.check(action in ("start", "stop", "prepare", "destroy"),
+										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
+
+		# step 2: for each action, check permissions.
+		if action in ("start", "stop", "prepare", "destroy"):
+			self._check_has_topology_role(connection_info.get_topology_info(), Role.manager)
 
 
 
@@ -431,6 +682,35 @@ class PermissionChecker(UserInfo):
 
 
 
+
+
+
+class PseudoUser(UserInfo):
+	"""
+	UserInfo-like object for non-existing users.
+	"""
+	__slots__ = ("organization",)
+
+	def __init__(self, username, organization):
+		super(PseudoUser, self).__init__(username)
+		self.organization = organization
+
+	def _fetch_data(self):
+		return {
+			'organization': self.organization,
+			'name': self.name
+		}
+
+
+
+
+
+def login(username, password):
+	user_info = get_permission_checker(username)
+	if user_info.login(password):
+		return user_info
+	else:
+		return None
 
 
 @cached(60)
@@ -452,32 +732,12 @@ def get_user_info(username):
 	"""
 	return get_permission_checker(username)
 
-@cached(3600)
-def get_topology_info(topology_id):
+def get_pseudo_user_info(username, organization):
 	"""
-	return TopologyInfo object for the respective topology
-	:param topology_id: id of topology
-	:return: TopologyInfo object
-	:rtype: TopologyInfo
+	return UserInfo object for a non-existing user
+	:param str username: username of user
+	:return: PermissionChecker object for corresponding user
+	:rtype: PermissionChecker
 	"""
-	return TopologyInfo(topology_id)
+	return PseudoUser(username, organization)
 
-@cached(3600)
-def get_site_info(site_name):
-	"""
-	return SiteInfo object for the respective site
-	:param str site_name: name of the target site
-	:return: SiteInfo object
-	:rtype: SiteInfo
-	"""
-	return SiteInfo(site_name)
-
-@cached(3600)
-def get_host_info(host_name):
-	"""
-	return HostInfo object for the respective host
-	:param str host_name: name of the target host
-	:return: HostInfo object
-	:rtype: HostInfo
-	"""
-	return HostInfo(host_name)

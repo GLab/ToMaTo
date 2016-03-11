@@ -17,7 +17,7 @@
 
 from ..lib.service import get_tomato_inner_proxy as _get_tomato_inner_proxy
 from ..lib.settings import Config as _Config
-from ..authorization import get_user_info as _get_user_info
+from ..authorization import get_user_info as _get_user_info, PermissionChecker, get_pseudo_user_info as _get_pseudo_user_info
 from api_helpers import _getCurrentUserInfo, _getCurrentUserName
 
 #fixme: should be obsolete after migration of user stuff to backend_users
@@ -155,33 +155,19 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	if not attrs: attrs = {}
 	if name is None:
 		name = _getCurrentUserName()
-	modify_allowed_list = _getCurrentUserInfo().modify_user_allowed_keys(_get_user_info(name))
+	modify_keys_allowed_list = _getCurrentUserInfo().modify_user_allowed_keys(_get_user_info(name))
+	modify_flags_allowed = _getCurrentUserInfo().modify_user_allowed_flags(_get_user_info(name))
+
+	attrs = PermissionChecker.reduce_keys_to_allowed(attrs, modify_keys_allowed_list, modify_flags_allowed,
+																									 ignore_key_on_unauthorized, ignore_flag_on_unauthorized)
 
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
-
-	# check authorization for keys
-	for k in attrs.keys():
-		if k not in modify_allowed_list:
-			if ignore_key_on_unauthorized:
-				del attrs[k]
-			else:
-				_UserError.check(False, code=_UserError.DENIED, message="trying to modify a key that is not allowed", data={"allowed_keys": list(modify_allowed_list), "attributes_modifying": attrs.keys()})
-
-	# check authorization for flags
-	if 'flags' in attrs:
-		flags = attrs['flags']
-		allowed_flags = _getCurrentUserInfo().modify_user_allowed_flags(_get_user_info(name))
-		for k in flags.keys():
-			if k not in allowed_flags:
-				if ignore_key_on_unauthorized:
-					del flags[k]
-				else:
-					_UserError.check(False, code=_UserError.DENIED, message="trying to modify a flag that is not allowed", data={"allowed_flags": list(allowed_flags), "flags_modifying": flags.keys()})
+	info = api.user_modify(name, attrs)
 
 	_get_user_info(name).invalidate_info()
-	return api.user_modify(name, attrs)
+	return info
 		
-def account_create(username, password, organization, attrs=None, provider=""):
+def account_create(username, password, organization, attrs=None):
 	"""
 	This method will create a new account in a provider that supports this.
 	
@@ -207,11 +193,21 @@ def account_create(username, password, organization, attrs=None, provider=""):
 	Return value:
 	  This method returns the info dict of the new account.
 	"""
-	# fixme: use backend_users
-	if not attrs: attrs = {}
-	user = register(username, password, organization, attrs, provider)
-	return user.info(True)
-		
+	if _getCurrentUserName() is None:
+		attrs = PermissionChecker.reduce_keys_to_allowed(attrs,
+																												PermissionChecker.account_register_self_allowed_keys(),
+																												[])
+	else:
+		target_user = _get_pseudo_user_info(username, organization)
+		_getCurrentUserInfo().check_may_create_user(target_user)
+		attrs = PermissionChecker.reduce_keys_to_allowed(attrs,
+																												_getCurrentUserInfo().modify_user_allowed_keys(target_user),
+																												_getCurrentUserInfo().modify_user_allowed_flags(target_user))
+	email = attrs.get('email', None)
+	del attrs['email']  # fixme: email should be an api parameter here
+	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
+	return api.user_create(username, organization, email, password, attrs)
+
 def account_remove(name=None):
 	"""
 	Deletes the given account from the database. Note that this does not remove
@@ -246,7 +242,7 @@ def account_send_notification(name, subject, message, ref=None, from_support=Fal
 def broadcast_announcement(title, message, ref=None, show_sender=True, subject_group=None, organization_filter=None):
 	_getCurrentUserInfo().check_may_broadcast_messages(organization_filter)
 	api = _get_tomato_inner_proxy(_Config.TOMATO_MODULE_BACKEND_USERS)
-	api.broadcast_message(title, message, fromUser=(_currentUserName() if show_sender else None), ref=ref,
+	api.broadcast_message(title, message, fromUser=(_getCurrentUserName() if show_sender else None), ref=ref,
 												subject_group=subject_group, organization_filter=organization_filter)
 
 def account_usage(name): #@ReservedAssignment

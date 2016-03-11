@@ -18,6 +18,8 @@
 from .. import currentUser
 from ..connections import Connection
 from elements import _getElement
+from api_helpers import _getCurrentUserInfo
+from ..authorization import get_connection_info as _get_connection_info, get_element_info as _get_element_info
 
 def _getConnection(id_):
 	con = Connection.get(id_)
@@ -62,8 +64,8 @@ def connection_create(el1, el2, attrs=None): #@ReservedAssignment
 	  * one of the elements is already connected
 	  * both elements are the same
 	"""
+	_getCurrentUserInfo().check_may_create_connection(_get_element_info(el1), _get_element_info(el2))
 	if not attrs: attrs = {}
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el1 = _getElement(el1)
 	el2 = _getElement(el2)
 	con = Connection.create(el1, el2, attrs)
@@ -98,7 +100,7 @@ def connection_modify(id, attrs): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection 
 	  state.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_modify_connection(_get_connection_info(id))
 	con = _getConnection(id)
 	con.modify(attrs)
 	return con.info()
@@ -133,7 +135,7 @@ def connection_action(id, action, params=None): #@ReservedAssignment
 	  and state.
 	"""
 	if not params: params = {}
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_run_connection_action(_get_connection_info(id), action, params)
 	con = _getConnection(id)
 	return con.action(action, params)
 
@@ -156,7 +158,7 @@ def connection_remove(id): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection type 
 	  and state.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_remove_connection(_get_connection_info(id))
 	con = _getConnection(id)
 	con.remove()
 
@@ -200,7 +202,7 @@ def connection_info(id, fetch=False): #@ReservedAssignment
 	  If the given connection does not exist or belongs to another owner
 	  an exception *connection does not exist* is raised.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_view_connection(_get_connection_info(id))
 	con = _getConnection(id)
 	if fetch:
 		con.fetchInfo()
@@ -217,7 +219,7 @@ def connection_usage(id): #@ReservedAssignment
 	  Usage statistics for the given connection according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	_getCurrentUserInfo().check_may_view_connection(_get_connection_info(id))
 	con = _getConnection(id)
 	return con.totalUsage.info()
 

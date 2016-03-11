@@ -112,9 +112,6 @@ class VMElement(Element):
 	def modify_profile(self, val):
 		profile = Profile.get(self.TYPE, val)
 		UserError.check(profile, code=UserError.INVALID_VALUE, message="No such profile", data={"value": val})
-		if profile.restricted and not self.profile == profile:
-			UserError.check(currentUser().hasFlag(Flags.RestrictedProfiles), code=UserError.DENIED,
-				message="Profile is restricted")
 		self.profile = profile
 		if self.element:
 			self.element.modify(self._profileAttrs)
@@ -122,9 +119,6 @@ class VMElement(Element):
 	def modify_template(self, tmplName):
 		template = Template.get(self.TYPE, tmplName)
 		UserError.check(template, code=UserError.INVALID_VALUE, message="No such template", data={"value": tmplName})
-		if template.restricted and not self.template == template:
-			UserError.check(currentUser().hasFlag(Flags.RestrictedTemplates), code=UserError.DENIED,
-				message="Template is restricted")
 		self.template = template
 		if self.element:
 			self.element.modify({"template": self.template.name})
@@ -316,5 +310,3 @@ class ConnectingElement(object):
 				els.update(ch.connectedElement.getLocationData(maxDepth=maxDepth-1))
 		return els
 
-from .. import currentUser
-from ..auth import Flags

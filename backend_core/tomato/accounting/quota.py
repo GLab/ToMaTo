@@ -1,29 +1,7 @@
-# -*- coding: utf-8 -*-
-# ToMaTo (Topology management software) 
-# Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>
-
-from .db import *
-
-from lib.decorators import *
-from datetime import datetime, timedelta
+from ..db import *
+from datetime import timedelta
 import time
-from . import scheduler
-
-#TODO: aggregate per user
-#TODO: fetch and save current records of to-be-deleted objects
+from ..lib import util
 
 TYPES = ["5minutes", "hour", "day", "month", "year"]
 KEEP_RECORDS = {
@@ -162,6 +140,7 @@ class Quota(EmbeddedDocument):
 	used = EmbeddedDocumentField(Usage, required=True)
 	usedTime = FloatField(db_field='used_time', required=True)
 	continousFactor = FloatField(db_field='continous_factor')
+	username = StringField(unique=True, required=True)
 
 	def init(self, cputime, memory, diskspace, traffic, continous_factor):
 		self.monthly = Usage(cputime=cputime, memory=memory, diskspace=diskspace, traffic=traffic)
@@ -187,7 +166,7 @@ class Quota(EmbeddedDocument):
 			self.used.traffic = 0.0
 			self.usedTime = start_of_month
 		recs = filter(lambda rec: rec.end > self.usedTime, usageStats.by5minutes)
-		factor = 300.0 / util.secondsInMonth(*util.getYearMonth(time.time())) 
+		factor = 300.0 / util.secondsInMonth(*util.getYearMonth(time.time()))
 		end = self.usedTime
 		for rec in recs:
 			if rec.usage.cputime > self.monthly.cputime * factor * self.continousFactor:
@@ -233,32 +212,3 @@ class Quota(EmbeddedDocument):
 			"used_time": self.usedTime,
 			"continous_factor": self.continousFactor
 		}
-
-@util.wrap_task
-def housekeep():
-	try:
-		exec_js(js_code("accounting_housekeep"), now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
-	except:
-		import traceback
-		traceback.print_exc()
-
-
-@util.wrap_task
-def aggregate():
-	try:
-		exec_js(js_code("accounting_aggregate"), now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
-	except:
-		import traceback
-		traceback.print_exc()
-
-
-@util.wrap_task
-def updateQuota():
-	from . import auth
-	for user in auth.User.objects():
-		user.updateQuota()
-		user.enforceQuota()
-
-scheduler.scheduleRepeated(60, housekeep) #every minute @UndefinedVariable
-scheduler.scheduleRepeated(60, aggregate) #every minute @UndefinedVariable
-scheduler.scheduleRepeated(60, updateQuota) #every minute @UndefinedVariable

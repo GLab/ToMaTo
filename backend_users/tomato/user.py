@@ -20,7 +20,7 @@ from .generic import *
 from .db import *
 from .lib import logging, util, mail #@UnresolvedImport
 from . import scheduler
-from settings import settings, Config
+from .lib.settings import settings, Config
 from .lib.error import UserError
 
 from .lib.userflags import Flags
@@ -67,10 +67,7 @@ class User(Entity, BaseDocument):
 	:type notifications: list of Notification
 	"""
 	from .organization import Organization
-	from .quota import Quota, UsageStatistics
-
-	#fixme: remove this after db migration (cannot load objects without this reference)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
+	from .quota import Quota
 
 	name = StringField(required=True)
 	organization = ReferenceField(Organization, required=True, reverse_delete_rule=DENY)
@@ -92,25 +89,24 @@ class User(Entity, BaseDocument):
 	}
 
 	@classmethod
-	def create(cls, password=None, **kwargs):
+	def create(cls, name, organization, email, password=None, attrs=None):
 		if not password:
 			password = User.randomPassword()
+		if not attrs:
+			attrs = {}
 		from .quota import Quota, Usage
-		default_quota = settings.get_user_quota("default");
-		obj = cls(lastLogin=time.time(), quota=Quota(
-			used=Usage(cputime=0, memory=0, diskspace=0, traffic=0),
-			monthly=Usage(
-				cputime=default_quota["cputime"],
-				memory=default_quota["memory"],
-				diskspace=default_quota["diskspace"],
-				traffic=default_quota["traffic"],
-			),
-			continousFactor=default_quota["continous-factor"],
-			usedTime=time.time()
-		))
+		default_quota = settings.get_user_quota(Config.USER_QUOTA_DEFAULT)
+		obj = cls(lastLogin=time.time(),
+							quota=Quota(
+								used=Usage(cputime=0, memory=0, diskspace=0, traffic=0),
+								monthly=Usage.from_settings(default_quota),
+								continousFactor=default_quota["continous-factor"],
+								usedTime=time.time()
+								)
+							)
 		try:
 			obj.modify_password(password)
-			obj.modify(**kwargs)
+			obj.modify(organization=organization, email=email, **attrs)
 			obj.save()
 		except:
 			if obj.id:

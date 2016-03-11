@@ -5,14 +5,13 @@ from .lib import anyjson as json
 from lib import service
 
 import host
-from . import scheduler, currentUser
+from . import scheduler
 from .lib.error import InternalError, UserError, Error, TransportError  # @UnresolvedImport
 from .lib.rpc.sslrpc import RPCError
 from .lib import util
+from .lib.userflags import Flags
 
 from lib.settings import settings, Config
-
-from auth import User
 
 # Zero-th part: database stuff
 class ErrorDump(EmbeddedDocument):
@@ -75,7 +74,7 @@ class ErrorGroup(BaseDocument):
 	removedDumps = IntField(default=0, db_field='removed_dumps')
 	dumps = ListField(EmbeddedDocumentField(ErrorDump))
 	hidden = BooleanField(default=False)
-	users_favorite = ListField(ReferenceField(User))
+	users_favorite = ListField(StringField())
 	clientData = DictField(db_field='client_data')
 	meta = {
 		'collection': 'error_group',
@@ -103,14 +102,14 @@ class ErrorGroup(BaseDocument):
 				self.LOCKS[key] = lock
 			return lock
 
-	def add_favorite_user(self, user_obj):
-		if user_obj not in self.users_favorite:
-			self.users_favorite.append(user_obj)
+	def add_favorite_user(self, username):
+		if username not in self.users_favorite:
+			self.users_favorite.append(username)
 			self.save()
 
-	def remove_favorite_user(self, user_obj):
-		if user_obj in self.users_favorite:
-			self.users_favorite.remove(user_obj)
+	def remove_favorite_user(self, username):
+		if username in self.users_favorite:
+			self.users_favorite.remove(username)
 			self.save()
 
 	def modify(self, attrs):
@@ -419,7 +418,6 @@ def insert_dump(dump, source):
 	with ErrorGroup.GROUP_LIST_LOCK:
 		group = get_group(dump['group_id'])
 		if not group:
-			from auth import notifyFlaggedUsers, Flags
 			must_fetch_data = True
 			if isinstance(dump['description'], dict):
 				if 'subject' in dump['description'] and 'type' in dump['description']:
@@ -429,12 +427,19 @@ def insert_dump(dump, source):
 			else:
 				group_desc = dump['description']
 			group = create_group(dump['group_id'], group_desc)
-			notifyFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group",
-							 "\n\n".join((
-								 "A new group of error has been found.",
-								 "Description: %s",
-								 "It has first been observed on %s.")) % (
-								 group_desc, source.dump_source_name()), ref=['errorgroup', dump['group_id']])
+			api = service.get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
+			api.broadcast_message(
+				title="[ToMaTo Devs] New Error Group",  # fixme: this message should be configurable
+				message="\n\n".join((
+								"A new group of error has been found.",
+								"Description: %s",
+								"It has first been observed on %s.")) % (
+								group_desc, source.dump_source_name()),
+				ref=["errorgroup", dump['group_id']],
+				subject_group="new_errorgroup",
+				flag_filter=Flags.ErrorNotify
+			)
+
 	with group.lock:
 		group = group.reload()
 		# insert the dump.
@@ -494,13 +499,14 @@ def init():
 
 # Second Part: Access to known dumps for API
 
-def api_errorgroup_list(show_empty=False):
+def api_errorgroup_list(show_empty=False, as_user=None):
 	res = []
 	for grp in getAll_group():
 		with grp.lock:
 			if show_empty or (grp.dumps and (not grp.hidden)):
 				info = grp.info()
-				info['user_favorite'] = (currentUser() in grp.users_favorite)
+				if as_user is not None:
+					info['user_favorite'] = (as_user in grp.users_favorite)
 				res.append(info)
 	return res
 
@@ -579,10 +585,9 @@ def api_errorgroup_hide(group_id):
 def api_force_refresh():
 	return update_all(async=False)
 
-def api_errorgroup_favorite(group_id, is_favorite):
+def api_errorgroup_favorite(username, group_id, is_favorite):
 	group = get_group(group_id)
-	user = currentUser()
 	if is_favorite:
-		group.add_favorite_user(user)
+		group.add_favorite_user(username)
 	else:
-		group.remove_favorite_user(user)
+		group.remove_favorite_user(username)

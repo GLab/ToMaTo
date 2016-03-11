@@ -19,13 +19,13 @@
 
 import sys
 
-from . import currentUser, api, login, dump
+from . import api, login, getCurrentUserInfo
 from .lib import util, rpc, logging #@UnresolvedImport
 from .lib.error import Error, UserError, InternalError
 from lib.settings import settings
 
 def logCall(function, args, kwargs):
-	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name if currentUser() else None)
+	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=getCurrentUserInfo().get_username() if getCurrentUserInfo() else None)
 
 def handleError(error, function, args, kwargs):
 	if not isinstance(error, Error):

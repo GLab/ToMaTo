@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .. import currentUser
+from .. import getCurrentUserInfo
 from ..lib.error import UserError  #@UnresolvedImport
 from ..authorization import get_permission_checker
 
 def checkauth(fn):
 	def call(*args, **kwargs):
-		if not currentUser():
+		if not getCurrentUserInfo():
 			raise UserError(UserError.NOT_LOGGED_IN, message="not logged in")
 		return fn(*args, **kwargs)
 	call.__name__ = fn.__name__
@@ -36,9 +36,9 @@ def _getCurrentUserName():
 	:return: current user name
 	:rtype: str
 	"""
-	u = currentUser()
+	u = getCurrentUserInfo()
 	UserError.check(u is not None, code=UserError.NOT_LOGGED_IN, message="Unauthenticated")
-	return u.name
+	return u.get_username()
 
 def _getCurrentUserInfo():
 	"""
@@ -47,4 +47,4 @@ def _getCurrentUserInfo():
 	:return: PermissionChecker object for current user
 	:rtype: PermissionChecker
 	"""
-	return get_permission_checker(_getCurrentUserName())
+	return getCurrentUserInfo()

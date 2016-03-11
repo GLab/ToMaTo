@@ -41,6 +41,15 @@ class Usage(EmbeddedDocument):
 			"traffic": self.traffic
 		}
 
+	@classmethod
+	def from_settings(cls, settings_entry):
+		return cls(
+				cputime=settings_entry["cputime"],
+				memory=settings_entry["memory"],
+				diskspace=settings_entry["diskspace"],
+				traffic=settings_entry["traffic"],
+			)
+
 class Quota(EmbeddedDocument):
 	monthly = EmbeddedDocumentField(Usage, required=True)
 	used = EmbeddedDocumentField(Usage, required=True)
@@ -117,40 +126,3 @@ class Quota(EmbeddedDocument):
 			"used_time": self.usedTime,
 			"continous_factor": self.continousFactor
 		}
-
-
-
-
-
-#fixme: should be removed after db migration
-class UsageRecord(EmbeddedDocument):
-	__slots__ = ("_cls", "begin", "end", "measurements", "usage")
-	begin = FloatField(required=True, db_field="b")
-	end = FloatField(required=True, db_field="e")
-	measurements = IntField(default=0, db_field="m")
-	usage = EmbeddedDocumentField(Usage, required=True, db_field="u")
-	meta = {
-		'collection': 'usage_record',
-		'ordering': ['type', 'end'],
-		'indexes': [
-			('type', 'end')
-		]
-	}
-
-#fixme: should be removed after db migration
-class UsageStatistics(BaseDocument):
-	"""
-	:type by5minutes: list of UsageRecord
-	:type byHour: list of UsageRecord
-	:type byDay: list of UsageRecord
-	:type byMonth: list of UsageRecord
-	:type byYear: list of UsageRecord
-	"""
-	by5minutes = ListField(EmbeddedDocumentField(UsageRecord), db_field='5minutes')
-	byHour = ListField(EmbeddedDocumentField(UsageRecord), db_field='hour')
-	byDay = ListField(EmbeddedDocumentField(UsageRecord), db_field='day')
-	byMonth = ListField(EmbeddedDocumentField(UsageRecord), db_field='month')
-	byYear = ListField(EmbeddedDocumentField(UsageRecord), db_field='year')
-	meta = {
-		'collection': 'usage_statistics',
-	}
