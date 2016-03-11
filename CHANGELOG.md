@@ -3,7 +3,7 @@
 This file should be used to track all changes to ToMaTo in a similar way to [VpnCloud](https://github.com/dswd/vpncloud.rs/blob/master/CHANGELOG.md)
 Entries should be prefixed with some tags:
 - Status tags: `added`, `fixed`, `changed`, `removed`
-- Component tags: `backend_core`, `web`, `cli`, `hostmanager`
+- Component tags: `backend_core`, `web`, `cli`, `hostmanager`, `misc`
 Entries should be sorted by component and status with important entries and entries with multiple components being on top.
 
 
@@ -23,7 +23,7 @@ Entries should be sorted by component and status with important entries and entr
 - [backend_core, fixed] Fixed problem with dumpmanager collecting errors
 - [backend, removed] Removed useless dump environment infos
 - [web, fixed] Fixed small menu display issue for vpncloud switches
-- [hostmanager] Fixed problem with vpncloud dropping ARP packets
+- [hostmanager, fixed] Fixed problem with vpncloud dropping ARP packets
 
 
 ### UNRELEASED (NOT RUNNING ON SERVERS)
@@ -31,3 +31,4 @@ Entries should be sorted by component and status with important entries and entr
 - [backend, web, changed] Changed docker mount points of tomato code
 - [backend_core, changed] Backend_core no longer uses two separate ssl keys
 - [backend_core, web, fixed] Fixed tomato-ctl stopping behaviour
+- [misc, fixed] Fixed data link in tutorial
