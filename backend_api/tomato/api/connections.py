@@ -15,9 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
-from elements import _getElement
+from ..lib.service import get_backend_core_proxy
 from api_helpers import getCurrentUserInfo
 from ..lib.remote_info import get_connection_info, get_element_info
 
@@ -60,11 +58,7 @@ def connection_create(el1, el2, attrs=None): #@ReservedAssignment
 	  * both elements are the same
 	"""
 	getCurrentUserInfo().check_may_create_connection(get_element_info(el1), get_element_info(el2))
-	if not attrs: attrs = {}
-	el1 = _getElement(el1)
-	el2 = _getElement(el2)
-	con = Connection.create(el1, el2, attrs)
-	return con.info()
+	return get_backend_core_proxy().connection_create(el1, el2, attrs)
 
 def connection_modify(id, attrs): #@ReservedAssignment
 	"""
@@ -96,9 +90,7 @@ def connection_modify(id, attrs): #@ReservedAssignment
 	  state.
 	"""
 	getCurrentUserInfo().check_may_modify_connection(get_connection_info(id))
-	con = _getConnection(id)
-	con.modify(attrs)
-	return con.info()
+	return get_backend_core_proxy().connection_modify(id, attrs)
 
 def connection_action(id, action, params=None): #@ReservedAssignment
 	"""
@@ -131,8 +123,7 @@ def connection_action(id, action, params=None): #@ReservedAssignment
 	"""
 	if not params: params = {}
 	getCurrentUserInfo().check_may_run_connection_action(get_connection_info(id), action, params)
-	con = _getConnection(id)
-	return con.action(action, params)
+	return get_backend_core_proxy().connection_action(id, action, params)
 
 def connection_remove(id): #@ReservedAssignment
 	"""
@@ -154,8 +145,7 @@ def connection_remove(id): #@ReservedAssignment
 	  and state.
 	"""
 	getCurrentUserInfo().check_may_remove_connection(get_connection_info(id))
-	con = _getConnection(id)
-	con.remove()
+	get_backend_core_proxy().connection_remove(id)
 
 def connection_info(id, fetch=False): #@ReservedAssignment
 	"""
@@ -198,10 +188,7 @@ def connection_info(id, fetch=False): #@ReservedAssignment
 	  an exception *connection does not exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_view_connection(get_connection_info(id))
-	con = _getConnection(id)
-	if fetch:
-		con.fetchInfo()
-	return con.info()
+	return get_backend_core_proxy().connection_info(id, fetch)
 	
 def connection_usage(id): #@ReservedAssignment
 	"""
@@ -215,6 +202,5 @@ def connection_usage(id): #@ReservedAssignment
 	  :doc:`/docs/accountingdata`.
 	"""
 	getCurrentUserInfo().check_may_view_connection(get_connection_info(id))
-	con = _getConnection(id)
-	return con.totalUsage.info()
+	# fixme: broken
 

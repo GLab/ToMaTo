@@ -15,39 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
-from ..lib.cache import cached #@UnresolvedImport
+from ..lib.service import get_backend_core_proxy
 
 def capabilities_element(type, host=None): #@ReservedAssignment
-	typeClass = elements.TYPES.get(type)
-	UserError.check(typeClass, code=UserError.UNSUPPORTED_TYPE, message="No such element type", data={"type": type})
-	if host:
-		host = Host.get(name=host)
-		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
-	return typeClass.getCapabilities(host)
+	return get_backend_core_proxy().capabilities_element(type, host)
 
 def capabilities_connection(type, host=None): #@ReservedAssignment
-	if host:
-		host = Host.get(name=host)
-		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
-	return connections.Connection.getCapabilities(type, host)
+	return get_backend_core_proxy().capabilities_connection(type, host)
 
-@cached(timeout=24*3600, autoupdate=True)
 def capabilities():
-	res = {"element": {}, "connection": {}}
-	host = None
-	for t in elements.TYPES:
-		typeClass = elements.TYPES.get(t)
-		host = typeClass.selectCapabilitiesHost(host)
-		res["element"][t] = typeClass.getCapabilities(host)
-	for t in ["bridge", "fixed_bridge"]:
-		if not host or not t in host.connectionTypes:
-			host = select(connectionTypes=[t], best=False)
-		res["connection"][t] = connections.Connection.getCapabilities(t, host)
-	return res
-
-
-from .. import elements, connections
-from ..host import Host, select
-from ..lib.error import UserError
+	return get_backend_core_proxy().capabilities()

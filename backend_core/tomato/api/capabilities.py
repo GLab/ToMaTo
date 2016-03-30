@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
 from ..lib.cache import cached #@UnresolvedImport
 
 def capabilities_element(type, host=None): #@ReservedAssignment

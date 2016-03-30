@@ -1,7 +1,3 @@
-
-
-#fixme: all.
-
 from .. import scheduler
 import traceback, sys
 from api_helpers import getCurrentUserInfo
@@ -30,4 +26,5 @@ def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
 		return api.debug_stats()
 
 def debug_services_reachable():
-	return {module: is_reachable(module) for module in Config.TOMATO_BACKEND_MODULES}
+	res = {module: is_reachable(module) for module in Config.TOMATO_BACKEND_MODULES}
+	res[Config.TOMATO_MODULE_BACKEND_API] = True
