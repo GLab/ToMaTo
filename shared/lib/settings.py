@@ -115,7 +115,7 @@ backend_core:
     tracker-port: 8002
     bittorrent-restart: 1800  # 30 minutes
   database:
-    db-name: tomato
+    db-name: tomato_backend_core
     server:
       host: dockerhost  # you may need to use %(OS__DB_PORT_27017_TCP_ADDR)s instead...
       port: 27017  # you may need to use %(OS__DB_PORT_27017_TCP_PORT)s instead...
@@ -140,7 +140,7 @@ backend_users:
     key:  /etc/tomato/backend_users.pem
     ca:  /etc/tomato/ca.pem
   database:
-    db-name: tomato
+    db-name: tomato_backend_users
     server:
       host: dockerhost  # you may need to use %(DB_PORT_27017_TCP_ADDR)s instead...
       port: 27017  # you may need to use %(DB_PORT_27017_TCP_PORT)s instead...
