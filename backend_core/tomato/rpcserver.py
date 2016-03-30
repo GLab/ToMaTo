@@ -19,13 +19,16 @@
 
 import sys
 
-from . import api, login, getCurrentUserInfo
-from .lib import util, rpc, logging #@UnresolvedImport
+from . import api
+from .lib import util, sslrpc2, logging #@UnresolvedImport
 from .lib.error import Error, UserError, InternalError
+
 from lib.settings import settings
 
+import ssl
+
 def logCall(function, args, kwargs):
-	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=getCurrentUserInfo().get_username() if getCurrentUserInfo() else None)
+	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs)
 
 def handleError(error, function, args, kwargs):
 	if not isinstance(error, Error):
@@ -37,43 +40,26 @@ def handleError(error, function, args, kwargs):
 	error.dump()
 	return error
 
-def afterCall(*args, **kwargs):
-	pass
-
 def runServer(server):
 	try:
 		server.serve_forever()
 	except KeyboardInterrupt:
 		pass
 
-servers = []
-
-def wrapError(error, func, args, kwargs):
-	error = handleError(error, func, args, kwargs)
-	assert isinstance(error, Error)
-	import traceback
-	error.data['trace'] = traceback.format_exc()
-	if isinstance(error, InternalError):
-		print >>sys.stderr, error
-	if error.code == UserError.NOT_LOGGED_IN:
-		return rpc.xmlrpc.ErrorUnauthorized()
-	return rpc.Fault(999, error.rawstr)
+global server
 
 def start():
-	print >>sys.stderr, "Starting RPC servers"
-	global servers
-	del servers[:]
-	for conf in settings.get_own_interface_config():
-		server_address = ('', conf['port'])
-		sslOpts = None
-		if conf.get('ssl', False):
-			sslOpts = rpc.SSLOpts(private_key=settings.get_ssl_key_filename(), certificate=settings.get_ssl_cert_filename(), client_certs=None)
-		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=wrapError)
-		server.register(api)
-		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
+	global server
+	print >>sys.stderr, "Starting RPC server..."
+	def wrapError(error, method, args, kwargs):
+		error = handleError(error, method, args, kwargs)
+		return sslrpc2.Failure(error.raw)
+	for config in settings.get_own_interface_config():
+		server = sslrpc2.Server(('0.0.0.0', config['port']), beforeExecute=logCall, onError=wrapError, keyfile=settings.get_ssl_key_filename(),
+							certfile=settings.get_ssl_cert_filename(), ca_certs=settings.get_ssl_ca_filename(), cert_reqs=ssl.CERT_REQUIRED)
+		server.registerContainer(api)
 		util.start_thread(server.serve_forever)
-		servers.append(server)
+		print >>sys.stderr, "done."
 
 def stop():
-	for server in servers:
-		server.shutdown()
+	server.shutdown()

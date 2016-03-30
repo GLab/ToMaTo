@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import getCurrentUserInfo, getCurrentUserName
-from ..authorization.info import get_topology_info
 from ..lib.topology_role import role_descriptions
 from ..lib.service import get_backend_users_proxy
 
@@ -25,20 +23,19 @@ def _getTopology(id_):
 	UserError.check(top, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"id": id_})
 	return top
 
-def topology_create():
+def topology_create(owner_username):
 	"""
 	Creates an empty topology.
+
+	Parameter *owner_username*:
+	  Username of initial owner
 	
 	Return value:
 	  The return value of this method is the info dict of the new topology as
 	  returned by :py:func:`topology_info`. This info dict also contains the
 	  topology id that is needed for further manipulation of that object.
 	"""
-	getCurrentUserInfo().check_may_create_topologies()
-	return topology.create(getCurrentUserName()).info()
-
-def topology_permissions():
-	return role_descriptions()
+	return topology.create(owner_username).info()
 
 def topology_remove(id): #@ReservedAssignment
 	"""
@@ -51,7 +48,6 @@ def topology_remove(id): #@ReservedAssignment
 	  The topology must not contain elements or connections, otherwise the call
 	  will fail.
 	"""
-	getCurrentUserInfo().check_may_remove_topology(get_topology_info(id))
 	top = _getTopology(id)
 	top.remove()
 
@@ -77,12 +73,11 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  returned by :py:func:`topology_info`. This info dict will reflect all
 	  attribute changes.	
 	"""
-	getCurrentUserInfo().check_may_modify_topology(get_topology_info(id))
 	top = _getTopology(id)
 	top.modify(attrs)
 	return top.info()
 
-def topology_action(id, action, params=None): #@ReservedAssignment
+def topology_action(id, action, params): #@ReservedAssignment
 	"""
 	Performs an action on the whole topology (i.e. on all elements) in a smart
 	way.
@@ -127,8 +122,6 @@ def topology_action(id, action, params=None): #@ReservedAssignment
 	  of the action to the topology can be checked using 
 	  :py:func:`~topology_info`.	
 	"""
-	if not params: params = {}
-	getCurrentUserInfo().check_may_run_topology_action(get_topology_info(id), action, params)
 	top = _getTopology(id)
 	return top.action(action, params)
 
@@ -178,11 +171,10 @@ def topology_info(id, full=False): #@ReservedAssignment
 	``permissions``
 	  A dict with usernames as the keys and permission levels as values.
 	"""
-	getCurrentUserInfo().check_may_view_topology(get_topology_info(id))
 	top = _getTopology(id)
 	return top.info(full)
 
-def topology_list(full=False, showAll=False, organization=None): #@ReservedAssignment
+def topology_list(full=False, organization_filter=None, username_filter=None): #@ReservedAssignment
 	"""
 	Retrieves information about all topologies the user can access.
 
@@ -194,18 +186,17 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	  contains exactly the same information as returned by 
 	  :py:func:`topology_info`. If no topologies exist, the list is empty. 
 	"""
+	# fixme: is broken since arguments have changed.
 	if organization:
-		getCurrentUserInfo().check_may_list_organization_topologies(organization)
 		users = get_backend_users_proxy().username_list(organization=organization)
 		tops = topology.getAll(permissions__user__in=users, permissions__role="owner")
 	elif showAll:
-		getCurrentUserInfo().check_may_list_all_topologies()
 		tops = topology.getAll()
 	else:
 		tops = topology.getAll(permissions__user=getCurrentUserName())
 	return [top.info(full) for top in tops]
 
-def topology_permission(id, user, role): #@ReservedAssignment
+def topology_set_permission(id, user, role): #@ReservedAssignment
 	"""
 	Grants/changes permissions for a user on a topology. See :doc:`permissions`
 	for further information about available roles and their meanings.
@@ -222,7 +213,6 @@ def topology_permission(id, user, role): #@ReservedAssignment
 	  The name of the role for this user. If the user already has a role,
 	  if will be changed.
 	"""
-	getCurrentUserInfo().check_may_grant_permission_for_topologies(get_topology_info(id))
 	top = _getTopology(id)
 	top.setRole(user, role)
 	
@@ -237,7 +227,6 @@ def topology_usage(id): #@ReservedAssignment
 	  Usage statistics for the given topology according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	getCurrentUserInfo().check_may_view_topology_usage(get_topology_info(id))
 	top = _getTopology(id)
 	return top.totalUsage.info()
 

@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import getCurrentUserInfo
+#fixme: all.
+
 from ..dumpmanager import api_errordump_info, api_errordump_list, api_errorgroup_favorite,\
 	api_errorgroup_hide, api_errorgroup_info, api_errorgroup_list, api_errorgroup_modify, api_errorgroup_remove,\
 	api_force_refresh

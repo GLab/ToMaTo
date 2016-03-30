@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import checkauth, getCurrentUserInfo
-from ..authorization.info import get_template_info
+#fixme: all.
+
 from ..lib.cache import cached, invalidates
 
 def _getTemplate(id_):

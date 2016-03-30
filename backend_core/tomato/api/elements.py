@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+#fixme: all.
+
 def _getElement(id_):
 	el = Element.get(id_)
 	UserError.check(el, code=UserError.ENTITY_DOES_NOT_EXIST, message="Element with that id does not exist", data={"id": id_})

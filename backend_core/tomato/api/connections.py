@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+#fixme: all.
+
 from ..connections import Connection
 from elements import _getElement
-from api_helpers import getCurrentUserInfo
-from ..authorization.info import get_connection_info, get_element_info
 from ..lib.error import UserError
 
 def _getConnection(id_):

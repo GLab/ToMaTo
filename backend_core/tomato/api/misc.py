@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+#fixme: all.
+
 from ..lib.cache import cached
 import time
 from ..lib.versioninfo import getVersionStr
-from api_helpers import checkauth, getCurrentUserInfo, getCurrentUserName
 from ..lib.service import get_backend_users_proxy
 from ..lib.userflags import Flags
 

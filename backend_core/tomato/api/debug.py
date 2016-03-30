@@ -1,8 +1,9 @@
 from .. import scheduler
 import traceback, sys
-from api_helpers import getCurrentUserInfo
 from ..lib.settings import Config
 from ..lib.service import is_reachable, is_self, get_tomato_inner_proxy
+
+#fixme: all.
 
 def debug(method, args=None, kwargs=None, profile=None):
 	getCurrentUserInfo().check_may_view_debugging_info()
