@@ -412,6 +412,10 @@ def read_config():
 		if "version" not in config[module]:
 			config[module]['version'] = subprocess.check_output(["bash", "-c", "cd '%s'; git describe --tags | cut -f1,2 -d'-'" % config['tomato_dir']]).split()[0]
 
+		for dirname, directory in config[module]['directories'].items():
+			if not os.path.isabs(directory):
+				config[module]['directories'][dirname] = os.path.join(config['docker_dir'], directory)
+
 		additional_dirs_new = []
 		for additional_dir in config[module]['additional_directories']:
 			directory = additional_dir[0] % config[module]['directories']
