@@ -70,7 +70,7 @@ time.sleep(1)
 print ""
 
 # recreate missing certs
-print "Gnerating Certs..."
+print "Generating Certs..."
 subprocess.call(["./tomato-ctl.py", "gencerts"])
 time.sleep(5)
 print ""
