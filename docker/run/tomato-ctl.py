@@ -670,7 +670,7 @@ if len(args) == 2:
 				run_observing("openssl", "req", "-new", "-key", service_key, "-out", service_csr, "-sha512", "-subj", "/CN=ToMaTo %s" % module_name)
 			if not os.path.exists(service_file) or new_ca:
 				run_observing("openssl", "x509", "-req", "-in", service_csr, "-CA", ca_cert, "-CAkey", ca_key, "-CAcreateserial", "-out", service_cert, "-days", "10240", "-sha512")
-				run_observing("sh", "-c", "cat %s %s %s > %s" % (ca_cert, service_cert, service_key, service_file))
+				run_observing("sh", "-c", "cat %s %s %s > %s" % (service_cert, ca_cert, service_key, service_file))
 			if not os.path.exists(ca_file) or new_ca:
 				shutil.copy(ca_cert, ca_file)
 		exit(0)
