@@ -18,6 +18,7 @@
 #fixme: all.
 
 from api_helpers import getCurrentUserInfo
+from ..lib.service import get_backend_core_proxy
 
 def errordump_info(group_id, source, dump_id, include_data=False):
     """
@@ -45,7 +46,7 @@ def errordump_info(group_id, source, dump_id, include_data=False):
       If include_data is True, it will contain a data field, otherwise a data_available indicator.
     """
     getCurrentUserInfo().check_may_view_debugging_info()
-    return api_errordump_info(group_id, source, dump_id, include_data)
+    return get_backend_core_proxy().errordump_info(group_id, source, dump_id, include_data)
 
 def errordump_list(group_id, source=None, data_available=None):
     """
@@ -64,7 +65,7 @@ def errordump_list(group_id, source=None, data_available=None):
       A list of dumps, filtered by the arguments.
     """
     getCurrentUserInfo().check_may_view_debugging_info()
-    return api_errordump_list(group_id, source, data_available)
+    return get_backend_core_proxy().errordump_list(group_id, source, data_available)
 
 def errorgroup_info(group_id, include_dumps=False):
     """
@@ -80,14 +81,14 @@ def errorgroup_info(group_id, include_dumps=False):
       The return value of this method is the info dict of the group, maybe expanded by a list of dumps.
     """
     getCurrentUserInfo().check_may_view_debugging_info()
-    return api_errorgroup_info(group_id, include_dumps)
+    return get_backend_core_proxy().errorgroup_info(group_id, include_dumps)
 
 def errorgroup_list(show_empty=False):
     """
     Returns a list of all error groups.
     """
     getCurrentUserInfo().check_may_view_debugging_info()
-    return api_errorgroup_list(show_empty, as_user=getCurrentUserInfo().get_username())
+    return get_backend_core_proxy().errorgroup_list(show_empty, as_user=getCurrentUserInfo().get_username())
 
 def errorgroup_modify(group_id, attrs):
     """
@@ -104,7 +105,7 @@ def errorgroup_modify(group_id, attrs):
       The return value of this method is the info dict of the group.
     """
     getCurrentUserInfo().check_may_view_debugging_info()
-    return api_errorgroup_modify(group_id, attrs)
+    return get_backend_core_proxy().errorgroup_modify(group_id, attrs)
 
 def errorgroup_remove(group_id):
     """
@@ -114,7 +115,7 @@ def errorgroup_remove(group_id):
       The unique identifier of the group to be removed.
     """
     getCurrentUserInfo().check_may_view_debugging_info()
-    api_errorgroup_remove(group_id)
+    get_backend_core_proxy().errorgroup_remove(group_id)
     
 def errordumps_force_refresh():
     """
@@ -126,7 +127,7 @@ def errordumps_force_refresh():
       The time in seconds it takes until all dumps should be collected.
     """
     getCurrentUserInfo().check_may_view_debugging_info()
-    return api_force_refresh()
+    return get_backend_core_proxy().force_refresh()
 
 def errorgroup_hide(group_id):
 		"""
@@ -137,7 +138,7 @@ def errorgroup_hide(group_id):
 		:return: None
 		"""
 		getCurrentUserInfo().check_may_view_debugging_info()
-		api_errorgroup_hide(group_id)
+		get_backend_core_proxy().errorgroup_hide(group_id)
 
 def errorgroup_favorite(group_id, is_favorite):
 		"""
@@ -148,4 +149,4 @@ def errorgroup_favorite(group_id, is_favorite):
 		:return: None
 		"""
 		getCurrentUserInfo().check_may_view_debugging_info()
-		api_errorgroup_favorite(getCurrentUserInfo().get_username(), group_id, is_favorite)
+		get_backend_core_proxy().errorgroup_favorite(getCurrentUserInfo().get_username(), group_id, is_favorite)
