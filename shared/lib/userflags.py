@@ -10,14 +10,14 @@ class Flags:
 	RestrictedTemplates ="restricted_templates"
 	RestrictedNetworks ="restricted_networks"
 	NoMails = "nomails"
-	GlobalAdmin = "global_admin" #alle rechte für alle vergeben
+	GlobalAdmin = "global_admin" #alle rechte fuer alle vergeben
 	GlobalHostManager = "global_host_manager"
 	GlobalToplOwner = "global_topl_owner"
 	GlobalToplManager = "global_topl_manager"
 	GlobalToplUser = "global_topl_user"
 	GlobalHostContact = "global_host_contact"
 	GlobalAdminContact = "global_admin_contact"
-	OrgaAdmin = "orga_admin" #nicht "global-" rechte vergeben für eigene user (auch nicht debug)
+	OrgaAdmin = "orga_admin" #nicht "global-" rechte vergeben fuer eigene user (auch nicht debug)
 	OrgaHostManager = "orga_host_manager" # eigene orga, hosts und sites verwalten
 	OrgaToplOwner = "orga_topl_owner"
 	OrgaToplManager = "orga_topl_manager"
