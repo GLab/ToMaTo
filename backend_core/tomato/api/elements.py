@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
 def _getElement(id_):
 	el = Element.get(id_)
 	UserError.check(el, code=UserError.ENTITY_DOES_NOT_EXIST, message="Element with that id does not exist", data={"id": id_})
@@ -61,12 +59,7 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	  an exception *element does not exist* is raised.
 	  Various other exceptions can be raised, depending on the given type.
 	"""
-	getCurrentUserInfo().check_may_create_element(get_topology_info(top))
 	if not attrs: attrs = {}
-	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info(get_element_info(id).get_type(), attrs['template']))
-	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info(get_element_info(id).get_type(), attrs['profile']))
 	top = _getTopology(top)
 	if parent:
 		parent = _getElement(parent)
@@ -102,11 +95,6 @@ def element_modify(id, attrs): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	getCurrentUserInfo().check_may_modify_element(get_element_info(id))
-	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info(get_element_info(id).get_type(), attrs['template']))
-	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info(get_element_info(id).get_type(), attrs['profile']))
 	el = _getElement(id)
 	el.modify(attrs)
 	return el.info()
@@ -143,7 +131,6 @@ def element_action(id, action, params=None): #@ReservedAssignment
 	  and state.
 	"""
 	if not params: params = {}
-	getCurrentUserInfo().check_may_run_element_action(get_element_info(id), action, params)
 	el = _getElement(id)
 	return el.action(action, params)
 
@@ -182,7 +169,6 @@ def element_remove(id): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	getCurrentUserInfo().check_may_remove_element(get_element_info(id))
 	el = _getElement(id)
 	el.remove()
 
@@ -288,7 +274,6 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	  If the given element does not exist or belongs to another owner
 	  an exception *element does not exist* is raised.
 	"""
-	getCurrentUserInfo().check_may_view_element(get_element_info(id))
 	el = _getElement(id)
 	if fetch:
 		el.fetchInfo()
@@ -305,12 +290,10 @@ def element_usage(id): #@ReservedAssignment
 	  Usage statistics for the given element according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	getCurrentUserInfo().check_may_view_element(get_element_info(id))
+	# fixme: broken
 	el = _getElement(id)
 	return el.totalUsage.info()	
 
 from ..elements import Element
 from .topology import _getTopology
 from ..lib.error import UserError
-from api_helpers import getCurrentUserInfo
-from ..authorization.info import get_topology_info, get_element_info, get_profile_info, get_template_info

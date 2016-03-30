@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
 
 def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	"""
@@ -63,11 +61,7 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 		getCurrentUserInfo().check_may_use_template(get_template_info(get_element_info(id).get_type(), attrs['template']))
 	if "profile" in attrs:
 		getCurrentUserInfo().check_may_use_profile(get_profile_info(get_element_info(id).get_type(), attrs['profile']))
-	top = _getTopology(top)
-	if parent:
-		parent = _getElement(parent)
-	el = Element.create(top, type, parent, attrs)
-	return el.info()
+	return get_backend_core_proxy().element_create(top, type, parent, attrs)
 
 def element_modify(id, attrs): #@ReservedAssignment
 	"""
@@ -103,9 +97,7 @@ def element_modify(id, attrs): #@ReservedAssignment
 		getCurrentUserInfo().check_may_use_template(get_template_info(get_element_info(id).get_type(), attrs['template']))
 	if "profile" in attrs:
 		getCurrentUserInfo().check_may_use_profile(get_profile_info(get_element_info(id).get_type(), attrs['profile']))
-	el = _getElement(id)
-	el.modify(attrs)
-	return el.info()
+	return get_backend_core_proxy().element_modify(id, attrs)
 
 def element_action(id, action, params=None): #@ReservedAssignment
 	"""
@@ -140,8 +132,7 @@ def element_action(id, action, params=None): #@ReservedAssignment
 	"""
 	if not params: params = {}
 	getCurrentUserInfo().check_may_run_element_action(get_element_info(id), action, params)
-	el = _getElement(id)
-	return el.action(action, params)
+	return get_backend_core_proxy().element_action(id, action, params)
 
 def element_remove(id): #@ReservedAssignment
 	"""
@@ -179,8 +170,7 @@ def element_remove(id): #@ReservedAssignment
 	  and state.
 	"""
 	getCurrentUserInfo().check_may_remove_element(get_element_info(id))
-	el = _getElement(id)
-	el.remove()
+	return get_backend_core_proxy().element_remove(id)
 
 def element_info(id, fetch=False): #@ReservedAssignment
 	"""
@@ -285,10 +275,7 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	  an exception *element does not exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_view_element(get_element_info(id))
-	el = _getElement(id)
-	if fetch:
-		el.fetchInfo()
-	return el.info()
+	return get_backend_core_proxy().element_info(id, fetch)
 	
 def element_usage(id): #@ReservedAssignment
 	"""
@@ -302,10 +289,8 @@ def element_usage(id): #@ReservedAssignment
 	  :doc:`/docs/accountingdata`.
 	"""
 	getCurrentUserInfo().check_may_view_element(get_element_info(id))
-	el = _getElement(id)
-	return el.totalUsage.info()	
+	# fixme: broken
 
-from .topology import _getTopology
-from ..lib.error import UserError
 from api_helpers import getCurrentUserInfo
 from ..lib.remote_info import get_topology_info, get_element_info, get_profile_info, get_template_info
+from ..lib.service import get_backend_core_proxy
