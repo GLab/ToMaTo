@@ -177,10 +177,10 @@ class HostInfo(InfoObj):
 		return get_backend_core_proxy().host_exists(self.name)
 
 	def _fetch_data(self):
-		return get_backend_core_proxy().host_exists(self.name)
+		return get_backend_core_proxy().host_info(self.name)
 
 	def get_organization_name(self):
-		return self.host.site.organization
+		return self.info()['organization']
 
 
 class ElementInfo(InfoObj):
@@ -199,10 +199,10 @@ class ElementInfo(InfoObj):
 		return get_backend_core_proxy().element_info(self.eid)
 
 	def get_topology_info(self):
-		return get_topology_info(self.element.topology.id)
+		return get_topology_info(self.info()['topology'])
 
 	def get_type(self):
-		return self.element.type
+		return self.info()['type']
 
 class ConnectionInfo(InfoObj):
 	__slots__ = ("cid",)
@@ -220,7 +220,7 @@ class ConnectionInfo(InfoObj):
 		return get_backend_core_proxy().connection_exists(self.cid)
 
 	def get_topology_info(self):
-		return get_topology_info(self.connection.topology.id)
+		return get_topology_info(self.info()['topology'])
 
 class TemplateInfo(InfoObj):
 	__slots__ = ("name", "tech")
@@ -239,7 +239,7 @@ class TemplateInfo(InfoObj):
 		return get_backend_core_proxy().template_exists(self.tech, self.name)
 
 	def is_restricted(self):
-		return self.temlate.restricted
+		return self.info()['restricted']
 
 class ProfileInfo(InfoObj):
 	__slots__ = ("name", "tech")
@@ -258,7 +258,7 @@ class ProfileInfo(InfoObj):
 		return get_backend_core_proxy().profile_exists(self.tech, self.name)
 
 	def is_restricted(self):
-		return self.profile.restricted
+		return self.info()['restricted']
 
 class NetworkInfo(InfoObj):
 	__slots__ = ("kind",)
@@ -276,7 +276,7 @@ class NetworkInfo(InfoObj):
 		return get_backend_core_proxy().network_exists(self.kind)
 
 	def is_restricted(self):
-		return self.k.restricted
+		return self.info()['restricted']
 
 
 
