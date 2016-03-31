@@ -103,7 +103,7 @@ class TopologyInfo(InfoObj):
 		return get_backend_core_proxy().topology_exists(self.topology_id)
 
 	def _fetch_data(self):
-		return get_backend_core_proxy().topology_exists(self.topology_id)
+		return get_backend_core_proxy().topology_info(self.topology_id)
 
 	def user_has_role(self, username, role):
 		"""
@@ -217,45 +217,43 @@ class ConnectionInfo(InfoObj):
 		return get_backend_core_proxy().connection_exists(self.cid)
 
 	def _fetch_data(self):
-		return get_backend_core_proxy().connection_exists(self.cid)
+		return get_backend_core_proxy().connection_info(self.cid)
 
 	def get_topology_info(self):
 		return get_topology_info(self.info()['topology'])
 
 class TemplateInfo(InfoObj):
-	__slots__ = ("name", "tech")
+	__slots__ = ("template_id")
 
-	def __init__(self, tech, name):
+	def __init__(self, template_id):
 		super(TemplateInfo, self).__init__()
-		self.tech = tech
-		self.name = name
+		self.template_id = template_id
 
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().template_exists(self.tech, self.name)
+		return get_backend_core_proxy().template_exists(self.template_id)
 
 	def _fetch_data(self):
-		return get_backend_core_proxy().template_exists(self.tech, self.name)
+		return get_backend_core_proxy().template_info(self.template_id)
 
 	def is_restricted(self):
 		return self.info()['restricted']
 
 class ProfileInfo(InfoObj):
-	__slots__ = ("name", "tech")
+	__slots__ = ("profile_id")
 
-	def __init__(self, tech, name):
+	def __init__(self, profile_id):
 		super(ProfileInfo, self).__init__()
-		self.tech = tech
-		self.name = name
+		self.profile_id = profile_id
 
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().profile_exists(self.tech, self.name)
+		return get_backend_core_proxy().profile_exists(self.profile_id)
 
 	def _fetch_data(self):
-		return get_backend_core_proxy().profile_exists(self.tech, self.name)
+		return get_backend_core_proxy().profile_info(self.profile_id)
 
 	def is_restricted(self):
 		return self.info()['restricted']
@@ -273,7 +271,7 @@ class NetworkInfo(InfoObj):
 		return get_backend_core_proxy().network_exists(self.kind)
 
 	def _fetch_data(self):
-		return get_backend_core_proxy().network_exists(self.kind)
+		return get_backend_core_proxy().network_info(self.kind)
 
 	def is_restricted(self):
 		return self.info()['restricted']
