@@ -59,8 +59,6 @@ from . import rpcserver
 from lib.cmd import process
 from lib import util, cache
 
-scheduler.scheduleRepeated(settings.settings.get_bittorrent_settings()['bittorrent-restart'], util.wrap_task(bittorrent.restartClient))
-
 stopped = threading.Event()
 
 #import dump

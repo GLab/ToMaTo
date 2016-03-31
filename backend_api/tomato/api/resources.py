@@ -65,7 +65,6 @@ def template_create(tech, name, attrs=None):
 	getCurrentUserInfo().check_may_create_user_resources()
 	return get_backend_core_proxy().template_create(tech, name, attrs)
 
-@invalidates(template_list)
 def template_modify(id, attrs):
 	"""
 	Modifies a template, configuring it with the given attributes.

@@ -34,6 +34,9 @@ def get_tomato_inner_proxy(tomato_module):
 def get_backend_users_proxy():
 	return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_USERS)
 
+def get_backend_core_proxy():
+	return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_API)
+
 def is_reachable(tomato_module):
 	if is_self(tomato_module):
 		return True
