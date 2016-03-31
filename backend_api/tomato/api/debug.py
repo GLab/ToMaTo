@@ -28,3 +28,4 @@ def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
 def debug_services_reachable():
 	res = {module: is_reachable(module) for module in Config.TOMATO_BACKEND_MODULES}
 	res[Config.TOMATO_MODULE_BACKEND_API] = True
+	return res

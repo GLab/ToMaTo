@@ -180,6 +180,13 @@ def topology_list(full=False, organization_filter=None, username_filter=None): #
 
 	Parameter *full*:
 	  See :py:func:`~topology_info` for this parameter.
+
+	Parameters *organization_filter* and *username_filter*:
+		If username_filter is given, organization_filter is ignored.
+		In this case, only topologies to which the given user has access are returned.
+		If organization_filter is given, but no username_filter,
+		all topologies where a user of this organization has access to are returned.
+		If no filter is given, all topologies are returned.
 	 
 	Return value:
 	  A list with information entries of all topologies. Each list entry
@@ -187,13 +194,15 @@ def topology_list(full=False, organization_filter=None, username_filter=None): #
 	  :py:func:`topology_info`. If no topologies exist, the list is empty. 
 	"""
 	# fixme: is broken since arguments have changed.
-	if organization:
-		users = get_backend_users_proxy().username_list(organization=organization)
-		tops = topology.getAll(permissions__user__in=users, permissions__role="owner")
-	elif showAll:
-		tops = topology.getAll()
+	if username_filter is None:
+		if organization_filter is None:
+			tops = topology.getAll()
+		else:
+			users = get_backend_users_proxy().username_list(organization=organization_filter)
+			tops = topology.getAll(permissions__user__in=users)
 	else:
-		tops = topology.getAll(permissions__user=getCurrentUserName())
+		tops = topology.getAll(permissions__user=username_filter)
+
 	return [top.info(full) for top in tops]
 
 def topology_set_permission(id, user, role): #@ReservedAssignment

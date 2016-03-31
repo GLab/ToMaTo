@@ -388,7 +388,6 @@ def timeout_task():
 
 scheduler.scheduleRepeated(600, timeout_task)
 
-#from .elements import Element
 import elements
 from .connections import Connection
 from lib.settings import settings, Config

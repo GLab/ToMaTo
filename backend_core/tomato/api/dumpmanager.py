@@ -81,11 +81,11 @@ def errorgroup_info(group_id, include_dumps=False):
     """
     return api_errorgroup_info(group_id, include_dumps)
 
-def errorgroup_list(show_empty=False):
+def errorgroup_list(show_empty, as_user):
     """
     Returns a list of all error groups.
     """
-    return api_errorgroup_list(show_empty, as_user=getCurrentUserInfo().get_username())
+    return api_errorgroup_list(show_empty, as_user=as_user)
 
 def errorgroup_modify(group_id, attrs):
     """

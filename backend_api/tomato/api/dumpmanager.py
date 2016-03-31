@@ -127,7 +127,7 @@ def errordumps_force_refresh():
       The time in seconds it takes until all dumps should be collected.
     """
     getCurrentUserInfo().check_may_view_debugging_info()
-    return get_backend_core_proxy().force_refresh()
+    return get_backend_core_proxy().errordumps_force_refresh()
 
 def errorgroup_hide(group_id):
 		"""
