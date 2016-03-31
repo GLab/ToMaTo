@@ -29,13 +29,12 @@ def server_info():
 	try:
 		core_info = get_backend_core_proxy().server_info()
 	except:
-		core_info = {'public_key': None, 'version': "[unknown]"}
+		core_info = {'public_key': None, "TEMPLATE_TRACKER_URL": None}
 	topology_config = settings.get_topology_settings()
 	return {
-		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port']),
+		"TEMPLATE_TRACKER_URL": core_info["TEMPLATE_TRACKER_URL"],
 		'public_key': core_info['public_key'],
 		'version': getVersionStr(),
-		'backend_core_version': core_info['version'],
 		'api_version': [4, 0, 1],
 		'topology_timeout': {
 			'initial': topology_config[Config.TOPOLOGY_TIMEOUT_INITIAL],

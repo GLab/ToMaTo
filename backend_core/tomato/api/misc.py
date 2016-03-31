@@ -20,11 +20,14 @@ import time
 from ..lib.versioninfo import getVersionStr
 from ..lib.service import get_backend_users_proxy
 from ..lib.userflags import Flags
+from ..lib import get_public_ip_address
+from ..lib.settings import settings
 
 def server_info():
 	return {
 		'public_key': misc.getPublicKey(),
-		'version': getVersionStr()
+		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (
+		get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port'])
 	}
 
 def link_statistics(siteA, siteB):
