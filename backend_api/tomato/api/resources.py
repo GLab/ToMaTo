@@ -15,32 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
 from api_helpers import checkauth, getCurrentUserInfo
 from ..lib.remote_info import get_template_info
-from ..lib.cache import cached, invalidates
-
-def _getTemplate(id_):
-	res = Template.objects.get(id=id_)
-	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Template does not exist", data={"id": id_})
-	return res
-
-def _getNetwork(id_):
-	res = Network.objects.get(id=id_)
-	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network does not exist", data={"id": id_})
-	return res
-
-def _getNetworkInstance(id_):
-	res = NetworkInstance.objects.get(id=id_)
-	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network instance does not exist", data={"id": id_})
-	return res
-
-def _getProfile(id_):
-	res = Profile.objects.get(id=id_)
-	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Profile does not exist", data={"id": id_})
-	return res
-
+from ..lib.service import get_backend_core_proxy
 
 def resources_map():
 	return {
@@ -50,7 +27,7 @@ def resources_map():
 		'network_instances': network_instance_list()
 	}
 
-@cached(timeout=6*3600, autoupdate=True)
+@checkauth
 def template_list(tech=None):
 	"""
 	Retrieves information about all resources.
@@ -63,10 +40,8 @@ def template_list(tech=None):
 	  entry contains exactly the same information as returned by
 	  :py:func:`template_info`. If no resource matches, the list is empty.
 	"""
-	res = Template.objects(tech=tech) if tech else Template.objects()
-	return [r.info() for r in res]
+	return get_backend_core_proxy().template_list(tech)
 
-@invalidates(template_list)
 def template_create(tech, name, attrs=None):
 	"""
 	Creates a template of given tech and name, configuring it with the given attributes.
@@ -88,11 +63,7 @@ def template_create(tech, name, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_user_resources()
-	if not attrs: attrs = {}
-	attrs = dict(attrs)
-	attrs.update(name=name, tech=tech)
-	res = Template.create(attrs)
-	return res.info()
+	return get_backend_core_proxy().template_create(tech, name, attrs)
 
 @invalidates(template_list)
 def template_modify(id, attrs):
@@ -120,12 +91,8 @@ def template_modify(id, attrs):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_modify_user_resources()
-	res = _getTemplate(id)
-	res.modify(attrs)
-	return res.info()
+	return get_backend_core_proxy().template_modify(id, attrs)
 
-
-@invalidates(template_list)
 def template_remove(id):
 	"""
 	Removes a template.
@@ -145,9 +112,7 @@ def template_remove(id):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_remove_user_resources()
-	res = _getTemplate(id)
-	res.remove()
-	return {}
+	return get_backend_core_proxy().template_remove(id)
 
 @checkauth
 def template_info(id, include_torrent_data=False): #@ReservedAssignment
@@ -174,12 +139,10 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	  If the given template does not exist an exception *template does not
 	  exist* is raised.
 	"""
-	res = _getTemplate(id)
 	if include_torrent_data:
-		getCurrentUserInfo().check_may_get_template_torrent_data(get_template_info(res.tech, res.name))
-	return res.info(include_torrent_data=include_torrent_data)
+		getCurrentUserInfo().check_may_get_template_torrent_data(get_template_info(id))
+	return get_backend_core_proxy().template_info(id, include_torrent_data)
 
-@cached(timeout=6*3600, autoupdate=True)
 def profile_list(tech=None):
 	"""
 	Retrieves information about all resources.
@@ -192,11 +155,9 @@ def profile_list(tech=None):
 	  entry contains exactly the same information as returned by
 	  :py:func:`profile_info`. If no resource matches, the list is empty.
 	"""
-	res = Profile.objects(tech=tech) if tech else Profile.objects()
-	return [r.info() for r in res]
+	return get_backend_core_proxy().profile_list(tech)
 
 
-@invalidates(profile_list)
 def profile_create(tech, name, attrs=None):
 	"""
 	Creates a profile of given tech and name, configuring it with the given attributes.
@@ -218,14 +179,9 @@ def profile_create(tech, name, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_user_resources()
-	if not attrs: attrs = {}
-	attrs = dict(attrs)
-	attrs.update(name=name, tech=tech)
-	res = Profile.create(attrs)
-	return res.info()
+	return get_backend_core_proxy().profile_create(tech, name, attrs)
 
 
-@invalidates(profile_list)
 def profile_modify(id, attrs):
 	"""
 	Modifies a profile, configuring it with the given attributes.
@@ -251,12 +207,9 @@ def profile_modify(id, attrs):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_modify_user_resources()
-	res = _getProfile(id)
-	res.modify(attrs)
-	return res.info()
+	return get_backend_core_proxy().profile_modify(id, attrs)
 
 
-@invalidates(profile_list)
 def profile_remove(id):
 	"""
 	Removes a profile.
@@ -276,9 +229,7 @@ def profile_remove(id):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_remove_user_resources()
-	res = _getProfile(id)
-	res.remove()
-	return {}
+	return get_backend_core_proxy().profile_remove(id)
 
 
 @checkauth
@@ -301,11 +252,9 @@ def profile_info(id):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	res = _getProfile(id)
-	return res.info()
+	return get_backend_core_proxy().profile_info(id)
 
 
-@cached(timeout=6*3600, autoupdate=True)
 def network_list():
 	"""
 	Retrieves information about all resources.
@@ -315,11 +264,9 @@ def network_list():
 	  entry contains exactly the same information as returned by
 	  :py:func:`network_info`. If no resource matches, the list is empty.
 	"""
-	res = Network.objects()
-	return [r.info() for r in res]
+	return get_backend_core_proxy().network_list()
 
 
-@invalidates(network_list)
 def network_create(kind, attrs=None):
 	"""
 	Creates a network of given tech and name, configuring it with the given attributes.
@@ -337,14 +284,9 @@ def network_create(kind, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_technical_resources()
-	if not attrs: attrs = {}
-	attrs = dict(attrs)
-	attrs.update(kind=kind)
-	res = Network.create(attrs)
-	return res.info()
+	return get_backend_core_proxy().network_create(kind, attrs)
 
 
-@invalidates(network_list)
 def network_modify(id, attrs):
 	"""
 	Modifies a network, configuring it with the given attributes.
@@ -366,12 +308,9 @@ def network_modify(id, attrs):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_modify_technical_resources()
-	res = _getNetwork(id)
-	res.modify(attrs)
-	return res.info()
+	return get_backend_core_proxy().network_modify(id, attrs)
 
 
-@invalidates(network_list)
 def network_remove(id):
 	"""
 	Removes a network.
@@ -387,9 +326,7 @@ def network_remove(id):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_remove_technical_resources()
-	res = _getNetwork(id)
-	res.remove()
-	return {}
+	return get_backend_core_proxy().network_remove(id)
 
 
 @checkauth
@@ -408,11 +345,9 @@ def network_info(id): #@ReservedAssignment
 	  If the given network does not exist an exception *network does not
 	  exist* is raised.
 	"""
-	res = _getNetwork(id)
-	return res.info()
+	return get_backend_core_proxy().network_info(id)
 
-
-@cached(timeout=6*3600, autoupdate=True)
+@checkauth
 def network_instance_list(network=None, host=None):
 	"""
 	Retrieves information about all resources.
@@ -425,16 +360,10 @@ def network_instance_list(network=None, host=None):
 	  entry contains exactly the same information as returned by
 	  :py:func:`network_instance_info`. If no resource matches, the list is empty.
 	"""
-	res = NetworkInstance.objects
-	if network:
-		res = res.filter(network=_getNetwork(network))
-	if host:
-		res = res.filter(hosT=_getHost(host))
-	return [r.info() for r in res]
+	return get_backend_core_proxy().network_instance_list(network, host)
 
 
 @checkauth
-@invalidates(network_instance_list)
 def network_instance_create(network, host, attrs=None):
 	"""
 	Creates a network_instance of given kind and host, configuring it with the given attributes.
@@ -456,14 +385,9 @@ def network_instance_create(network, host, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_technical_resources()
-	if not attrs: attrs = {}
-	attrs = dict(attrs)
-	attrs.update(host=host, network=network)
-	res = NetworkInstance.create(attrs)
-	return res.info()
+	return get_backend_core_proxy().network_instance_create(network, host, attrs)
 
 
-@invalidates(network_instance_list)
 def network_instance_modify(id, attrs):
 	"""
 	Modifies a network_instance, configuring it with the given attributes.
@@ -489,12 +413,9 @@ def network_instance_modify(id, attrs):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_modify_technical_resources()
-	res = _getNetworkInstance(id)
-	res.modify(attrs)
-	return res.info()
+	return get_backend_core_proxy().network_instance_modify(id, attrs)
 
 
-@invalidates(network_instance_list)
 def network_instance_remove(id):
 	"""
 	Removes a network_instance.
@@ -514,9 +435,7 @@ def network_instance_remove(id):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_remove_technical_resources()
-	res = _getNetworkInstance(id)
-	res.remove()
-	return {}
+	return get_backend_core_proxy().network_instance_remove(id)
 
 
 @checkauth
@@ -539,7 +458,4 @@ def network_instance_info(id):
 	  If the given network_instance does not exist an exception *network_instance does not
 	  exist* is raised.
 	"""
-	res = _getNetworkInstance(id)
-	return res.info()
-
-from ..lib.error import UserError
+	return get_backend_core_proxy().network_instance_info(id)

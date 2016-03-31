@@ -15,25 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
-from ..lib.cache import cached
 import time
 from ..lib.versioninfo import getVersionStr
 from api_helpers import checkauth, getCurrentUserInfo, getCurrentUserName
 from ..lib.service import get_backend_users_proxy
 from ..lib.userflags import Flags
+from ..lib.service import get_backend_core_proxy
 
-@cached(timeout=3600, autoupdate=True)
 def server_info():
 	"""
 	undocumented
 	"""
+	core_info = get_backend_core_proxy().server_info()
 	topology_config = settings.get_topology_settings()
 	return {
 		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port']),
-		'public_key': misc.getPublicKey(),
+		'public_key': core_info['public_key'],
 		'version': getVersionStr(),
+		'backend_core_version': core_info['version'],
 		'api_version': [4, 0, 1],
 		'topology_timeout': {
 			'initial': topology_config[Config.TOPOLOGY_TIMEOUT_INITIAL],
@@ -45,85 +44,28 @@ def server_info():
 	}
 
 def link_statistics(siteA, siteB):
-	return link.getStatistics(siteA, siteB)
+	return get_backend_core_proxy().link_statistics(siteA, siteB)
 
 def notifyAdmins(subject, text, global_contact = True, issue="admin"):
-	api = get_backend_users_proxy()
-	if issue == "admin":
-		if global_contact:
-			target_flag = Flags.GlobalAdminContact
-			target_organization = None
-		else:
-			target_flag = Flags.OrgaAdminContact
-			target_organization = getCurrentUserInfo().get_organization_name()
-	else:
-		if global_contact:
-			target_flag = Flags.GlobalHostContact
-			target_organization = None
-		else:
-			target_flag = Flags.OrgaHostContact
-			target_organization = getCurrentUserInfo().get_organization_name()
-	api.broadcast_message(subject, text, fromUser=getCurrentUserName(),
-											  organization_filter=target_organization, flag_filter=target_flag)
+	user_orga = getCurrentUserInfo().get_organization_name()
+	user_name = getCurrentUserName()
+	get_backend_core_proxy().notifyAdmins(subject, text, global_contact, issue, user_orga, user_name)
 
-@cached(timeout=3600)
 def statistics():
-	#fixme: broken
-	stats = {}
-	resources = {}
-	stats['resources'] = resources
-	resources['hosts'] = 0
-	resources['cpus'] = 0
-	resources['memory'] = 0
-	resources['diskspace'] = 0
-	resources['load'] = 0
-	resources['availability'] = 0
-	for h in Host.getAll():
-		resources['hosts'] += 1
-		try:
-			r = h.hostInfo['resources']
-			resources['cpus'] += r['cpus_present']['count']
-			resources['memory'] += int(r['memory']['total'])
-			for v in r['diskspace'].values():
-				resources['diskspace'] += int(v['total'])
-		except:
-			pass
-		resources['load'] += h.getLoad()
-		resources['availability'] += h.availability
-	for k in ['load', 'availability']:
-		resources[k] /= resources['hosts'] if resources['hosts'] else 1.0
-	for k in ['memory', 'diskspace']:
-		resources[k] = str(resources[k])
-	usage = {}
-	stats['usage'] = usage
-	usage['topologies'] = 0
-	
-	usage['topologies_active'] = 0
-	for top in list(topology.Topology.objects.all()):
-		usage['topologies'] += 1
-		topUsage = top.totalUsage.latest
-		if topUsage and (topUsage['memory']>0 or topUsage['cputime']>0 or topUsage['traffic']>0):
-			usage['topologies_active'] += 1
-	
-	usage['elements'] = elements.Element.objects.count()
-	usage['connections'] = connections.Connection.objects.count()
-	usage['element_types'] = {key: cls.objects.count() for (key, cls) in elements.TYPES.items()}
-	
-	usage['users'] = auth.User.objects.count()
-	usage['users_active_30days'] = auth.User.objects.filter(lastLogin__gte = time.time() - 30*24*60*60).count()
-	return stats
+	# fixme: broken
+	return get_backend_core_proxy().statistics()
 
 @checkauth
 def task_list():
 	#fixme: should this check more authorization?
+	#fixme: this should query all possible backend services...
 	return scheduler.info()["tasks"]
 
 def task_execute(id):
+	# fixme: this should get the argument on which service to be executed...
 	getCurrentUserInfo().check_may_execute_tasks()
 	return scheduler.executeTask(id, force=True)
 
-from .. import misc, link, topology, elements, connections, scheduler
+from .. import scheduler
 from ..lib.settings import settings, Config
-from ..host import Host
-from ..lib.error import UserError
 from ..lib import get_public_ip_address

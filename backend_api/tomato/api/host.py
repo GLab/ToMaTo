@@ -18,11 +18,9 @@
 #fixme: all.
 
 from api_helpers import checkauth, getCurrentUserInfo
-from ..lib.cache import cached, invalidates
-from ..lib.service import get_backend_users_proxy
+from ..lib.service import get_backend_users_proxy, get_backend_core_proxy
 from ..lib.remote_info import get_host_info, get_site_info
 
-@cached(timeout=6*3600, autoupdate=True)
 def organization_list():
 	"""
 	undocumented
@@ -30,7 +28,6 @@ def organization_list():
 	api = get_backend_users_proxy()
 	return api.organization_list()
 
-@invalidates(organization_list)
 def organization_create(name, label="", attrs={}):
 	"""
 	undocumented
@@ -46,7 +43,6 @@ def organization_info(name):
 	api = get_backend_users_proxy()
 	return api.organization_info(name)
 
-@invalidates(organization_list)
 def organization_modify(name, attrs):
 	"""
 	undocumented
@@ -55,7 +51,6 @@ def organization_modify(name, attrs):
 	api = get_backend_users_proxy()
 	return api.organization_modify(name, attrs)
 
-@invalidates(organization_list)
 def organization_remove(name):
 	"""
 	undocumented
@@ -70,85 +65,58 @@ def organization_usage(name): #@ReservedAssignment
 	orga = _getOrganization(name)
 	return orga.totalUsage.info()	
 
-@cached(timeout=6*3600, autoupdate=True)
 def site_list(organization=None):
 	"""
 	undocumented
 	"""
-	if organization:
-		sites = Site.objects(organization=organization)
-	else:
-		sites = Site.objects.all()
-	return [s.info() for s in sites]
+	return get_backend_core_proxy().site_list(organization)
 
-@invalidates(site_list)
 def site_create(name, organization, label="", attrs={}):
 	"""
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_create_sites(organization)
-	s = Site.create(name, organization, label, attrs)
-	return s.info()
+	return get_backend_core_proxy().site_create(name, organization, label, attrs)
 
 def site_info(name):
 	"""
 	undocumented
 	"""
-	site = _getSite(name)
-	return site.info()
+	return get_backend_core_proxy().site_info(name)
 
-@invalidates(site_list)
 def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_modify_site(get_site_info(name))
-	site = _getSite(name)
-	site.modify(attrs)
-	return site.info()
+	return get_backend_core_proxy().site_modify(name, attrs)
 
-@invalidates(site_list)
 def site_remove(name):
 	"""
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_delete_site(get_site_info(name))
-	site = _getSite(name)
-	site.remove()
+	return get_backend_core_proxy().site_remove(name)
 
-@cached(timeout=300, maxSize=1000, autoupdate=True)
 def host_list(site=None, organization=None):
 	"""
 	undocumented
 	"""
-	if site:
-		site = Site.get(site)
-		hosts = Host.objects(site=site)
-	elif organization:
-		sites = Site.objects(organization=organization)
-		hosts = Host.objects(site__in=sites)
-	else:
-		hosts = Host.objects
-	return [h.info() for h in hosts]
+	return get_backend_core_proxy().host_list(site, organization)
 
-@invalidates(host_list)
 def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_create_hosts(get_site_info(site))
-	if not attrs: attrs = {}
-	site = _getSite(site)
-	h = Host.create(name, site, attrs)
-	return h.info()
+	return get_backend_core_proxy().host_create(name, site, attrs)
 
 @checkauth
 def host_info(name):
 	"""
 	undocumented
 	"""
-	h = _getHost(name)
-	return h.info()
+	return get_backend_core_proxy().host_info(name)
 
 @invalidates(host_list)
 def host_modify(name, attrs):
@@ -156,9 +124,7 @@ def host_modify(name, attrs):
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_modify_host(get_host_info(name))
-	h = _getHost(name)
-	h.modify(attrs)
-	return h.info()
+	return get_backend_core_proxy().host_modify(name, attrs)
 
 @invalidates(host_list)
 def host_remove(name):
@@ -166,20 +132,16 @@ def host_remove(name):
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
-	h = _getHost(name)
-	h.remove()
+	get_backend_core_proxy().host_remove(name)
 
-@checkauth
 def host_users(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
-	h = _getHost(name)
-	return h.getUsers()
+	getCurrentUserInfo().check_may_list_host_users(get_host_info(name))
+	return get_backend_core_proxy().host_users(name)
 
 @checkauth
 def host_usage(name): #@ReservedAssignment
-	h = _getHost(name)
-	return h.totalUsage.info()
+	return get_backend_core_proxy().host_usage(name)
 

@@ -48,7 +48,6 @@ def site_create(name, organization, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_create_sites(organization)
 	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
@@ -64,7 +63,6 @@ def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_modify_site(get_site_info(name))
 	site = _getSite(name)
 	site.modify(attrs)
 	return site.info()
@@ -74,7 +72,6 @@ def site_remove(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_site(get_site_info(name))
 	site = _getSite(name)
 	site.remove()
 
@@ -98,7 +95,6 @@ def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_create_hosts(get_site_info(site))
 	if not attrs: attrs = {}
 	site = _getSite(site)
 	h = Host.create(name, site, attrs)
@@ -117,7 +113,6 @@ def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_modify_host(get_host_info(name))
 	h = _getHost(name)
 	h.modify(attrs)
 	return h.info()
@@ -127,20 +122,16 @@ def host_remove(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
 	h = _getHost(name)
 	h.remove()
 
-@checkauth
 def host_users(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
 	h = _getHost(name)
 	return h.getUsers()
 
-@checkauth
 def host_usage(name): #@ReservedAssignment
 	h = _getHost(name)
 	return h.totalUsage.info()

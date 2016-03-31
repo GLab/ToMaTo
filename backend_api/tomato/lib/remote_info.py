@@ -353,26 +353,24 @@ def get_connection_info(connection_id):
 	return ConnectionInfo(connection_id)
 
 @cached(60)
-def get_template_info(tech, name):
+def get_template_info(template_id):
 	"""
 	return TemplateInfo object for the respective template
-	:param str tech: tech of the target template
-	:param str name: name of the target template
+	:param str template_id: id of the target template
 	:return: TemplateInfo object
 	:rtype: TemplateInfo
 	"""
-	return TemplateInfo(tech, name)
+	return TemplateInfo(template_id)
 
 @cached(60)
-def get_profile_info(tech, name):
+def get_profile_info(profile_id):
 	"""
 	return ProfileInfo object for the respective profile
-	:param str tech: tech of the target profile
-	:param str name: name of the target profile
+	:param str profile_id: id of the target profile
 	:return: ProfileInfo object
 	:rtype: ProfileInfo
 	"""
-	return ProfileInfo(tech, name)
+	return ProfileInfo(profile_id)
 
 @cached(60)
 def get_network_info(kind):
