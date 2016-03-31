@@ -26,7 +26,10 @@ def server_info():
 	"""
 	undocumented
 	"""
-	core_info = get_backend_core_proxy().server_info()
+	try:
+		core_info = get_backend_core_proxy().server_info()
+	except:
+		core_info = {'public_key': None, 'version': "[unknown]"}
 	topology_config = settings.get_topology_settings()
 	return {
 		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port']),
