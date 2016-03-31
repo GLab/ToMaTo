@@ -1,6 +1,7 @@
 from error import InternalError
 from service import get_backend_users_proxy, get_backend_core_proxy
 from cache import cached
+import topology_role
 
 class ExistenceCheck(object):
 	__slots__ = ("_exists",)
@@ -126,8 +127,8 @@ class TopologyInfo(InfoObj):
 		:return: whether the user has this role (or a higher one)
 		:rtype: bool
 		"""
-		return self.topology.user_has_role(username, role)
-		# fixme: is broken
+		user_role = self.info()['permissions'][username]
+		return topology_role.Role.leq(role,user_role)
 
 	def organization_has_role(self, organization, role):
 		"""
@@ -138,8 +139,14 @@ class TopologyInfo(InfoObj):
 		:return: the role
 		:rtype: bool
 		"""
-		return self.topology.organization_has_role(organization, role)
-		# fixme: is broken
+		user_list = []
+		for user, user_role in self.info()['permissions'].iteritems():
+			if topology_role.Role.leq(role,user_role):
+				user_list.append(user)
+
+		organizations_with_role = get_backend_users_proxy().organization_list(user_list)
+
+		return (organization in organizations_with_role)
 
 	def get_id(self):
 		"""
