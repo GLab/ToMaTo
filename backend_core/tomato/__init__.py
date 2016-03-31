@@ -179,5 +179,3 @@ def run():
 			stopped.wait(1.0)
 	except KeyboardInterrupt:
 		stop()
-
-import authorization

@@ -100,7 +100,6 @@ def host_create(name, site, attrs=None):
 	h = Host.create(name, site, attrs)
 	return h.info()
 
-@checkauth
 def host_info(name):
 	"""
 	undocumented

@@ -72,7 +72,7 @@ class Topology(Entity, BaseDocument):
 
 	@property
 	def elements(self):
-		return Element.objects(topology=self)
+		return elements.Element.objects(topology=self)
 
 	@property
 	def connections(self):
@@ -388,7 +388,8 @@ def timeout_task():
 
 scheduler.scheduleRepeated(600, timeout_task)
 
-from .elements import Element
+#from .elements import Element
+import elements
 from .connections import Connection
 from lib.settings import settings, Config
 from .host.site import Site
