@@ -65,7 +65,11 @@ class UserInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_users_proxy().user_exists(self.name)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 
 class OrganizationInfo(InfoObj):
@@ -84,7 +88,11 @@ class OrganizationInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_users_proxy().organization_exists(self.name)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 
 class TopologyInfo(InfoObj):
@@ -100,7 +108,11 @@ class TopologyInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().topology_exists(self.topology_id)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().topology_info(self.topology_id)
@@ -153,10 +165,14 @@ class SiteInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().site_exists(self.name)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 	def _fetch_data(self):
-		return get_backend_core_proxy().site_exists(self.name)
+		return get_backend_core_proxy().site_info(self.name)
 
 	def get_organization_name(self):
 		return self.info()['organization']
@@ -174,7 +190,11 @@ class HostInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().host_exists(self.name)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().host_info(self.name)
@@ -193,7 +213,11 @@ class ElementInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().element_exists(self.eid)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().element_info(self.eid)
@@ -214,7 +238,11 @@ class ConnectionInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().connection_exists(self.cid)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().connection_info(self.cid)
@@ -232,7 +260,11 @@ class TemplateInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().template_exists(self.template_id)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().template_info(self.template_id)
@@ -250,7 +282,11 @@ class ProfileInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().profile_exists(self.profile_id)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().profile_info(self.profile_id)
@@ -268,7 +304,11 @@ class NetworkInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		return get_backend_core_proxy().network_exists(self.kind)
+		try:
+			self.info()
+			return True
+		except:
+			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().network_info(self.kind)
