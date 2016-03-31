@@ -339,6 +339,33 @@ def get_profile_info(profile_id):
 	"""
 	return ProfileInfo(profile_id)
 
+
+@cached(60)
+def get_template_info_by_techname(tech, name):
+	"""
+	return TemplateInfo object for the respective template
+	:param str tech: tech of the target template
+	:param str name: name of the target template
+	:return: TemplateInfo object
+	:rtype: TemplateInfo
+	"""
+	template_id = get_backend_core_proxy().template_id(tech, name)
+	return get_template_info(template_id)
+
+
+@cached(60)
+def get_profile_info_by_techname(tech, name):
+	"""
+	return ProfileInfo object for the respective profile
+	:param str tech: tech of the target profile
+	:param str name: name of the target profile
+	:return: ProfileInfo object
+	:rtype: ProfileInfo
+	"""
+	profile_id = get_backend_core_proxy().profile_id(tech, name)
+	return get_profile_info(profile_id)
+
+
 @cached(60)
 def get_network_info(kind):
 	"""
