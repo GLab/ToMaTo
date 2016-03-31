@@ -1,5 +1,5 @@
 services:
-  backend_core:  # currently, this points to backend_core
+  backend_api:
     host: dockerhost
     interfaces:
       - port: 8000
@@ -8,6 +8,10 @@ services:
       - port: 8001
         ssl: true
         protocol: https
+  backend_core:
+    host: dockerhost
+    port: 8004
+    protocol: sslrpc2
   backend_users:
     host: dockerhost
     port: 8003
@@ -33,6 +37,20 @@ github:
 
   repository-owner: GLab
   repository-name:  ToMaTo
+
+backend_api:
+  paths:
+    log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  false  # currently not implemented...
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
+  ssl:
+    cert:  /etc/tomato/backend_api.pem
+    key:  /etc/tomato/backend_api.pem
+    ca:  /etc/tomato/ca.pem
+  tasks:
+    max-workers: 25
 
 backend_core:
   paths:

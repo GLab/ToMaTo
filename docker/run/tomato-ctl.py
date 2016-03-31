@@ -12,7 +12,7 @@ from datetime import date
 from threading import Thread
 
 
-TOMATO_MODULES = ['web', 'backend_core', 'backend_users']
+TOMATO_MODULES = ['web', 'backend_core', 'backend_users', 'backend_api']
 DB_MODULE = "db"
 CONFIG_PATHS = ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]
 
@@ -298,10 +298,28 @@ def generate_default_config():
 			'shell_cmd': "/bin/bash"
 			# 'version'  (will be generated if not found in config)
 		},
+		'backend_api': {
+			'enabled': True,
+			'image': 'tomato_backend_api',
+			'ports': [8000, 8001],
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(config)s', '/config'),
+				('%(logs)s', '/logs')
+			],
+			'directories': {
+				'config': os.path.join("backend_api", "config"),
+				'logs': os.path.join("backend_api", "logs")
+			},
+			'code_directories': ['backend_api', 'shared'],
+			'shell_cmd': "/bin/bash"
+			# 'version'  (will be generated if not found in config)
+		},
 		'backend_core': {
 			'enabled': True,
 			'image': 'tomato_backend_core',
-			'ports': [8000, 8001, 8002, 8006] + range(8010, 8021),
+			'ports': [8002, 8004, 8006] + range(8010, 8021),
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
