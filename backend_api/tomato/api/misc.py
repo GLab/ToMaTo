@@ -17,7 +17,8 @@
 
 from ..lib.versioninfo import getVersionStr
 from api_helpers import checkauth, getCurrentUserInfo, getCurrentUserName
-from ..lib.service import get_backend_core_proxy
+from ..lib.service import get_backend_core_proxy, is_self, get_tomato_inner_proxy
+from ..lib.util import joinDicts
 
 def server_info():
 	"""
@@ -51,8 +52,12 @@ def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 	get_backend_core_proxy().notifyAdmins(subject, text, global_contact, issue, user_orga, user_name)
 
 def statistics():
-	# fixme: broken
-	return get_backend_core_proxy().statistics()
+	stats = {}
+	for mod in Config.TOMATO_BACKEND_MODULES:
+		if not is_self(mod):
+			stat_update = get_tomato_inner_proxy(mod).statistics()
+			stats = joinDicts(stats, stat_update)
+	return stats
 
 @checkauth
 def task_list():
