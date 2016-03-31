@@ -118,7 +118,6 @@ def host_info(name):
 	"""
 	return get_backend_core_proxy().host_info(name)
 
-@invalidates(host_list)
 def host_modify(name, attrs):
 	"""
 	undocumented
@@ -126,7 +125,6 @@ def host_modify(name, attrs):
 	getCurrentUserInfo().check_may_modify_host(get_host_info(name))
 	return get_backend_core_proxy().host_modify(name, attrs)
 
-@invalidates(host_list)
 def host_remove(name):
 	"""
 	undocumented
