@@ -18,34 +18,19 @@
 from ..lib.cache import cached
 import time
 from ..lib.versioninfo import getVersionStr
-from api_helpers import checkauth, getCurrentUserInfo, getCurrentUserName
 from ..lib.service import get_backend_users_proxy
 from ..lib.userflags import Flags
 
-@cached(timeout=3600, autoupdate=True)
 def server_info():
-	"""
-	undocumented
-	"""
-	topology_config = settings.get_topology_settings()
 	return {
-		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port']),
 		'public_key': misc.getPublicKey(),
-		'version': getVersionStr(),
-		'api_version': [4, 0, 1],
-		'topology_timeout': {
-			'initial': topology_config[Config.TOPOLOGY_TIMEOUT_INITIAL],
-			'maximum': topology_config[Config.TOPOLOGY_TIMEOUT_MAX],
-			'options': topology_config[Config.TOPOLOGY_TIMEOUT_OPTIONS],
-			'default': topology_config[Config.TOPOLOGY_TIMEOUT_DEFAULT],
-			'warning': topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]
-		}
+		'version': getVersionStr()
 	}
 
 def link_statistics(siteA, siteB):
 	return link.getStatistics(siteA, siteB)
 
-def notifyAdmins(subject, text, global_contact = True, issue="admin"):
+def notifyAdmins(subject, text, global_contact, issue, user_orga, user_name):
 	api = get_backend_users_proxy()
 	if issue == "admin":
 		if global_contact:
@@ -53,15 +38,15 @@ def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 			target_organization = None
 		else:
 			target_flag = Flags.OrgaAdminContact
-			target_organization = getCurrentUserInfo().get_organization_name()
+			target_organization = user_orga
 	else:
 		if global_contact:
 			target_flag = Flags.GlobalHostContact
 			target_organization = None
 		else:
 			target_flag = Flags.OrgaHostContact
-			target_organization = getCurrentUserInfo().get_organization_name()
-	api.broadcast_message(subject, text, fromUser=getCurrentUserName(),
+			target_organization = user_orga
+	api.broadcast_message(subject, text, fromUser=user_name,
 											  organization_filter=target_organization, flag_filter=target_flag)
 
 @cached(timeout=3600)
@@ -111,17 +96,11 @@ def statistics():
 	usage['users_active_30days'] = auth.User.objects.filter(lastLogin__gte = time.time() - 30*24*60*60).count()
 	return stats
 
-@checkauth
 def task_list():
-	#fixme: should this check more authorization?
 	return scheduler.info()["tasks"]
 
 def task_execute(id):
-	getCurrentUserInfo().check_may_execute_tasks()
 	return scheduler.executeTask(id, force=True)
 
 from .. import misc, link, topology, elements, connections, scheduler
-from ..lib.settings import settings, Config
 from ..host import Host
-from ..lib.error import UserError
-from ..lib import get_public_ip_address

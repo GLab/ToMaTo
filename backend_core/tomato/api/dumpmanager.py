@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import getCurrentUserInfo
+#fixme: all.
+
 from ..dumpmanager import api_errordump_info, api_errordump_list, api_errorgroup_favorite,\
 	api_errorgroup_hide, api_errorgroup_info, api_errorgroup_list, api_errorgroup_modify, api_errorgroup_remove,\
 	api_force_refresh
@@ -63,7 +64,6 @@ def errordump_list(group_id, source=None, data_available=None):
     Return value:
       A list of dumps, filtered by the arguments.
     """
-    getCurrentUserInfo().check_may_view_debugging_info()
     return api_errordump_list(group_id, source, data_available)
 
 def errorgroup_info(group_id, include_dumps=False):
@@ -79,14 +79,12 @@ def errorgroup_info(group_id, include_dumps=False):
     Return value:
       The return value of this method is the info dict of the group, maybe expanded by a list of dumps.
     """
-    getCurrentUserInfo().check_may_view_debugging_info()
     return api_errorgroup_info(group_id, include_dumps)
 
 def errorgroup_list(show_empty=False):
     """
     Returns a list of all error groups.
     """
-    getCurrentUserInfo().check_may_view_debugging_info()
     return api_errorgroup_list(show_empty, as_user=getCurrentUserInfo().get_username())
 
 def errorgroup_modify(group_id, attrs):
@@ -103,7 +101,6 @@ def errorgroup_modify(group_id, attrs):
     Return value:
       The return value of this method is the info dict of the group.
     """
-    getCurrentUserInfo().check_may_view_debugging_info()
     return api_errorgroup_modify(group_id, attrs)
 
 def errorgroup_remove(group_id):
@@ -113,7 +110,6 @@ def errorgroup_remove(group_id):
     Parameter *dump_id*: 
       The unique identifier of the group to be removed.
     """
-    getCurrentUserInfo().check_may_view_debugging_info()
     api_errorgroup_remove(group_id)
     
 def errordumps_force_refresh():
@@ -125,7 +121,6 @@ def errordumps_force_refresh():
     Return value:
       The time in seconds it takes until all dumps should be collected.
     """
-    getCurrentUserInfo().check_may_view_debugging_info()
     return api_force_refresh()
 
 def errorgroup_hide(group_id):
@@ -136,10 +131,9 @@ def errorgroup_hide(group_id):
 		:param group_id: the group ID
 		:return: None
 		"""
-		getCurrentUserInfo().check_may_view_debugging_info()
 		api_errorgroup_hide(group_id)
 
-def errorgroup_favorite(group_id, is_favorite):
+def errorgroup_favorite(username, group_id, is_favorite):
 		"""
 		Add or remove the group to favorites of the current user
 
@@ -147,5 +141,4 @@ def errorgroup_favorite(group_id, is_favorite):
 		:param is_favorite: True to add, False to remove.
 		:return: None
 		"""
-		getCurrentUserInfo().check_may_view_debugging_info()
-		api_errorgroup_favorite(getCurrentUserInfo().get_username(), group_id, is_favorite)
+		api_errorgroup_favorite(username, group_id, is_favorite)

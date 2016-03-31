@@ -1,0 +1,14 @@
+{
+  "icon": "icon.png",
+  "default_archive": "install_python.tar.gz",
+  "description": "Install Python on debian or ubuntu",
+  "creation_date": "2012-12-10",
+    "alternatives": [
+      {
+        "templates": ["debian-7.0_x86", "debian-7.0_x86_64"],
+        "archive": "install_python_alt.tar.gz",
+        "creation_date": "2014-12-10",
+        "description": "Just a test for a different link in case of Debian 7."
+      }
+    ]
+}

@@ -64,7 +64,7 @@ from error import InternalError
 
 default_settings = yaml.load("""
 services:
-  backend_core:
+  backend_api:
     host: dockerhost
     interfaces:
       - port: 8000
@@ -73,6 +73,10 @@ services:
       - port: 8001
         ssl: true
         protocol: https
+  backend_core:
+    host: dockerhost
+    port: 8004
+    protocol: sslrpc2
   backend_users:
     host: dockerhost
     port: 8003
@@ -98,6 +102,18 @@ github:
 
   repository-owner: GLab
   repository-name:  ToMaTo
+
+backend_api:
+  paths:
+    log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  false  # currently not implemented...
+  ssl:
+    cert:  /etc/tomato/backend_api.pem
+    key:  /etc/tomato/backend_api.pem
+    ca:  /etc/tomato/ca.pem
+  tasks:
+    max-workers: 25
 
 backend_core:
   paths:
@@ -277,12 +293,13 @@ class Config:
 	TOMATO_MODULE_WEB = "web"
 	TOMATO_MODULE_BACKEND_CORE = "backend_core"
 	TOMATO_MODULE_BACKEND_USERS = "backend_users"
-	TOMATO_MODULE_BACKEND_API = "backend_core"
+	TOMATO_MODULE_BACKEND_API = "backend_api"
 
 	TOMATO_MODULES = {TOMATO_MODULE_WEB,
 										TOMATO_MODULE_BACKEND_CORE,
-										TOMATO_MODULE_BACKEND_USERS}
-	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE, TOMATO_MODULE_BACKEND_USERS}
+										TOMATO_MODULE_BACKEND_USERS,
+										TOMATO_MODULE_BACKEND_API}
+	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE, TOMATO_MODULE_BACKEND_USERS, TOMATO_MODULE_BACKEND_API}
 
 	EMAIL_NOTIFICATION = "notification"
 	EMAIL_NEW_USER_WELCOME = "new-user-welcome"

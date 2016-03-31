@@ -15,10 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from api_helpers import checkauth, getCurrentUserInfo
+#fixme: all.
+
 from ..lib.cache import cached, invalidates
-from ..lib.service import get_backend_users_proxy
-from ..authorization.info import get_host_info, get_site_info
 
 from ..host import Host, Site
 from ..lib.error import UserError
@@ -32,54 +31,6 @@ def _getHost(name):
 	h = Host.get(name=name)
 	UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"name": name})
 	return h
-
-@cached(timeout=6*3600, autoupdate=True)
-def organization_list():
-	"""
-	undocumented
-	"""
-	api = get_backend_users_proxy()
-	return api.organization_list()
-
-@invalidates(organization_list)
-def organization_create(name, label="", attrs={}):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_create_organizations()
-	api = get_backend_users_proxy()
-	return api.organization_create(name, label, attrs)
-
-def organization_info(name):
-	"""
-	undocumented
-	"""
-	api = get_backend_users_proxy()
-	return api.organization_info(name)
-
-@invalidates(organization_list)
-def organization_modify(name, attrs):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_modify_organization(name)
-	api = get_backend_users_proxy()
-	return api.organization_modify(name, attrs)
-
-@invalidates(organization_list)
-def organization_remove(name):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_delete_organization(name)
-	api = get_backend_users_proxy()
-	api.organization_remove(name)
-
-@checkauth
-def organization_usage(name): #@ReservedAssignment
-	#fixme: broken
-	orga = _getOrganization(name)
-	return orga.totalUsage.info()	
 
 @cached(timeout=6*3600, autoupdate=True)
 def site_list(organization=None):
@@ -97,7 +48,6 @@ def site_create(name, organization, label="", attrs={}):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_create_sites(organization)
 	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
@@ -113,7 +63,6 @@ def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_modify_site(get_site_info(name))
 	site = _getSite(name)
 	site.modify(attrs)
 	return site.info()
@@ -123,7 +72,6 @@ def site_remove(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_site(get_site_info(name))
 	site = _getSite(name)
 	site.remove()
 
@@ -147,13 +95,11 @@ def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_create_hosts(get_site_info(site))
 	if not attrs: attrs = {}
 	site = _getSite(site)
 	h = Host.create(name, site, attrs)
 	return h.info()
 
-@checkauth
 def host_info(name):
 	"""
 	undocumented
@@ -166,7 +112,6 @@ def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_modify_host(get_host_info(name))
 	h = _getHost(name)
 	h.modify(attrs)
 	return h.info()
@@ -176,20 +121,16 @@ def host_remove(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
 	h = _getHost(name)
 	h.remove()
 
-@checkauth
 def host_users(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
 	h = _getHost(name)
 	return h.getUsers()
 
-@checkauth
 def host_usage(name): #@ReservedAssignment
 	h = _getHost(name)
 	return h.totalUsage.info()
