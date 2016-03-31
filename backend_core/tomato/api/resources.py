@@ -133,6 +133,12 @@ def template_remove(id):
 	res.remove()
 	return {}
 
+def template_id(tech, name):
+	"""
+	translate tech and name to a template id
+	"""
+	return Template.objects.get(tech=tech, name=name).id
+
 def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	"""
 	Retrieves information about a template.
@@ -258,6 +264,11 @@ def profile_remove(id):
 	res.remove()
 	return {}
 
+def profile_id(tech, name):
+	"""
+	translate tech and name to a template id
+	"""
+	return Profile.objects.get(tech=tech, name=name).id
 
 def profile_info(id):
 	"""

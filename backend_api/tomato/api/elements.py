@@ -58,9 +58,9 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	getCurrentUserInfo().check_may_create_element(get_topology_info(top))
 	if not attrs: attrs = {}
 	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info(get_element_info(id).get_type(), attrs['template']))
+		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(get_element_info(id).get_type(), attrs['template']))
 	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info(get_element_info(id).get_type(), attrs['profile']))
+		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(get_element_info(id).get_type(), attrs['profile']))
 	return get_backend_core_proxy().element_create(top, type, parent, attrs)
 
 def element_modify(id, attrs): #@ReservedAssignment
@@ -94,9 +94,9 @@ def element_modify(id, attrs): #@ReservedAssignment
 	"""
 	getCurrentUserInfo().check_may_modify_element(get_element_info(id))
 	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info(get_element_info(id).get_type(), attrs['template']))
+		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(get_element_info(id).get_type(), attrs['template']))
 	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info(get_element_info(id).get_type(), attrs['profile']))
+		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(get_element_info(id).get_type(), attrs['profile']))
 	return get_backend_core_proxy().element_modify(id, attrs)
 
 def element_action(id, action, params=None): #@ReservedAssignment
@@ -292,5 +292,5 @@ def element_usage(id): #@ReservedAssignment
 	# fixme: broken
 
 from api_helpers import getCurrentUserInfo
-from ..lib.remote_info import get_topology_info, get_element_info, get_profile_info, get_template_info
+from ..lib.remote_info import get_topology_info, get_element_info, get_profile_info_by_techname, get_template_info_by_techname
 from ..lib.service import get_backend_core_proxy

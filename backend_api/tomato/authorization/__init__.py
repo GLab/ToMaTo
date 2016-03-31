@@ -1,6 +1,6 @@
 from ..lib.settings import settings
 from ..lib.userflags import Flags
-from ..lib.remote_info import UserInfo, get_user_info, get_template_info
+from ..lib.remote_info import UserInfo, get_user_info, get_template_info_by_techname
 from ..lib.topology_role import Role
 from ..lib.error import UserError
 from ..lib.service import get_backend_users_proxy
@@ -673,7 +673,7 @@ class PermissionChecker(UserInfo):
 
 		if action == ActionName.CHANGE_TEMPLATE:
 			assert "template" in params
-			self.check_may_use_template(get_template_info(element_info.get_type(), params['template']))
+			self.check_may_use_template(get_template_info_by_techname(element_info.get_type(), params['template']))
 
 
 

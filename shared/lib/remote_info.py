@@ -37,6 +37,15 @@ class InfoObj(ExistenceCheck):
 	def _fetch_data(self):
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s._fetch_data' % repr(self.__class__)})
 
+	def _check_exists(self):
+		if self._info is not None:
+			return True
+		try:
+			self.info()
+			return True
+		except:
+			return False
+
 	def info(self):
 		if self._info is None:
 			self._info = self._fetch_data()
@@ -66,11 +75,7 @@ class UserInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
+		return get_backend_users_proxy().user_exists(self.name)
 
 
 class OrganizationInfo(InfoObj):
@@ -89,11 +94,7 @@ class OrganizationInfo(InfoObj):
 	def _check_exists(self):
 		if self._info is not None:
 			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
+		return get_backend_users_proxy().organization_exists(self.name)
 
 
 class TopologyInfo(InfoObj):
@@ -105,15 +106,6 @@ class TopologyInfo(InfoObj):
 	def __init__(self, topology_id):
 		super(TopologyInfo, self).__init__()
 		self.topology_id = topology_id
-
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().topology_info(self.topology_id)
@@ -169,15 +161,6 @@ class SiteInfo(InfoObj):
 		super(SiteInfo, self).__init__()
 		self.name = site_name
 
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
-
 	def _fetch_data(self):
 		return get_backend_core_proxy().site_info(self.name)
 
@@ -194,15 +177,6 @@ class HostInfo(InfoObj):
 		super(HostInfo, self).__init__()
 		self.name = host_name
 
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
-
 	def _fetch_data(self):
 		return get_backend_core_proxy().host_info(self.name)
 
@@ -216,15 +190,6 @@ class ElementInfo(InfoObj):
 	def __init__(self, element_id):
 		super(ElementInfo, self).__init__()
 		self.eid = element_id
-
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().element_info(self.eid)
@@ -242,15 +207,6 @@ class ConnectionInfo(InfoObj):
 		super(ConnectionInfo, self).__init__()
 		self.cid = connection_id
 
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
-
 	def _fetch_data(self):
 		return get_backend_core_proxy().connection_info(self.cid)
 
@@ -263,15 +219,6 @@ class TemplateInfo(InfoObj):
 	def __init__(self, template_id):
 		super(TemplateInfo, self).__init__()
 		self.template_id = template_id
-
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().template_info(self.template_id)
@@ -286,15 +233,6 @@ class ProfileInfo(InfoObj):
 		super(ProfileInfo, self).__init__()
 		self.profile_id = profile_id
 
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
-
 	def _fetch_data(self):
 		return get_backend_core_proxy().profile_info(self.profile_id)
 
@@ -307,15 +245,6 @@ class NetworkInfo(InfoObj):
 	def __init__(self, kind):
 		super(NetworkInfo, self).__init__()
 		self.kind = kind
-
-	def _check_exists(self):
-		if self._info is not None:
-			return True
-		try:
-			self.info()
-			return True
-		except:
-			return False
 
 	def _fetch_data(self):
 		return get_backend_core_proxy().network_info(self.kind)
@@ -416,6 +345,33 @@ def get_profile_info(profile_id):
 	:rtype: ProfileInfo
 	"""
 	return ProfileInfo(profile_id)
+
+
+@cached(60)
+def get_template_info_by_techname(tech, name):
+	"""
+	return TemplateInfo object for the respective template
+	:param str tech: tech of the target template
+	:param str name: name of the target template
+	:return: TemplateInfo object
+	:rtype: TemplateInfo
+	"""
+	template_id = get_backend_core_proxy().template_id(tech, name)
+	return get_template_info(template_id)
+
+
+@cached(60)
+def get_profile_info_by_techname(tech, name):
+	"""
+	return ProfileInfo object for the respective profile
+	:param str tech: tech of the target profile
+	:param str name: name of the target profile
+	:return: ProfileInfo object
+	:rtype: ProfileInfo
+	"""
+	profile_id = get_backend_core_proxy().profile_id(tech, name)
+	return get_profile_info(profile_id)
+
 
 @cached(60)
 def get_network_info(kind):
