@@ -22,7 +22,7 @@ from capabilities import capabilities, capabilities_connection, capabilities_ele
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
 	connection_action, connection_usage
 
-from debug import debug, debug_stats
+from debug import debug, debug_stats, ping
 
 from docs import docs, role_list
 
