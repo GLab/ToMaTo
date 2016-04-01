@@ -798,5 +798,3 @@ def get_pseudo_user_info(username, organization):
 	:rtype: PermissionChecker
 	"""
 	return PseudoUser(username, organization)
-
-z
