@@ -19,6 +19,7 @@ from ..lib.versioninfo import getVersionStr
 from api_helpers import checkauth, getCurrentUserInfo, getCurrentUserName
 from ..lib.service import get_backend_core_proxy, is_self, get_tomato_inner_proxy
 from ..lib.util import joinDicts
+from .. import misc
 
 def server_info():
 	"""
@@ -31,7 +32,7 @@ def server_info():
 	topology_config = settings.get_topology_settings()
 	return {
 		"TEMPLATE_TRACKER_URL": core_info["TEMPLATE_TRACKER_URL"],
-		'public_key': core_info['public_key'],
+		'public_key': misc.getCAPublicKey(),
 		'version': getVersionStr(),
 		'api_version': [4, 0, 1],
 		'topology_timeout': {
