@@ -1,0 +1,16 @@
+[package]
+name = "backend_accounting"
+version = "0.1.0"
+authors = ["Dennis Schwerdel <schwerdel@informatik.uni-kl.de>"]
+
+[dependencies]
+time = "0.1"
+fnv = "1"
+sslrpc2 = { path="../shared-rust/sslrpc2" }
+
+[dev-dependencies]
+tempdir = "0.3"
+
+[features]
+default = []
+bench = []
