@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from backend_core.tomato.lib.settings import settings
+from lib.settings import settings
 
 def getCAPublicKey():
 	lines = []
