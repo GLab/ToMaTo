@@ -144,7 +144,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		),
 		"enabled": Attribute(field=enabled, schema=schema.Bool()),
 		"description": Attribute(field=description, schema=schema.String()),
-		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization.name, schema=schema.Identifier()),
+		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization, schema=schema.Identifier()),
 		"problems": Attribute(readOnly=True, get=lambda obj: obj.problems(), schema=schema.List(items=schema.String())),
 		"component_errors": Attribute(field=componentErrors, readOnly=True, schema=schema.Int()),
 		"load": Attribute(readOnly=True, get=lambda obj: obj.getLoad(), schema=schema.List(items=schema.Number())),
