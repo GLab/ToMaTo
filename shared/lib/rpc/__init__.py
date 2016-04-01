@@ -34,13 +34,13 @@ def isReusable(proxy):
 		return True
 	return True
 
-def createXmlRpcProxy(url, sslcert, timeout):
+def createXmlRpcProxy(url, sslcert, sslkey, timeout):
 	schema, address = url.split(":", 1)
 	schema, _ = schema.split("+")
 	if address.startswith("//"):
 		address = address[2:]
 	if schema == "https":
-		transport = xmlrpc.SafeTransportWithCerts(sslcert, sslcert, timeout=timeout)
+		transport = xmlrpc.SafeTransportWithCerts(sslkey, sslcert, timeout=timeout)
 	else:
 		transport = None
 	return xmlrpc.ServerProxy('%s://%s' % (schema, address), allow_none=True, transport=transport,
@@ -67,7 +67,7 @@ def createProxy(url, sslcert, sslkey, sslca, timeout=30):
 		raise TransportError(code=TransportError.INVALID_URL, message="invalid url: %s" % url)
 	schema, address = url.split(":", 1)
 	if schema == "http+xmlrpc" or schema == "https+xmlrpc":
-		return createXmlRpcProxy(url, sslcert, sslkey, sslca, timeout)
+		return createXmlRpcProxy(url, sslcert, sslkey, timeout)
 	elif schema == "ssl+jsonrpc":
 		return createJsonRpcProxy(address, sslcert, sslkey, sslca, timeout)
 	else:

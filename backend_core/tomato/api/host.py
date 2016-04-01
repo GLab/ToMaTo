@@ -87,7 +87,7 @@ def host_list(site=None, organization=None):
 		sites = Site.objects(organization=organization)
 		hosts = Host.objects(site__in=sites)
 	else:
-		hosts = Host.objects
+		hosts = Host.objects.all()
 	return [h.info() for h in hosts]
 
 @invalidates(host_list)
