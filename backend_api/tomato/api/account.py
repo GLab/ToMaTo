@@ -18,8 +18,9 @@
 #fixme: all.
 
 from ..lib.service import get_backend_users_proxy
-from ..authorization import get_user_info, PermissionChecker, get_pseudo_user_info
+from ..authorization import PermissionChecker, get_pseudo_user_info
 from api_helpers import getCurrentUserInfo, getCurrentUserName
+from ..lib.remote_info import get_user_info
 
 def account_info(name=None):
 	"""
