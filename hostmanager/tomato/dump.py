@@ -38,4 +38,4 @@ def get(dump_id, include_data=False, compress_data=False, dump_on_error=False):
 
 
 def init():
-    dump_lib.init(envCmds,"Hostmanager",hostinfo.hostmanagerVersion())
+    dump_lib.init(envCmds, hostinfo.hostmanagerVersion())

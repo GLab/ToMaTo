@@ -18,6 +18,7 @@
 from django.db import models
 from django.core import exceptions
 import traceback
+import time
 from datetime import datetime, timedelta
 
 from lib import db, attributes, logging #@UnresolvedImport
