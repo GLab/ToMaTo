@@ -184,6 +184,17 @@ class TopologyInfo(ActionObj):
 
 		return (organization in organizations_with_role)
 
+	def set_permission(self, user, role):
+		"""
+		set the permission of a user
+		:param str user: username of target user
+		:param str role: role as in topology_role
+		"""
+		res = get_backend_core_proxy().topology_set_permission(id, user, role)  # fixme: do this in TopologyInfo
+		if self._info is not None:
+			self._info['permissions'][user] = role
+		return res
+
 	def get_id(self):
 		"""
 		return the topology id of this toppology

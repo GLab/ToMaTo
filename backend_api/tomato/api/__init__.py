@@ -22,7 +22,7 @@ from account_notification import account_notifications, account_notification_set
 
 from capabilities import capabilities, capabilities_connection, capabilities_element
 
-from config_infos import account_flag_categories, account_flag_configuration, account_flags
+from config_infos import account_flag_categories, account_flag_configuration, account_flags, topology_permissions
 
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
 	connection_action, connection_usage
@@ -55,7 +55,7 @@ from site import site_list, site_create, site_info, site_modify, site_remove
 from templates import template_list, template_info, template_create, template_modify, template_remove
 
 from topology import topology_action, topology_create, topology_info,\
-	topology_list, topology_modify, topology_set_permission, topology_permissions, topology_remove, topology_usage
+	topology_list, topology_modify, topology_set_permission, topology_remove, topology_usage
 
 
 
