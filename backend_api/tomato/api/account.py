@@ -241,35 +241,4 @@ def account_usage(name): #@ReservedAssignment
 
 
 # the following functions should be removed, and clients should use the respective library in shared
-		
-def account_flags():
-	"""
-	Returns the dict of all account flags and their short descriptions.
-	
-	Return value:
-	  A list of all available account flags.
-	"""
-	return flags
-
-#deprecated
-def account_flag_categories():
-	"""
-	Returns a dict which puts flags into different categories
-	"""
-	res = {}
-	for cat in categories:
-		res[cat['title']] = cat['flags']
-	return res
-
-def account_flag_configuration():
-	return {
-		'flags': flags,
-		'categories': categories
-		}
-
-
-
-
-
-from ..lib.userflags import flags, categories
 from ..lib.error import UserError as _UserError

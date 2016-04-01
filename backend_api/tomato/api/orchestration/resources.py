@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from backend_api.tomato.api.templates import template_list
-from backend_api.tomato.api.profile import profile_list
-from backend_api.tomato.api.network import network_list
-from backend_api.tomato.api.network_instance import network_instance_list
+from ..templates import template_list
+from ..profile import profile_list
+from ..network import network_list
+from ..network_instance import network_instance_list
 
 def resources_map():
 	return {
@@ -27,12 +27,3 @@ def resources_map():
 		'networks': network_list(),
 		'network_instances': network_instance_list()
 	}
-
-
-
-
-
-
-
-
-
