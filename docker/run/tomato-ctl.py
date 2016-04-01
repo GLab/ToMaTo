@@ -166,6 +166,7 @@ Other commands:
 
  gencerts:
    generate certs for the tomato inner communication.
+   this does not overwrite any existing files.
 
 examples:
  %(cmd)s db stop
