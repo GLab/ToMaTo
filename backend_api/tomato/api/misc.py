@@ -72,4 +72,3 @@ def task_execute(id):
 
 from .. import scheduler
 from ..lib.settings import settings, Config
-from ..lib import get_public_ip_address

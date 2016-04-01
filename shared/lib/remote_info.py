@@ -24,7 +24,7 @@ class ExistenceCheck(object):
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s.exists' % repr(self.__class__)})
 
 class InfoObj(ExistenceCheck):
-	__slots__ = ("_info")
+	__slots__ = ("_info",)
 
 	def __init__(self):
 		super(InfoObj, self).__init__()
@@ -98,9 +98,6 @@ class OrganizationInfo(InfoObj):
 
 
 class TopologyInfo(InfoObj):
-	"""
-	:type topology: Topology
-	"""
 	__slots__ = ("topology_id", )
 
 	def __init__(self, topology_id):

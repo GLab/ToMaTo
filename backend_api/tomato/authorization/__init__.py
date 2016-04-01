@@ -70,7 +70,6 @@ class PermissionChecker(UserInfo):
 	def check_may_list_all_users(self):
 		"""
 		check whether this user may list all users
-		:param str organization: name of the organization
 		"""
 		# only global admins may do this.
 		auth_check(Flags.GlobalAdmin in self.get_flags(), "operation requires global admin permission.")

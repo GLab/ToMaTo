@@ -18,7 +18,7 @@
 from api_helpers import getCurrentUserInfo, getCurrentUserName
 from ..lib.remote_info import get_topology_info
 from ..lib.topology_role import role_descriptions
-from ..lib.service import get_backend_users_proxy, get_backend_core_proxy
+from ..lib.service import get_backend_core_proxy
 
 def topology_create():
 	"""
@@ -223,5 +223,3 @@ def topology_usage(id): #@ReservedAssignment
 	"""
 	getCurrentUserInfo().check_may_view_topology_usage(get_topology_info(id))
 	return get_backend_core_proxy().topology_usage(id)
-
-from ..lib.error import UserError

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import subprocess, os, hashlib, shutil
+import subprocess, os, hashlib
 
 DEVNULL = open("/dev/null", "w")
 
@@ -79,6 +79,7 @@ def splitVersion(verStr):
     
 
 def getDpkgVersion(package, verStr=None):
+    # fixme: broken. are we still using this?
     verStr = getDpkgVersionStr(package)
     return splitVersion(verStr)
 

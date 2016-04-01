@@ -90,7 +90,7 @@ def account_notification_set_read(notification_id, read):
 	"""
 	username = getCurrentUserName()
 	api = get_backend_users_proxy()
-	api.notification_set_read(username, read)
+	api.notification_set_read(username, notification_id, read)
 
 def account_list(organization=None, with_flag=None):
 	"""
