@@ -15,17 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.service import get_backend_core_proxy
-from ..lib.cache import cached
+from ..templates import template_list
+from ..profile import profile_list
+from ..network import network_list
+from ..network_instance import network_instance_list
 
-@cached(3600*6)
-def capabilities_element(type, host=None): #@ReservedAssignment
-	return get_backend_core_proxy().capabilities_element(type, host)
-
-@cached(3600*6)
-def capabilities_connection(type, host=None): #@ReservedAssignment
-	return get_backend_core_proxy().capabilities_connection(type, host)
-
-@cached(3600*6)
-def capabilities():
-	return get_backend_core_proxy().capabilities()
+def resources_map():
+	return {
+		'templates': template_list(),
+		'profiles': profile_list(),
+		'networks': network_list(),
+		'network_instances': network_instance_list()
+	}

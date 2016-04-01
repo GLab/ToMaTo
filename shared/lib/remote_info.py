@@ -24,7 +24,7 @@ class ExistenceCheck(object):
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s.exists' % repr(self.__class__)})
 
 class InfoObj(ExistenceCheck):
-	__slots__ = ("_info")
+	__slots__ = ("_info",)
 
 	def __init__(self):
 		super(InfoObj, self).__init__()
@@ -32,10 +32,17 @@ class InfoObj(ExistenceCheck):
 
 	def invalidate_info(self):
 		self._info = None
-		self.invalidate_exists()
 
-	def _fetch_data(self):
-		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s._fetch_data' % repr(self.__class__)})
+	def _fetch_info(self, fetch=False):
+		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s._fetch_info' % repr(self.__class__)})
+
+	def _modify(self, attrs):
+		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden",
+												data={'function': '%s._modify' % repr(self.__class__)})
+
+	def _remove(self):
+		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden",
+												data={'function': '%s._remove' % repr(self.__class__)})
 
 	def _check_exists(self):
 		if self._info is not None:
@@ -46,11 +53,39 @@ class InfoObj(ExistenceCheck):
 		except:
 			return False
 
-	def info(self):
-		if self._info is None:
-			self._info = self._fetch_data()
+	def info(self, fetch=False):
+		if fetch or (self._info is None):
+			self._info = self._fetch_info(fetch)
 			self.set_exists(True)  # otherwise, fetch_data would have thrown an error
 		return self._info
+
+	def modify(self, attrs):
+		self._info = self._modify(attrs)
+		return self._info
+
+	def remove(self):
+		self._remove()
+		self.invalidate_info()
+		self.invalidate_exists()
+
+
+class ActionObj(InfoObj):
+
+	__slots__ = ()
+
+	def __init__(self):
+		super(ActionObj, self).__init__()
+
+	def _action(self, action, params):
+		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden",
+												data={'function': '%s._action' % repr(self.__class__)})
+
+	def action(self, action, params):
+		res = self._action(action, params)
+		self.invalidate_info()
+		self.invalidate_exists()
+		return res
+
 
 
 class UserInfo(InfoObj):
@@ -60,7 +95,7 @@ class UserInfo(InfoObj):
 		super(UserInfo, self).__init__()
 		self.name = username
 
-	def _fetch_data(self):
+	def _fetch_info(self, fetch=False):
 		return get_backend_users_proxy().user_info(self.name)
 
 	def get_username(self):
@@ -77,6 +112,12 @@ class UserInfo(InfoObj):
 			return True
 		return get_backend_users_proxy().user_exists(self.name)
 
+	def _modify(self, attrs):
+		return get_backend_users_proxy().user_modify(self.name, attrs)
+
+	def _remove(self):
+		get_backend_users_proxy().user_remove(self.name)
+
 
 class OrganizationInfo(InfoObj):
 	__slots__ = ("name",)
@@ -85,7 +126,7 @@ class OrganizationInfo(InfoObj):
 		super(OrganizationInfo, self).__init__()
 		self.name = organization_name
 
-	def _fetch_data(self):
+	def _fetch_info(self, fetch=False):
 		return get_backend_users_proxy().organization_info(self.name)
 
 	def get_organization_name(self):
@@ -96,18 +137,21 @@ class OrganizationInfo(InfoObj):
 			return True
 		return get_backend_users_proxy().organization_exists(self.name)
 
+	def _modify(self, attrs):
+		return get_backend_users_proxy().organization_modify(self.name, attrs)
 
-class TopologyInfo(InfoObj):
-	"""
-	:type topology: Topology
-	"""
+	def _remove(self):
+		get_backend_users_proxy().organization_remove(self.name)
+
+
+class TopologyInfo(ActionObj):
 	__slots__ = ("topology_id", )
 
 	def __init__(self, topology_id):
 		super(TopologyInfo, self).__init__()
 		self.topology_id = topology_id
 
-	def _fetch_data(self):
+	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().topology_info(self.topology_id)
 
 	def user_has_role(self, username, role):
@@ -140,12 +184,32 @@ class TopologyInfo(InfoObj):
 
 		return (organization in organizations_with_role)
 
+	def set_permission(self, user, role):
+		"""
+		set the permission of a user
+		:param str user: username of target user
+		:param str role: role as in topology_role
+		"""
+		res = get_backend_core_proxy().topology_set_permission(id, user, role)  # fixme: do this in TopologyInfo
+		if self._info is not None:
+			self._info['permissions'][user] = role
+		return res
+
 	def get_id(self):
 		"""
 		return the topology id of this toppology
 		:return:
 		"""
 		return self.topology_id
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().topology_modify(self.topology_id, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().topology_remove(self.topology_id)
+
+	def _action(self, action, params):
+		return get_backend_core_proxy().topology_action(self.topology_id, action, params)
 
 
 
@@ -161,8 +225,14 @@ class SiteInfo(InfoObj):
 		super(SiteInfo, self).__init__()
 		self.name = site_name
 
-	def _fetch_data(self):
+	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().site_info(self.name)
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().site_modify(self.name, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().site_remove(self.name)
 
 	def get_organization_name(self):
 		return self.info()['organization']
@@ -177,22 +247,37 @@ class HostInfo(InfoObj):
 		super(HostInfo, self).__init__()
 		self.name = host_name
 
-	def _fetch_data(self):
+	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().host_info(self.name)
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().host_modify(self.name, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().host_remove(self.name)
 
 	def get_organization_name(self):
 		return self.info()['organization']
 
 
-class ElementInfo(InfoObj):
+class ElementInfo(ActionObj):
 	__slots__ = ("eid",)
 
 	def __init__(self, element_id):
 		super(ElementInfo, self).__init__()
 		self.eid = element_id
 
-	def _fetch_data(self):
-		return get_backend_core_proxy().element_info(self.eid)
+	def _fetch_info(self, fetch=False):
+		return get_backend_core_proxy().element_info(self.eid, fetch=fetch)
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().element_modify(self.eid, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().element_remove(self.eid)
+
+	def _action(self, action, params):
+		return get_backend_core_proxy().element_action(self.eid, action, params)
 
 	def get_topology_info(self):
 		return get_topology_info(self.info()['topology'])
@@ -200,15 +285,24 @@ class ElementInfo(InfoObj):
 	def get_type(self):
 		return self.info()['type']
 
-class ConnectionInfo(InfoObj):
+class ConnectionInfo(ActionObj):
 	__slots__ = ("cid",)
 
 	def __init__(self, connection_id):
 		super(ConnectionInfo, self).__init__()
 		self.cid = connection_id
 
-	def _fetch_data(self):
-		return get_backend_core_proxy().connection_info(self.cid)
+	def _fetch_info(self, fetch=False):
+		return get_backend_core_proxy().element_info(self.eid, fetch=fetch)
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().connection_modify(self.eid, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().connection_remove(self.eid)
+
+	def _action(self, action, params):
+		return get_backend_core_proxy().connection_action(self.eid, action, params)
 
 	def get_topology_info(self):
 		return get_topology_info(self.info()['topology'])
@@ -220,8 +314,14 @@ class TemplateInfo(InfoObj):
 		super(TemplateInfo, self).__init__()
 		self.template_id = template_id
 
-	def _fetch_data(self):
+	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().template_info(self.template_id)
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().template_modify(self.template_id, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().template_remove(self.template_id)
 
 	def is_restricted(self):
 		return self.info()['restricted']
@@ -233,8 +333,14 @@ class ProfileInfo(InfoObj):
 		super(ProfileInfo, self).__init__()
 		self.profile_id = profile_id
 
-	def _fetch_data(self):
+	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().profile_info(self.profile_id)
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().profile_modify(self.profile_id, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().profile_remove(self.profile_id)
 
 	def is_restricted(self):
 		return self.info()['restricted']
@@ -246,11 +352,33 @@ class NetworkInfo(InfoObj):
 		super(NetworkInfo, self).__init__()
 		self.kind = kind
 
-	def _fetch_data(self):
+	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().network_info(self.kind)
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().network_modify(self.kind, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().network_remove(self.kind)
 
 	def is_restricted(self):
 		return self.info()['restricted']
+
+class NetworkInstanceInfo(InfoObj):
+	__slots__ = ("niid",)
+
+	def __init__(self, network_instance_id):
+		super(NetworkInstanceInfo, self).__init__()
+		self.niid = network_instance_id
+
+	def _fetch_info(self, fetch=False):
+		return get_backend_core_proxy().network_instance_info(self.niid)
+
+	def _modify(self, attrs):
+		return get_backend_core_proxy().network_instance_modify(self.niid, attrs)
+
+	def _remove(self):
+		get_backend_core_proxy().network_instance_remove(self.niid)
 
 
 
@@ -382,3 +510,13 @@ def get_network_info(kind):
 	:rtype: NetworkInfo
 	"""
 	return NetworkInfo(kind)
+
+@cached(60)
+def get_network_instance_info(network_instance_id):
+	"""
+	return NetworkInstanceInfo object for the respective network instance
+	:param str network_instance_id: id of the target network instance
+	:return: NetworkInstanceInfo object
+	:rtype: NetworkInstanceInfo
+	"""
+	return NetworkInstanceInfo(network_instance_id)

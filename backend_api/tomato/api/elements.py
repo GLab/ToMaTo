@@ -92,12 +92,13 @@ def element_modify(id, attrs): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	getCurrentUserInfo().check_may_modify_element(get_element_info(id))
+	elem = get_element_info(id)
+	getCurrentUserInfo().check_may_modify_element(elem)
 	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(get_element_info(id).get_type(), attrs['template']))
+		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(elem.get_type(), attrs['template']))
 	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(get_element_info(id).get_type(), attrs['profile']))
-	return get_backend_core_proxy().element_modify(id, attrs)
+		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(elem.get_type(), attrs['profile']))
+	return elem.modify(attrs)
 
 def element_action(id, action, params=None): #@ReservedAssignment
 	"""
@@ -131,8 +132,9 @@ def element_action(id, action, params=None): #@ReservedAssignment
 	  and state.
 	"""
 	if not params: params = {}
-	getCurrentUserInfo().check_may_run_element_action(get_element_info(id), action, params)
-	return get_backend_core_proxy().element_action(id, action, params)
+	elem = get_element_info(id)
+	getCurrentUserInfo().check_may_run_element_action(elem, action, params)
+	return elem.action(action, params)
 
 def element_remove(id): #@ReservedAssignment
 	"""
@@ -169,8 +171,9 @@ def element_remove(id): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	getCurrentUserInfo().check_may_remove_element(get_element_info(id))
-	return get_backend_core_proxy().element_remove(id)
+	elem = get_element_info(id)
+	getCurrentUserInfo().check_may_remove_element(elem)
+	return elem.remove()
 
 def element_info(id, fetch=False): #@ReservedAssignment
 	"""
@@ -274,8 +277,9 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	  If the given element does not exist or belongs to another owner
 	  an exception *element does not exist* is raised.
 	"""
-	getCurrentUserInfo().check_may_view_element(get_element_info(id))
-	return get_backend_core_proxy().element_info(id, fetch)
+	elem = get_element_info(id)
+	getCurrentUserInfo().check_may_view_element(elem)
+	return elem.info(fetch)
 	
 def element_usage(id): #@ReservedAssignment
 	"""

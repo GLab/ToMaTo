@@ -17,8 +17,7 @@
 
 from api_helpers import getCurrentUserInfo, getCurrentUserName
 from ..lib.remote_info import get_topology_info
-from ..lib.topology_role import role_descriptions
-from ..lib.service import get_backend_users_proxy, get_backend_core_proxy
+from ..lib.service import get_backend_core_proxy
 
 def topology_create():
 	"""
@@ -32,9 +31,6 @@ def topology_create():
 	getCurrentUserInfo().check_may_create_topologies()
 	return get_backend_core_proxy().topology_create(getCurrentUserName())
 
-def topology_permissions():
-	return role_descriptions()
-
 def topology_remove(id): #@ReservedAssignment
 	"""
 	Removes and empty topology.
@@ -46,8 +42,9 @@ def topology_remove(id): #@ReservedAssignment
 	  The topology must not contain elements or connections, otherwise the call
 	  will fail.
 	"""
-	getCurrentUserInfo().check_may_remove_topology(get_topology_info(id))
-	get_backend_core_proxy().topology_remove(id)
+	topl = get_topology_info(id)
+	getCurrentUserInfo().check_may_remove_topology(topl)
+	topl.remove()
 
 def topology_modify(id, attrs): #@ReservedAssignment
 	"""
@@ -71,8 +68,9 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  returned by :py:func:`topology_info`. This info dict will reflect all
 	  attribute changes.	
 	"""
-	getCurrentUserInfo().check_may_modify_topology(get_topology_info(id))
-	return get_backend_core_proxy().topology_modify(id, attrs)
+	topl = get_topology_info(id)
+	getCurrentUserInfo().check_may_modify_topology(topl)
+	return topl.modify(attrs)
 
 def topology_action(id, action, params=None): #@ReservedAssignment
 	"""
@@ -120,8 +118,9 @@ def topology_action(id, action, params=None): #@ReservedAssignment
 	  :py:func:`~topology_info`.	
 	"""
 	if not params: params = {}
-	getCurrentUserInfo().check_may_run_topology_action(get_topology_info(id), action, params)
-	return get_backend_core_proxy().topology_action(action, params)
+	topl = get_topology_info(id)
+	getCurrentUserInfo().check_may_run_topology_action(topl, action, params)
+	return topl.action(action, params)
 
 def topology_info(id, full=False): #@ReservedAssignment
 	"""
@@ -169,8 +168,12 @@ def topology_info(id, full=False): #@ReservedAssignment
 	``permissions``
 	  A dict with usernames as the keys and permission levels as values.
 	"""
-	getCurrentUserInfo().check_may_view_topology(get_topology_info(id))
-	return get_backend_core_proxy().topology_info(id, full)
+	topl = get_topology_info(id)
+	getCurrentUserInfo().check_may_view_topology(topl)
+	if full:
+		return topl.info()
+	else:
+		return get_backend_core_proxy().topology_info(id, full)
 
 def topology_list(full=False, showAll=False, organization=None): #@ReservedAssignment
 	"""
@@ -207,8 +210,9 @@ def topology_set_permission(id, user, role): #@ReservedAssignment
 	  The name of the role for this user. If the user already has a role,
 	  if will be changed.
 	"""
-	getCurrentUserInfo().check_may_grant_permission_for_topologies(get_topology_info(id))
-	return get_backend_core_proxy().topology_set_permission(id, user, role)
+	topl = get_topology_info(id)
+	getCurrentUserInfo().check_may_grant_permission_for_topologies(topl)
+	return topl.set_permission(id, user, role)
 	
 def topology_usage(id): #@ReservedAssignment
 	"""
@@ -221,7 +225,6 @@ def topology_usage(id): #@ReservedAssignment
 	  Usage statistics for the given topology according to 
 	  :doc:`/docs/accountingdata`.
 	"""
+	# fixme: broken
 	getCurrentUserInfo().check_may_view_topology_usage(get_topology_info(id))
 	return get_backend_core_proxy().topology_usage(id)
-
-from ..lib.error import UserError

@@ -166,6 +166,7 @@ Other commands:
 
  gencerts:
    generate certs for the tomato inner communication.
+   this does not overwrite any existing files.
 
 examples:
  %(cmd)s db stop
@@ -641,6 +642,12 @@ def stop_all(modules):
 
 
 
+
+# expand module shortnames (e.g., api for backend_api)
+if len(args) >1:
+	for module in TOMATO_MODULES:
+		if "backend_%s" % args[1] == module:
+			args[1] = module
 
 if len(args) == 2:
 	if args[1] == "start":
