@@ -39,21 +39,24 @@ def host_info(name):
 	"""
 	undocumented
 	"""
-	return get_backend_core_proxy().host_info(name)
+	host = get_host_info(name)
+	return host.info()
 
 def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_modify_host(get_host_info(name))
-	return get_backend_core_proxy().host_modify(name, attrs)
+	host = get_host_info(name)
+	getCurrentUserInfo().check_may_modify_host(host)
+	return host.modify(name, attrs)
 
 def host_remove(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
-	get_backend_core_proxy().host_remove(name)
+	host = get_host_info(name)
+	getCurrentUserInfo().check_may_delete_host(host)
+	host.remove(name)
 
 def host_users(name):
 	"""

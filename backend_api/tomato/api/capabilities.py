@@ -16,12 +16,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.service import get_backend_core_proxy
+from ..lib.cache import cached
 
+@cached(3600*6)
 def capabilities_element(type, host=None): #@ReservedAssignment
 	return get_backend_core_proxy().capabilities_element(type, host)
 
+@cached(3600*6)
 def capabilities_connection(type, host=None): #@ReservedAssignment
 	return get_backend_core_proxy().capabilities_connection(type, host)
 
+@cached(3600*6)
 def capabilities():
 	return get_backend_core_proxy().capabilities()

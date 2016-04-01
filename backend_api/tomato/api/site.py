@@ -19,18 +19,18 @@ def site_info(name):
 	"""
 	undocumented
 	"""
-	return get_backend_core_proxy().site_info(name)
+	return get_site_info(name).info()
 
 def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_modify_site(get_site_info(name))
-	return get_backend_core_proxy().site_modify(name, attrs)
+	return get_site_info(name).modify(attrs)
 
 def site_remove(name):
 	"""
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_delete_site(get_site_info(name))
-	return get_backend_core_proxy().site_remove(name)
+	return get_site_info(name).remove()

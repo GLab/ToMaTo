@@ -1,5 +1,6 @@
 from ..lib.service import get_backend_users_proxy
 from api_helpers import getCurrentUserInfo, checkauth
+from ..lib.remote_info import get_organization_info
 
 def organization_list():
 	"""
@@ -20,24 +21,21 @@ def organization_info(name):
 	"""
 	undocumented
 	"""
-	api = get_backend_users_proxy()
-	return api.organization_info(name)
+	return get_organization_info(name).info()
 
 def organization_modify(name, attrs):
 	"""
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_modify_organization(name)
-	api = get_backend_users_proxy()
-	return api.organization_modify(name, attrs)
+	return get_organization_info(name).modify(attrs)
 
 def organization_remove(name):
 	"""
 	undocumented
 	"""
 	getCurrentUserInfo().check_may_delete_organization(name)
-	api = get_backend_users_proxy()
-	api.organization_remove(name)
+	get_organization_info(name).remove()
 
 @checkauth
 def organization_usage(name): #@ReservedAssignment

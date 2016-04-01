@@ -89,8 +89,9 @@ def connection_modify(id, attrs): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection 
 	  state.
 	"""
-	getCurrentUserInfo().check_may_modify_connection(get_connection_info(id))
-	return get_backend_core_proxy().connection_modify(id, attrs)
+	conn = get_connection_info(id)
+	getCurrentUserInfo().check_may_modify_connection(conn)
+	return conn.modify(attrs)
 
 def connection_action(id, action, params=None): #@ReservedAssignment
 	"""
@@ -122,8 +123,9 @@ def connection_action(id, action, params=None): #@ReservedAssignment
 	  and state.
 	"""
 	if not params: params = {}
-	getCurrentUserInfo().check_may_run_connection_action(get_connection_info(id), action, params)
-	return get_backend_core_proxy().connection_action(id, action, params)
+	conn = get_connection_info(id)
+	getCurrentUserInfo().check_may_run_connection_action(conn, action, params)
+	return conn.action(action, params)
 
 def connection_remove(id): #@ReservedAssignment
 	"""
@@ -144,8 +146,9 @@ def connection_remove(id): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection type 
 	  and state.
 	"""
-	getCurrentUserInfo().check_may_remove_connection(get_connection_info(id))
-	get_backend_core_proxy().connection_remove(id)
+	conn = get_connection_info(id)
+	getCurrentUserInfo().check_may_remove_connection(conn)
+	conn.remove()
 
 def connection_info(id, fetch=False): #@ReservedAssignment
 	"""
@@ -187,8 +190,9 @@ def connection_info(id, fetch=False): #@ReservedAssignment
 	  If the given connection does not exist or belongs to another owner
 	  an exception *connection does not exist* is raised.
 	"""
-	getCurrentUserInfo().check_may_view_connection(get_connection_info(id))
-	return get_backend_core_proxy().connection_info(id, fetch)
+	conn = get_connection_info(id)
+	getCurrentUserInfo().check_may_view_connection(conn)
+	return conn.info(id, fetch)
 	
 def connection_usage(id): #@ReservedAssignment
 	"""

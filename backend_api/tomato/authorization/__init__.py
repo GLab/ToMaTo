@@ -30,7 +30,7 @@ class PermissionChecker(UserInfo):
 		super(PermissionChecker, self).invalidate_info()
 		self.success_password = None
 
-	def _fetch_data(self):
+	def _fetch_info(self):
 		return get_user_info(self.get_username()).info()
 	def _check_exists(self):
 		return get_user_info(self.get_username()).exists()
@@ -755,7 +755,7 @@ class PseudoUser(UserInfo):
 		super(PseudoUser, self).__init__(username)
 		self.organization = organization
 
-	def _fetch_data(self):
+	def _fetch_info(self):
 		return {
 			'organization': self.organization,
 			'name': self.name
@@ -787,7 +787,6 @@ def get_permission_checker(username):
 	:return: PermissionChecker object for corresponding user
 	:rtype: PermissionChecker
 	"""
-
 	return PermissionChecker(username=username)
 
 def get_pseudo_user_info(username, organization):

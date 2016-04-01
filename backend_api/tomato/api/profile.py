@@ -1,5 +1,6 @@
 from ..lib.service import get_backend_core_proxy
 from api_helpers import getCurrentUserInfo, checkauth
+from ..lib.remote_info import get_profile_info
 
 def profile_list(tech=None):
 	"""
@@ -65,7 +66,7 @@ def profile_modify(id, attrs):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_modify_user_resources()
-	return get_backend_core_proxy().profile_modify(id, attrs)
+	return get_profile_info(id).modify(attrs)
 
 
 def profile_remove(id):
@@ -87,7 +88,7 @@ def profile_remove(id):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_remove_user_resources()
-	return get_backend_core_proxy().profile_remove(id)
+	return get_profile_info(id).remove()
 
 
 @checkauth
@@ -110,4 +111,4 @@ def profile_info(id):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	return get_backend_core_proxy().profile_info(id)
+	return get_profile_info(id).remove()

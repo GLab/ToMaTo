@@ -1,5 +1,6 @@
 from ..lib.service import get_backend_core_proxy
 from api_helpers import checkauth, getCurrentUserInfo
+from ..lib.remote_info import get_template_info
 
 @checkauth
 def template_list(tech=None):
@@ -64,7 +65,7 @@ def template_modify(id, attrs):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_modify_user_resources()
-	return get_backend_core_proxy().template_modify(id, attrs)
+	return get_template_info(id).modify(attrs)
 
 def template_remove(id):
 	"""
@@ -85,7 +86,7 @@ def template_remove(id):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_remove_user_resources()
-	return get_backend_core_proxy().template_remove(id)
+	return get_template_info(id).remove()
 
 @checkauth
 def template_info(id, include_torrent_data=False): #@ReservedAssignment
@@ -112,6 +113,9 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	  If the given template does not exist an exception *template does not
 	  exist* is raised.
 	"""
+	templ = get_template_info(id)
 	if include_torrent_data:
-		getCurrentUserInfo().check_may_get_template_torrent_data(get_template_info(id))
-	return get_backend_core_proxy().template_info(id, include_torrent_data)
+		getCurrentUserInfo().check_may_get_template_torrent_data(templ)
+		return get_backend_core_proxy().template_info(id, include_torrent_data)
+	else:
+		return templ.info()

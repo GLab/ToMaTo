@@ -1,5 +1,6 @@
 from ..lib.service import get_backend_core_proxy
 from api_helpers import getCurrentUserInfo, checkauth
+from ..lib.remote_info import get_network_instance_info
 
 @checkauth
 def network_instance_list(network=None, host=None):
@@ -67,7 +68,7 @@ def network_instance_modify(id, attrs):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_modify_technical_resources()
-	return get_backend_core_proxy().network_instance_modify(id, attrs)
+	return get_network_instance_info(id).modify(attrs)
 
 
 def network_instance_remove(id):
@@ -89,7 +90,7 @@ def network_instance_remove(id):
 	  exist* is raised.
 	"""
 	getCurrentUserInfo().check_may_remove_technical_resources()
-	return get_backend_core_proxy().network_instance_remove(id)
+	return get_network_instance_info(id).remove()
 
 
 @checkauth
@@ -112,4 +113,4 @@ def network_instance_info(id):
 	  If the given network_instance does not exist an exception *network_instance does not
 	  exist* is raised.
 	"""
-	return get_backend_core_proxy().network_instance_info(id)
+	return get_network_instance_info(id).info()
