@@ -61,36 +61,13 @@ def account_info(name=None):
 	"""
 	if name is None:
 		name = getCurrentUserName()
-	keys_to_show = getCurrentUserInfo().account_info_visible_keys(get_user_info(name))
-	api = get_backend_users_proxy()
-	info = api.user_info(name)
+	target_account = get_user_info(name)
+	keys_to_show = getCurrentUserInfo().account_info_visible_keys(target_account)
+	info = target_account.info()
 	for k in info.keys():
 		if k not in keys_to_show:
 			del info[k]
 	return info
-
-def account_notifications(include_read=False):
-	"""
-	List notifications for the currently logged in user.
-
-	:param bool include_read: include read notifications. if False, only return unread ones.
-	:return: list of Notification
-	"""
-	username = getCurrentUserName()
-	api = get_backend_users_proxy()
-	api.notification_list(username, include_read)
-
-def account_notification_set_read(notification_id, read):
-	"""
-	Modify the read status of a notification
-
-	:param str notification_id: ID of the notification to modify
-	:param bool read: new read status of the notification
-	:return: None
-	"""
-	username = getCurrentUserName()
-	api = get_backend_users_proxy()
-	api.notification_set_read(username, notification_id, read)
 
 def account_list(organization=None, with_flag=None):
 	"""
@@ -143,17 +120,14 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	if not attrs: attrs = {}
 	if name is None:
 		name = getCurrentUserName()
-	modify_keys_allowed_list = getCurrentUserInfo().modify_user_allowed_keys(get_user_info(name))
-	modify_flags_allowed = getCurrentUserInfo().modify_user_allowed_flags(get_user_info(name))
+	target_account = get_user_info(name)
+	modify_keys_allowed_list = getCurrentUserInfo().modify_user_allowed_keys(target_account)
+	modify_flags_allowed = getCurrentUserInfo().modify_user_allowed_flags(target_account)
 
 	attrs = PermissionChecker.reduce_keys_to_allowed(attrs, modify_keys_allowed_list, modify_flags_allowed,
 																									 ignore_key_on_unauthorized, ignore_flag_on_unauthorized)
 
-	api = get_backend_users_proxy()
-	info = api.user_modify(name, attrs)
-
-	get_user_info(name).invalidate_info()
-	return info
+	return target_account.modify(attrs)
 		
 def account_create(username, password, organization, attrs=None):
 	"""
@@ -210,28 +184,10 @@ def account_remove(name=None):
 	"""
 	if name is None:
 		name = getCurrentUserName()
-	getCurrentUserInfo().check_may_delete_user(get_user_info(name))
-	api = get_backend_users_proxy()
-	api.user_remove(name)
+	target_account = get_user_info(name)
+	getCurrentUserInfo().check_may_delete_user(target_account)
+	target_account.remove()
 
-
-def account_send_notification(name, subject, message, ref=None, from_support=False, subject_group=None):
-	"""
-	Sends an email to the account
-	"""
-	if from_support:
-		fromUser = None
-	else:
-		fromUser = getCurrentUserName()
-	getCurrentUserInfo().check_may_send_message_to_user(get_user_info(name))
-	api = get_backend_users_proxy()
-	api.send_message(name, subject, message, fromUser=fromUser, ref=ref, subject_group=subject_group)
-
-def broadcast_announcement(title, message, ref=None, show_sender=True, subject_group=None, organization_filter=None):
-	getCurrentUserInfo().check_may_broadcast_messages(organization_filter)
-	api = get_backend_users_proxy()
-	api.broadcast_message(title, message, fromUser=(getCurrentUserName() if show_sender else None), ref=ref,
-												subject_group=subject_group, organization_filter=organization_filter)
 
 def account_usage(name): #@ReservedAssignment
 	#fixme: backend_users and stuff
