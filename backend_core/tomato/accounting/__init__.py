@@ -22,6 +22,8 @@ from ..lib.service import get_backend_users_proxy
 
 from quota import TYPES, KEEP_RECORDS
 
+MAX_AGE = 20  # fixme: just a random value to avoid an error...
+
 #TODO: aggregate per user
 #TODO: fetch and save current records of to-be-deleted objects
 
