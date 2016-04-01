@@ -15,17 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.cache import cached
-import time
-from ..lib.versioninfo import getVersionStr
-from ..lib.service import get_backend_users_proxy
-from ..lib.userflags import Flags
 from ..lib import get_public_ip_address
+from ..lib.cache import cached
+from ..lib.service import get_backend_users_proxy
 from ..lib.settings import settings
+from ..lib.userflags import Flags
+
 
 def server_info():
 	return {
-		'public_key': misc.getPublicKey(),
 		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (
 		get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port'])
 	}
@@ -102,5 +100,5 @@ def task_list():
 def task_execute(id):
 	return scheduler.executeTask(id, force=True)
 
-from .. import misc, link, topology, elements, connections, scheduler
+from .. import link, topology, elements, connections, scheduler
 from ..host import Host

@@ -168,10 +168,9 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def getProxy(self):
 		if not _caching:
-			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), timeout=settings.get_rpc_timeout())
+			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		if not self.rpcurl in _proxies:
-			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(),
-												  timeout=settings.get_rpc_timeout())
+			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		return _proxies[self.rpcurl]
 
 	def incrementErrors(self):

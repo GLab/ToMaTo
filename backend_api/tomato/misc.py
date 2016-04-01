@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from lib.settings import settings
+from backend_core.tomato.lib.settings import settings
 
-def getPublicKey():
+def getCAPublicKey():
 	lines = []
 	ignore = False
-	with open(settings.get_ssl_cert_filename()) as key:
+	with open(settings.get_ssl_ca_filename()) as key:
 		for line in key:
 			if "PRIVATE" in line:
 				ignore = not ignore

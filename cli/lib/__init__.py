@@ -129,4 +129,4 @@ def getConnection(url, sslCert=None):
 		This method returns a server proxy object.
 
 	"""
-	return rpc.createProxy(url, sslCert)
+	return rpc.createProxy(url, sslCert, sslCert, sslCert)
