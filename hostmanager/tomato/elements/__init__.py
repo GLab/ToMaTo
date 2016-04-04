@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil, os.path, abc
+import os, shutil, os.path, abc, time
 from django.db import models
 from threading import Lock
 

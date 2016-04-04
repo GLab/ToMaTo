@@ -219,7 +219,10 @@ def create_group(group_id, description=None):
 			desc = desc[:100] + " ..."
 		if not desc:
 			desc = group_id
-		return ErrorGroup(groupId=group_id, description=desc).save()
+		grp = ErrorGroup(groupId=group_id, description=desc)
+		grp.save()
+		return grp
+
 
 
 def get_group(group_id):

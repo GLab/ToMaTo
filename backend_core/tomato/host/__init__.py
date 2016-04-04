@@ -144,7 +144,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		),
 		"enabled": Attribute(field=enabled, schema=schema.Bool()),
 		"description": Attribute(field=description, schema=schema.String()),
-		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization.name, schema=schema.Identifier()),
+		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization, schema=schema.Identifier()),
 		"problems": Attribute(readOnly=True, get=lambda obj: obj.problems(), schema=schema.List(items=schema.String())),
 		"component_errors": Attribute(field=componentErrors, readOnly=True, schema=schema.Int()),
 		"load": Attribute(readOnly=True, get=lambda obj: obj.getLoad(), schema=schema.List(items=schema.Number())),
@@ -437,7 +437,6 @@ class Host(DumpSource, Entity, BaseDocument):
 		return (el.upcast() for el in Element.objects.filter(host_elements__host=self))
 
 	def getUsers(self):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		res = []
 		for type_, obj in [("element", el) for el in self.elements.all()] + [("connection", con) for con in
 																			 self.connections.all()]:
@@ -454,11 +453,7 @@ class Host(DumpSource, Entity, BaseDocument):
 			res.append(data)
 		return res
 
-	def checkPermissions(self):
-		return self.site.checkPermissions()
-
 	def remove(self, params=None):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		if self.id:
 			UserError.check(not self.elements.all(), code=UserError.NOT_EMPTY, message="Host still has active elements")
 			UserError.check(not self.connections.all(), code=UserError.NOT_EMPTY, message="Host still has active connections")
