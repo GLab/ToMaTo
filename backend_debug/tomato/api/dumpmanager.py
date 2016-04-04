@@ -17,7 +17,7 @@
 
 #fixme: all.
 
-from ..dumpmanager import api_errordump_info, api_errordump_list, api_errorgroup_favorite,\
+from backend_core.tomato.dumpmanager import api_errordump_info, api_errordump_list, api_errorgroup_favorite,\
 	api_errorgroup_hide, api_errorgroup_info, api_errorgroup_list, api_errorgroup_modify, api_errorgroup_remove,\
 	api_force_refresh
 
