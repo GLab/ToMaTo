@@ -138,13 +138,13 @@ fn record_decode() {
 fn data_new() {
     let tmpdir = TempDir::new("").unwrap();
     let data = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
-    assert_eq!(data.records.len(), 0);
+    assert_eq!(data.records.read().unwrap().len(), 0);
 }
 
 #[test]
 fn data_get_record() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
     assert!(data.get_record(data::RecordType::Element, "test_id".to_owned()).is_none());
     data.add_usage(data::RecordType::Element, "test_id".to_owned(), &data::Usage::zero(), util::now());
     assert!(data.get_record(data::RecordType::Element, "test_id".to_owned()).is_some());
@@ -160,7 +160,7 @@ fn data_record_path() {
 #[test]
 fn data_store_record() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
     data.add_usage(data::RecordType::Element, "test_id".to_owned(), &data::Usage::zero(), 0);
     let rec = data.get_record(data::RecordType::Element, "test_id".to_owned()).unwrap();
     assert!(!data.record_path(data::RecordType::Element, "test_id").exists());
@@ -171,7 +171,7 @@ fn data_store_record() {
 #[test]
 fn data_store_all() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
     data.add_usage(data::RecordType::Element, "test_id_1".to_owned(), &data::Usage::zero(), util::now());
     data.add_usage(data::RecordType::Element, "test_id_2".to_owned(), &data::Usage::zero(), util::now());
     assert_eq!(data.store_all().unwrap(), 2);
@@ -187,20 +187,20 @@ fn data_store_all() {
 #[test]
 fn data_load_record() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut data1 = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
+    let data1 = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
     data1.add_usage(data::RecordType::Element, "test_id".to_owned(), &data::Usage::zero(), util::now());
     data1.store_all().unwrap();
-    let mut data2 = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
+    let data2 = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
     data2.load_record(data::RecordType::Element, "test_id").unwrap();
 }
 
 #[test]
 fn data_load_all() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut data1 = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
+    let data1 = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
     data1.add_usage(data::RecordType::Element, "test_id".to_owned(), &data::Usage::zero(), util::now());
     data1.store_all().unwrap();
-    let mut data2 = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
+    let data2 = data::Data::new(tmpdir.path(), Box::new(hierarchy::DummyHierarchy));
     data2.load_all().unwrap();
     assert!(data2.get_record(data::RecordType::Element, "test_id".to_owned()).is_some());
 }
@@ -209,18 +209,18 @@ fn data_load_all() {
 fn data_add_organization_usage() {
     let tmpdir = TempDir::new("").unwrap();
     let hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
-    data.add_organization_usage("org1".to_owned(), &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
+    data.add_organization_usage("org1", &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
     assert_eq!(data.get_record(data::RecordType::Organization, "org1".to_owned()).unwrap().cur().memory, 1.0);
 }
 
 #[test]
 fn data_add_user_usage() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
+    let hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
     hierarchy.put(data::RecordType::User, "user1".to_owned(), data::RecordType::Organization, vec!["org1".to_owned()]);
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
-    data.add_user_usage("user1".to_owned(), &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
+    data.add_user_usage("user1", &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
     assert_eq!(data.get_record(data::RecordType::User, "user1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::Organization, "org1".to_owned()).unwrap().cur().memory, 1.0);
 }
@@ -228,12 +228,12 @@ fn data_add_user_usage() {
 #[test]
 fn data_add_topology_usage() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
+    let hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
     hierarchy.put(data::RecordType::User, "user1".to_owned(), data::RecordType::Organization, vec!["org1".to_owned()]);
     hierarchy.put(data::RecordType::User, "user2".to_owned(), data::RecordType::Organization, vec!["org1".to_owned()]);
     hierarchy.put(data::RecordType::Topology, "top1".to_owned(), data::RecordType::User, vec!["user1".to_owned(), "user2".to_owned()]);
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
-    data.add_topology_usage("top1".to_owned(), &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
+    data.add_topology_usage("top1", &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
     assert_eq!(data.get_record(data::RecordType::Topology, "top1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::User, "user1".to_owned()).unwrap().cur().memory, 0.5);
     assert_eq!(data.get_record(data::RecordType::User, "user2".to_owned()).unwrap().cur().memory, 0.5);
@@ -243,12 +243,12 @@ fn data_add_topology_usage() {
 #[test]
 fn data_add_element_usage() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
+    let hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
     hierarchy.put(data::RecordType::User, "user1".to_owned(), data::RecordType::Organization, vec!["org1".to_owned()]);
     hierarchy.put(data::RecordType::Topology, "top1".to_owned(), data::RecordType::User, vec!["user1".to_owned()]);
     hierarchy.put(data::RecordType::Element, "elem1".to_owned(), data::RecordType::Topology, vec!["top1".to_owned()]);
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
-    data.add_element_usage("elem1".to_owned(), &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
+    data.add_element_usage("elem1", &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
     assert_eq!(data.get_record(data::RecordType::Element, "elem1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::Topology, "top1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::User, "user1".to_owned()).unwrap().cur().memory, 1.0);
@@ -258,12 +258,12 @@ fn data_add_element_usage() {
 #[test]
 fn data_add_connection_usage() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
+    let hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
     hierarchy.put(data::RecordType::User, "user1".to_owned(), data::RecordType::Organization, vec!["org1".to_owned()]);
     hierarchy.put(data::RecordType::Topology, "top1".to_owned(), data::RecordType::User, vec!["user1".to_owned()]);
     hierarchy.put(data::RecordType::Connection, "con1".to_owned(), data::RecordType::Topology, vec!["top1".to_owned()]);
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
-    data.add_connection_usage("con1".to_owned(), &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
+    data.add_connection_usage("con1", &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
     assert_eq!(data.get_record(data::RecordType::Connection, "con1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::Topology, "top1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::User, "user1".to_owned()).unwrap().cur().memory, 1.0);
@@ -273,16 +273,16 @@ fn data_add_connection_usage() {
 #[test]
 fn data_add_host_element_usage() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
+    let hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
     hierarchy.put(data::RecordType::User, "user1".to_owned(), data::RecordType::Organization, vec!["org1".to_owned()]);
     hierarchy.put(data::RecordType::Topology, "top1".to_owned(), data::RecordType::User, vec!["user1".to_owned()]);
     hierarchy.put(data::RecordType::Connection, "con1".to_owned(), data::RecordType::Topology, vec!["top1".to_owned()]);
     hierarchy.put(data::RecordType::Element, "elem1".to_owned(), data::RecordType::Topology, vec!["top1".to_owned()]);
     hierarchy.put(data::RecordType::HostElement, "hel1".to_owned(), data::RecordType::Element, vec!["elem1".to_owned()]);
     hierarchy.put(data::RecordType::HostElement, "hel2".to_owned(), data::RecordType::Connection, vec!["con1".to_owned()]);
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
-    data.add_host_element_usage("hel1".to_owned(), &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
-    data.add_host_element_usage("hel2".to_owned(), &mut data::Usage::new(2.0, 2.0, 2.0, 2.0), util::now());
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
+    data.add_host_element_usage("hel1", &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
+    data.add_host_element_usage("hel2", &mut data::Usage::new(2.0, 2.0, 2.0, 2.0), util::now());
     assert_eq!(data.get_record(data::RecordType::Element, "elem1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::Connection, "con1".to_owned()).unwrap().cur().memory, 2.0);
     assert_eq!(data.get_record(data::RecordType::Topology, "top1".to_owned()).unwrap().cur().memory, 3.0);
@@ -293,13 +293,13 @@ fn data_add_host_element_usage() {
 #[test]
 fn data_add_host_connection_usage() {
     let tmpdir = TempDir::new("").unwrap();
-    let mut hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
+    let hierarchy = hierarchy::HierarchyCache::new(Box::new(hierarchy::DummyHierarchy), 1000);
     hierarchy.put(data::RecordType::User, "user1".to_owned(), data::RecordType::Organization, vec!["org1".to_owned()]);
     hierarchy.put(data::RecordType::Topology, "top1".to_owned(), data::RecordType::User, vec!["user1".to_owned()]);
     hierarchy.put(data::RecordType::Connection, "con1".to_owned(), data::RecordType::Topology, vec!["top1".to_owned()]);
     hierarchy.put(data::RecordType::HostConnection, "hcon1".to_owned(), data::RecordType::Connection, vec!["con1".to_owned()]);
-    let mut data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
-    data.add_host_connection_usage("hcon1".to_owned(), &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
+    let data = data::Data::new(tmpdir.path(), Box::new(hierarchy));
+    data.add_host_connection_usage("hcon1", &mut data::Usage::new(1.0, 1.0, 1.0, 1.0), util::now());
     assert_eq!(data.get_record(data::RecordType::Connection, "con1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::Topology, "top1".to_owned()).unwrap().cur().memory, 1.0);
     assert_eq!(data.get_record(data::RecordType::User, "user1".to_owned()).unwrap().cur().memory, 1.0);

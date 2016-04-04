@@ -6,7 +6,7 @@
 
 extern crate time;
 extern crate fnv;
-extern crate sslrpc2;
+#[macro_use] extern crate sslrpc2;
 
 pub mod data;
 pub mod util;

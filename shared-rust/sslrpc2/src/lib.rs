@@ -1,12 +1,13 @@
 #[macro_use] extern crate log;
 extern crate env_logger;
-extern crate rmp;
+pub extern crate rmp;
 extern crate net2;
 extern crate libc;
 extern crate epoll;
 extern crate openssl;
+extern crate fnv;
 
-mod util;
+#[macro_use] mod util;
 mod errors;
 mod socket;
 mod msgs;

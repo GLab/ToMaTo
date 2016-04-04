@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
+use std::sync::RwLock;
 
 use fnv::FnvHasher;
 
@@ -14,13 +15,13 @@ pub enum HierarchyError {
 }
 
 pub trait Hierarchy {
-    fn get(&mut self, child_type: RecordType, parent_type: RecordType, child_id: &str) -> Result<Vec<String>, HierarchyError>;
+    fn get(&self, child_type: RecordType, parent_type: RecordType, child_id: &str) -> Result<Vec<String>, HierarchyError>;
 }
 
 pub struct HierarchyCache {
     timeout: Time,
     inner: Box<Hierarchy>,
-    cache: HashMap<(RecordType, RecordType), HashMap<String, (Vec<String>, Time), Hash>, Hash>
+    cache: HashMap<(RecordType, RecordType), RwLock<HashMap<String, (Vec<String>, Time), Hash>>, Hash>
 }
 
 impl HierarchyCache {
@@ -36,30 +37,34 @@ impl HierarchyCache {
             (RecordType::Element, RecordType::Topology), (RecordType::Connection, RecordType::Topology),
             (RecordType::Topology, RecordType::User), (RecordType::User, RecordType::Organization)
         ] {
-            obj.cache.insert((child, parent), HashMap::default());
+            obj.cache.insert((child, parent), RwLock::new(HashMap::default()));
         }
         obj
     }
 
-    pub fn put(&mut self, child_type: RecordType, child_id: String, parent_type: RecordType, parent_ids: Vec<String>) {
-        let mut group = self.cache.get_mut(&(child_type, parent_type)).expect("No such relation");
-        group.insert(child_id, (parent_ids, now()));
+    pub fn put(&self, child_type: RecordType, child_id: String, parent_type: RecordType, parent_ids: Vec<String>) {
+        let group = self.cache.get(&(child_type, parent_type)).expect("No such relation");
+        group.write().expect("Lock poisoned").insert(child_id, (parent_ids, now()));
     }
 }
 
 impl Hierarchy for HierarchyCache {
-    fn get(&mut self, child_type: RecordType, parent_type: RecordType, child_id: &str) -> Result<Vec<String>, HierarchyError> {
+    fn get(&self, child_type: RecordType, parent_type: RecordType, child_id: &str) -> Result<Vec<String>, HierarchyError> {
         let now = now();
-        let mut group = match self.cache.get_mut(&(child_type, parent_type)) {
+        let group = match self.cache.get(&(child_type, parent_type)) {
             Some(group) => group,
             None => return Err(HierarchyError::NoSuchRelation)
         };
-        if let Some(&(ref data, time)) = group.get(child_id) {
-            if time + self.timeout > now {
-                return Ok(data.clone());
+        {
+            let group = group.read().expect("Lock poisoned");
+            if let Some(&(ref data, time)) = group.get(child_id) {
+                if time + self.timeout > now {
+                    return Ok(data.clone());
+                }
             }
         }
         let fresh = try!(self.inner.get(child_type, parent_type, child_id));
+        let mut group = group.write().expect("Lock poisoned");
         group.insert(child_id.to_owned(), (fresh.clone(), now));
         Ok(fresh)
     }
@@ -68,7 +73,7 @@ impl Hierarchy for HierarchyCache {
 pub struct DummyHierarchy;
 
 impl Hierarchy for DummyHierarchy {
-    fn get(&mut self, _: RecordType, _: RecordType, _: &str) -> Result<Vec<String>, HierarchyError> {
+    fn get(&self, _: RecordType, _: RecordType, _: &str) -> Result<Vec<String>, HierarchyError> {
         Ok(Vec::new())
     }
 }

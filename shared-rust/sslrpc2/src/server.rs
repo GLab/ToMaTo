@@ -8,7 +8,6 @@ use std::sync::atomic::{Ordering, AtomicBool};
 use std::ops::Deref;
 use std::mem;
 use std::os::unix::io::AsRawFd;
-use std::borrow::Cow;
 
 use rmp;
 use openssl::ssl::{SslContext, SslStream};
@@ -19,16 +18,16 @@ use super::socket::Connection;
 use super::wrapper;
 use super::util::ToValue;
 
-pub type Method = Arc<Fn(Vec<rmp::Value>, HashMap<Cow<'static, str>, rmp::Value>) -> Result<rmp::Value, rmp::Value> + Sync + Send>;
+pub type Method = Arc<Fn(Args, KwArgs) -> Result<rmp::Value, rmp::Value> + Sync + Send>;
 
 
 pub struct ServerInner {
     ssl: SslContext,
     socket: TcpListener,
-    methods: RwLock<HashMap<String, (Method, rmp::Value)>>,
+    methods: RwLock<HashMap<String, (Method, rmp::Value), Hash>>,
     running: AtomicBool,
-    call_threads: Mutex<HashMap<u64, Option<thread::JoinHandle<()>>>>,
-    con_threads: Mutex<HashMap<u64, Option<thread::JoinHandle<()>>>>
+    call_threads: Mutex<HashMap<u64, Option<thread::JoinHandle<()>>, Hash>>,
+    con_threads: Mutex<HashMap<u64, Option<thread::JoinHandle<()>>, Hash>>
 }
 
 #[derive(Clone)]
@@ -47,10 +46,10 @@ impl Server {
         let server = Server(Arc::new(ServerInner {
             ssl: ssl,
             socket: try!(TcpListener::bind(addr)),
-            methods: RwLock::new(HashMap::new()),
+            methods: RwLock::new(HashMap::default()),
             running: AtomicBool::new(true),
-            call_threads: Mutex::new(HashMap::new()),
-            con_threads: Mutex::new(HashMap::new())
+            call_threads: Mutex::new(HashMap::default()),
+            con_threads: Mutex::new(HashMap::default())
         }));
         let copy = server.clone();
         let thread = thread::Builder::new().name("server_socket".to_owned()).spawn(move || copy.run_server()).expect("Failed to spawn thread");

@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::io::{Read, Write, Cursor};
 use std::io;
 use std::borrow::Cow;
+use std::hash::BuildHasherDefault;
 
+use fnv::FnvHasher;
 use rmp;
 use libc::{c_int, size_t};
 use openssl::ssl::error::Error as SslStreamError;
@@ -27,6 +29,11 @@ extern {
     /*fn snappy_validate_compressed_buffer(compressed: *const u8,
                                          compressed_length: size_t) -> c_int;*/
 }
+
+pub type Hash = BuildHasherDefault<FnvHasher>;
+
+pub type Args = Vec<rmp::Value>;
+pub type KwArgs = HashMap<Cow<'static, str>, rmp::Value, Hash>;
 
 pub trait Message: Sized {
     fn encode(self) -> rmp::Value;
@@ -106,8 +113,8 @@ pub trait Message: Sized {
 pub struct Request {
     pub id: u64,
     pub method: String,
-    pub args: Vec<rmp::Value>,
-    pub kwargs: HashMap<Cow<'static, str>, rmp::Value>
+    pub args: Args,
+    pub kwargs: KwArgs
 }
 
 impl Message for Request {
@@ -146,7 +153,7 @@ impl Message for Request {
         };
         let kwargs = match kwargs {
             rmp::Value::Map(pairs) => {
-                let mut kwargs = HashMap::new();
+                let mut kwargs = HashMap::default();
                 for (k, v) in pairs {
                     let k = match k {
                         rmp::Value::String(k) => k,

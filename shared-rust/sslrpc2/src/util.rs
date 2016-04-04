@@ -168,6 +168,22 @@ impl<T> ParseValue for Option<T> where T: ParseValue {
     }
 }
 
+impl<K, V> ParseValue for HashMap<K, V> where K: ParseValue + Eq + Hash, V: ParseValue {
+    #[inline]
+    fn parse(val: rmp::Value) -> Result<Self, ParseError> {
+        match val {
+            rmp::Value::Map(list) => {
+                let mut map = HashMap::new();
+                for (k, v) in list {
+                    map.insert(try!(K::parse(k)), try!(V::parse(v)));
+                }
+                Ok(map)
+            },
+            _ => Err(ParseError)
+        }
+    }
+}
+
 macro_rules! tuple_parse_value {
     ($($id:ident),+) => {
         impl<$($id : ParseValue),*> ParseValue for ($($id),*) {
@@ -203,6 +219,13 @@ tuple_parse_value!(T1, T2, T3, T4, T5, T6, T7, T8);
 
 pub trait ToValue {
     fn to_value(self) -> rmp::Value;
+}
+
+impl ToValue for rmp::Value {
+    #[inline(always)]
+    fn to_value(self) -> rmp::Value {
+        self
+    }
 }
 
 impl ToValue for () {
@@ -358,3 +381,20 @@ tuple_to_value!(T1, T2, T3, T4, T5);
 tuple_to_value!(T1, T2, T3, T4, T5, T6);
 tuple_to_value!(T1, T2, T3, T4, T5, T6, T7);
 tuple_to_value!(T1, T2, T3, T4, T5, T6, T7, T8);
+
+#[macro_export]
+macro_rules! to_value {
+    ($val:expr) => {
+        $val.to_value();
+    };
+    {$($name:expr => $val:expr),*} => {
+        rmp::Value::Map(vec![
+            $( ($name.to_value(), $val.to_value()), )*
+        ])
+    };
+    [$($val:expr),*] => {
+        rmp::Value::Array(vec![
+            $( $val.to_value(), )*
+        ])
+    }
+}

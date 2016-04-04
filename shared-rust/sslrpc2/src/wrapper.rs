@@ -1,11 +1,11 @@
 use rmp;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::borrow::Cow;
 
 use super::server::Method as WrappedMethod;
 use super::util::ToValue;
+use super::msgs::{Args, KwArgs};
 
 pub enum Error {
     TooManyArgs(usize, usize),
@@ -14,34 +14,32 @@ pub enum Error {
 
 impl ToValue for Error {
     fn to_value(self) -> rmp::Value {
-        let mut err: Vec<(rmp::Value, rmp::Value)> = Vec::new();
         match self {
-            Error::TooManyArgs(given, max) => {
-                err.push(("type".to_value(), "user".to_value()));
-                err.push(("code".to_value(), "too_many_args".to_value()));
-                err.push(("message".to_value(), "too many arguments".to_value()));
-                err.push(("data".to_value(), rmp::Value::Map(vec![
-                    ("args_given".to_value(), given.to_value()),
-                    ("args_max".to_value(), max.to_value())
-                ])));
+            Error::TooManyArgs(given, max) => to_value!{
+                "type" => "user",
+                "code" => "too_many_args",
+                "message" => "too many arguments",
+                "data" => to_value!{
+                    "args_given" => given,
+                    "args_max" => max
+                }
             },
-            Error::DuplicateParam(name) => {
-                err.push(("type".to_value(), "user".to_value()));
-                err.push(("code".to_value(), "duplicate_param".to_value()));
-                err.push(("message".to_value(), "duplicate parameter".to_value()));
-                err.push(("data".to_value(), rmp::Value::Map(vec![
-                    ("param_name".to_value(), name.to_value())
-                ])));
+            Error::DuplicateParam(name) => to_value!{
+                "type" => "user",
+                "code" => "duplicate_param",
+                "message" => "duplicate parameter",
+                "data" => to_value!{
+                    "param_name" => name
+                }
             }
         }
-        rmp::Value::Map(err)
     }
 }
 
-pub struct Params(HashMap<Cow<'static, str>, rmp::Value>);
+pub struct Params(KwArgs);
 
 impl Params {
-    pub fn new(mut args: Vec<rmp::Value>, mut kwargs: HashMap<Cow<'static, str>, rmp::Value>, arg_names: &Vec<&'static str>) -> Result<Params, Error> {
+    pub fn new(mut args: Args, mut kwargs: KwArgs, arg_names: &Vec<&'static str>) -> Result<Params, Error> {
         if args.len() > arg_names.len() {
             return Err(Error::TooManyArgs(args.len(), arg_names.len()));
         }

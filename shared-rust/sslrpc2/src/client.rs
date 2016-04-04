@@ -8,10 +8,9 @@ use std::ops::Deref;
 use std::thread;
 use std::time::Duration;
 use std::mem;
-use std::borrow::Cow;
 
 use super::errors::{Error, NetworkError};
-use super::msgs::{Reply, Request, Message};
+use super::msgs::{Reply, Request, Message, Args, KwArgs};
 use super::socket::Connection;
 
 use rmp;
@@ -100,7 +99,7 @@ impl Client {
     }
 
     #[inline]
-    pub fn send_request(&self, method: String, args: Vec<rmp::Value>, kwargs: HashMap<Cow<'static, str>, rmp::Value>) -> Result<usize, Error> {
+    pub fn send_request(&self, method: String, args: Args, kwargs: KwArgs) -> Result<usize, Error> {
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let req = Request{
             id: id as u64,
@@ -137,12 +136,12 @@ impl Client {
         }
     }
 
-    pub fn call(&self, method: String, args: Vec<rmp::Value>, kwargs: HashMap<Cow<'static, str>, rmp::Value>, timeout: Option<Duration>) -> Result<rmp::Value, Error> {
+    pub fn call(&self, method: String, args: Args, kwargs: KwArgs, timeout: Option<Duration>) -> Result<rmp::Value, Error> {
         let id = try!(self.send_request(method, args, kwargs));
         self.wait_for_reply(id, timeout)
     }
 
-    pub fn call_async(&self, method: String, args: Vec<rmp::Value>, kwargs: HashMap<Cow<'static, str>, rmp::Value>, timeout: Option<Duration>, mut callback: Callback) -> Result<(), Error> {
+    pub fn call_async(&self, method: String, args: Args, kwargs: KwArgs, timeout: Option<Duration>, mut callback: Callback) -> Result<(), Error> {
         let id = try!(self.send_request(method, args, kwargs));
         let self2 = self.clone();
         thread::spawn(move || callback(self2.wait_for_reply(id, timeout)));

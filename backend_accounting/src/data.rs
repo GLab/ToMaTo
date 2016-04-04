@@ -1,9 +1,9 @@
 use std::collections::{VecDeque, HashMap};
-use std::collections::hash_map::Entry;
 use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
 use std::fs::{self, File};
 use std::io::{self, Write, Read};
+use std::sync::{RwLock, Mutex};
 
 use fnv::FnvHasher;
 use time;
@@ -32,6 +32,53 @@ pub fn last_periods(now: Time) -> (Time, Time, Time, Time, Time) {
     let year = tm.to_timespec().sec;
     (five_min, hour, day, month, year)
 }
+
+pub fn last_five_min(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = (tm.tm_min / 5) * 5;
+    tm.to_timespec().sec
+}
+
+pub fn last_hour(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = 0;
+    tm.to_timespec().sec
+}
+
+pub fn last_day(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = 0;
+    tm.tm_hour = 0;
+    tm.to_timespec().sec
+}
+
+pub fn last_month(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = 0;
+    tm.tm_hour = 0;
+    tm.tm_mday = 1; // 1st of month
+    tm.to_timespec().sec
+}
+
+pub fn last_year(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = 0;
+    tm.tm_hour = 0;
+    tm.tm_mday = 1; // 1st of month
+    tm.tm_mon = 0; // Jan is 0
+    tm.to_timespec().sec
+}
+
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Usage {
@@ -80,6 +127,7 @@ impl Usage {
     }
 }
 
+#[derive(Clone)]
 pub struct Record {
     pub timestamp: Time,
     pub five_min: VecDeque<Usage>,
@@ -262,7 +310,7 @@ pub enum RecordType {
 }
 
 impl RecordType {
-    fn name(&self) -> &str {
+    pub fn name(&self) -> &'static str {
         match self {
             &RecordType::HostElement => "host_element",
             &RecordType::HostConnection => "host_connection",
@@ -301,9 +349,18 @@ impl From<DecodeError> for LoadError {
 pub struct Data {
     path: PathBuf,
     hierarchy: Box<Hierarchy>,
-    last_store: Time,
+    last_store: Mutex<Time>,
     max_entries: HashMap<RecordType, (usize, usize, usize, usize, usize), Hash>,
-    pub records: HashMap<(RecordType, String), Record, Hash>
+    pub records: RwLock<HashMap<(RecordType, String), Mutex<Record>, Hash>>
+}
+
+macro_rules! hierarchy {
+    ($hierarchy:expr, $ctype:expr, $ptype:expr, $cid:expr) => {
+        match $hierarchy.get($ctype, $ptype, $cid) {
+            Ok(data) => data,
+            Err(_) => return
+        };
+    }
 }
 
 impl Data {
@@ -317,8 +374,8 @@ impl Data {
             path: path.as_ref().to_owned(),
             hierarchy: hierarchy,
             max_entries: HashMap::default(),
-            records: HashMap::default(),
-            last_store: now()
+            records: RwLock::new(HashMap::default()),
+            last_store: Mutex::new(now())
         };
         data.max_entries.insert(RecordType::HostElement, (0, 0, 0, 0, 0));
         data.max_entries.insert(RecordType::HostConnection, (0, 0, 0, 0, 0));
@@ -342,138 +399,125 @@ impl Data {
         Ok(())
     }
 
-    pub fn get_record(&self, type_: RecordType, id: String) -> Option<&Record> {
-        self.records.get(&(type_, id))
+    pub fn get_record(&self, type_: RecordType, id: String) -> Option<Record> {
+        self.records.read().expect("Lock poisoned").get(&(type_, id)).map(|v| v.lock().expect("Lock poisoned").clone())
     }
 
-    pub fn store_all(&mut self) -> Result<usize, StoreError> {
+    pub fn store_all(&self) -> Result<usize, StoreError> {
         let mut stored = 0;
-        for (&(type_, ref id), record) in &self.records {
-            if record.timestamp >= self.last_store {
-                try!(self.store_record(type_, id, record));
+        let last_store = self.last_store.lock().expect("Lock poisoned").clone();
+        for (&(type_, ref id), record) in self.records.read().expect("Lock poisoned").iter() {
+            let record = record.lock().expect("Lock poisoned");
+            if record.timestamp >= last_store {
+                try!(self.store_record(type_, id, &record));
                 stored += 1;
             }
         }
-        self.last_store = now();
+        *self.last_store.lock().expect("Lock poisoned") = now();
         Ok(stored)
     }
 
-    pub fn load_record(&mut self, type_: RecordType, id: &str) -> Result<Record, LoadError> {
+    pub fn load_record(&self, type_: RecordType, id: &str) -> Result<Record, LoadError> {
         let mut f = try!(File::open(self.record_path(type_, id)));
         let mut buf = Vec::new();
         try!(f.read_to_end(&mut buf));
         Record::decode(&buf).map_err(|err| LoadError::from(err))
     }
 
-    pub fn load_all(&mut self) -> Result<(), LoadError> {
+    pub fn load_all(&self) -> Result<(), LoadError> {
         for type_ in &[RecordType::Connection, RecordType::Element, RecordType::HostConnection,
             RecordType::HostElement, RecordType::Topology, RecordType::User, RecordType::Organization] {
             let path = self.path.clone().join(type_.name());
             let files = try!(fs::read_dir(&path));
+            let mut records = self.records.write().expect("Lock poisoned");
             for file in files {
                 let id = try!(file).file_name().to_string_lossy().into_owned();
                 let record = try!(self.load_record(*type_, &id));
-                self.records.insert((type_.clone(), id), record);
+                records.insert((type_.clone(), id), Mutex::new(record));
             }
         }
         Ok(())
     }
 
-    pub fn add_usage(&mut self, type_: RecordType, id: String, usage: &Usage, timestamp: Time) {
+    pub fn add_usage(&self, type_: RecordType, id: String, usage: &Usage, timestamp: Time) {
         let key = (type_, id);
-        match self.records.entry(key) {
-            Entry::Occupied(mut entry) => entry.get_mut().add(usage, timestamp),
-            Entry::Vacant(entry) => {
-                let &(max_five_min, max_hour, max_day, max_month, max_year) = self.max_entries.get(&type_).expect(&format!("No limits set for record type {:?}", type_));
-                entry.insert(Record::new(timestamp, max_five_min, max_hour, max_day, max_month, max_year)).add(&usage, timestamp)
+        {
+            let records = self.records.read().expect("Lock poisoned");
+            if let Some(record) = records.get(&key) {
+                record.lock().expect("Lock poisoned").add(usage, timestamp);
+                return
             }
         }
+        let &(max_five_min, max_hour, max_day, max_month, max_year) = self.max_entries.get(&type_).expect(&format!("No limits set for record type {:?}", type_));
+        let mut records = self.records.write().expect("Lock poisoned");
+        let mut record = Record::new(timestamp, max_five_min, max_hour, max_day, max_month, max_year);
+        record.add(&usage, timestamp);
+        records.insert(key, Mutex::new(record));
     }
 
-    pub fn add_organization_usage(&mut self, id: String, usage: &mut Usage, timestamp: Time) {
-        self.add_usage(RecordType::Organization, id.clone(), usage, timestamp);
+    pub fn add_organization_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        self.add_usage(RecordType::Organization, id.to_owned(), usage, timestamp);
     }
 
-    pub fn add_user_usage(&mut self, id: String, usage: &mut Usage, timestamp: Time) {
-        let mut organizations = match self.hierarchy.get(RecordType::User, RecordType::Organization, &id) {
-            Ok(data) => data,
-            Err(_) => return
-        };
-        self.add_usage(RecordType::User, id.clone(), usage, timestamp);
+    pub fn add_user_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        let mut organizations = hierarchy!(self.hierarchy, RecordType::User, RecordType::Organization, &id);
+        self.add_usage(RecordType::User, id.to_owned(), usage, timestamp);
         if organizations.len() == 0 {
             return;
         }
-        self.add_organization_usage(organizations.pop().unwrap(), usage, timestamp);
+        self.add_organization_usage(&organizations.pop().unwrap(), usage, timestamp);
     }
 
-    pub fn add_topology_usage(&mut self, id: String, usage: &mut Usage, timestamp: Time) {
-        let users = match self.hierarchy.get(RecordType::Topology, RecordType::User, &id) {
-            Ok(data) => data,
-            Err(_) => return
-        };
-        self.add_usage(RecordType::Topology, id.clone(), usage, timestamp);
+    pub fn add_topology_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        let users = hierarchy!(self.hierarchy, RecordType::Topology, RecordType::User, &id);
+        self.add_usage(RecordType::Topology, id.to_owned(), usage, timestamp);
         if users.len() > 1 {
             usage.divide_by(users.len() as f32);
         }
         for user in users {
-            self.add_user_usage(user, usage, timestamp);
+            self.add_user_usage(&user, usage, timestamp);
         }
     }
 
-    pub fn add_element_usage(&mut self, id: String, usage: &mut Usage, timestamp: Time) {
-        let mut topologies = match self.hierarchy.get(RecordType::Element, RecordType::Topology, &id) {
-            Ok(data) => data,
-            Err(_) => return
-        };
-        self.add_usage(RecordType::Element, id.clone(), usage, timestamp);
+    pub fn add_element_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        let mut topologies = hierarchy!(self.hierarchy, RecordType::Element, RecordType::Topology, &id);
+        self.add_usage(RecordType::Element, id.to_owned(), usage, timestamp);
         if topologies.len() == 0 {
             return;
         }
-        self.add_topology_usage(topologies.pop().unwrap(), usage, timestamp);
+        self.add_topology_usage(&topologies.pop().unwrap(), usage, timestamp);
     }
 
-    pub fn add_connection_usage(&mut self, id: String, usage: &mut Usage, timestamp: Time) {
-        let mut topologies = match self.hierarchy.get(RecordType::Connection, RecordType::Topology, &id) {
-            Ok(data) => data,
-            Err(_) => return
-        };
-        self.add_usage(RecordType::Connection, id.clone(), usage, timestamp);
+    pub fn add_connection_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        let mut topologies = hierarchy!(self.hierarchy, RecordType::Connection, RecordType::Topology, &id);
+        self.add_usage(RecordType::Connection, id.to_owned(), usage, timestamp);
         if topologies.len() == 0 {
             return;
         }
-        self.add_topology_usage(topologies.pop().unwrap(), usage, timestamp);
+        self.add_topology_usage(&topologies.pop().unwrap(), usage, timestamp);
     }
 
-    pub fn add_host_element_usage(&mut self, id: String, usage: &mut Usage, timestamp: Time) {
-        let elements = match self.hierarchy.get(RecordType::HostElement, RecordType::Element, &id) {
-            Ok(data) => data,
-            Err(_) => return
-        };
-        let connections = match self.hierarchy.get(RecordType::HostElement, RecordType::Connection, &id) {
-            Ok(data) => data,
-            Err(_) => return
-        };
+    pub fn add_host_element_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        let elements = hierarchy!(self.hierarchy, RecordType::HostElement, RecordType::Element, &id);
+        let connections = hierarchy!(self.hierarchy, RecordType::HostElement, RecordType::Connection, &id);
         if elements.len() + connections.len() == 0 {
             return;
         }
-        self.add_usage(RecordType::HostElement, id.clone(), usage, timestamp);
+        self.add_usage(RecordType::HostElement, id.to_owned(), usage, timestamp);
         for el in elements {
-            self.add_element_usage(el, usage, timestamp);
+            self.add_element_usage(&el, usage, timestamp);
         }
         for con in connections {
-            self.add_connection_usage(con, usage, timestamp);
+            self.add_connection_usage(&con, usage, timestamp);
         }
     }
 
-    pub fn add_host_connection_usage(&mut self, id: String, usage: &mut Usage, timestamp: Time) {
-        let mut connections = match self.hierarchy.get(RecordType::HostConnection, RecordType::Connection, &id) {
-            Ok(data) => data,
-            Err(_) => return
-        };
+    pub fn add_host_connection_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        let mut connections = hierarchy!(self.hierarchy, RecordType::HostConnection, RecordType::Connection, &id);
         if connections.len() == 0 {
             return;
         }
-        self.add_usage(RecordType::HostConnection, id.clone(), usage, timestamp);
-        self.add_connection_usage(connections.pop().unwrap(), usage, timestamp);
+        self.add_usage(RecordType::HostConnection, id.to_owned(), usage, timestamp);
+        self.add_connection_usage(&connections.pop().unwrap(), usage, timestamp);
     }
 }
