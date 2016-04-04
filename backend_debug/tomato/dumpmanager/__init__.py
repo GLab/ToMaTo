@@ -1,5 +1,5 @@
 from errordump import ErrorDump
-from errorgroup import get_group, ErrorGroup, maintenance
+from errorgroup import get_group, ErrorGroup
 from ..lib.settings import settings, Config
 from ..lib import util
 from .. import scheduler
@@ -59,7 +59,6 @@ def start():
 	scheduler.scheduleRepeated(settings.get_dumpmanager_config()[Config.DUMPMANAGER_COLLECTION_INTERVAL],
 	                           scheduleUpdates,
 	                           immediate=True)
-	scheduler.scheduleRepeated(scheduler.DAILY, maintenance)
 
 def stop():
 	pass

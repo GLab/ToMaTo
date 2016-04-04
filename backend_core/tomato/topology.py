@@ -385,7 +385,6 @@ def timeout_task():
 		except Exception:
 			handleError()
 
-
 scheduler.scheduleRepeated(600, timeout_task)
 
 import elements

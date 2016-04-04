@@ -213,17 +213,3 @@ def get_group(group_id, create_if_notexists=False, description=None, dump_source
 				return ErrorGroup.create(group_id=group_id, description=description, dump_source_name=dump_source_name)
 			else:
 				return None
-
-@util.wrap_task
-def maintenance():
-	userlist = get_backend_users_proxy().username_list()
-	with ErrorGroup.GROUP_LIST_LOCK:
-		for grp in ErrorGroup.objects.all():
-			did_update = False
-			with grp.lock:
-				for user in list(grp.users_favorite):
-					if user not in userlist:
-						did_update = True
-						grp.users_favorite.remove(user)
-				if did_update:
-					grp.save()
