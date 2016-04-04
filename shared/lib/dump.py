@@ -247,7 +247,7 @@ def getCount():
 #param list_only: if true, only return dumps with timestamp after this time (time.Time object)
 #param include_data: include environment data (may be about 1M!, or set compress_data true). Only used if not list_only
 #param compress_data: use zlib to compress environment data. only used if include_data==True. decompress with json.loads(zlib.decompress(base64.decode(dump['environment'])))
-def getAll(after=None, list_only=False, include_data=False, compress_data=True):
+def getAll(after=None, list_only=False, include_data=False):
 	global dumps
 	return_list = []
 	for dump_id, _dump in dumps.iteritems():
@@ -255,7 +255,7 @@ def getAll(after=None, list_only=False, include_data=False, compress_data=True):
 			if list_only:
 				dump = dump_id
 			elif include_data:
-				dump = load_dump(dump_id, True, True, dump_on_error=True)
+				dump = load_dump(dump_id, True, False, dump_on_error=True)
 			else:
 				dump = _dump
 			return_list.append(dump)

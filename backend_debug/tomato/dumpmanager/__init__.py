@@ -4,6 +4,7 @@ from ..lib.settings import settings, Config
 from ..lib import util
 from .. import scheduler
 import fetching
+import time
 
 
 def insert_dump_save(dump_dict, source):
@@ -18,11 +19,12 @@ def insert_dump_save(dump_dict, source):
 		try:
 			dump_obj = ErrorDump(
 				source=source.dump_source_name(),
-				dumpId=dump_dict['dump_id'],
-				timestamp=dump_dict['timestamp'],
-				description=dump_dict['description'],
-				type=dump_dict['type'],
-				softwareVersion=dump_dict['software_version']
+				dumpId=dump_dict.get('dump_id', str(time.time())),
+				timestamp=dump_dict.get('timestamp', None),
+				description=dump_dict.get('description', None),
+				type=dump_dict.get('type', None),
+				softwareVersion=dump_dict.get('software_version', None),
+				data=dump_dict.get("data", None)
 			)
 			group.insert_dump(dump_obj)
 		finally:

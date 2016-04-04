@@ -132,7 +132,7 @@ class ErrorGroup(BaseDocument):
 		:rtype: list(ErrorDump)
 		"""
 		with self.lock:
-			return [d.info() for d in self.dumps if ((source_filter is None) or (d.source == source_filter))]
+			return [d for d in self.dumps if ((source_filter is None) or (d.source == source_filter))]
 
 	def get_dump(self, dump_id, source_name):
 		"""
@@ -141,7 +141,7 @@ class ErrorGroup(BaseDocument):
 		with self.lock:
 			for d in self.dumps:
 				if d.dumpId == dump_id and d.source == source_name:
-					return d.info()
+					return d
 			raise UserError(UserError.ENTITY_DOES_NOT_EXIST, message="no such dump", data={"group_id": self.groupId, "dump_id": dump_id, "source_name": source_name})
 
 	def hide(self):

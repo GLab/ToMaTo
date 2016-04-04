@@ -2,7 +2,7 @@ __author__ = 't-gerhard'
 
 import github3  # https://github.com/sigmavirus24/github3.py
 
-from settings import get_settings
+from settings import get_settings, Config
 from .. import settings as config_module
 settings = get_settings(config_module)
 
@@ -13,7 +13,8 @@ class GithubError(Error):
 	NOT_CONFIGURED = "not configured"
 
 def is_enabled():
-	if not github_access_token:
+	config = settings.get_github_settings()
+	if not config[Config.GITHUB_ACCESS_TOKEN]:
 		return False
 	return True
 
@@ -25,7 +26,7 @@ def connect(access_token):
 
 def create_issue(title, body):
 	config = settings.get_github_settings()
-	gh = connect(config['access-token'])
-	repo = gh.repository(config['repository-owner'], config['repository-name'])
+	gh = connect(config[Config.GITHUB_ACCESS_TOKEN])
+	repo = gh.repository(config[Config.GITHUB_REPOSITORY_OWNER], config[Config.GITHUB_REPOSITORY_NAME])
 	issue = repo.create_issue(title, body)
 	return issue

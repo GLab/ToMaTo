@@ -25,7 +25,7 @@ def dumpException(**kwargs):
     return dump_lib.dumpException(**kwargs)
 
 def getAll(after=None):
-    return dump_lib.getAll(after=after,list_only=False,include_data=True,compress_data=False)
+    return dump_lib.getAll(after=after,list_only=False,include_data=True)
 
 
 def init():

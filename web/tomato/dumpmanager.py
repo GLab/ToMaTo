@@ -157,7 +157,7 @@ def dump_info(api, request, source, dump_id,data=False):
 def dump_export(api, request, group_id, source, dump_id, data=False):
 	if not api.user:
 		raise AuthError()
-	dump = api.errordump_info(group_id, source, dump_id,data)
+	dump = api.errordump_info(group_id, source, dump_id, data)
 	filename = re.sub('[^\w\-_\. :]', '_', source.lower() + "__" + dump_id ) + ".errordump.json"
 	response = HttpResponse(json.orig.dumps(dump, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'

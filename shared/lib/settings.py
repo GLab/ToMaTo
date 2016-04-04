@@ -369,6 +369,10 @@ class Config:
 
 	TASKS_MAX_WORKERS = 'max-workers'
 
+	GITHUB_ACCESS_TOKEN = "access-token"
+	GITHUB_REPOSITORY_OWNER = "repository-owner"
+	GITHUB_REPOSITORY_NAME = "repository-name"
+
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
 		"""
