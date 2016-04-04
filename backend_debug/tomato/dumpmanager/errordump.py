@@ -1,5 +1,6 @@
 from ..db import *
 import fetching
+import time
 
 class ErrorDump(EmbeddedDocument):
 	source = StringField(required=True)
@@ -28,3 +29,15 @@ class ErrorDump(EmbeddedDocument):
 		if include_data:
 			dump['data'] = self.data
 		return dump
+
+	@staticmethod
+	def from_dict(dump_dict, source):
+		return ErrorDump(
+			source=source.dump_source_name(),
+			dumpId=dump_dict.get('dump_id', str(time.time())),
+			timestamp=dump_dict.get('timestamp', None),
+			description=dump_dict.get('description', None),
+			type=dump_dict.get('type', None),
+			softwareVersion=dump_dict.get('software_version', None),
+			data=dump_dict.get("data", None)
+		)

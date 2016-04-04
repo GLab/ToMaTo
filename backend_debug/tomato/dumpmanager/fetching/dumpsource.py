@@ -1,5 +1,6 @@
 import time
 from ...lib.error import Error, InternalError, TransportError
+from .. import errorgroup, errordump
 from ...db import data
 
 class DumpSource(object):
@@ -37,7 +38,7 @@ class PullingDumpSource(DumpSource):
 		"""
 		refresh dumps
 		for each dump: call insert_dump_func(dump_dict, self)
-		:param func insert_insert_dump_func: function to insert dumps
+		:param func insert_dump_func: function to insert dumps
 		:return: None
 		:rtype: None
 		"""
@@ -49,21 +50,14 @@ class PullingDumpSource(DumpSource):
 			if fetch_results is None:
 				return  # this means that fetching is currently not possible.
 
-			groups = set()
-			try:
-				for dump_dict in fetch_results:
-					try:
-						grp = insert_dump_func(dump_dict, self)
-						groups.add(grp)
-					except Exception as exc:
-						InternalError(code=InternalError.UNKNOWN, message="Failed to insert dump: %s" % exc,
+			for dump_dict in fetch_results:
+				try:
+
+					insert_dump_func(dump_dict, self)
+
+				except Exception as exc:
+					InternalError(code=InternalError.UNKNOWN, message="Failed to insert dump: %s" % exc,
 													data={"source": repr(self), "exception": repr(exc)}).dump()
-			finally:
-				for grp in groups:
-					try:
-						grp.shrink()
-					finally:
-						grp.save()
 
 			self._set_last_updatetime(this_fetch_time)
 

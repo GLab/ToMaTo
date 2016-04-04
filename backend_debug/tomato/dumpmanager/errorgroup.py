@@ -151,6 +151,9 @@ class ErrorGroup(BaseDocument):
 
 	def insert_dump(self, dump_obj):
 		with self.lock:
+			for d in self.dumps:
+				if d.dumpId == dump_obj.dumpId and d.source == dump_obj.source:
+					return None  # this dump is already in this group.
 			self.hidden = False
 			self.dumps.append(dump_obj)
 			return dump_obj
@@ -214,9 +217,13 @@ def get_group(group_id, create_if_notexists=False, description=None, dump_source
 @util.wrap_task
 def maintenance():
 	userlist = get_backend_users_proxy().username_list()
-	for grp in ErrorGroup.objects.all():
-		with grp.lock:
-			for user in list(grp.users_favorite):
-				if user not in userlist:
-					grp.users_favorite.remove(user)
-			grp.save()
+	with ErrorGroup.GROUP_LIST_LOCK:
+		for grp in ErrorGroup.objects.all():
+			did_update = False
+			with grp.lock:
+				for user in list(grp.users_favorite):
+					if user not in userlist:
+						did_update = True
+						grp.users_favorite.remove(user)
+				if did_update:
+					grp.save()

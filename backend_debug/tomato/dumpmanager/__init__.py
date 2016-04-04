@@ -4,10 +4,9 @@ from ..lib.settings import settings, Config
 from ..lib import util
 from .. import scheduler
 import fetching
-import time
 
 
-def insert_dump_save(dump_dict, source):
+def insert_dump(dump_dict, source):
 	"""
 	insert dumps. afterward, shrink and save.
 	"""
@@ -17,42 +16,13 @@ def insert_dump_save(dump_dict, source):
 	)
 	with group.lock:
 		try:
-			dump_obj = ErrorDump(
-				source=source.dump_source_name(),
-				dumpId=dump_dict.get('dump_id', str(time.time())),
-				timestamp=dump_dict.get('timestamp', None),
-				description=dump_dict.get('description', None),
-				type=dump_dict.get('type', None),
-				softwareVersion=dump_dict.get('software_version', None),
-				data=dump_dict.get("data", None)
-			)
+			dump_obj = ErrorDump.from_dict(dump_dict)
 			group.insert_dump(dump_obj)
 		finally:
 			try:
 				group.shrink()
 			finally:
 				group.save()
-	return group
-
-def insert_dump_unsave(dump_dict, source):
-	"""
-	insert dumps. do not save or shrink.
-	:rtype: ErrorGroup
-	"""
-	group = get_group(
-		dump_dict['group_id'],
-		True, dump_dict['description'], source.dump_source_name()
-	)
-	dump_obj = ErrorDump(
-		source=source.dump_source_name(),
-		dumpId=dump_dict['dump_id'],
-		timestamp=dump_dict['timestamp'],
-		description=dump_dict['description'],
-		type=dump_dict['type'],
-		softwareVersion=dump_dict['software_version']
-	)
-	group.insert_dump(dump_obj)
-	return group
 
 
 def fetch_from(source_name):
@@ -60,7 +30,7 @@ def fetch_from(source_name):
 	:param str source: source to fetch from
 	"""
 	#fixme: use insert_dump_unsave to speed up things, but handle locks...
-	fetching.get_source_by_name(source_name).fetch_new_dumps(insert_dump_save)
+	fetching.get_source_by_name(source_name).fetch_new_dumps(insert_dump)
 
 
 def _get_sync_tasks():
