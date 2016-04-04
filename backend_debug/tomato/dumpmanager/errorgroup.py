@@ -4,6 +4,7 @@ import threading
 from ..lib.error import UserError
 from ..lib.service import get_backend_users_proxy
 from ..lib.userflags import Flags
+from ..lib import util
 
 class ErrorGroup(BaseDocument):
 	"""
@@ -174,17 +175,20 @@ class ErrorGroup(BaseDocument):
 				desc = group_id
 			grp = ErrorGroup(groupId=group_id, description=desc)
 
-			get_backend_users_proxy().broadcast_message(
-				title="[ToMaTo Devs] New Error Group",  # fixme: this message should be configurable
-				message="\n\n".join((
-					"A new group of error has been found.",
-					"Description: %s",
-					"It has first been observed on %s.")) % (
-									grp.description, dump_source_name),
-				ref=["errorgroup", grp.groupId],
-				subject_group="new_errorgroup",
-				flag_filter=Flags.ErrorNotify
-			)
+			try:
+				get_backend_users_proxy().broadcast_message(
+					title="[ToMaTo Devs] New Error Group",  # fixme: this message should be configurable
+					message="\n\n".join((
+						"A new group of error has been found.",
+						"Description: %s",
+						"It has first been observed on %s.")) % (
+										grp.description, dump_source_name),
+					ref=["errorgroup", grp.groupId],
+					subject_group="new_errorgroup",
+					flag_filter=Flags.ErrorNotify
+				)
+			except:
+				pass
 
 			return grp
 
@@ -206,3 +210,13 @@ def get_group(group_id, create_if_notexists=False, description=None, dump_source
 				return ErrorGroup.create(group_id=group_id, description=description, dump_source_name=dump_source_name)
 			else:
 				return None
+
+@util.wrap_task
+def maintenance():
+	userlist = get_backend_users_proxy().username_list()
+	for grp in ErrorGroup.objects.all():
+		with grp.lock:
+			for user in list(grp.users_favorite):
+				if user not in userlist:
+					grp.users_favorite.remove(user)
+			grp.save()
