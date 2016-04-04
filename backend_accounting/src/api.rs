@@ -1,10 +1,13 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::net::ToSocketAddrs;
+use std::sync::Arc;
+use std::io;
 
-use sslrpc2::{Params, Value, ToValue, ParseValue, rmp, ParseError};
+use sslrpc2::{Server, Params, Value, ToValue, ParseValue, ParseError, ServerCloseGuard, rmp, openssl};
 
 use super::data::{Data, RecordType, Record, Usage, last_five_min, last_hour, last_day, last_month, last_year};
-use super::util::{Time, now};
+use super::util::Time;
 
 pub struct Error {
     pub module: Cow<'static, str>,
@@ -63,24 +66,25 @@ impl ParseValue for RecordType {
 }
 
 macro_rules! convert_series {
-    ($series:expr, $durfn:ident) => { {
+    ($series:expr, $durfn:ident, $now:expr) => { {
         let mut series: Vec<(Time, Time, Usage)> = $series.into_iter().map(|u| (0, 0, u)).collect();
-        let mut end = now();
+        let mut end = $now;
         for ref mut rec in series.iter_mut().rev() {
             let start = $durfn(end);
             rec.0 = start;
             rec.1 = end;
-            let diff = (end - start) as f32;
-            rec.2.memory /= diff; // convert byte-seconds to bytes
-            rec.2.disk /= diff; // convert byte-seconds to bytes
-            end = start;
+            end = start-1;
         }
         let series: Vec<Value> = series.into_iter().map(|(start, end, usage)| to_value!{
-            "start" => start, "end" => end,
-            "memory" => usage.memory,
-            "disk" => usage.disk,
-            "cputime" => usage.cputime,
-            "traffic" => usage.traffic
+            "start" => start,
+            "end" => end,
+            "usage" => to_value!{
+                "memory" => usage.memory,
+                "disk" => usage.disk,
+                "cputime" => usage.cputime,
+                "traffic" => usage.traffic
+            },
+            "measurements" => usage.measurements
         }).collect();
         series
     } }
@@ -89,11 +93,11 @@ macro_rules! convert_series {
 impl ToValue for Record {
     fn to_value(self) -> Value {
         to_value!{
-            "5minutes" => convert_series!(self.five_min, last_five_min),
-            "hour" => convert_series!(self.hour, last_hour),
-            "day" => convert_series!(self.day, last_day),
-            "month" => convert_series!(self.month, last_month),
-            "year" => convert_series!(self.year, last_year)
+            "5minutes" => convert_series!(self.five_min, last_five_min, self.timestamp),
+            "hour" => convert_series!(self.hour, last_hour, self.timestamp),
+            "day" => convert_series!(self.day, last_day, self.timestamp),
+            "month" => convert_series!(self.month, last_month, self.timestamp),
+            "year" => convert_series!(self.year, last_year, self.timestamp)
         }
     }
 }
@@ -106,7 +110,8 @@ macro_rules! param {
     }
 }
 
-pub struct Api(Data);
+#[derive(Clone)]
+pub struct Api(Arc<Data>);
 
 impl Api {
     pub fn get_record(&self, mut params: Params) -> Result<Record, Error> {
@@ -118,26 +123,60 @@ impl Api {
         }
     }
 
-    pub fn push_usage(&self, mut params: Params) -> Result<Value, Error> {
-        type Records = HashMap<String, Vec<(Time, f32, f32, f32, f32)>>;
+    pub fn push_usage(&self, mut params: Params) -> Result<(), Error> {
+        type Records = HashMap<String, Vec<(Time, f32, f32, f32, f32, u32)>>;
         let elements = param!(params, "elements", Records);
         let connections = param!(params, "connections", Records);
         for (id, records) in elements {
             for rec in records {
                 let time = rec.0;
-                let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4);
+                let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4, rec.5);
                 self.0.add_host_element_usage(&id, &mut usage, time);
             }
         }
         for (id, records) in connections {
             for rec in records {
                 let time = rec.0;
-                let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4);
+                let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4, rec.5);
                 self.0.add_host_connection_usage(&id, &mut usage, time);
             }
         }
-        unimplemented!();
+        Ok(())
+    }
+
+    pub fn store_all(&self, mut _params: Params) -> Result<usize, Error> {
+        Ok(self.0.store_all().expect("Failed to store"))
     }
 }
 
 pub struct ApiServer;
+
+impl ApiServer {
+    pub fn new<A: ToSocketAddrs>(data: Data, addr: A, ssl: openssl::ssl::SslContext) -> Result<ServerCloseGuard, io::Error> {
+        let api = Api(Arc::new(data));
+        let server = try!(Server::new(addr, ssl));
+        let tmp_api = api.clone();
+        server.register_easy(
+            "get_record".to_owned(),
+            Box::new(move |params| tmp_api.get_record(params)),
+            vec!["type", "id"],
+            Value::Nil
+        );
+        let tmp_api = api.clone();
+        server.register_easy(
+            "push_usage".to_owned(),
+            Box::new(move |params| tmp_api.push_usage(params)),
+            vec!["elements", "connections"],
+            Value::Nil
+        );
+        let tmp_api = api.clone();
+        server.register_easy(
+            "store_all".to_owned(),
+            Box::new(move |params| tmp_api.store_all(params)),
+            vec![],
+            Value::Nil
+        );
+        server.register_list_cmd();
+        Ok(server)
+    }
+}

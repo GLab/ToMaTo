@@ -82,24 +82,30 @@ pub fn last_year(now: Time) -> Time {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Usage {
-    pub memory: f32, // Byte-Seconds
-    pub disk: f32, // Byte-Seconds
+    pub memory: f32, // Bytes on average
+    pub disk: f32, // Bytes on average
     pub traffic: f32, // Bytes
     pub cputime: f32, // Core-Seconds
+    pub measurements: u32
 }
 
+const USAGE_SIZE: usize = 20;
+
 impl Usage {
-    pub fn new(memory: f32, disk: f32, traffic: f32, cputime: f32) -> Usage {
-        Usage { memory: memory, disk: disk, traffic: traffic, cputime: cputime }
+    pub fn new(memory: f32, disk: f32, traffic: f32, cputime: f32, measurements: u32) -> Usage {
+        Usage { memory: memory, disk: disk, traffic: traffic, cputime: cputime, measurements: measurements }
     }
 
     pub fn zero() -> Usage {
-        Usage::new(0.0, 0.0, 0.0, 0.0)
+        Usage::new(0.0, 0.0, 0.0, 0.0, 0)
     }
 
     pub fn add(&mut self, other: &Usage) {
-        self.memory += other.memory;
-        self.disk += other.disk;
+        self.memory = self.memory * self.measurements as f32 + other.memory * other.measurements as f32;
+        self.disk = self.disk * self.measurements as f32 + other.disk * other.measurements as f32;
+        self.measurements += other.measurements;
+        self.memory /= self.measurements as f32;
+        self.disk /= self.measurements as f32;
         self.cputime += other.cputime;
         self.traffic += other.traffic;
     }
@@ -116,6 +122,7 @@ impl Usage {
         Binary::write_f32(self.disk, &mut buf[4..]);
         Binary::write_f32(self.traffic, &mut buf[8..]);
         Binary::write_f32(self.cputime, &mut buf[12..]);
+        Binary::write_u32(self.measurements, &mut buf[16..]);
     }
 
     pub fn decode(buf: &[u8]) -> Usage {
@@ -123,7 +130,8 @@ impl Usage {
         let disk = Binary::read_f32(&buf[4..]);
         let traffic = Binary::read_f32(&buf[8..]);
         let cputime = Binary::read_f32(&buf[12..]);
-        Usage::new(memory, disk, traffic, cputime)
+        let measurements = Binary::read_u32(&buf[16..]);
+        Usage::new(memory, disk, traffic, cputime, measurements)
     }
 }
 
@@ -231,19 +239,19 @@ impl Record {
         buf[pos] = self.year.len() as u8; pos += 1;
         Binary::write_i64(self.timestamp, &mut buf[pos..]); pos += 8;
         for usage in &self.five_min {
-            usage.encode(&mut buf[pos..]); pos += 16;
+            usage.encode(&mut buf[pos..]); pos += USAGE_SIZE;
         }
         for usage in &self.hour {
-            usage.encode(&mut buf[pos..]); pos += 16;
+            usage.encode(&mut buf[pos..]); pos += USAGE_SIZE;
         }
         for usage in &self.day {
-            usage.encode(&mut buf[pos..]); pos += 16;
+            usage.encode(&mut buf[pos..]); pos += USAGE_SIZE;
         }
         for usage in &self.month {
-            usage.encode(&mut buf[pos..]); pos += 16;
+            usage.encode(&mut buf[pos..]); pos += USAGE_SIZE;
         }
         for usage in &self.year {
-            usage.encode(&mut buf[pos..]); pos += 16;
+            usage.encode(&mut buf[pos..]); pos += USAGE_SIZE;
         }
         pos
     }
@@ -267,24 +275,24 @@ impl Record {
         let max_month = buf[pos] as usize; pos += 1;
         let max_year = buf[pos] as usize; pos += 1;
         let timestamp = Binary::read_i64(&buf[pos..]); pos += 8;
-        if buf.len() < pos + (max_five_min + max_hour + max_day + max_month + max_year) * 16 {
+        if buf.len() < pos + (max_five_min + max_hour + max_day + max_month + max_year) * USAGE_SIZE {
             return Err(DecodeError::Truncated);
         }
         let mut rec = Record::empty(timestamp, max_five_min, max_hour, max_day, max_month, max_year);
         for _ in 0..max_five_min {
-            rec.five_min.push_back(Usage::decode(&buf[pos..])); pos += 16;
+            rec.five_min.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         for _ in 0..max_hour {
-            rec.hour.push_back(Usage::decode(&buf[pos..])); pos += 16;
+            rec.hour.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         for _ in 0..max_day {
-            rec.day.push_back(Usage::decode(&buf[pos..])); pos += 16;
+            rec.day.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         for _ in 0..max_month {
-            rec.month.push_back(Usage::decode(&buf[pos..])); pos += 16;
+            rec.month.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         for _ in 0..max_year {
-            rec.year.push_back(Usage::decode(&buf[pos..])); pos += 16;
+            rec.year.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         Ok(rec)
     }
@@ -377,8 +385,8 @@ impl Data {
             records: RwLock::new(HashMap::default()),
             last_store: Mutex::new(now())
         };
-        data.max_entries.insert(RecordType::HostElement, (0, 0, 0, 0, 0));
-        data.max_entries.insert(RecordType::HostConnection, (0, 0, 0, 0, 0));
+        data.max_entries.insert(RecordType::HostElement, (2, 0, 0, 0, 0));
+        data.max_entries.insert(RecordType::HostConnection, (2, 0, 0, 0, 0));
         data.max_entries.insert(RecordType::Element, (25, 75, 50, 15, 0));
         data.max_entries.insert(RecordType::Connection, (25, 75, 50, 15, 0));
         data.max_entries.insert(RecordType::Topology, (25, 75, 50, 15, 5));
@@ -500,10 +508,10 @@ impl Data {
     pub fn add_host_element_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
         let elements = hierarchy!(self.hierarchy, RecordType::HostElement, RecordType::Element, &id);
         let connections = hierarchy!(self.hierarchy, RecordType::HostElement, RecordType::Connection, &id);
+        self.add_usage(RecordType::HostElement, id.to_owned(), usage, timestamp);
         if elements.len() + connections.len() == 0 {
             return;
         }
-        self.add_usage(RecordType::HostElement, id.to_owned(), usage, timestamp);
         for el in elements {
             self.add_element_usage(&el, usage, timestamp);
         }
@@ -514,10 +522,10 @@ impl Data {
 
     pub fn add_host_connection_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
         let mut connections = hierarchy!(self.hierarchy, RecordType::HostConnection, RecordType::Connection, &id);
+        self.add_usage(RecordType::HostConnection, id.to_owned(), usage, timestamp);
         if connections.len() == 0 {
             return;
         }
-        self.add_usage(RecordType::HostConnection, id.to_owned(), usage, timestamp);
         self.add_connection_usage(&connections.pop().unwrap(), usage, timestamp);
     }
 }

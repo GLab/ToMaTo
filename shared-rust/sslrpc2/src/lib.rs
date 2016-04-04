@@ -4,7 +4,7 @@ pub extern crate rmp;
 extern crate net2;
 extern crate libc;
 extern crate epoll;
-extern crate openssl;
+pub extern crate openssl;
 extern crate fnv;
 
 #[macro_use] mod util;
@@ -15,7 +15,7 @@ mod server;
 mod client;
 mod wrapper;
 
-pub use server::{Server, Method};
+pub use server::{Server, Method, ServerCloseGuard};
 pub use client::Client;
 pub use socket::Connection;
 pub use rmp::Value;

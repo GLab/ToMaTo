@@ -14,7 +14,7 @@ pub enum HierarchyError {
     NoSuchRelation
 }
 
-pub trait Hierarchy {
+pub trait Hierarchy: Send + Sync {
     fn get(&self, child_type: RecordType, parent_type: RecordType, child_id: &str) -> Result<Vec<String>, HierarchyError>;
 }
 
