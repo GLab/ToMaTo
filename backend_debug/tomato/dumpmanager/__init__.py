@@ -16,7 +16,7 @@ def insert_dump(dump_dict, source):
 	)
 	with group.lock:
 		try:
-			dump_obj = ErrorDump.from_dict(dump_dict)
+			dump_obj = ErrorDump.from_dict(dump_dict, source)
 			group.insert_dump(dump_obj)
 		finally:
 			try:
