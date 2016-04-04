@@ -11,7 +11,7 @@ def account_notifications(include_read=False):
 	"""
 	username = getCurrentUserName()
 	api = get_backend_users_proxy()
-	api.notification_list(username, include_read)
+	return api.notification_list(username, include_read)
 
 def account_notification_set_read(notification_id, read):
 	"""

@@ -68,6 +68,7 @@ class Task(object):
 
 class TaskScheduler(threading.Thread):
 	__slots__ = ("tasks", "tasksLock", "nextId", "workers", "workersLock", "stopped", "wakeup", "stopped_confirm", "maxLateTime", "maxWorkers", "minWorkers", "waitFrac")
+	DAILY = 3600*24
 	def __init__(self, maxLateTime=2.0, maxWorkers=5, minWorkers=1):
 		self.tasks = {}
 		self.tasksLock = threading.RLock()

@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
 from capabilities import capabilities, capabilities_connection, capabilities_element
 
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
@@ -26,12 +24,11 @@ from debug import debug, debug_stats, ping
 
 from docs import docs, role_list
 
-from dumpmanager import errordump_info, errordump_list, errordumps_force_refresh, errorgroup_favorite,\
-	errorgroup_hide, errorgroup_info, errorgroup_list, errorgroup_modify, errorgroup_remove
+from dump import dump_list
 
 from elements import element_info, element_action, element_create, element_modify, element_remove, element_usage
 
-from host import site_create, site_info, site_list, site_modify, site_remove,\
+from host import host_dump_list, host_name_list, site_create, site_info, site_list, site_modify, site_remove,\
 	host_modify, host_create, host_info, host_list, host_remove, host_usage, host_users
 
 from misc import link_statistics, notifyAdmins, server_info, statistics, task_execute, task_list
