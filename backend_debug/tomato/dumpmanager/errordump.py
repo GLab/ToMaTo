@@ -5,7 +5,7 @@ class ErrorDump(EmbeddedDocument):
 	source = StringField(required=True)
 	dumpId = StringField(db_field='dump_id', required=True)  # not unique, different semantics on embedded documents
 	description = DictField(required=True)
-	data = StringField()
+	data = DictField()
 	type = StringField(required=True)
 	softwareVersion = DictField(db_field='software_version')
 	timestamp = FloatField(required=True)
