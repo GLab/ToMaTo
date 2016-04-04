@@ -1,6 +1,5 @@
 import time
 from ...lib.error import Error, InternalError, TransportError
-from .. import errorgroup, errordump
 from ...db import data
 
 class DumpSource(object):
