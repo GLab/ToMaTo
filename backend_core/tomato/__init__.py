@@ -38,34 +38,6 @@ database_settings = settings.settings.get_db_settings()
 database_connnection = connect(database_settings['database'], host=database_settings['host'], port=database_settings['port'])
 database_obj = getattr(database_connnection, database_settings['database'])
 
-def db_migrate():
-	def getMigration(version):
-		try:
-			return __import__("tomato.migrations.migration_%04d" % version, {}, {}, 'migration_%04d' % version).migrate
-		except ImportError:
-			return None
-
-	from .db import data
-	version = data.get('db_version', 0)
-	print >>sys.stderr, "Database version: %04d" % version
-	if version > 0 and not getMigration(version):
-		raise Exception("Database is newer than code")
-	if not version and not getMigration(1):
-		raise Exception("Failed to migrate to initial version")
-	while True:
-		version += 1
-		migrate = getMigration(version)
-		if not migrate:
-			break
-		print >>sys.stderr, " - migrating to version %04d..." % version
-		try:
-			migrate()
-		except:
-			import traceback
-			traceback.print_exc()
-			raise
-		data.set('db_version', version)
-
 from lib import logging
 def handleError():
 	logging.logException()
@@ -76,7 +48,7 @@ scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=setti
 
 starttime = time.time()
 
-from . import host, rpcserver #@UnresolvedImport
+from . import db, host, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import util, cache #@UnresolvedImport
 
@@ -91,7 +63,7 @@ import models
 def start():
 	logging.openDefault(settings.settings.get_log_filename())
 	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
-		db_migrate()
+		db.migrate()
 	else:
 		print >>sys.stderr, "Skipping migrations"
 	global starttime
