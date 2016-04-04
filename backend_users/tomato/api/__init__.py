@@ -1,6 +1,6 @@
 from auth import user_check_password
 
-from dump import dump_count, dump_info, dump_list
+from dump import dump_list
 
 from debug import debug_stats, debug, ping
 

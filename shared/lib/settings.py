@@ -73,6 +73,10 @@ services:
       - port: 8001
         ssl: true
         protocol: https
+  backend_debug:
+    host: dockerhost
+    port: 8004
+    protocol: sslrpc2
   backend_core:
     host: dockerhost
     port: 8004
@@ -158,8 +162,27 @@ backend_users:
   database:
     db-name: tomato_backend_users
     server:
-      host: dockerhost  # you may need to use %(DB_PORT_27017_TCP_ADDR)s instead...
-      port: 27017  # you may need to use %(DB_PORT_27017_TCP_PORT)s instead...
+      host: dockerhost  # you may need to use %(OS__DB_PORT_27017_TCP_ADDR)s instead...
+      port: 27017  # you may need to use %(OS__DB_PORT_27017_TCP_PORT)s instead...
+  tasks:
+    max-workers: 25
+
+backend_debug:
+  paths:
+    log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
+  ssl:
+    cert:  /etc/tomato/backend_debug.pem
+    key:  /etc/tomato/backend_debug.pem
+    ca:  /etc/tomato/ca.pem
+  database:
+    db-name: tomato_backend_debug
+    server:
+      host: dockerhost  # you may need to use %(OS__DB_PORT_27017_TCP_ADDR)s instead...
+      port: 27017  # you may need to use %(OS__DB_PORT_27017_TCP_PORT)s instead...
   tasks:
     max-workers: 25
 
@@ -294,12 +317,20 @@ class Config:
 	TOMATO_MODULE_BACKEND_CORE = "backend_core"
 	TOMATO_MODULE_BACKEND_USERS = "backend_users"
 	TOMATO_MODULE_BACKEND_API = "backend_api"
+	TOMATO_MODULE_BACKEND_DEBUG = "backend_debug"
 
 	TOMATO_MODULES = {TOMATO_MODULE_WEB,
 										TOMATO_MODULE_BACKEND_CORE,
 										TOMATO_MODULE_BACKEND_USERS,
-										TOMATO_MODULE_BACKEND_API}
-	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE, TOMATO_MODULE_BACKEND_USERS, TOMATO_MODULE_BACKEND_API}
+										TOMATO_MODULE_BACKEND_API,
+										TOMATO_MODULE_BACKEND_DEBUG}
+	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE,
+														TOMATO_MODULE_BACKEND_USERS,
+														TOMATO_MODULE_BACKEND_API,
+														TOMATO_MODULE_BACKEND_DEBUG}
+	TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES = {TOMATO_MODULE_BACKEND_CORE,
+																							 TOMATO_MODULE_BACKEND_USERS,
+																							 TOMATO_MODULE_BACKEND_DEBUG}
 
 	EMAIL_NOTIFICATION = "notification"
 	EMAIL_NEW_USER_WELCOME = "new-user-welcome"
@@ -370,6 +401,12 @@ class SettingsProvider:
 
 
 	def get_dumpmanager_enabled(self, tomato_module):
+		"""
+		get whether dumps on this module are enabled
+		:param str tomato_module: tomato module as in Config
+		:return: whether dumps on this module are enabled
+		:rtype: bool
+		"""
 		InternalError.check(tomato_module in Config.TOMATO_MODULES, code=InternalError.INVALID_PARAMETER, message="invalid tomato module", todump=False, data={'tomato_module': tomato_module})
 		return self.original_settings[tomato_module]['dumps']['enabled']
 

@@ -28,6 +28,9 @@ def _getSite(name):
 	return s
 
 def _getHost(name):
+	"""
+	:rtype: Host
+	"""
 	h = Host.get(name=name)
 	UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"name": name})
 	return h
@@ -75,22 +78,39 @@ def site_remove(name):
 	site = _getSite(name)
 	site.remove()
 
-@cached(timeout=300, maxSize=1000, autoupdate=True)
-def host_list(site=None, organization=None):
+def _host_list(site=None, organization=None):
 	"""
 	undocumented
 	"""
 	if site:
 		site = Site.get(site)
-		hosts = Host.objects(site=site)
+		return Host.objects(site=site)
 	elif organization:
 		sites = Site.objects(organization=organization)
-		hosts = Host.objects(site__in=sites)
+		return Host.objects(site__in=sites)
 	else:
-		hosts = Host.objects.all()
-	return [h.info() for h in hosts]
+		return Host.objects.all()
 
-@invalidates(host_list)
+def host_list(site=None, organization=None):
+	"""
+	return a list of hosts
+	:rtype: list(str)
+	"""
+	return [h.info() for h in _host_list(site, organization)]
+
+def host_name_list(site=None, organization=None):
+	"""
+	return a list of hosts, but only their names
+	:rtype: list(str)
+	"""
+	return [h.name for h in _host_list(site, organization)]
+
+def host_dump_list(name, after):
+	"""
+	return all dumps of this host since last_updatetime
+	"""
+	return _getHost(name).getProxy().dump_list(after)
+
 def host_create(name, site, attrs=None):
 	"""
 	undocumented
@@ -107,7 +127,6 @@ def host_info(name):
 	h = _getHost(name)
 	return h.info()
 
-@invalidates(host_list)
 def host_modify(name, attrs):
 	"""
 	undocumented
@@ -116,7 +135,6 @@ def host_modify(name, attrs):
 	h.modify(attrs)
 	return h.info()
 
-@invalidates(host_list)
 def host_remove(name):
 	"""
 	undocumented

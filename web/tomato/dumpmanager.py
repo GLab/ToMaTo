@@ -215,9 +215,6 @@ def errorgroup_github(api, request, group_id):
 
 		info = api.errorgroup_info(group_id, include_dumps=True)
 		dump_tofetch = info['dumps'][0]
-		for dump in info['dumps']:
-			if dump['data_available']:
-				dump_tofetch = dump
 		dump_info = api.errordump_info(group_id, dump_tofetch['source'], dump_tofetch['dump_id'], include_data=True)
 
 		backend_dump = False

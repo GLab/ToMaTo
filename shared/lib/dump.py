@@ -250,13 +250,14 @@ def getCount():
 def getAll(after=None, list_only=False, include_data=False, compress_data=True):
 	global dumps
 	return_list = []
-	for d in dumps:
-		if (after is None) or (dumps[d]['timestamp'] >= after):
-			dump = dumps[d]
+	for dump_id, _dump in dumps.iteritems():
+		if (after is None) or (_dump['timestamp'] >= after):
 			if list_only:
-				dump = d
+				dump = dump_id
 			elif include_data:
-				dump = load_dump(d['dump_id'], True, True, dump_on_error=True)
+				dump = load_dump(dump_id, True, True, dump_on_error=True)
+			else:
+				dump = _dump
 			return_list.append(dump)
 	return return_list
 

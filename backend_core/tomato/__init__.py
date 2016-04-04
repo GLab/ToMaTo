@@ -15,7 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, signal, time, thread
+import os
+import signal
+import sys
+import thread
+import time
 
 import monkey
 monkey.patch_all()
@@ -62,25 +66,6 @@ def db_migrate():
 			raise
 		data.set('db_version', version)
 
-import threading
-_currentUser = threading.local()
-
-def getCurrentUserInfo():
-	"""
-	get the current user's PermissionChecker object
-	:return: current user's PermissionChecker object
-	:rtype: authorization.PermissionChecker
-	"""
-	return _currentUser.user_info if hasattr(_currentUser, "user_info") else None  # fixme: _currentuser should have another name, shouldn't it?
-	
-def setCurrentUserInfo(user_info):
-	_currentUser.user_info = user_info
-
-def login(credentials, sslCert):
-	user_info = authorization.login(*credentials) if credentials else None
-	setCurrentUserInfo(user_info)
-	return user_info or not credentials
-
 from lib import logging
 def handleError():
 	logging.logException()
@@ -97,10 +82,10 @@ from lib import util, cache #@UnresolvedImport
 
 scheduler.scheduleRepeated(settings.settings.get_bittorrent_settings()['bittorrent-restart'], util.wrap_task(bittorrent.restartClient))
 
+import threading
 stopped = threading.Event()
 
 import dump
-import dumpmanager
 import models
 
 def start():
@@ -119,7 +104,6 @@ def start():
 	else:
 		print >>sys.stderr, "Running without tasks"
 	dump.init()
-	dumpmanager.init()# important: must be called after dump.init()
 	cache.init()# this does not depend on anything (except the scheduler variable being initialized), and nothing depends on this. No need to hurry this.
 	
 def reload_(*args):

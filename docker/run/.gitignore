@@ -3,4 +3,6 @@ mongodb-data/*
 backend/*/*
 backend_core/*/*
 backend_users/*/*
+backend_api/*/*
+backend_debug/*/*
 web/*/*

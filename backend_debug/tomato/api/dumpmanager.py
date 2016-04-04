@@ -15,113 +15,127 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
-from backend_core.tomato.dumpmanager import api_errordump_info, api_errordump_list, api_errorgroup_favorite,\
-	api_errorgroup_hide, api_errorgroup_info, api_errorgroup_list, api_errorgroup_modify, api_errorgroup_remove,\
-	api_force_refresh
+from ..dumpmanager.errorgroup import get_group, ErrorGroup
+from ..dumpmanager import update_all
+from ..lib.error import UserError
 
 def errordump_info(group_id, source, dump_id, include_data=False):
-    """
-    Returns details for the given dump.
-    A dump is identified by its group_id, its source, and the dump_id on this source.
-    
-    Parameter *group_id*:
-      A string. This is the group id of the dump group.
+		"""
+		Returns details for the given dump.
+		A dump is identified by its group_id, its source, and the dump_id on this source.
 
-    Parameter *source*:
-      A string. This is the source (i.e., a certain host, or the backend) of the dump.
-    
-    Parameter *dump_id*: 
-      The unique identifier of the dump to be queried. 
-    
-    Parameter *include_data*:
-      A boolean.
-      Every dump has environment data attatched to it. This data may be big (i.e., >1MB).
-      By default, the data of a dump has most likely not been loaded from its source.
-      If include_data is False, this data will not be returned by this call.
-      If it is True, this data will first be fetched from the source, if needed, and included in this call's return.
-    
-    Return value:
-      The return value of this method is the info dict of the dump.
-      If include_data is True, it will contain a data field, otherwise a data_available indicator.
-    """
-    return api_errordump_info(group_id, source, dump_id, include_data)
+		Parameter *group_id*:
+			A string. This is the group id of the dump group.
 
-def errordump_list(group_id, source=None, data_available=None):
-    """
-    Returns a list of dumps.
-    
-    Parameter *group_id*: 
-      A string. Only dumps of this group will be included.
-    
-    Parameter *source*:
-      A string. If this is not None, only dumps from this source will be included.
-    
-    Parameter *data_available*:
-      A boolean. If this is not None, only dumps which match this criterion will be included. 
-      
-    Return value:
-      A list of dumps, filtered by the arguments.
-    """
-    return api_errordump_list(group_id, source, data_available)
+		Parameter *source*:
+			A string. This is the source (i.e., a certain host, or the backend) of the dump.
 
-def errorgroup_info(group_id, include_dumps=False):
-    """
-    Returns details for the given dump group.
-    
-    Parameter *group_id*:
-      A string. The unique identifier of the group.
-    
-    Parameter *include_dumps*: 
-      If true, a list of all dumps will be attached. 
-    
-    Return value:
-      The return value of this method is the info dict of the group, maybe expanded by a list of dumps.
-    """
-    return api_errorgroup_info(group_id, include_dumps)
+		Parameter *dump_id*:
+			The unique identifier of the dump to be queried.
 
-def errorgroup_list(show_empty, as_user):
-    """
-    Returns a list of all error groups.
-    """
-    return api_errorgroup_list(show_empty, as_user=as_user)
+		Parameter *include_data*:
+			A boolean.
+			Every dump has environment data attatched to it. This data may be big (i.e., >1MB).
+			By default, the data of a dump has most likely not been loaded from its source.
+			If include_data is False, this data will not be returned by this call.
+			If it is True, this data will first be fetched from the source, if needed, and included in this call's return.
+
+		Return value:
+			The return value of this method is the info dict of the dump.
+			If include_data is True, it will contain a data field, otherwise a data_available indicator.
+		"""
+		grp = get_group(group_id)
+		UserError.check(grp, UserError.ENTITY_DOES_NOT_EXIST, message="no such error group", data={"group_id": group_id})
+		return grp.get_dump(dump_id, source).info(include_data)
+
+def errordump_list(group_id, source=None):
+		"""
+		Returns a list of dumps.
+
+		Parameter *group_id*:
+			A string. Only dumps of this group will be included.
+
+		Parameter *source*:
+			A string. If this is not None, only dumps from this source will be included.
+
+		Return value:
+			A list of dumps, filtered by the arguments.
+		"""
+		grp = get_group(group_id)
+		UserError.check(grp, UserError.ENTITY_DOES_NOT_EXIST, message="no such error group", data={"group_id": group_id})
+		return [d.info(False) for d in grp.get_dumps(source)]
+
+def errorgroup_info(group_id, include_dumps=False, as_user=None):
+		"""
+		Returns details for the given dump group.
+
+		Parameter *group_id*:
+			A string. The unique identifier of the group.
+
+		Parameter *include_dumps*:
+			If true, a list of all dumps will be attached.
+
+		Return value:
+			The return value of this method is the info dict of the group, maybe expanded by a list of dumps.
+		"""
+		grp = get_group(group_id)
+		UserError.check(grp, UserError.ENTITY_DOES_NOT_EXIST, message="no such error group", data={"group_id": group_id})
+		res = grp.info(as_user)
+		if include_dumps:
+			res['dumps'] = [d.info(False) for d in grp.get_dumps(None)]
+		return res
+
+def errorgroup_list(show_empty, as_user=None):
+		"""
+		Returns a list of all error groups.
+		"""
+		res = [grp.info(as_user) for grp in ErrorGroup.objects.all()]
+		if show_empty:
+			return res
+		else:
+			return [grp for grp in res if grp['count'] > 0]
 
 def errorgroup_modify(group_id, attrs):
-    """
-    Allows to modify the description of the error group.
-    
-    Parameter *group_id*:
-      A string. The unique identifier of the group.
-    
-    Parameter *attrs*: 
-      A dict with attributes to update. This matches the info dict.
-      Only the description can be updated. 
-    
-    Return value:
-      The return value of this method is the info dict of the group.
-    """
-    return api_errorgroup_modify(group_id, attrs)
+		"""
+		Allows to modify the description of the error group.
+
+		Parameter *group_id*:
+			A string. The unique identifier of the group.
+
+		Parameter *attrs*:
+			A dict with attributes to update. This matches the info dict.
+			Only the description can be updated.
+
+		Return value:
+			The return value of this method is the info dict of the group.
+		"""
+		grp = get_group(group_id)
+		UserError.check(grp, UserError.ENTITY_DOES_NOT_EXIST, message="no such error group", data={"group_id": group_id})
+		grp.modify(attrs)
+		grp.save()
+		return grp.info()
 
 def errorgroup_remove(group_id):
-    """
-    Remove a dump.
-    
-    Parameter *dump_id*: 
-      The unique identifier of the group to be removed.
-    """
-    api_errorgroup_remove(group_id)
-    
+		"""
+		Remove a dump.
+
+		Parameter *dump_id*:
+			The unique identifier of the group to be removed.
+		"""
+		grp = get_group(group_id)
+		UserError.check(grp, UserError.ENTITY_DOES_NOT_EXIST, message="no such error group", data={"group_id": group_id})
+		grp.remove()
+
 def errordumps_force_refresh():
-    """
-    Force a refresh of dumps.
-    This is done automatically in a longer interval.
-    To get instant access to all dumps, call this function.
-    
-    Return value:
-      The time in seconds it takes until all dumps should be collected.
-    """
-    return api_force_refresh()
+		"""
+		Force a refresh of dumps.
+		This is done automatically in a longer interval.
+		To get instant access to all dumps, call this function.
+
+		Return value:
+			The time in seconds it takes until all dumps should be collected.
+		"""
+		update_all()
 
 def errorgroup_hide(group_id):
 		"""
@@ -131,7 +145,10 @@ def errorgroup_hide(group_id):
 		:param group_id: the group ID
 		:return: None
 		"""
-		api_errorgroup_hide(group_id)
+		grp = get_group(group_id)
+		UserError.check(grp, UserError.ENTITY_DOES_NOT_EXIST, message="no such error group", data={"group_id": group_id})
+		grp.hide()
+		grp.save()
 
 def errorgroup_favorite(username, group_id, is_favorite):
 		"""
@@ -141,4 +158,10 @@ def errorgroup_favorite(username, group_id, is_favorite):
 		:param is_favorite: True to add, False to remove.
 		:return: None
 		"""
-		api_errorgroup_favorite(username, group_id, is_favorite)
+		grp = get_group(group_id)
+		UserError.check(grp, UserError.ENTITY_DOES_NOT_EXIST, message="no such error group", data={"group_id": group_id})
+		if is_favorite:
+			grp.add_favorite_user(username)
+		else:
+			grp.remove_favorite_user(username)
+		grp.save()

@@ -259,6 +259,12 @@ class HostInfo(InfoObj):
 	def get_organization_name(self):
 		return self.info()['organization']
 
+	def get_clock_offset(self):
+		return self.info()['host_info']['time_diff']
+
+	def get_dumps(self, after):
+		return get_backend_core_proxy().host_dump_list(self.name, after)
+
 
 class ElementInfo(ActionObj):
 	__slots__ = ("eid",)
