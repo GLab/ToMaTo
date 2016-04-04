@@ -385,20 +385,7 @@ def timeout_task():
 		except Exception:
 			handleError()
 
-@util.wrap_task
-def maintenance():
-	userlist = get_backend_users_proxy().username_list()
-	for top in getAll():
-		top_updated = False
-		for p in list(top.permissions):
-			if p.user not in userlist:
-				top_updated = True
-				top.permissions.remove(p)
-		if top_updated:
-			top.save()
-
 scheduler.scheduleRepeated(600, timeout_task)
-scheduler.scheduleRepeated(14*scheduler.DAILY, maintenance)
 
 import elements
 from .connections import Connection
