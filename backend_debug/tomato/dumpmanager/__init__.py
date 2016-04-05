@@ -17,7 +17,8 @@ def insert_dump(dump_dict, source):
 	with group.lock:
 		try:
 			dump_obj = ErrorDump.from_dict(dump_dict, source)
-			group.insert_dump(dump_obj)
+			if dump_obj.timestamp <= source.get_last_updatetime():
+				group.insert_dump(dump_obj)
 		finally:
 			try:
 				group.shrink()
@@ -29,7 +30,6 @@ def fetch_from(source_name):
 	"""
 	:param str source: source to fetch from
 	"""
-	#fixme: use insert_dump_unsave to speed up things, but handle locks...
 	fetching.get_source_by_name(source_name).fetch_new_dumps(insert_dump)
 
 

@@ -27,7 +27,7 @@ from config_infos import account_flag_categories, account_flag_configuration, ac
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
 	connection_action, connection_usage
 
-from debug import debug, debug_stats, debug_services_reachable
+from debug import debug, debug_stats, debug_services_reachable, debug_run_internal_api_call
 
 from docs import docs, role_list
 

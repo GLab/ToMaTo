@@ -12,8 +12,8 @@ def debug(method, args=None, kwargs=None, profile=None):
 	return result.marshal()
 
 def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
+	getCurrentUserInfo().check_may_view_debugging_info()
 	if is_self(tomato_module):
-		getCurrentUserInfo().check_may_view_debugging_info()
 		stats = {}
 		stats["scheduler"] = scheduler.info()
 		stats["threads"] = map(traceback.extract_stack, sys._current_frames().values())
@@ -33,3 +33,8 @@ def debug_services_reachable():
 	res = {module: is_reachable(module) for module in Config.TOMATO_BACKEND_MODULES}
 	res[Config.TOMATO_MODULE_BACKEND_API] = True
 	return res
+
+
+def debug_run_internal_api_call(_tomato_module, _command, *args, **kwargs):
+	getCurrentUserInfo().check_may_run_any_command()
+	return get_tomato_inner_proxy(_tomato_module)._call(_command, args, kwargs)

@@ -28,15 +28,23 @@ from dump import dump_list
 
 from elements import element_info, element_action, element_create, element_modify, element_remove, element_usage
 
-from host import host_dump_list, host_name_list, site_create, site_info, site_list, site_modify, site_remove,\
+from host import host_dump_list, host_name_list,\
 	host_modify, host_create, host_info, host_list, host_remove, host_usage, host_users
 
 from misc import link_statistics, notifyAdmins, server_info, statistics, task_execute, task_list
 
-from resources import network_create, network_info, network_instance_create, network_instance_info,\
-	network_instance_list, network_instance_modify, network_instance_remove, network_list, network_modify,\
-	network_remove, profile_create, profile_info, profile_list, profile_modify, profile_remove, template_info,\
-	template_create, template_list, template_modify, template_remove
+from network import network_create, network_info, network_list, network_modify, network_remove
+
+from network_instance import network_instance_create, network_instance_info,\
+	network_instance_list, network_instance_modify, network_instance_remove
+
+from profile import profile_create, profile_info, profile_list, profile_modify, profile_remove
+
+from template import template_info, template_create, template_list, template_modify, template_remove
+
+from site import site_create, site_info, site_list, site_modify, site_remove
 
 from topology import topology_action, topology_create, topology_info,\
 	topology_list, topology_modify, topology_set_permission, topology_remove, topology_usage
+
+from hierarchy import object_exists, object_parents, objects_available

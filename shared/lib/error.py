@@ -180,7 +180,7 @@ class InternalError(Error):
 	INVALID_PARAMETER = "invalid_parameter"
 	CONFIGURATION_ERROR = "configuration_error"
 	RESOURCE_ERROR = "resource_error"
-	ASSERTION = "assertion" 
+	ASSERTION = "assertion"
 
 
 @ErrorType

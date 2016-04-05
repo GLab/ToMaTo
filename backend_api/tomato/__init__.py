@@ -61,7 +61,7 @@ from lib import util, cache
 
 stopped = threading.Event()
 
-#import dump
+import dump
 
 def start():
 	logging.openDefault(settings.settings.get_log_filename())
@@ -73,7 +73,8 @@ def start():
 	else:
 		print >>sys.stderr, "Running without tasks"
 	cache.init()# this does not depend on anything (except the scheduler variable being initialized), and nothing depends on this. No need to hurry this.
-	
+	dump.init()
+
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
 	logging.closeDefault()

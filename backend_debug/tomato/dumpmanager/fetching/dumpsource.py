@@ -27,7 +27,7 @@ class PullingDumpSource(DumpSource):
 	def _clock_offset(self):
 		raise NotImplemented()
 
-	def _get_last_updatetime(self):
+	def get_last_updatetime(self):
 		return data.get("dumpsource:%s/last_updatetime" % self.dump_source_name(), 0)
 
 	def _set_last_updatetime(self, last_updatetime):
@@ -45,7 +45,7 @@ class PullingDumpSource(DumpSource):
 		this_fetch_time = time.time() - offset
 
 		try:
-			fetch_results = self._fetch_dumps(self._get_last_updatetime())
+			fetch_results = self._fetch_dumps(self.get_last_updatetime())
 			if fetch_results is None:
 				return  # this means that fetching is currently not possible.
 

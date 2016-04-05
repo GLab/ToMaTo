@@ -61,20 +61,19 @@ class EditErrorGroupForm(ErrorGroupForm):
 	
 
 @wrap_rpc
-def group_list(api, request, site=None, organization=None):	
+def group_list(api, request):
 	errorgroups = api.errorgroup_list()
 	for e in errorgroups:
 		e['frontend_mod'] = {'sources':[]}
 		host_count = 0
 		for s in e['dump_contents']['source']:
-			if s == 'backend':
-				e['frontend_mod']['sources'].append('backend')
 			if s.startswith('host'):
-				host_count+=1
-		if host_count>0:
-			if len(e['frontend_mod']['sources'])>0:
-				e['frontend_mod']['sources'].append(", ")
+				host_count += 1
+			else:
+				e['frontend_mod']['sources'].append(s.replace('backend:', ''))
+		if host_count > 0:
 			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
+		e['frontend_mod']['sources'] = ", ".join(e['frontend_mod']['sources'])
 
 	favorite_groups = []
 	other_groups = []
@@ -102,6 +101,9 @@ def group_info(api, request, group_id):
 		errordump['source___link'] = None
 		if errordump['source'].startswith('host:'):
 			errordump['source___link'] = errordump['source'].replace('host:', '')
+			errordump['source___displayname'] = errordump['source']
+		else:
+			errordump['source___displayname'] = errordump['source'].replace('backend:', '')
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	errorgroup['github_url'] = errorgroup.get('_github_url', False)
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup, 'github_enabled': github_enabled()})
