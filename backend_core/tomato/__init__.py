@@ -60,6 +60,9 @@ stopped = threading.Event()
 import dump
 import models
 
+import hierarchy
+hierarchy.init()
+
 def start():
 	logging.openDefault(settings.settings.get_log_filename())
 	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
@@ -95,7 +98,7 @@ def _printStackTraces():
 			print >>sys.stderr, '\tFile: "%s", line %d, in %s' % (filename, lineno, name)
 			if line:
 				print >>sys.stderr, "\t\t%s" % (line.strip())
-	
+
 
 def _stopHelper():
 	stopped.wait(10)
