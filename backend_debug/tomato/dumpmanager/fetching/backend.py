@@ -22,11 +22,11 @@ class BackendDumpSource(PullingDumpSource):
 			return None
 
 		if is_self(self.tomato_module):
-			return getAll(self._get_last_updatetime())
+			return getAll(last_updatetime)
 		else:
 			if not is_reachable(self.tomato_module):
 				return None  # no need to throw an exception here, just wait for the service to become reachable again.
-			return get_tomato_inner_proxy(self.tomato_module).dump_list(self._get_last_updatetime())
+			return get_tomato_inner_proxy(self.tomato_module).dump_list(last_updatetime)
 
 	def _clock_offset(self):
 		if is_self(self.tomato_module):

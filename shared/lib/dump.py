@@ -6,7 +6,6 @@ from .. import scheduler
 from .error import InternalError, generate_inspect_trace, Error, TransportError
 
 from settings import settings, Config
-from service import get_tomato_inner_proxy
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
@@ -23,11 +22,14 @@ dumps = {}
 #when adding or removing keys to this array, it has to be locked.
 dumps_lock = threading.RLock()
 
-#if set to true, this will automatically try to push all dumps when saving.
-auto_push = False
+# will be called when a dump is created.
+# should be overwritten if needed.
+# important: do not dump exceptions that happen in here!
+def on_dump_create():
+	pass
 
-#use this while pushing dumps to avoid double pushing
-push_lock = threading.RLock()
+#use this to signal the pushing thread that there are new dumps
+must_autopush = threading.Event()
 
 boot_time = 0
 
@@ -140,16 +142,10 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 			fp.close()
 		dumps[dump_id] = dump_meta
 
-	if auto_push:
-		try:
-			with push_lock:
-				get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_DEBUG).dump_push_from_backend(
-					settings.get_tomato_module_name(),
-					load_dump(dump_id, load_data=True, dump_on_error=True))
-				remove_dump(dump_id)
-		except:
-			# do NOT dump if dumping fails!
-			pass
+	try:
+		on_dump_create()
+	except:
+		pass  # exceptions from this shouldn't interrupt this, and shouldn't be dumped.
 
 	return dump_id
 
@@ -249,28 +245,6 @@ def remove_all_where(before=None, group_id=None):
 				remove_dump(d)
 
 
-# this will be done regularly, if not in settings.Config.TOMATO_DUMP_PULL_MODULES
-# usually this won't do anything, unless there was a problem pushing individual dumps.
-def push_dumps_to_dumpmanager():
-	with push_lock:
-		with dumps_lock:
-			dump_ids = getAll(list_only=True)
-		for dump_id in dump_ids:
-			try:
-				get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_DEBUG).dump_push_from_backend(
-					settings.get_tomato_module_name(),
-					load_dump(dump_id, load_data=True))
-				remove_dump(dump_id)
-			except Exception as exc:
-				to_be_dumped = True
-				if isinstance(exc, Error):
-					if exc.type == TransportError.TYPE:
-						to_be_dumped = False
-				if to_be_dumped:
-					InternalError(code=InternalError.UNKNOWN, message="Failed to retrieve dumps: %s" % exc,
-									data={"exception": repr(exc)}).dump()
-
-
 #this will be done daily.
 def auto_cleanup():
 	before = time.time() - settings.get_dump_config()[Config.DUMPS_LIFETIME]
@@ -307,9 +281,6 @@ def get_recent_dumps():
 
 #initialize dump management on server startup.
 def init(env_cmds, tomatoVersion):
-	global auto_push
-	auto_push = settings.get_dump_config()[Config.DUMPS_AUTO_PUSH]
-
 	with dumps_lock:
 		global envCmds
 		global dumps
@@ -336,8 +307,6 @@ def init(env_cmds, tomatoVersion):
 						traceback.print_exc()
 
 	scheduler.scheduleRepeated(60 * 60 * 24, auto_cleanup, immediate=True)
-	if auto_push:
-		scheduler.scheduleRepeated(settings.get_dumpmanager_config()[Config.DUMPMANAGER_COLLECTION_INTERVAL], push_dumps_to_dumpmanager, immediate=True, random_offset=True)
 
 
 

@@ -6,4 +6,5 @@ def dump_push_from_backend(tomato_module, dump_dict):
 	actively push a dump to the dumpmanager.
 	Only call this as a backend service.
 	"""
-	insert_dump(dump_dict, BackendDumpSource(tomato_module))
+	source = BackendDumpSource(tomato_module)
+	insert_dump(dump_dict, source)
