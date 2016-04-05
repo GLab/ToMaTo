@@ -6,78 +6,14 @@ use std::io::{self, Write, Read};
 use std::sync::{RwLock, Mutex};
 
 use fnv::FnvHasher;
-use time;
 
-use util::{Time, now, Binary};
+use util::{Time, now, Binary, last_periods};
 use hierarchy::Hierarchy;
 
 
 static MAGIC: u16 = 28732;
 static VERSION: u8 = 0;
 
-
-pub fn last_periods(now: Time) -> (Time, Time, Time, Time, Time) {
-    let mut tm = time::at_utc(time::Timespec::new(now, 0));
-    tm.tm_nsec = 0;
-    tm.tm_sec = 0;
-    tm.tm_min = (tm.tm_min / 5) * 5;
-    let five_min = tm.to_timespec().sec;
-    tm.tm_min = 0;
-    let hour = tm.to_timespec().sec;
-    tm.tm_hour = 0;
-    let day = tm.to_timespec().sec;
-    tm.tm_mday = 1; // 1st of month
-    let month = tm.to_timespec().sec;
-    tm.tm_mon = 0; // Jan is 0
-    let year = tm.to_timespec().sec;
-    (five_min, hour, day, month, year)
-}
-
-pub fn last_five_min(now: Time) -> Time {
-    let mut tm = time::at_utc(time::Timespec::new(now, 0));
-    tm.tm_nsec = 0;
-    tm.tm_sec = 0;
-    tm.tm_min = (tm.tm_min / 5) * 5;
-    tm.to_timespec().sec
-}
-
-pub fn last_hour(now: Time) -> Time {
-    let mut tm = time::at_utc(time::Timespec::new(now, 0));
-    tm.tm_nsec = 0;
-    tm.tm_sec = 0;
-    tm.tm_min = 0;
-    tm.to_timespec().sec
-}
-
-pub fn last_day(now: Time) -> Time {
-    let mut tm = time::at_utc(time::Timespec::new(now, 0));
-    tm.tm_nsec = 0;
-    tm.tm_sec = 0;
-    tm.tm_min = 0;
-    tm.tm_hour = 0;
-    tm.to_timespec().sec
-}
-
-pub fn last_month(now: Time) -> Time {
-    let mut tm = time::at_utc(time::Timespec::new(now, 0));
-    tm.tm_nsec = 0;
-    tm.tm_sec = 0;
-    tm.tm_min = 0;
-    tm.tm_hour = 0;
-    tm.tm_mday = 1; // 1st of month
-    tm.to_timespec().sec
-}
-
-pub fn last_year(now: Time) -> Time {
-    let mut tm = time::at_utc(time::Timespec::new(now, 0));
-    tm.tm_nsec = 0;
-    tm.tm_sec = 0;
-    tm.tm_min = 0;
-    tm.tm_hour = 0;
-    tm.tm_mday = 1; // 1st of month
-    tm.tm_mon = 0; // Jan is 0
-    tm.to_timespec().sec
-}
 
 
 #[derive(Clone, Debug, PartialEq)]
@@ -185,22 +121,27 @@ impl Record {
         if now / 300 != self.timestamp / 300 {
             let (last_five_min, last_hour, last_day, last_month, last_year) = last_periods(now);
             if self.timestamp < last_five_min {
+                debug!("New 5 minute period, shifting usage");
                 self.five_min.pop_front();
                 self.five_min.push_back(Usage::zero());
             }
             if self.timestamp < last_hour {
+                debug!("New hour period, shifting usage");
                 self.hour.pop_front();
                 self.hour.push_back(Usage::zero());
             }
             if self.timestamp < last_day {
+                debug!("New day period, shifting usage");
                 self.day.pop_front();
                 self.day.push_back(Usage::zero());
             }
             if self.timestamp < last_month {
+                debug!("New month period, shifting usage");
                 self.month.pop_front();
                 self.month.push_back(Usage::zero());
             }
             if self.timestamp < last_year {
+                debug!("New year period, shifting usage");
                 self.year.pop_front();
                 self.year.push_back(Usage::zero());
             }
@@ -400,6 +341,7 @@ impl Data {
     }
 
     pub fn store_record(&self, type_: RecordType, id: &str, record: &Record) -> Result<(), StoreError> {
+        debug!("Storing {}/{}", type_.name(), id);
         let mut f = try!(File::create(self.record_path(type_, id)));
         let mut buf = [0u8; 32768];
         let len = record.encode(&mut buf);
@@ -426,6 +368,7 @@ impl Data {
     }
 
     pub fn load_record(&self, type_: RecordType, id: &str) -> Result<Record, LoadError> {
+        debug!("Loading {}/{}", type_.name(), id);
         let mut f = try!(File::open(self.record_path(type_, id)));
         let mut buf = Vec::new();
         try!(f.read_to_end(&mut buf));
@@ -448,6 +391,7 @@ impl Data {
     }
 
     pub fn add_usage(&self, type_: RecordType, id: String, usage: &Usage, timestamp: Time) {
+        debug!("Adding usage to {}/{}: {:?}@{}", type_.name(), id, usage, timestamp);
         let key = (type_, id);
         {
             let records = self.records.read().expect("Lock poisoned");
@@ -456,6 +400,7 @@ impl Data {
                 return
             }
         }
+        debug!("Creating new record for {}/{}", type_.name(), key.1);
         let &(max_five_min, max_hour, max_day, max_month, max_year) = self.max_entries.get(&type_).expect(&format!("No limits set for record type {:?}", type_));
         let mut records = self.records.write().expect("Lock poisoned");
         let mut record = Record::new(timestamp, max_five_min, max_hour, max_day, max_month, max_year);
@@ -471,6 +416,7 @@ impl Data {
         let mut organizations = hierarchy!(self.hierarchy, RecordType::User, RecordType::Organization, &id);
         self.add_usage(RecordType::User, id.to_owned(), usage, timestamp);
         if organizations.len() == 0 {
+            warn!("No organization for user/{}", id);
             return;
         }
         self.add_organization_usage(&organizations.pop().unwrap(), usage, timestamp);
@@ -480,7 +426,11 @@ impl Data {
         let users = hierarchy!(self.hierarchy, RecordType::Topology, RecordType::User, &id);
         self.add_usage(RecordType::Topology, id.to_owned(), usage, timestamp);
         if users.len() > 1 {
+            debug!("Topology {} has multiple owners, dividing usage by {}", id, users.len());
             usage.divide_by(users.len() as f32);
+        }
+        if users.len() == 0 {
+            warn!("No user for topology/{}", id);
         }
         for user in users {
             self.add_user_usage(&user, usage, timestamp);
@@ -491,6 +441,7 @@ impl Data {
         let mut topologies = hierarchy!(self.hierarchy, RecordType::Element, RecordType::Topology, &id);
         self.add_usage(RecordType::Element, id.to_owned(), usage, timestamp);
         if topologies.len() == 0 {
+            warn!("No topology for element/{}", id);
             return;
         }
         self.add_topology_usage(&topologies.pop().unwrap(), usage, timestamp);
@@ -500,6 +451,7 @@ impl Data {
         let mut topologies = hierarchy!(self.hierarchy, RecordType::Connection, RecordType::Topology, &id);
         self.add_usage(RecordType::Connection, id.to_owned(), usage, timestamp);
         if topologies.len() == 0 {
+            warn!("No topology for connection/{}", id);
             return;
         }
         self.add_topology_usage(&topologies.pop().unwrap(), usage, timestamp);
@@ -510,6 +462,11 @@ impl Data {
         let connections = hierarchy!(self.hierarchy, RecordType::HostElement, RecordType::Connection, &id);
         self.add_usage(RecordType::HostElement, id.to_owned(), usage, timestamp);
         if elements.len() + connections.len() == 0 {
+            warn!("No element/connection for host_element/{}", id);
+            return;
+        }
+        if elements.len() + connections.len() > 1 {
+            warn!("Multiple elements/connections for host_element/{}", id);
             return;
         }
         for el in elements {
@@ -524,6 +481,7 @@ impl Data {
         let mut connections = hierarchy!(self.hierarchy, RecordType::HostConnection, RecordType::Connection, &id);
         self.add_usage(RecordType::HostConnection, id.to_owned(), usage, timestamp);
         if connections.len() == 0 {
+            warn!("No connection for host_connection/{}", id);
             return;
         }
         self.add_connection_usage(&connections.pop().unwrap(), usage, timestamp);

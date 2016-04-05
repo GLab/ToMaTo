@@ -6,8 +6,8 @@ use std::io;
 
 use sslrpc2::{Server, Params, Value, ToValue, ParseValue, ParseError, ServerCloseGuard, rmp, openssl};
 
-use super::data::{Data, RecordType, Record, Usage, last_five_min, last_hour, last_day, last_month, last_year};
-use super::util::Time;
+use super::data::{Data, RecordType, Record, Usage};
+use super::util::{Time, last_five_min, last_hour, last_day, last_month, last_year};
 
 pub struct Error {
     pub module: Cow<'static, str>,
@@ -115,6 +115,7 @@ pub struct Api(Arc<Data>);
 
 impl Api {
     pub fn get_record(&self, mut params: Params) -> Result<Record, Error> {
+        debug!("API call get_record {:?}", params);
         let type_ = param!(params, "type", RecordType);
         let id = param!(params, "id", String);
         match self.0.get_record(type_, id) {
@@ -124,6 +125,7 @@ impl Api {
     }
 
     pub fn push_usage(&self, mut params: Params) -> Result<(), Error> {
+        debug!("API call push_usage {:?}", params);
         type Records = HashMap<String, Vec<(Time, f32, f32, f32, f32, u32)>>;
         let elements = param!(params, "elements", Records);
         let connections = param!(params, "connections", Records);
@@ -144,7 +146,8 @@ impl Api {
         Ok(())
     }
 
-    pub fn store_all(&self, mut _params: Params) -> Result<usize, Error> {
+    pub fn store_all(&self, params: Params) -> Result<usize, Error> {
+        debug!("API call store_all {:?}", params);
         Ok(self.0.store_all().expect("Failed to store"))
     }
 }

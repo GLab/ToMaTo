@@ -9,6 +9,70 @@ pub fn now() -> Time {
     time::get_time().sec
 }
 
+pub fn last_periods(now: Time) -> (Time, Time, Time, Time, Time) {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = (tm.tm_min / 5) * 5;
+    let five_min = tm.to_timespec().sec;
+    tm.tm_min = 0;
+    let hour = tm.to_timespec().sec;
+    tm.tm_hour = 0;
+    let day = tm.to_timespec().sec;
+    tm.tm_mday = 1; // 1st of month
+    let month = tm.to_timespec().sec;
+    tm.tm_mon = 0; // Jan is 0
+    let year = tm.to_timespec().sec;
+    (five_min, hour, day, month, year)
+}
+
+pub fn last_five_min(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = (tm.tm_min / 5) * 5;
+    tm.to_timespec().sec
+}
+
+pub fn last_hour(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = 0;
+    tm.to_timespec().sec
+}
+
+pub fn last_day(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = 0;
+    tm.tm_hour = 0;
+    tm.to_timespec().sec
+}
+
+pub fn last_month(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = 0;
+    tm.tm_hour = 0;
+    tm.tm_mday = 1; // 1st of month
+    tm.to_timespec().sec
+}
+
+pub fn last_year(now: Time) -> Time {
+    let mut tm = time::at_utc(time::Timespec::new(now, 0));
+    tm.tm_nsec = 0;
+    tm.tm_sec = 0;
+    tm.tm_min = 0;
+    tm.tm_hour = 0;
+    tm.tm_mday = 1; // 1st of month
+    tm.tm_mon = 0; // Jan is 0
+    tm.to_timespec().sec
+}
+
+
 
 pub struct Binary;
 

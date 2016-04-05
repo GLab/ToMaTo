@@ -36,6 +36,7 @@ impl ToValue for Error {
     }
 }
 
+#[derive(Debug)]
 pub struct Params(KwArgs);
 
 impl Params {

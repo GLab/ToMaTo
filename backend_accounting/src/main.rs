@@ -6,41 +6,103 @@
 
 extern crate time;
 extern crate fnv;
+extern crate yaml_rust;
 #[macro_use] extern crate sslrpc2;
+#[macro_use] extern crate log;
 
 pub mod data;
 pub mod util;
 pub mod hierarchy;
 pub mod api;
 
-//TODO: logging
-//TODO: yaml config file
 //TODO: fetch hierarchy information
 //TODO: periodically store records
 //TODO: periodically remove very old ids
-//TODO: fix usage integration
+//TODO: snappy compression?
+//TODO: f64?
 
 use std::thread;
 use std::time::Duration;
+use std::fs::File;
+use std::path::Path;
+use std::env;
+use std::io::Read;
+use std::str::FromStr;
 
 use sslrpc2::openssl::ssl::{SslContext, SslMethod, SSL_VERIFY_PEER, SSL_VERIFY_FAIL_IF_NO_PEER_CERT};
 use sslrpc2::openssl::x509::X509FileType;
 use data::Data;
 use hierarchy::{DummyHierarchy, HierarchyCache};
 use api::ApiServer;
+use yaml_rust::YamlLoader;
 
 const DEFAULT_CIPHERS: &'static str = "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH:ECDHE-RSA-AES128-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA128:DHE-RSA-AES128-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES128-GCM-SHA128:ECDHE-RSA-AES128-SHA384:ECDHE-RSA-AES128-SHA128:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA384:AES128-GCM-SHA128:AES128-SHA128:AES128-SHA128:AES128-SHA:AES128-SHA:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4";
 
+#[derive(Debug)]
+struct Config {
+    ssl_ciphers: String,
+    ssl_key_file: String,
+    ssl_cert_file: String,
+    ssl_ca_file: String,
+    data_path: String,
+    hierarchy_cache_timeout: i64,
+    listen_address: String,
+    log_level: log::LogLevelFilter,
+}
+
+impl Config {
+    fn load(path: &Path) -> Self {
+        let mut text = String::default();
+        File::open(path).expect("Failed to open config file").read_to_string(&mut text).expect("Failed to read config");
+        let docs = YamlLoader::load_from_str(&text).expect("Failed to parse YAML config");
+        let doc = &docs[0];
+        Config {
+            ssl_ciphers: doc["ssl"]["ciphers"].as_str().unwrap_or(DEFAULT_CIPHERS).to_owned(),
+            ssl_key_file: doc["ssl"]["key_file"].as_str().expect("SSL key file unset").to_owned(),
+            ssl_cert_file: doc["ssl"]["cert_file"].as_str().expect("SSL cert file unset").to_owned(),
+            ssl_ca_file: doc["ssl"]["ca_file"].as_str().expect("SSL ca file unset").to_owned(),
+            data_path: doc["data_path"].as_str().expect("Data path unset").to_owned(),
+            hierarchy_cache_timeout: doc["hierarchy_cache_timeout"].as_i64().unwrap_or(3600),
+            listen_address: doc["listen_address"].as_str().expect("Listen address unset").to_owned(),
+            log_level: log::LogLevelFilter::from_str(doc["log_level"].as_str().unwrap_or("info")).expect("Invalid log level")
+        }
+    }
+}
+
+struct SimpleLogger;
+
+impl log::Log for SimpleLogger {
+    #[inline(always)]
+    fn enabled(&self, metadata: &log::LogMetadata) -> bool {
+        metadata.target().starts_with("backend_accounting")
+    }
+
+    #[inline(always)]
+    fn log(&self, record: &log::LogRecord) {
+        if self.enabled(record.metadata()) {
+            println!("{} - {}", record.level(), record.args());
+        }
+    }
+}
+
 fn main() {
+    let config = Config::load(Path::new(&env::args().nth(1).expect("Config file must be given as parameter")));
+    log::set_logger(|max_log_level| {
+        max_log_level.set(config.log_level);
+        Box::new(SimpleLogger)
+    }).unwrap();
+    debug!("Config: {:?}", config);
     let mut ssl_context = SslContext::new(SslMethod::Sslv23).unwrap();
-    ssl_context.set_cipher_list(DEFAULT_CIPHERS).unwrap();
-    ssl_context.set_private_key_file("certs/alice_key.pem", X509FileType::PEM).unwrap();
-    ssl_context.set_certificate_chain_file("certs/alice_cert.pem", X509FileType::PEM).unwrap();
-    ssl_context.set_CA_file("certs/good_ca_root.pem").unwrap();
+    ssl_context.set_cipher_list(&config.ssl_ciphers).unwrap();
+    ssl_context.set_private_key_file(config.ssl_key_file, X509FileType::PEM).unwrap();
+    ssl_context.set_certificate_chain_file(config.ssl_cert_file, X509FileType::PEM).unwrap();
+    ssl_context.set_CA_file(config.ssl_ca_file).unwrap();
     ssl_context.set_verify(SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, None);
-    let data = Data::new("data", Box::new(HierarchyCache::new(Box::new(DummyHierarchy), 3600)));
+    let data = Data::new(config.data_path, Box::new(HierarchyCache::new(Box::new(DummyHierarchy), config.hierarchy_cache_timeout)));
+    info!("Loading data from filesystem...");
     data.load_all().expect("Failed to load");
-    let _server = ApiServer::new(data, "0.0.0.0:8005", ssl_context).unwrap();
+    let _server = ApiServer::new(data, &config.listen_address as &str, ssl_context).unwrap();
+    info!("done. Server listening on {}", config.listen_address);
     loop {
         thread::sleep(Duration::from_millis(1000));
     }

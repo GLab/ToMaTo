@@ -6,6 +6,8 @@ authors = ["Dennis Schwerdel <schwerdel@informatik.uni-kl.de>"]
 [dependencies]
 time = "0.1"
 fnv = "1"
+yaml-rust = "0.3"
+log = "0.3"
 sslrpc2 = { path="../shared-rust/sslrpc2" }
 
 [dev-dependencies]

@@ -63,6 +63,7 @@ impl Hierarchy for HierarchyCache {
                 }
             }
         }
+        warn!("{} of {}/{} unknown, querying", parent_type.name(), child_type.name(), child_id);
         let fresh = try!(self.inner.get(child_type, parent_type, child_id));
         let mut group = group.write().expect("Lock poisoned");
         group.insert(child_id.to_owned(), (fresh.clone(), now));
@@ -73,7 +74,8 @@ impl Hierarchy for HierarchyCache {
 pub struct DummyHierarchy;
 
 impl Hierarchy for DummyHierarchy {
-    fn get(&self, _: RecordType, _: RecordType, _: &str) -> Result<Vec<String>, HierarchyError> {
+    fn get(&self, child_type: RecordType, parent_type: RecordType, child_id: &str) -> Result<Vec<String>, HierarchyError> {
+        warn!("Dummy hierarchy queried for {} of {}/{}", parent_type.name(), child_type.name(), child_id);
         Ok(Vec::new())
     }
 }

@@ -51,17 +51,17 @@ impl Connection {
     }
 
     pub fn write(&self, data: &[u8]) -> Result<(), SslStreamError> {
-        debug!("Write start: {:?}", thread::current().name());
+        trace!("Write start: {:?}", thread::current().name());
         let _lock = self.write_lock.lock().expect("Lock poisoned");
         let mut events = [epoll::EpollEvent{events: 0, data: 0}; 1];
         let mut written = 0;
         loop {
-            debug!("Before lock on write: {:?}", thread::current().name());
+            trace!("Before lock on write: {:?}", thread::current().name());
             let res = {
                 let mut lock = self.stream.lock().expect("Lock poisoned");
                 lock.ssl_write(&data[written..])
             };
-            debug!("After lock on write: {:?}", thread::current().name());
+            trace!("After lock on write: {:?}", thread::current().name());
             match res {
                 Ok(size) => {
                     written += size;
@@ -74,11 +74,11 @@ impl Connection {
                     }
                 }
                 Err(SslStreamError::WantRead(_)) => {
-                    debug!("Waiting on read: {:?}", thread::current().name());
+                    trace!("Waiting on read: {:?}", thread::current().name());
                     epoll::wait(self.epoll_read, &mut events, 1000).expect("Epoll wait failed");
                 },
                 Err(SslStreamError::WantWrite(_)) => {
-                    debug!("Waiting on write: {:?}", thread::current().name());
+                    trace!("Waiting on write: {:?}", thread::current().name());
                     epoll::wait(self.epoll_write, &mut events, 1000).expect("Epoll wait failed");
                 },
                 Err(other) => {
@@ -90,22 +90,22 @@ impl Connection {
     }
 
     pub fn read(&self, buffer: &mut[u8]) -> Result<(), SslStreamError> {
-        debug!("Read begin: {:?}", thread::current().name());
+        trace!("Read begin: {:?}", thread::current().name());
         let _lock = self.read_lock.lock().expect("Lock poisoned");
         let mut events = [epoll::EpollEvent{events: 0, data: 0}; 1];
         let mut read = 0;
         loop {
-            debug!("Before lock on read: {:?}", thread::current().name());
+            trace!("Before lock on read: {:?}", thread::current().name());
             let res = {
                 let mut lock = self.stream.lock().expect("Lock poisoned");
                 lock.ssl_read(&mut buffer[read..])
             };
-            debug!("After lock on read: {:?}", thread::current().name());
+            trace!("After lock on read: {:?}", thread::current().name());
             match res {
                 Ok(size) => {
                     read += size;
                     if read >= buffer.len() {
-                        debug!("Read success: {:?}", thread::current().name());
+                        trace!("Read success: {:?}", thread::current().name());
                         return Ok(());
                     }
                     if size == 0 {
