@@ -24,7 +24,12 @@ def hostelement_parents(id_):
 	hel = hostelement.HostElement.objects.get(id=id_)
 	UserError.check(hel is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
-	return [(hierarchy.ClassName.ELEMENT, hel.hostElement.id)]
+	res = []
+	if hel.topologyElement is not None:
+		res.append((hierarchy.ClassName.ELEMENT, hel.topologyElement.id))
+	if hel.topologyConnection is not None:
+		res.append((hierarchy.ClassName.CONNECTION, hel.topologyConnection.id))
+	return res
 
 
 # Element
@@ -57,7 +62,12 @@ def hostconnection_parents(id_):
 	hconn = hostconnection.HostConnection.objects.get(id=id_)
 	UserError.check(hconn is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
-	return [(hierarchy.ClassName.ELEMENT, hconn.hostConnection.id)]
+	res = []
+	if hconn.topologyElement is not None:
+		res.append((hierarchy.ClassName.ELEMENT, hconn.topologyElement.id))
+	if hconn.topologyConnection is not None:
+		res.append((hierarchy.ClassName.CONNECTION, hconn.topologyConnection.id))
+	return res
 
 
 
