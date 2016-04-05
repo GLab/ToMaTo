@@ -224,7 +224,7 @@ class User(Entity, BaseDocument):
 		"flags": Attribute(field=flags, set=modify_flags),
 		"organization": Attribute(get=lambda self: self.organization.name, set=modify_organization),
 		"quota": Attribute(get=lambda self: self.quota.info(), set=modify_quota),
-		"notification_count": Attribute(get=lambda self: len(self.notifications)),
+		"notification_count": Attribute(get=lambda self: len(filter(lambda n: not n.read, self.notifications))),
 		"client_data": Attribute(field=clientData),
 		"last_login": Attribute(get=lambda self: self.lastLogin),
 		"password_hash": Attribute(field=password)

@@ -28,7 +28,7 @@ def get_all_dumpsources():
 	for h in host_name_list:
 		sources.append(fetching_host.HostDumpSource(h))
 
-	# step three: add backend modules
+	# step three: add backend modules which need to be pulled
 	for mod in Config.TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES:
 		sources.append(fetching_backend.BackendDumpSource(mod))
 

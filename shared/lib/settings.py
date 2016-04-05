@@ -111,7 +111,10 @@ backend_api:
   paths:
     log:  /var/log/tomato/main.log
   dumps:
-    enabled:  false  # currently not implemented...
+    enabled:  true
+    auto-push:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
     cert:  /etc/tomato/backend_api.pem
     key:  /etc/tomato/backend_api.pem
@@ -125,6 +128,7 @@ backend_core:
     log:    /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
@@ -153,6 +157,7 @@ backend_users:
     log:  /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
@@ -172,6 +177,7 @@ backend_debug:
     log:  /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
@@ -319,15 +325,20 @@ class Config:
 	TOMATO_MODULE_BACKEND_API = "backend_api"
 	TOMATO_MODULE_BACKEND_DEBUG = "backend_debug"
 
+	# all existing modules
 	TOMATO_MODULES = {TOMATO_MODULE_WEB,
 										TOMATO_MODULE_BACKEND_CORE,
 										TOMATO_MODULE_BACKEND_USERS,
 										TOMATO_MODULE_BACKEND_API,
 										TOMATO_MODULE_BACKEND_DEBUG}
+
+	# modules of backend (TOMATO_MODULES - web)
 	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE,
 														TOMATO_MODULE_BACKEND_USERS,
 														TOMATO_MODULE_BACKEND_API,
 														TOMATO_MODULE_BACKEND_DEBUG}
+
+	# all modules that are reachable via an sslrpc2 API
 	TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES = {TOMATO_MODULE_BACKEND_CORE,
 																							 TOMATO_MODULE_BACKEND_USERS,
 																							 TOMATO_MODULE_BACKEND_DEBUG}
@@ -366,6 +377,7 @@ class Config:
 	DUMPS_ENABLED = "enabled"
 	DUMPS_DIRECTORY = "directory"
 	DUMPS_LIFETIME = "lifetime"
+	DUMPS_AUTO_PUSH = "auto-push"
 
 	TASKS_MAX_WORKERS = 'max-workers'
 

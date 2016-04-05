@@ -46,7 +46,8 @@ backend_api:
   paths:
     log:  /var/log/tomato/main.log
   dumps:
-    enabled:  false  # currently not implemented...
+    enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
@@ -62,6 +63,7 @@ backend_core:
     log:    /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
@@ -90,6 +92,7 @@ backend_users:
     log:  /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
@@ -109,6 +112,7 @@ backend_debug:
     log:  /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
