@@ -33,7 +33,8 @@ def broadcast_message_multifilter(title, message, fromUser=None, ref=None, subje
 	for filter_pair in filters:
 
 		if filter_pair[0]:
-			users = User.objects(organization__name=filter_pair[0])
+			organization = _getOrganization(filter_pair[0])
+			users = User.objects(organization=organization)
 		else:
 			users = User.objects.all()
 
