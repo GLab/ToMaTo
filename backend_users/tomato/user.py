@@ -184,9 +184,10 @@ class User(Entity, BaseDocument):
 		notf = Notification(title=subject, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
+		self.save()
 
 		# send email
-		if not Flags.NoMails:
+		if Flags.NoMails not in self.flags:
 			mail.send(self.realname, self.email, subject, message, fromUser.realname)
 
 
