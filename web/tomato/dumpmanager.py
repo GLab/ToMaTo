@@ -101,7 +101,9 @@ def group_info(api, request, group_id):
 		errordump['source___link'] = None
 		if errordump['source'].startswith('host:'):
 			errordump['source___link'] = errordump['source'].replace('host:', '')
-		errordump['source'] = errordump['source'].replace('backend:', '')
+			errordump['source___displayname'] = errordump['source']
+		else:
+			errordump['source___displayname'] = errordump['source'].replace('backend:', '')
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	errorgroup['github_url'] = errorgroup.get('_github_url', False)
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup, 'github_enabled': github_enabled()})
