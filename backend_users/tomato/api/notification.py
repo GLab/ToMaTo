@@ -44,7 +44,7 @@ def broadcast_message_multifilter(title, message, fromUser=None, ref=None, subje
 		target_users.update([u.name for u in users])
 
 	for username in target_users:
-		_getUser(username).send_message(fromUser=fromUser, title=title, message=message,
+		_getUser(username).send_message(fromUser=fromUser, subject=title, message=message,
 												ref=ref, subject_group=subject_group)
 
 def notification_list(username, includeRead=False):
