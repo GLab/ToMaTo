@@ -41,9 +41,7 @@
 				<tr>
 					<td>
 						<a href="{%url "dumpmanager.group_info" errorgroup.group_id %}">{{errorgroup.description}}</a>
-						(
-						{% for s in errorgroup.frontend_mod.sources %}{{s}}{% endfor %}
-						)
+						({{errorgroup.frontend_mod.sources}})
 					</td>
 					<td>{{errorgroup.count}}</td>
 					<td enhancetable_customkey="{{errorgroup.last_timestamp}}">{{errorgroup.last_timestamp|todate}}</td>
