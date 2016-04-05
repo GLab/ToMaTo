@@ -15,17 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
 from ..lib.cache import cached, invalidates
 
 from ..host import Host, Site
 from ..lib.error import UserError
-
-def _getSite(name):
-	s = Site.get(name)
-	UserError.check(s, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist", data={"name": name})
-	return s
+from .site import _getSite
 
 def _getHost(name):
 	"""
@@ -34,49 +28,6 @@ def _getHost(name):
 	h = Host.get(name=name)
 	UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"name": name})
 	return h
-
-@cached(timeout=6*3600, autoupdate=True)
-def site_list(organization=None):
-	"""
-	undocumented
-	"""
-	if organization:
-		sites = Site.objects(organization=organization)
-	else:
-		sites = Site.objects.all()
-	return [s.info() for s in sites]
-
-@invalidates(site_list)
-def site_create(name, organization, label="", attrs={}):
-	"""
-	undocumented
-	"""
-	s = Site.create(name, organization, label, attrs)
-	return s.info()
-
-def site_info(name):
-	"""
-	undocumented
-	"""
-	site = _getSite(name)
-	return site.info()
-
-@invalidates(site_list)
-def site_modify(name, attrs):
-	"""
-	undocumented
-	"""
-	site = _getSite(name)
-	site.modify(attrs)
-	return site.info()
-
-@invalidates(site_list)
-def site_remove(name):
-	"""
-	undocumented
-	"""
-	site = _getSite(name)
-	site.remove()
 
 def _host_list(site=None, organization=None):
 	"""
