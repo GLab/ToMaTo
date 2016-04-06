@@ -4,26 +4,60 @@ from cache import cached
 import topology_role
 
 class ExistenceCheck(object):
+	"""
+	An object that can check the existence of a remote object.
+	Abstract class that should be implemented regarding a certain remote class.
+	Caches information in its fields about the existence.
+	An instance of this is always linked to an remote object.
+
+	You should override _check_exists(self) when creating a subclass.
+	"""
 	__slots__ = ("_exists",)
 
 	def __init__(self):
 		self._exists = None
 
 	def invalidate_exists(self):
+		"""
+		call this if the existence of this is no longer guaranteed.
+		remove cached info about existence.
+		:return: None
+		"""
 		self._exists = None
 
 	def set_exists(self, exists):
+		"""
+		use this if you certainly know about the existence about this.
+		:param bool exists: whether the object exists or not
+		:return: None
+		"""
 		self._exists = exists
 
 	def exists(self):
+		"""
+		check whether this exists. This information probably cached locally.
+		:return: whether this object exists remotely.
+		:rtype: bool
+		"""
 		if self._exists is None:
 			self._exists = self._check_exists()
 		return self._exists
 
 	def _check_exists(self):
+		"""
+		check whether this object exists remotely. Do not modify any fields here!
+		:return: whether it exists
+		:rtype: bool
+		"""
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s.exists' % repr(self.__class__)})
 
 class InfoObj(ExistenceCheck):
+	"""
+	An Existencecheck object which can aditionally hold cached info about the remote object.
+	Supports info, modify and remove methods.
+
+	When creating a subclass, override _fetch_info, _modify, _remove
+	"""
 	__slots__ = ("_info",)
 
 	def __init__(self):
@@ -31,18 +65,45 @@ class InfoObj(ExistenceCheck):
 		self._info = None
 
 	def invalidate_info(self):
+		"""
+		Call this if server info is known to have changed.
+		remove info cache. Does not change exists knowledge.
+		:return:
+		"""
 		self._info = None
 
 	def _fetch_info(self, fetch=False):
+		"""
+		fetch info from server. Do not modify any fields here!
+		:param fetch: if true, force the server to update remote info.
+		:return: server info as fetched from server
+		:rtype: dict
+		"""
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden", data={'function': '%s._fetch_info' % repr(self.__class__)})
 
 	def _modify(self, attrs):
+		"""
+		modify data on server. return object info. Do not modify any fields here!
+		You should invalidate info of other objects if needed.
+		:param dict attrs: params for modification.
+		:return: server info as fetched from server (usually returned by ____modify)
+		:rtype: dict
+		"""
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden",
 												data={'function': '%s._modify' % repr(self.__class__)})
 
 	def _remove(self):
+		"""
+		remove the object from the server. Do not modify any fields here!
+		You should invalidate info of other objects if needed.
+		:return: None
+		"""
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden",
 												data={'function': '%s._remove' % repr(self.__class__)})
+
+	def set_exists(self, exists):
+		super(InfoObj, self).set_exists(exists)
+		self.invalidate_info()
 
 	def _check_exists(self):
 		if self._info is not None:
@@ -53,23 +114,44 @@ class InfoObj(ExistenceCheck):
 		except:
 			return False
 
-	def info(self, fetch=False):
-		if fetch or (self._info is None):
+	def info(self, fetch=False, update=False):
+		"""
+		get info, probably cached locally.. load from other services if needed.
+		:param bool fetch: force local refresh. If supported, let _fetch_info to tell the server to force updates remotely.
+		:param bool update: force local refresh.
+		:return: object info
+		:rtype: dict
+		"""
+		if fetch or update or (self._info is None):
 			self._info = self._fetch_info(fetch)
 			self.set_exists(True)  # otherwise, fetch_data would have thrown an error
 		return self._info
 
 	def modify(self, attrs):
+		"""
+		call corresponding modify function. update info.
+		:param dict attrs: params for object modification
+		:return: object info
+		:rtype: dict
+		"""
 		self._info = self._modify(attrs)
 		return self._info
 
 	def remove(self):
+		"""
+		remove the object. delete cache.
+		:return: None
+		"""
 		self._remove()
-		self.invalidate_info()
-		self.invalidate_exists()
+		self.set_exists(False)
 
 
 class ActionObj(InfoObj):
+	"""
+	An InfoObj that supports actions.
+
+	When creating a subclass, override _fetch_info, _modify, _remove, _action.
+	"""
 
 	__slots__ = ()
 
@@ -77,13 +159,38 @@ class ActionObj(InfoObj):
 		super(ActionObj, self).__init__()
 
 	def _action(self, action, params):
+		"""
+		run an action. Do not modify any fields here!
+		Usually, afterwards, every knowledge about this object will be invalidated.
+		  If you do not wish this, override _after_action.
+		:param str action: action name
+		:param str params: action params
+		:return: action return value
+		"""
 		raise InternalError(code=InternalError.UNKNOWN, message="this function should have been overridden",
 												data={'function': '%s._action' % repr(self.__class__)})
 
-	def action(self, action, params):
-		res = self._action(action, params)
+	def _after_action(self, action, params):
+		"""
+		does not need to be overwritten.
+		Called after a successful action. should invalidate all information which may have changed during the action.
+
+		:param str action: action that has been run
+		:param str params: action params of this action.
+		:return: None
+		"""
 		self.invalidate_info()
 		self.invalidate_exists()
+
+	def action(self, action, params):
+		"""
+		run the action. Afterwards, all information will be invalidated.
+		:param action:
+		:param params:
+		:return:
+		"""
+		res = self._action(action, params)
+		self._after_action(action, params)
 		return res
 
 
@@ -113,10 +220,19 @@ class UserInfo(InfoObj):
 		return get_backend_users_proxy().user_exists(self.name)
 
 	def _modify(self, attrs):
-		return get_backend_users_proxy().user_modify(self.name, attrs)
+		orga = None
+		if ('organization' in attrs) and (self.get_organization_name() != attrs['organization']):
+			orga = self.get_organization_name()
+		res = get_backend_users_proxy().user_modify(self.name, attrs)
+		if orga is not None:
+			get_organization_info(orga).invalidate_info()
+			get_organization_info(attrs['organization']).invalidate_info()
+		return res
 
 	def _remove(self):
+		orga = self.get_organization_name()
 		get_backend_users_proxy().user_remove(self.name)
+		get_organization_info(orga).invalidate_info()
 
 
 class OrganizationInfo(InfoObj):
@@ -206,10 +322,25 @@ class TopologyInfo(ActionObj):
 		return get_backend_core_proxy().topology_modify(self.topology_id, attrs)
 
 	def _remove(self):
+		elems = self.info()['elements']
+		conns = self.info()['connections']
 		get_backend_core_proxy().topology_remove(self.topology_id)
+		for e in elems:
+			get_element_info(e).set_exists(False)
+		for c in conns:
+			get_connection_info(c).set_exists(False)
 
 	def _action(self, action, params):
-		return get_backend_core_proxy().topology_action(self.topology_id, action, params)
+		elems = self.info()['elements']
+		conns = self.info()['connections']
+		res = get_backend_core_proxy().topology_action(self.topology_id, action, params)
+		for e in elems:
+			get_element_info(e).invalidate_info()
+			get_element_info(e).invalidate_exists()
+		for c in conns:
+			get_connection_info(c).invalidate_info()
+			get_connection_info(c).invalidate_exists()
+		return res
 
 
 
@@ -221,6 +352,18 @@ class TopologyInfo(ActionObj):
 class SiteInfo(InfoObj):
 	__slots__ = ("name",)
 
+	def invalidate_exists(self):
+		get_organization_info(self.get_organization_name()).invalidate_info()
+		super(SiteInfo, self).invalidate_exists()
+
+	def invalidate_info(self):
+		get_organization_info(self.get_organization_name()).invalidate_info()
+		super(SiteInfo, self).invalidate_info()
+
+	def set_exists(self, exists):
+		get_organization_info(self.get_organization_name()).invalidate_info()
+		super(SiteInfo, self).set_exists(exists)
+
 	def __init__(self, site_name):
 		super(SiteInfo, self).__init__()
 		self.name = site_name
@@ -229,10 +372,19 @@ class SiteInfo(InfoObj):
 		return get_backend_core_proxy().site_info(self.name)
 
 	def _modify(self, attrs):
-		return get_backend_core_proxy().site_modify(self.name, attrs)
+		orga = None
+		if ('organization' in attrs) and (self.get_organization_name() != attrs['organization']):
+			orga = self.get_organization_name()
+		res = get_backend_core_proxy().site_modify(self.name, attrs)
+		if orga is not None:
+			get_organization_info(orga).invalidate_info()
+			get_organization_info(attrs['organization']).invalidate_info()
+		return res
 
 	def _remove(self):
+		orga = self.get_organization_name()
 		get_backend_core_proxy().site_remove(self.name)
+		get_organization_info(orga).invalidate_info()
 
 	def get_organization_name(self):
 		return self.info()['organization']
@@ -247,14 +399,38 @@ class HostInfo(InfoObj):
 		super(HostInfo, self).__init__()
 		self.name = host_name
 
+	def invalidate_exists(self):
+		get_site_info(self.get_site_name()).invalidate_info()
+		super(HostInfo, self).invalidate_exists()
+
+	def invalidate_info(self):
+		get_site_info(self.get_site_name()).invalidate_info()
+		super(HostInfo, self).invalidate_info()
+
+	def set_exists(self, exists):
+		get_site_info(self.get_site_name()).invalidate_info()
+		super(HostInfo, self).set_exists(exists)
+
 	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().host_info(self.name)
 
 	def _modify(self, attrs):
-		return get_backend_core_proxy().host_modify(self.name, attrs)
+		site = None
+		if ('site' in attrs) and (self.get_site_name() != attrs['site']):
+			site = self.get_site_name()
+		res = get_backend_core_proxy().host_modify(self.name, attrs)
+		if site is not None:
+			get_site_info(site).invalidate_info()
+			get_site_info(attrs['site']).invalidate_info()
+		return res
 
 	def _remove(self):
+		site = self.get_site_name()
 		get_backend_core_proxy().host_remove(self.name)
+		get_site_info(site).invalidate_info()
+
+	def get_site_name(self):
+		return self.info()['site']
 
 	def get_organization_name(self):
 		return self.info()['organization']
@@ -269,6 +445,10 @@ class HostInfo(InfoObj):
 class ElementInfo(ActionObj):
 	__slots__ = ("eid",)
 
+	def _after_action(self, action, params):
+		super(ElementInfo, self)._after_action(action, params)
+		self.get_topology_info().invalidate_info()
+
 	def __init__(self, element_id):
 		super(ElementInfo, self).__init__()
 		self.eid = element_id
@@ -281,8 +461,10 @@ class ElementInfo(ActionObj):
 
 	def _remove(self):
 		get_backend_core_proxy().element_remove(self.eid)
+		self.get_topology_info().invalidate_info()
 
 	def _action(self, action, params):
+		self.get_topology_info().invalidate_info()
 		return get_backend_core_proxy().element_action(self.eid, action, params)
 
 	def get_topology_info(self):
@@ -293,6 +475,10 @@ class ElementInfo(ActionObj):
 
 class ConnectionInfo(ActionObj):
 	__slots__ = ("cid",)
+
+	def _after_action(self, action, params):
+		super(ConnectionInfo, self)._after_action(action, params)
+		self.get_topology_info().invalidate_info()
 
 	def __init__(self, connection_id):
 		super(ConnectionInfo, self).__init__()
@@ -306,8 +492,10 @@ class ConnectionInfo(ActionObj):
 
 	def _remove(self):
 		get_backend_core_proxy().connection_remove(self.eid)
+		self.get_topology_info().invalidate_info()
 
 	def _action(self, action, params):
+		self.get_topology_info().invalidate_info()
 		return get_backend_core_proxy().connection_action(self.eid, action, params)
 
 	def get_topology_info(self):
