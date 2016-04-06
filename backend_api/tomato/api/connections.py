@@ -15,9 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.service import get_backend_core_proxy
 from api_helpers import getCurrentUserInfo
-from ..lib.remote_info import get_connection_info, get_element_info
+from ..lib.remote_info import get_connection_info, get_element_info, ConnectionInfo
 
 def connection_create(el1, el2, attrs=None): #@ReservedAssignment
 	"""
@@ -57,8 +56,10 @@ def connection_create(el1, el2, attrs=None): #@ReservedAssignment
 	  * one of the elements is already connected
 	  * both elements are the same
 	"""
-	getCurrentUserInfo().check_may_create_connection(get_element_info(el1), get_element_info(el2))
-	return get_backend_core_proxy().connection_create(el1, el2, attrs)
+	elinf1 = get_element_info(el1)
+	elinf2 = get_element_info(el2)
+	getCurrentUserInfo().check_may_create_connection(elinf1, elinf2)
+	return ConnectionInfo.create(elinf1, elinf2, attrs)
 
 def connection_modify(id, attrs): #@ReservedAssignment
 	"""

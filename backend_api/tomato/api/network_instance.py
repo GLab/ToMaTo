@@ -1,6 +1,5 @@
-from ..lib.service import get_backend_core_proxy
 from api_helpers import getCurrentUserInfo, checkauth
-from ..lib.remote_info import get_network_instance_info
+from ..lib.remote_info import get_network_instance_info, get_network_instance_list, NetworkInstanceInfo
 
 @checkauth
 def network_instance_list(network=None, host=None):
@@ -15,7 +14,7 @@ def network_instance_list(network=None, host=None):
 	  entry contains exactly the same information as returned by
 	  :py:func:`network_instance_info`. If no resource matches, the list is empty.
 	"""
-	return get_backend_core_proxy().network_instance_list(network, host)
+	return get_network_instance_list(network, host)
 
 
 @checkauth
@@ -40,7 +39,7 @@ def network_instance_create(network, host, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_technical_resources()
-	return get_backend_core_proxy().network_instance_create(network, host, attrs)
+	return NetworkInstanceInfo.create(network, host, attrs)
 
 
 def network_instance_modify(id, attrs):

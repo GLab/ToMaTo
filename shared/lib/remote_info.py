@@ -10,12 +10,21 @@ class ExistenceCheck(object):
 	Caches information in its fields about the existence.
 	An instance of this is always linked to an remote object.
 
-	You should override _check_exists(self) when creating a subclass.
+	You must override _check_exists(self) when creating a subclass.
+	You should override invalidate_list() to invalidate the cached list funciton, if there is one.
 	"""
 	__slots__ = ("_exists",)
 
 	def __init__(self):
 		self._exists = None
+
+	def invalidate_list(self):
+		"""
+		this is called automatically when invalidating or modifying info or existence.
+		invalidate the list of this object.
+		:return:
+		"""
+		pass
 
 	def invalidate_exists(self):
 		"""
@@ -24,6 +33,7 @@ class ExistenceCheck(object):
 		:return: None
 		"""
 		self._exists = None
+		self.invalidate_list()
 
 	def set_exists(self, exists):
 		"""
@@ -57,6 +67,7 @@ class InfoObj(ExistenceCheck):
 	Supports info, modify and remove methods.
 
 	When creating a subclass, override _fetch_info, _modify, _remove
+	You should override invalidate_list() to invalidate the cached list funciton, if there is one.
 	"""
 	__slots__ = ("_info",)
 
@@ -71,6 +82,7 @@ class InfoObj(ExistenceCheck):
 		:return:
 		"""
 		self._info = None
+		self.invalidate_list()
 
 	def _fetch_info(self, fetch=False):
 		"""
@@ -123,8 +135,13 @@ class InfoObj(ExistenceCheck):
 		:rtype: dict
 		"""
 		if fetch or update or (self._info is None):
-			self._info = self._fetch_info(fetch)
-			self.set_exists(True)  # otherwise, fetch_data would have thrown an error
+			info = self._fetch_info(fetch)
+			# otherwise, fetch_data would have thrown an error
+			# use super function to avoid invalidating the list here.
+			super(InfoObj, self).set_exists(True)
+			if fetch:
+				self.invalidate_list()
+			self._info = info
 		return self._info
 
 	def modify(self, attrs):
@@ -135,6 +152,7 @@ class InfoObj(ExistenceCheck):
 		:rtype: dict
 		"""
 		self._info = self._modify(attrs)
+		self.invalidate_list()
 		return self._info
 
 	def remove(self):
@@ -151,6 +169,7 @@ class ActionObj(InfoObj):
 	An InfoObj that supports actions.
 
 	When creating a subclass, override _fetch_info, _modify, _remove, _action.
+	You should override invalidate_list() to invalidate the cached list funciton, if there is one.
 	"""
 
 	__slots__ = ()
@@ -198,9 +217,18 @@ class ActionObj(InfoObj):
 class UserInfo(InfoObj):
 	__slots__ = ("name",)
 
+	def invalidate_list(self):
+		get_user_list.invalidate()
+
 	def __init__(self, username):
 		super(UserInfo, self).__init__()
 		self.name = username
+
+	@staticmethod
+	def create(username, organization, email, password, attrs):
+		res = get_backend_users_proxy().user_create(username, organization, email, password, attrs)
+		get_user_list.invalidate()
+		return res
 
 	def _fetch_info(self, fetch=False):
 		return get_backend_users_proxy().user_info(self.name)
@@ -238,9 +266,20 @@ class UserInfo(InfoObj):
 class OrganizationInfo(InfoObj):
 	__slots__ = ("name",)
 
+	def invalidate_list(self):
+		get_organization_list.invalidate()
+
 	def __init__(self, organization_name):
 		super(OrganizationInfo, self).__init__()
 		self.name = organization_name
+
+	@staticmethod
+	def create(name, label="", attrs=None):
+		if attrs is None: attrs = {}
+		attrs['label'] = label
+		res = get_backend_users_proxy().organization_create(name, **attrs)
+		get_organization_list.invalidate()
+		return res
 
 	def _fetch_info(self, fetch=False):
 		return get_backend_users_proxy().organization_info(self.name)
@@ -262,6 +301,15 @@ class OrganizationInfo(InfoObj):
 
 class TopologyInfo(ActionObj):
 	__slots__ = ("topology_id", )
+
+	def invalidate_list(self):
+		get_topology_list.invalidate()
+
+	@staticmethod
+	def create(initial_owner):
+		res = get_backend_core_proxy().topology_create(initial_owner)
+		get_topology_list.invalidate()
+		return res
 
 	def __init__(self, topology_id):
 		super(TopologyInfo, self).__init__()
@@ -352,6 +400,15 @@ class TopologyInfo(ActionObj):
 class SiteInfo(InfoObj):
 	__slots__ = ("name",)
 
+	@staticmethod
+	def create(name, organization_name, label, attrs):
+		res = get_backend_core_proxy().site_create(name, organization_name, label, attrs)
+		get_network_instance_list.invalidate()
+		return res
+
+	def invalidate_list(self):
+		get_site_list.invalidate()
+
 	def invalidate_exists(self):
 		get_organization_info(self.get_organization_name()).invalidate_info()
 		super(SiteInfo, self).invalidate_exists()
@@ -389,11 +446,23 @@ class SiteInfo(InfoObj):
 	def get_organization_name(self):
 		return self.info()['organization']
 
+	def get_name(self):
+		return self.name
+
 
 
 
 class HostInfo(InfoObj):
 	__slots__ = ("name",)
+
+	def invalidate_list(self):
+		get_host_list.invalidate()
+
+	@staticmethod
+	def create(name, site_info, attrs):
+		res = get_backend_core_proxy().host_create(name, site_info.get_name(), attrs)
+		get_network_instance_list.invalidate()
+		return res
 
 	def __init__(self, host_name):
 		super(HostInfo, self).__init__()
@@ -445,6 +514,18 @@ class HostInfo(InfoObj):
 class ElementInfo(ActionObj):
 	__slots__ = ("eid",)
 
+	@staticmethod
+	def create(top, type, parent_id, attrs):
+		"""
+
+		:param TopologyInfo top: target topology
+		:param str type: element type
+		:param str parent_id: id of parent element. None if no parent.
+		:param attrs: element attrs
+		:return:
+		"""
+		get_backend_core_proxy().element_create(top.get_id(), type, parent_id, attrs)
+
 	def _after_action(self, action, params):
 		super(ElementInfo, self)._after_action(action, params)
 		self.get_topology_info().invalidate_info()
@@ -473,12 +554,26 @@ class ElementInfo(ActionObj):
 	def get_type(self):
 		return self.info()['type']
 
+	def get_id(self):
+		return self.eid
+
 class ConnectionInfo(ActionObj):
 	__slots__ = ("cid",)
 
 	def _after_action(self, action, params):
 		super(ConnectionInfo, self)._after_action(action, params)
 		self.get_topology_info().invalidate_info()
+
+	@staticmethod
+	def create(el1, el2, attrs):
+		"""
+		create connection
+		:param ElementInfo el1:
+		:param ElementInfo el2:
+		:param dict attrs: connection attributes
+		:return:
+		"""
+		return get_backend_core_proxy().connection_create(el1.get_id(), el2.get_id(), attrs)
 
 	def __init__(self, connection_id):
 		super(ConnectionInfo, self).__init__()
@@ -504,6 +599,15 @@ class ConnectionInfo(ActionObj):
 class TemplateInfo(InfoObj):
 	__slots__ = ("template_id")
 
+	def invalidate_list(self):
+		get_template_list.invalidate()
+
+	@staticmethod
+	def create(tech, name, attrs):
+		res = get_backend_core_proxy().template_create(tech, name, attrs)
+		get_template_list.invalidate()
+		return res
+
 	def __init__(self, template_id):
 		super(TemplateInfo, self).__init__()
 		self.template_id = template_id
@@ -522,6 +626,15 @@ class TemplateInfo(InfoObj):
 
 class ProfileInfo(InfoObj):
 	__slots__ = ("profile_id")
+
+	@staticmethod
+	def create(tech, name, attrs):
+		res = get_backend_core_proxy().profile_create(tech, name, attrs)
+		get_profile_list.invalidate()
+		return res
+
+	def invalidate_list(self):
+		get_profile_list.invalidate()
 
 	def __init__(self, profile_id):
 		super(ProfileInfo, self).__init__()
@@ -542,6 +655,15 @@ class ProfileInfo(InfoObj):
 class NetworkInfo(InfoObj):
 	__slots__ = ("kind",)
 
+	@staticmethod
+	def create(kind, attrs):
+		res = get_backend_core_proxy().network_create(kind, attrs)
+		get_network_list.invalidate()
+		return res
+
+	def invalidate_list(self):
+		get_network_list.invalidate()
+
 	def __init__(self, kind):
 		super(NetworkInfo, self).__init__()
 		self.kind = kind
@@ -560,6 +682,15 @@ class NetworkInfo(InfoObj):
 
 class NetworkInstanceInfo(InfoObj):
 	__slots__ = ("niid",)
+
+	@staticmethod
+	def create(network, host_name, attrs):
+		res = get_backend_core_proxy().network_instance_create(network, host_name, attrs)
+		get_network_instance_list.invalidate()
+		return res
+
+	def invalidate_list(self):
+		get_network_instance_list.invalidate()
 
 	def __init__(self, network_instance_id):
 		super(NetworkInstanceInfo, self).__init__()
@@ -589,6 +720,17 @@ def get_user_info(username):
 	return UserInfo(username)
 
 @cached(60)
+def get_user_list(organization=None, with_flag=None):
+	"""
+	get the list of users.
+	:param str organization: organization filter
+	:param str with_flag: flag filter
+	:return: user list
+	:rtype: list(dict)
+	"""
+	return get_backend_users_proxy().user_list(organization=organization, with_flag=with_flag)
+
+@cached(1800)
 def get_organization_info(organization_name):
 	"""
 	return OrganizationInfo object for the respective organization
@@ -598,7 +740,16 @@ def get_organization_info(organization_name):
 	"""
 	return OrganizationInfo(organization_name)
 
-@cached(60)
+@cached(1800)
+def get_organization_list():
+	"""
+	get the list of organizations
+	:return: list of organizations
+	:rtype: list(dict)
+	"""
+	return get_backend_users_proxy().organization_list()
+
+@cached(10)
 def get_topology_info(topology_id):
 	"""
 	return TopologyInfo object for the respective topology
@@ -608,7 +759,18 @@ def get_topology_info(topology_id):
 	"""
 	return TopologyInfo(topology_id)
 
-@cached(60)
+@cached(10)
+def get_topology_list(organization_filter=None, username_filter=None):
+	"""
+	get the list of topologies
+	:param list(str) organization_filter: list of organizations
+	:param str username_filter: username to filter for
+	:return: list of topologies
+	:rtype: list(dict)
+	"""
+	return get_backend_core_proxy().topology_list(organization_filter=organization_filter, username_filter=username_filter)
+
+@cached(1800)
 def get_site_info(site_name):
 	"""
 	return SiteInfo object for the respective site
@@ -618,7 +780,17 @@ def get_site_info(site_name):
 	"""
 	return SiteInfo(site_name)
 
-@cached(60)
+@cached(1800)
+def get_site_list(organization=None):
+	"""
+	get the list of sites
+	:param organization: if not None, filter by this organization.
+	:return: list of sites, filtered if requested
+	:rtype: list(dict)
+	"""
+	return get_backend_core_proxy().site_list(organization)
+
+@cached(10)
 def get_host_info(host_name):
 	"""
 	return HostInfo object for the respective host
@@ -628,7 +800,18 @@ def get_host_info(host_name):
 	"""
 	return HostInfo(host_name)
 
-@cached(60)
+@cached(1)
+def get_host_list(site=None, organization=None):
+	"""
+	get the list of hosts, filtered by site or organization, if requested.
+	:param str site: site filter
+	:param str organization: organization filter
+	:return: list of hosts
+	:rtype: list(dict)
+	"""
+	return get_backend_core_proxy().host_list(site, organization)
+
+@cached(10)
 def get_element_info(element_id):
 	"""
 	return ElementInfo object for the respective element
@@ -638,7 +821,7 @@ def get_element_info(element_id):
 	"""
 	return ElementInfo(element_id)
 
-@cached(60)
+@cached(10)
 def get_connection_info(connection_id):
 	"""
 	return ConnectionInfo object for the respective connection
@@ -648,7 +831,7 @@ def get_connection_info(connection_id):
 	"""
 	return ConnectionInfo(connection_id)
 
-@cached(60)
+@cached(120)
 def get_template_info(template_id):
 	"""
 	return TemplateInfo object for the respective template
@@ -658,7 +841,17 @@ def get_template_info(template_id):
 	"""
 	return TemplateInfo(template_id)
 
-@cached(60)
+@cached(120)
+def get_template_list(tech=None):
+	"""
+	get the list of all templates
+	:param str tech: filter for tech if wanted
+	:return: list of templates
+	:rtype: list(dict)
+	"""
+	return get_backend_core_proxy().template_list(tech)
+
+@cached(120)
 def get_profile_info(profile_id):
 	"""
 	return ProfileInfo object for the respective profile
@@ -668,8 +861,26 @@ def get_profile_info(profile_id):
 	"""
 	return ProfileInfo(profile_id)
 
+@cached(120)
+def get_profile_list(tech=None):
+	"""
+	get the list of all profile
+	:param str tech: filter for tech if wanted
+	:return: list of profiles
+	:rtype: list(dict)
+	"""
+	return get_backend_core_proxy().profile_list(tech)
 
-@cached(60)
+
+@cached(1800)
+def _template_id(tech, name):
+	"""
+	get template id by tech and name
+	:param tech: template tech
+	:param name: template name
+	:return: template id
+	"""
+	return get_backend_core_proxy().template_id(tech, name)
 def get_template_info_by_techname(tech, name):
 	"""
 	return TemplateInfo object for the respective template
@@ -678,11 +889,18 @@ def get_template_info_by_techname(tech, name):
 	:return: TemplateInfo object
 	:rtype: TemplateInfo
 	"""
-	template_id = get_backend_core_proxy().template_id(tech, name)
-	return get_template_info(template_id)
+	return get_template_info(_template_id(tech, name))
 
 
-@cached(60)
+@cached(1800)
+def _profile_id(tech, name):
+	"""
+	get profile id by tech and name
+	:param tech: profile tech
+	:param name: profile name
+	:return: profile id
+	"""
+	return get_backend_core_proxy().template_id(tech, name)
 def get_profile_info_by_techname(tech, name):
 	"""
 	return ProfileInfo object for the respective profile
@@ -691,11 +909,10 @@ def get_profile_info_by_techname(tech, name):
 	:return: ProfileInfo object
 	:rtype: ProfileInfo
 	"""
-	profile_id = get_backend_core_proxy().profile_id(tech, name)
-	return get_profile_info(profile_id)
+	return get_profile_info(_profile_id(tech, name))
 
 
-@cached(60)
+@cached(1800)
 def get_network_info(kind):
 	"""
 	return NetworkInfo object for the respective network
@@ -705,7 +922,16 @@ def get_network_info(kind):
 	"""
 	return NetworkInfo(kind)
 
-@cached(60)
+@cached(1800)
+def get_network_list():
+	"""
+	get the list of networks
+	:return: list of networks
+	:rtype: list(dict)
+	"""
+	return get_backend_core_proxy().network_list()
+
+@cached(1800)
 def get_network_instance_info(network_instance_id):
 	"""
 	return NetworkInstanceInfo object for the respective network instance
@@ -714,3 +940,14 @@ def get_network_instance_info(network_instance_id):
 	:rtype: NetworkInstanceInfo
 	"""
 	return NetworkInstanceInfo(network_instance_id)
+
+@cached(1800)
+def get_network_instance_list(network=None, host=None):
+	"""
+	get the list of network instances
+	:param network: filter by network
+	:param host: filter by host
+	:return: list of network instances
+	:rtype: list(dict)
+	"""
+	return get_backend_core_proxy().network_instance_list(network, host)

@@ -1,6 +1,6 @@
 from ..lib.service import get_backend_core_proxy
 from api_helpers import checkauth, getCurrentUserInfo
-from ..lib.remote_info import get_template_info
+from ..lib.remote_info import get_template_info, get_template_list, TemplateInfo
 
 @checkauth
 def template_list(tech=None):
@@ -15,7 +15,7 @@ def template_list(tech=None):
 	  entry contains exactly the same information as returned by
 	  :py:func:`template_info`. If no resource matches, the list is empty.
 	"""
-	return get_backend_core_proxy().template_list(tech)
+	return get_template_list(tech)
 
 def template_create(tech, name, attrs=None):
 	"""
@@ -38,7 +38,7 @@ def template_create(tech, name, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_user_resources()
-	return get_backend_core_proxy().template_create(tech, name, attrs)
+	return TemplateInfo.create(tech, name, attrs)
 
 def template_modify(id, attrs):
 	"""

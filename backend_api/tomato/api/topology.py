@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import getCurrentUserInfo, getCurrentUserName
-from ..lib.remote_info import get_topology_info
+from ..lib.remote_info import get_topology_info, get_topology_list, TopologyInfo
 from ..lib.service import get_backend_core_proxy
 
 def topology_create():
@@ -29,7 +29,7 @@ def topology_create():
 	  topology id that is needed for further manipulation of that object.
 	"""
 	getCurrentUserInfo().check_may_create_topologies()
-	return get_backend_core_proxy().topology_create(getCurrentUserName())
+	return TopologyInfo.create(getCurrentUserName())
 
 def topology_remove(id): #@ReservedAssignment
 	"""
@@ -191,7 +191,7 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 		getCurrentUserInfo().check_may_list_organization_topologies(organization)
 	if showAll:
 		getCurrentUserInfo().check_may_list_all_topologies()
-	return get_backend_core_proxy().topology_list(full, organization_filter=[organization], username_filter = (None if showAll else getCurrentUserName()))
+	return get_topology_list(full, organization_filter=[organization], username_filter = (None if showAll else getCurrentUserName()))
 
 def topology_set_permission(id, user, role): #@ReservedAssignment
 	"""

@@ -15,12 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
-from ..lib.service import get_backend_users_proxy
 from ..authorization import PermissionChecker, get_pseudo_user_info
 from api_helpers import getCurrentUserInfo, getCurrentUserName
-from ..lib.remote_info import get_user_info
+from ..lib.remote_info import get_user_info, get_user_list, UserInfo
 
 def account_info(name=None):
 	"""
@@ -82,8 +79,7 @@ def account_list(organization=None, with_flag=None):
 		getCurrentUserInfo().check_may_list_all_users()
 	else:
 		getCurrentUserInfo().check_may_list_organization_users(organization)
-	api = get_backend_users_proxy()
-	return api.user_list(organization, with_flag)
+	return get_user_list(organization, with_flag)
 
 def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, ignore_flag_on_unauthorized=False):
 	"""
@@ -168,8 +164,7 @@ def account_create(username, password, organization, attrs=None):
 																										 getCurrentUserInfo().modify_user_allowed_flags(target_user))
 	email = attrs.get('email', None)
 	del attrs['email']  # fixme: email should be an api parameter here
-	api = get_backend_users_proxy()
-	return api.user_create(username, organization, email, password, attrs)
+	return UserInfo.create(username, organization, email, password, attrs)
 
 def account_remove(name=None):
 	"""

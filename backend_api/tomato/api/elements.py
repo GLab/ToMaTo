@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from api_helpers import getCurrentUserInfo
+from ..lib.remote_info import get_topology_info, get_element_info, get_profile_info_by_techname, get_template_info_by_techname, ElementInfo
+
 
 def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	"""
@@ -55,13 +58,14 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	  an exception *element does not exist* is raised.
 	  Various other exceptions can be raised, depending on the given type.
 	"""
-	getCurrentUserInfo().check_may_create_element(get_topology_info(top))
+	top_inf = get_topology_info(top)
+	getCurrentUserInfo().check_may_create_element(top_inf)
 	if not attrs: attrs = {}
 	if "template" in attrs:
 		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(get_element_info(id).get_type(), attrs['template']))
 	if "profile" in attrs:
 		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(get_element_info(id).get_type(), attrs['profile']))
-	return get_backend_core_proxy().element_create(top, type, parent, attrs)
+	return ElementInfo.create.create(top_inf, type, parent, attrs)
 
 def element_modify(id, attrs): #@ReservedAssignment
 	"""
@@ -294,7 +298,3 @@ def element_usage(id): #@ReservedAssignment
 	"""
 	getCurrentUserInfo().check_may_view_element(get_element_info(id))
 	# fixme: broken
-
-from api_helpers import getCurrentUserInfo
-from ..lib.remote_info import get_topology_info, get_element_info, get_profile_info_by_techname, get_template_info_by_techname
-from ..lib.service import get_backend_core_proxy
