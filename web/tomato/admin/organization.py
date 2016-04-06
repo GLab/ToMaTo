@@ -68,7 +68,7 @@ class AddOrganizationForm(OrganizationForm):
         super(AddOrganizationForm, self).__init__(*args, **kwargs)
 
     def submit(self, api):
-      formData = self.cleaned_data
+      formData = self.get_optimized_data()
       api.organization_create(formData['name'], formData['label'],
 											{k: v for k, v in formData.iteritems() if k not in ('name', 'label')})
 
@@ -82,7 +82,7 @@ class EditOrganizationForm(OrganizationForm):
         self.fields["name"].help_text=None
 
     def submit(self, api):
-      formData = self.cleaned_data
+      formData = self.get_optimized_data()
       api.organization_modify(formData['name'],
 			                         {k: v for k, v in formData.iteritems() if k not in ('name',)})
 
