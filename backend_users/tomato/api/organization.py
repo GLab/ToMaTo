@@ -7,7 +7,8 @@ def organization_exists(name):
 		return True
 	return False
 
-def organization_create(**args):
+def organization_create(name, **args):
+	args['name'] = name
 	org = Organization.create(**args)
 	return org.name
 
@@ -15,7 +16,7 @@ def organization_list(user_list_filter=None):
 	if user_list_filter is not None:
 		orga_list = []
 		for user in user_list_filter:
-			user_orga=User.get("organization")
+			user_orga = user.get("organization")
 			if user_orga not in orga_list:
 				orga_list.append(user_orga)
 		return orga_list
