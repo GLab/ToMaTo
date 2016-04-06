@@ -95,7 +95,7 @@ class AddHostForm(HostForm):
 			self.fields['site'].initial = site
 
 	def submit(self, api):
-		formData = self.cleaned_data
+		formData = self.get_optimized_data()
 		api.host_create(formData['name'], formData['site'],
 											{k: v for k, v in formData.iteritems() if k not in ('name', 'site')})
 
@@ -112,7 +112,7 @@ class EditHostForm(HostForm):
 		self.fields["name"].help_text = None
 
 	def submit(self, api):
-		formData = self.cleaned_data
+		formData = self.get_optimized_data()
 		api.host_modify(formData['name'], {k: v for k, v in formData.iteritems() if k not in ('name',)})
 
 class RemoveHostForm(RemoveConfirmForm):

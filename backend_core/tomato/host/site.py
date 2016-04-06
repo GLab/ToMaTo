@@ -61,7 +61,7 @@ class Site(Entity, BaseDocument):
 			set=lambda obj, value: obj.modify_organization(value),
 			schema=schema.Identifier()
 		),
-		"description": Attribute(field=description, schema=schema.String())
+		"description": Attribute(field=description, schema=schema.String(null=True))
 	}
 
 	def __str__(self):
