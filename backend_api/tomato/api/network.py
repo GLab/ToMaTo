@@ -92,4 +92,4 @@ def network_info(id): #@ReservedAssignment
 	  If the given network does not exist an exception *network does not
 	  exist* is raised.
 	"""
-	return get_network_info(id).info()
+	return get_network_info(id).info(update=True)

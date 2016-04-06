@@ -19,7 +19,7 @@ def site_info(name):
 	"""
 	undocumented
 	"""
-	return get_site_info(name).info()
+	return get_site_info(name).info(update=True)
 
 def site_modify(name, attrs):
 	"""

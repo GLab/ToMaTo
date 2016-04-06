@@ -40,7 +40,7 @@ def host_info(name):
 	undocumented
 	"""
 	host = get_host_info(name)
-	return host.info()
+	return host.info(update=True)
 
 def host_modify(name, attrs):
 	"""

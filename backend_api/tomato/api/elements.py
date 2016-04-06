@@ -279,7 +279,7 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	"""
 	elem = get_element_info(id)
 	getCurrentUserInfo().check_may_view_element(elem)
-	return elem.info(fetch)
+	return elem.info(fetch=fetch, update=True)
 	
 def element_usage(id): #@ReservedAssignment
 	"""

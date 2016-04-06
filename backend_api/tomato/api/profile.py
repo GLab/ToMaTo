@@ -111,4 +111,4 @@ def profile_info(id):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	return get_profile_info(id).remove()
+	return get_profile_info(id).info(update=True)

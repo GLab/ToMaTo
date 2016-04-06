@@ -64,7 +64,7 @@ def account_info(name=None):
 		name = getCurrentUserName()
 	target_account = get_user_info(name)
 	keys_to_show = getCurrentUserInfo().account_info_visible_keys(target_account)
-	info = target_account.info()
+	info = target_account.info(update=True)
 	for k in info.keys():
 		if k not in keys_to_show:
 			del info[k]

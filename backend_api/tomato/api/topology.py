@@ -171,7 +171,7 @@ def topology_info(id, full=False): #@ReservedAssignment
 	topl = get_topology_info(id)
 	getCurrentUserInfo().check_may_view_topology(topl)
 	if full:
-		return topl.info()
+		return topl.info(update=True)
 	else:
 		return get_backend_core_proxy().topology_info(id, full)
 

@@ -21,7 +21,7 @@ def organization_info(name):
 	"""
 	undocumented
 	"""
-	return get_organization_info(name).info()
+	return get_organization_info(name).info(update=True)
 
 def organization_modify(name, attrs):
 	"""

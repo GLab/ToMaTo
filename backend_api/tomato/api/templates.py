@@ -118,4 +118,4 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 		getCurrentUserInfo().check_may_get_template_torrent_data(templ)
 		return get_backend_core_proxy().template_info(id, include_torrent_data)
 	else:
-		return templ.info()
+		return templ.info(update=True)

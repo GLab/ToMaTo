@@ -192,7 +192,7 @@ def connection_info(id, fetch=False): #@ReservedAssignment
 	"""
 	conn = get_connection_info(id)
 	getCurrentUserInfo().check_may_view_connection(conn)
-	return conn.info(id, fetch)
+	return conn.info(fetch=fetch, update=True)
 	
 def connection_usage(id): #@ReservedAssignment
 	"""

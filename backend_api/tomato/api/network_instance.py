@@ -113,4 +113,4 @@ def network_instance_info(id):
 	  If the given network_instance does not exist an exception *network_instance does not
 	  exist* is raised.
 	"""
-	return get_network_instance_info(id).info()
+	return get_network_instance_info(id).info(update=True)
