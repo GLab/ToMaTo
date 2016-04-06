@@ -811,7 +811,7 @@ def get_host_list(site=None, organization=None):
 	"""
 	return get_backend_core_proxy().host_list(site, organization)
 
-@cached(10)
+@cached(1800)
 def get_element_info(element_id):
 	"""
 	return ElementInfo object for the respective element
@@ -821,7 +821,7 @@ def get_element_info(element_id):
 	"""
 	return ElementInfo(element_id)
 
-@cached(10)
+@cached(1800)
 def get_connection_info(connection_id):
 	"""
 	return ConnectionInfo object for the respective connection
@@ -831,7 +831,7 @@ def get_connection_info(connection_id):
 	"""
 	return ConnectionInfo(connection_id)
 
-@cached(120)
+@cached(1800)
 def get_template_info(template_id):
 	"""
 	return TemplateInfo object for the respective template
@@ -841,7 +841,7 @@ def get_template_info(template_id):
 	"""
 	return TemplateInfo(template_id)
 
-@cached(120)
+@cached(1)
 def get_template_list(tech=None):
 	"""
 	get the list of all templates
@@ -851,7 +851,7 @@ def get_template_list(tech=None):
 	"""
 	return get_backend_core_proxy().template_list(tech)
 
-@cached(120)
+@cached(1800)
 def get_profile_info(profile_id):
 	"""
 	return ProfileInfo object for the respective profile
@@ -861,7 +861,7 @@ def get_profile_info(profile_id):
 	"""
 	return ProfileInfo(profile_id)
 
-@cached(120)
+@cached(1)
 def get_profile_list(tech=None):
 	"""
 	get the list of all profile
