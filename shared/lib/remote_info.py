@@ -760,15 +760,16 @@ def get_topology_info(topology_id):
 	return TopologyInfo(topology_id)
 
 @cached(10)
-def get_topology_list(organization_filter=None, username_filter=None):
+def get_topology_list(full=False, organization_filter=None, username_filter=None):
 	"""
 	get the list of topologies
-	:param list(str) organization_filter: list of organizations
+	:param bool full: expand children info
+	:param str organization_filter: list of organizations
 	:param str username_filter: username to filter for
 	:return: list of topologies
 	:rtype: list(dict)
 	"""
-	return get_backend_core_proxy().topology_list(organization_filter=organization_filter, username_filter=username_filter)
+	return get_backend_core_proxy().topology_list(full=full, organization_filter=organization_filter, username_filter=username_filter)
 
 @cached(1800)
 def get_site_info(site_name):

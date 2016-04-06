@@ -191,7 +191,7 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 		getCurrentUserInfo().check_may_list_organization_topologies(organization)
 	if showAll:
 		getCurrentUserInfo().check_may_list_all_topologies()
-	return get_topology_list(full, organization_filter=[organization], username_filter = (None if showAll else getCurrentUserName()))
+	return get_topology_list(full, organization_filter=organization, username_filter=(None if showAll else getCurrentUserName()))
 
 def topology_set_permission(id, user, role): #@ReservedAssignment
 	"""
