@@ -213,3 +213,8 @@ user-quota:
 
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
+
+# this disables active debugging, i.e., executing internal commands via the API.
+# this may be a security issue if enabled!
+debugging:
+  enabled: false

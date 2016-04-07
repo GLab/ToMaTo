@@ -279,6 +279,9 @@ user-quota:
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
 
+debugging:
+  enabled: false
+
 """)
 
 settings = None
@@ -414,7 +417,16 @@ class SettingsProvider:
 		for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):
 			print >> sys.stderr, "Found old-style config at %s - This is no longer supported." % (path)
 
+		print "debugging is %s" % ("ENABLED" if self.debugging_enabled() else "disabled")
 
+
+	def debugging_enabled(self):
+		"""
+		get whether debugging is enabled (globally)
+		:return: whether debugging should be allowed
+		:rtype: bool
+		"""
+		return self.original_settings['debugging']['enabled']
 
 	def get_dumpmanager_enabled(self, tomato_module):
 		"""
@@ -847,6 +859,18 @@ class SettingsProvider:
 					print "Configuration ERROR at /dumpmanager/%s: is missing." % k
 					print " using default setting for %s" % k
 					self.original_settings['dumpmanager'][k] = v
+
+		# dumpmanager
+		if not self.original_settings.get('debugging', None):
+			print "Configuration ERROR at /debugging: is missing."
+			print " using default debugging settings."
+			self.original_settings['debugging'] = default_settings['debugging']
+		else:
+			for k, v in default_settings['debugging'].iteritems():
+				if not self.original_settings['debugging'].get(k, None):
+					print "Configuration ERROR at /debugging/%s: is missing." % k
+					print " using default setting for %s" % k
+					self.original_settings['debugging'][k] = v
 
 
 		# tomato modules' settings
