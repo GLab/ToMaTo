@@ -10,7 +10,7 @@ services:
         protocol: https
   backend_accounting:
     host: dockerhost
-    port: 8006
+    port: 8007
     protocol: sslrpc2
   backend_debug:
     host: dockerhost
@@ -67,6 +67,8 @@ backend_accounting:
     cert_file:  /etc/tomato/backend_api_cert.pem
     key_file:  /etc/tomato/backend_api_key.pem
     ca_file:  /etc/tomato/ca.pem
+  dumps:
+    enabled: false
 
 backend_core:
   paths:
