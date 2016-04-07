@@ -67,7 +67,23 @@ impl Config {
         let mut text = String::default();
         File::open(path).expect("Failed to open config file").read_to_string(&mut text).expect("Failed to read config");
         let docs = YamlLoader::load_from_str(&text).expect("Failed to parse YAML config");
-        let doc = &docs[0];
+        let services = &docs[0]["services"];
+        let listen_addr = format!("{}:{}",
+            services["backend_accounting"]["host"].as_str().expect("Listen address host unset"),
+            services["backend_accounting"]["port"].as_i64().expect("Listen address port unset")
+        );
+        assert_eq!(services["backend_accounting"]["protocol"].as_str(), Some("sslrpc2"));
+        let user_service_addr = format!("{}:{}",
+            services["backend_users"]["host"].as_str().expect("User service host unset"),
+            services["backend_users"]["port"].as_i64().expect("User service port unset")
+        );
+        assert_eq!(services["backend_users"]["protocol"].as_str(), Some("sslrpc2"));
+        let core_service_addr = format!("{}:{}",
+            services["backend_core"]["host"].as_str().expect("Backend core host unset"),
+            services["backend_core"]["port"].as_i64().expect("Backend core port unset")
+        );
+        assert_eq!(services["backend_core"]["protocol"].as_str(), Some("sslrpc2"));
+        let doc = &docs[0]["backend_accounting"];
         Config {
             ssl_ciphers: doc["ssl"]["ciphers"].as_str().unwrap_or(DEFAULT_CIPHERS).to_owned(),
             ssl_key_file: doc["ssl"]["key_file"].as_str().expect("SSL key file unset").to_owned(),
@@ -78,10 +94,10 @@ impl Config {
             store_interval: doc["store_interval"].as_i64().unwrap_or(60),
             cleanup_interval: doc["cleanup_interval"].as_i64().unwrap_or(3600),
             max_record_age: doc["max_record_age"].as_i64().unwrap_or(24*3600*14),
-            listen_address: doc["listen_address"].as_str().expect("Listen address unset").to_owned(),
+            listen_address: listen_addr,
             log_level: log::LogLevelFilter::from_str(doc["log_level"].as_str().unwrap_or("info")).expect("Invalid log level"),
-            user_service_address: doc["service_addresses"]["backend_users"].as_str().expect("User service address unset").to_owned(),
-            core_service_address: doc["service_addresses"]["backend_core"].as_str().expect("Core service address unset").to_owned(),
+            user_service_address: user_service_addr,
+            core_service_address: core_service_addr,
             service_timeout: doc["service_timeout"].as_i64().unwrap_or(30),
         }
     }
