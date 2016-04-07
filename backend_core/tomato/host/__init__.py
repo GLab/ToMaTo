@@ -813,5 +813,6 @@ def synchronizeComponents():
 from .site import Site
 from .. import handleError
 
-scheduler.scheduleRepeated(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL], scheduleHostChecks)  # @UndefinedVariable
+scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL],
+                              Host.getAll, synchronizeHost)
 scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
