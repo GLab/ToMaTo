@@ -154,7 +154,7 @@ class URL(String):
 class Email(String):
 	__slots__ = ()
 	def __init__(self, **kwargs):
-		String.__init__(self, regex="[a-zA-Z0-9.-+_]+@[A-Za-z0-9.-+_]+", **kwargs)
+		String.__init__(self, regex="[a-zA-Z0-9\.\-+_]+@[A-Za-z0-9\.\-+_]+", **kwargs)
 
 	@property
 	def errormsg(self):
