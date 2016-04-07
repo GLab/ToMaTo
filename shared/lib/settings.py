@@ -327,24 +327,28 @@ class Config:
 	TOMATO_MODULE_BACKEND_USERS = "backend_users"
 	TOMATO_MODULE_BACKEND_API = "backend_api"
 	TOMATO_MODULE_BACKEND_DEBUG = "backend_debug"
+	TOMATO_MODULE_BACKEND_ACCOUNTING = "backend_accounting"
 
 	# all existing modules
 	TOMATO_MODULES = {TOMATO_MODULE_WEB,
 										TOMATO_MODULE_BACKEND_CORE,
 										TOMATO_MODULE_BACKEND_USERS,
 										TOMATO_MODULE_BACKEND_API,
-										TOMATO_MODULE_BACKEND_DEBUG}
+										TOMATO_MODULE_BACKEND_DEBUG,
+										TOMATO_MODULE_BACKEND_ACCOUNTING}
 
 	# modules of backend (TOMATO_MODULES - web)
 	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE,
 														TOMATO_MODULE_BACKEND_USERS,
 														TOMATO_MODULE_BACKEND_API,
-														TOMATO_MODULE_BACKEND_DEBUG}
+														TOMATO_MODULE_BACKEND_DEBUG,
+														TOMATO_MODULE_BACKEND_ACCOUNTING}
 
 	# all modules that are reachable via an sslrpc2 API
 	TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES = {TOMATO_MODULE_BACKEND_CORE,
 																							 TOMATO_MODULE_BACKEND_USERS,
-																							 TOMATO_MODULE_BACKEND_DEBUG}
+																							 TOMATO_MODULE_BACKEND_DEBUG,
+																							 TOMATO_MODULE_BACKEND_ACCOUNTING}
 
 	EMAIL_NOTIFICATION = "notification"
 	EMAIL_NEW_USER_WELCOME = "new-user-welcome"
@@ -509,7 +513,7 @@ class SettingsProvider:
 		return {
 			'database': self.original_settings[self.tomato_module]['database']['db-name'],
 			'host': self.original_settings[self.tomato_module]['database']['server']['host'],
-			'port': self.original_settings[self.tomato_module]['database']['server']['port']
+			'port': int(self.original_settings[self.tomato_module]['database']['server']['port'])
 		}
 
 	def get_bittorrent_settings(self):

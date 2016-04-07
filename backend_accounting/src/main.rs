@@ -69,7 +69,7 @@ impl Config {
         let docs = YamlLoader::load_from_str(&text).expect("Failed to parse YAML config");
         let services = &docs[0]["services"];
         let listen_addr = format!("{}:{}",
-            services["backend_accounting"]["host"].as_str().expect("Listen address host unset"),
+            "0.0.0.0",
             services["backend_accounting"]["port"].as_i64().expect("Listen address port unset")
         );
         assert_eq!(services["backend_accounting"]["protocol"].as_str(), Some("sslrpc2"));
