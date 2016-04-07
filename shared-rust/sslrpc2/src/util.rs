@@ -1,5 +1,5 @@
 use rmp::Value;
-use {Integer, Float};
+use rmp::value::{Integer, Float};
 
 use std::i64;
 use std::collections::HashMap;
@@ -10,6 +10,13 @@ pub struct ParseError;
 
 pub trait ParseValue: Sized {
     fn parse(Value) -> Result<Self, ParseError>;
+}
+
+impl ParseValue for Value {
+    #[inline(always)]
+    fn parse(val: Value) -> Result<Self, ParseError> {
+        Ok(val)
+    }
 }
 
 impl ParseValue for () {

@@ -299,6 +299,7 @@ pub struct Data {
     path: PathBuf,
     hierarchy: Box<Hierarchy>,
     last_store: Mutex<Time>,
+    last_cleanup: Mutex<Time>,
     max_entries: HashMap<RecordType, (usize, usize, usize, usize, usize), Hash>,
     pub records: RwLock<HashMap<(RecordType, String), Mutex<Record>, Hash>>
 }
@@ -324,7 +325,8 @@ impl Data {
             hierarchy: hierarchy,
             max_entries: HashMap::default(),
             records: RwLock::new(HashMap::default()),
-            last_store: Mutex::new(now())
+            last_store: Mutex::new(now()),
+            last_cleanup: Mutex::new(now())
         };
         data.max_entries.insert(RecordType::HostElement, (2, 0, 0, 0, 0));
         data.max_entries.insert(RecordType::HostConnection, (2, 0, 0, 0, 0));
@@ -365,6 +367,42 @@ impl Data {
         }
         *self.last_store.lock().expect("Lock poisoned") = now();
         Ok(stored)
+    }
+
+    pub fn cleanup_all(&self, max_age: Time) -> Result<usize, StoreError> {
+        debug!("Cleanup begin");
+        // Phase 1: determine which records are pretty old
+        let mut to_check = Vec::new();
+        let limit = now() - max_age;
+        for (&(type_, ref id), record) in self.records.read().expect("Lock poisoned").iter() {
+            let record = record.lock().expect("Lock poisoned");
+            if record.timestamp < limit {
+                to_check.push((type_, id.clone()));
+            }
+        }
+        // Phase 2: query hierarchy for existence (important: hold no locks)
+        let mut to_remove = Vec::with_capacity(to_check.len());
+        for (type_, id) in to_check {
+            match self.hierarchy.exists(type_, &id) {
+                Err(err) => {
+                    error!("Unable to check for existence of {}/{}: {:?}", type_.name(), id, err);
+                    break
+                },
+                Ok(true) => continue,
+                Ok(false) => to_remove.push((type_, id))
+            }
+        }
+        // Phase 3: actually delete entries that don't exist
+        let removed = to_remove.len();
+        let mut records = self.records.write().expect("Lock poisoned");
+        for key in to_remove {
+            debug!("Removing record {}/{}", key.0.name(), key.1);
+            records.remove(&key);
+            try!(fs::remove_file(self.record_path(key.0, &key.1)));
+        }
+        *self.last_cleanup.lock().expect("Lock poisoned") = now();
+        info!("Cleanup removed {} records", removed);
+        Ok(removed)
     }
 
     pub fn load_record(&self, type_: RecordType, id: &str) -> Result<Record, LoadError> {
@@ -485,5 +523,14 @@ impl Data {
             return;
         }
         self.add_connection_usage(&connections.pop().unwrap(), usage, timestamp);
+    }
+
+    pub fn housekeep(&self, store_interval: Time, cleanup_interval: Time, max_record_age: Time) {
+        if *self.last_store.lock().expect("Lock poisoned") + store_interval <= now() {
+            self.store_all().expect("Store failed");
+        }
+        if *self.last_cleanup.lock().expect("Lock poisoned") + cleanup_interval <= now() {
+            self.cleanup_all(max_record_age).expect("Store failed");
+        }
     }
 }

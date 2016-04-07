@@ -16,12 +16,14 @@ mod client;
 mod wrapper;
 
 pub use server::{Server, Method, ServerCloseGuard};
-pub use client::Client;
+pub use client::{Client, ClientCloseGuard};
+pub use errors::Error;
 pub use socket::Connection;
 pub use rmp::Value;
 pub use rmp::value::Integer;
 pub use rmp::value::Float;
 pub use util::{ToValue, ParseError, ParseValue};
+pub use msgs::{Args, KwArgs};
 pub use wrapper::Params;
 
 use std::sync::{Once, ONCE_INIT};

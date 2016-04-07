@@ -146,17 +146,26 @@ impl Api {
         Ok(())
     }
 
-    pub fn store_all(&self, params: Params) -> Result<usize, Error> {
-        debug!("API call store_all {:?}", params);
-        Ok(self.0.store_all().expect("Failed to store"))
+    pub fn ping(&self, _params: Params) -> Result<bool, Error> {
+        Ok(true)
+    }
+
+    pub fn server_stats(&self, _params: Params) -> Result<Value, Error> {
+        Ok(to_value!{
+            "record_count" => self.0.records.read().expect("Lock poisoned").len()
+        })
+    }
+
+    pub fn server_info(&self, _params: Params) -> Result<Value, Error> {
+        Ok(to_value!{})
     }
 }
 
 pub struct ApiServer;
 
 impl ApiServer {
-    pub fn new<A: ToSocketAddrs>(data: Data, addr: A, ssl: openssl::ssl::SslContext) -> Result<ServerCloseGuard, io::Error> {
-        let api = Api(Arc::new(data));
+    pub fn new<A: ToSocketAddrs>(data: Arc<Data>, addr: A, ssl: openssl::ssl::SslContext) -> Result<ServerCloseGuard, io::Error> {
+        let api = Api(data);
         let server = try!(Server::new(addr, ssl));
         let tmp_api = api.clone();
         server.register_easy(
@@ -173,9 +182,23 @@ impl ApiServer {
             Value::Nil
         );
         let tmp_api = api.clone();
-        server.register_easy(
-            "store_all".to_owned(),
-            Box::new(move |params| tmp_api.store_all(params)),
+        server.register_easy::<bool, Error>(
+            "ping".to_owned(),
+            Box::new(move |params| tmp_api.ping(params)),
+            vec![],
+            Value::Nil
+        );
+        let tmp_api = api.clone();
+        server.register_easy::<Value, Error>(
+            "server_info".to_owned(),
+            Box::new(move |params| tmp_api.server_info(params)),
+            vec![],
+            Value::Nil
+        );
+        let tmp_api = api.clone();
+        server.register_easy::<Value, Error>(
+            "server_stats".to_owned(),
+            Box::new(move |params| tmp_api.server_stats(params)),
             vec![],
             Value::Nil
         );
