@@ -620,6 +620,7 @@ class TemplateInfo(InfoObj):
 
 	def _remove(self):
 		get_backend_core_proxy().template_remove(self.template_id)
+		_template_id.invalidate()
 
 	def is_restricted(self):
 		return self.info()['restricted']
@@ -648,6 +649,7 @@ class ProfileInfo(InfoObj):
 
 	def _remove(self):
 		get_backend_core_proxy().profile_remove(self.profile_id)
+		_profile_id.invalidate()
 
 	def is_restricted(self):
 		return self.info()['restricted']
