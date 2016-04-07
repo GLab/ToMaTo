@@ -719,6 +719,33 @@ def reload_all(modules):
 
 
 
+def gencerts(config):
+	ca_key = config["certs"]["ca_key"]
+	ca_cert = config["certs"]["ca_cert"]
+	new_ca = False
+	if not os.path.exists(ca_key):
+		run_observing("openssl", "genrsa", "-out", ca_key, "2048")
+		run_observing("openssl", "req", "-x509", "-new", "-nodes", "-extensions", "v3_ca", "-key", ca_key, "-days", "10240",
+		              "-out", ca_cert, "-sha512", "-subj", '/CN=ToMaTo CA')
+		new_ca = True
+	for module_name, module in tomato_modules.iteritems():
+		dir = config[module_name]["directories"]["config"]
+		service_key = os.path.join(dir, module_name + "_key.pem")
+		service_cert = os.path.join(dir, module_name + "_cert.pem")
+		service_csr = os.path.join(dir, module_name + "_csr.pem")
+		service_file = os.path.join(dir, module_name + ".pem")
+		ca_file = os.path.join(dir, "ca.pem")
+		if not os.path.exists(service_key):
+			run_observing("openssl", "genrsa", "-out", service_key, "2048")
+			run_observing("openssl", "req", "-new", "-key", service_key, "-out", service_csr, "-sha512", "-subj",
+			              "/CN=ToMaTo %s" % module_name)
+		if not os.path.exists(service_file) or new_ca:
+			run_observing("openssl", "x509", "-req", "-in", service_csr, "-CA", ca_cert, "-CAkey", ca_key, "-CAcreateserial",
+			              "-out", service_cert, "-days", "10240", "-sha512")
+			run_observing("sh", "-c", "cat %s %s %s > %s" % (service_cert, ca_cert, service_key, service_file))
+		if not os.path.exists(ca_file) or new_ca:
+			shutil.copy(ca_cert, ca_file)
+
 
 
 
@@ -760,28 +787,7 @@ if len(args) == 2:
 		exit(0)
 
 	if args[1] == "gencerts":
-		ca_key = config["certs"]["ca_key"]
-		ca_cert = config["certs"]["ca_cert"]
-		new_ca = False
-		if not os.path.exists(ca_key):
-			run_observing("openssl", "genrsa", "-out", ca_key, "2048")
-			run_observing("openssl", "req", "-x509", "-new", "-nodes", "-extensions", "v3_ca", "-key", ca_key, "-days", "10240", "-out", ca_cert, "-sha512", "-subj", '/CN=ToMaTo CA')
-			new_ca = True
-		for module_name, module in tomato_modules.iteritems():
-			dir = config[module_name]["directories"]["config"]
-			service_key = os.path.join(dir, module_name + "_key.pem")
-			service_cert = os.path.join(dir, module_name + "_cert.pem")
-			service_csr = os.path.join(dir, module_name + "_csr.pem")
-			service_file = os.path.join(dir, module_name + ".pem")
-			ca_file = os.path.join(dir, "ca.pem")
-			if not os.path.exists(service_key):
-				run_observing("openssl", "genrsa", "-out", service_key, "2048")
-				run_observing("openssl", "req", "-new", "-key", service_key, "-out", service_csr, "-sha512", "-subj", "/CN=ToMaTo %s" % module_name)
-			if not os.path.exists(service_file) or new_ca:
-				run_observing("openssl", "x509", "-req", "-in", service_csr, "-CA", ca_cert, "-CAkey", ca_key, "-CAcreateserial", "-out", service_cert, "-days", "10240", "-sha512")
-				run_observing("sh", "-c", "cat %s %s %s > %s" % (service_cert, ca_cert, service_key, service_file))
-			if not os.path.exists(ca_file) or new_ca:
-				shutil.copy(ca_cert, ca_file)
+		gencerts(config)
 		exit(0)
 
 	if args[1] in ('help-config', '--help-config'):
