@@ -17,7 +17,7 @@ def insert_dump(dump_dict, source):
 	with group.lock:
 		try:
 			dump_obj = ErrorDump.from_dict(dump_dict, source)
-			if dump_obj.timestamp <= source.get_last_updatetime():
+			if dump_obj.timestamp >= source.get_last_updatetime():
 				group.insert_dump(dump_obj)
 		finally:
 			try:
