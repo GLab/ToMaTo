@@ -55,7 +55,7 @@ class Task(object):
 			self.next = 0
 	def info(self):
 		return {
-			"method": self.fn.__module__+"."+self.fn.__name__,
+			"method": (self.fn.__module__+"." if self.fn.__module__ else "")+self.fn.__name__,
 			"busy": self.busy,
 			"args": [str(arg) for arg in self.args],
 			"kwargs": {name: str(value) for name, value in self.kwargs.items()},
