@@ -172,6 +172,28 @@ class TaskScheduler(threading.Thread):
 		immediate = kwargs.pop("immediate", True)
 		random_offset = kwargs.pop("random_offset", True)
 		return self._schedule(Task(fn, args, kwargs, timeout=timeout, repeated=True, immediate=immediate, random_offset=random_offset))
+
+	def scheduleMaintenance(self, timeout, keyfn, maintenancefn):
+		"""
+		schedule maintenance for multiple objects.
+		Objects may be created or removed, without affecting maintenance (except for missing it once, maybe)
+		:param timeout: interval in which to run maintenance (per object)
+		:param keyfn: function which returns a list of object identifiers to be used by maintenancefn
+		:param maintenancefn: function takes an object identifier as argument, and runs the maintenance.
+		:return: maintenance scheduler id
+		"""
+		def maintenance_scheduler():
+			to_sync = set(keyfn())
+			current_tasks = {t.args[0]: tid for tid, t in self.tasks.items() if t.fn == maintenancefn}
+			syncing = set(current_tasks.keys())
+			for ident in to_sync - syncing:
+				self.scheduleRepeated(timeout, maintenancefn, ident, random_offset=True, immediate=True)
+			for ident in syncing - to_sync:
+				self.cancelTask(current_tasks[ident])
+		maintenance_scheduler.__name__ = "maintenance_scheduler:" + keyfn.__module__+"."+keyfn.__name__
+		maintenance_scheduler.__module__ = ""
+		self.scheduleRepeated(timeout, maintenance_scheduler, immediate=True)
+
 	def cancelTask(self, taskId):
 		with self.tasksLock:
 			del self.tasks[taskId]
