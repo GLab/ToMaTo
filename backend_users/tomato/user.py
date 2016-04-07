@@ -235,12 +235,11 @@ def clean_up_user_notifications(username):
 	if user is not None:
 		user.clean_up_notifications()
 
-def clean_up_all_notifications():
-	for u in User.objects.all():
-		scheduler.scheduleOnce(random.random()*60*60*24, clean_up_user_notifications, username=u.name)
+def get_all_usersnames():
+	return [u.name for u in User.objects.all()]
 
 def init():
-	scheduler.scheduleRepeated(60*60*24, clean_up_all_notifications, random_offset=False, immediate=True)
+	scheduler.scheduleMaintenance(3600*24, get_all_usersnames, clean_up_user_notifications)
 
 """
 class Provider:

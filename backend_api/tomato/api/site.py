@@ -1,25 +1,25 @@
-from ..lib.service import get_backend_core_proxy
 from api_helpers import getCurrentUserInfo
-from ..lib.remote_info import get_site_info
+from ..lib.remote_info import get_site_info, get_site_list, SiteInfo
 
 def site_list(organization=None):
 	"""
 	undocumented
 	"""
-	return get_backend_core_proxy().site_list(organization)
+	return get_site_list(organization)
 
-def site_create(name, organization, label="", attrs={}):
+def site_create(name, organization, label="", attrs=None):
 	"""
 	undocumented
 	"""
+	if attrs is None: attrs = {}
 	getCurrentUserInfo().check_may_create_sites(organization)
-	return get_backend_core_proxy().site_create(name, organization, label, attrs)
+	return SiteInfo.create(name, organization, label, attrs)
 
 def site_info(name):
 	"""
 	undocumented
 	"""
-	return get_site_info(name).info()
+	return get_site_info(name).info(update=True)
 
 def site_modify(name, attrs):
 	"""

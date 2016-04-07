@@ -168,8 +168,11 @@ class ErrorGroup(BaseDocument):
 	def create(group_id, dump_source_name, description=None):
 		with ErrorGroup.GROUP_LIST_LOCK:
 			desc = description or group_id
-			if isinstance(desc, dict) and "message" in desc:
-				desc = desc["message"]
+			if isinstance(desc, dict):
+				if "message" in desc:
+					desc = desc["message"]
+				elif "subject" in desc:
+					desc = desc["subject"]
 			if not isinstance(desc, str):
 				desc = str(desc)
 			if len(desc) > 100:

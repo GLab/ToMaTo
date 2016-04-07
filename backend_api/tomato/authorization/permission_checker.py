@@ -732,9 +732,9 @@ class PermissionChecker(UserInfo):
 
 	# debugging
 
-	def check_may_run_any_command(self):
+	def check_allow_active_debugging(self):
 		auth_check(Flags.Debug in self.get_flags(), "you don't have debugging permissions")
-		# fixme: allow to disable this in settings
+		auth_check(settings.debugging_enabled(), "the server does not allow active debugging")
 
 	def check_may_view_debugging_info(self):
 		auth_check(Flags.Debug in self.get_flags(), "you don't have debugging permissions")

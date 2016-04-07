@@ -36,5 +36,5 @@ def debug_services_reachable():
 
 
 def debug_run_internal_api_call(_tomato_module, _command, *args, **kwargs):
-	getCurrentUserInfo().check_may_run_any_command()
+	getCurrentUserInfo().check_allow_active_debugging()
 	return get_tomato_inner_proxy(_tomato_module)._call(_command, args, kwargs)

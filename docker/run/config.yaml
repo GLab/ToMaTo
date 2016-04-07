@@ -8,6 +8,10 @@ services:
       - port: 8001
         ssl: true
         protocol: https
+  backend_accounting:
+    host: dockerhost
+    port: 8006
+    protocol: sslrpc2
   backend_debug:
     host: dockerhost
     port: 8005
@@ -57,6 +61,13 @@ backend_api:
   tasks:
     max-workers: 25
 
+backend_accounting:
+  data_path: /var/lib/tomato_backend_accounting
+  ssl:
+    cert_file:  /etc/tomato/backend_api_cert.pem
+    key_file:  /etc/tomato/backend_api_key.pem
+    ca_file:  /etc/tomato/ca.pem
+
 backend_core:
   paths:
     templates:  /var/lib/tomato/templates
@@ -76,8 +87,8 @@ backend_core:
   database:
     db-name: tomato_backend_core
     server:
-      host: %(OS__DB_PORT_27017_TCP_ADDR)s
-      port: %(OS__DB_PORT_27017_TCP_PORT)s
+      host: "%(OS__DB_PORT_27017_TCP_ADDR)s"
+      port: "%(OS__DB_PORT_27017_TCP_PORT)s"
   host-connections:
     update-interval: 60
     availability-halftime: 7776000  # 90 days
@@ -102,8 +113,8 @@ backend_users:
   database:
     db-name: tomato_backend_users
     server:
-      host: %(OS__DB_PORT_27017_TCP_ADDR)s
-      port: %(OS__DB_PORT_27017_TCP_PORT)s
+      host: "%(OS__DB_PORT_27017_TCP_ADDR)s"
+      port: "%(OS__DB_PORT_27017_TCP_PORT)s"
   tasks:
     max-workers: 25
 
@@ -122,8 +133,8 @@ backend_debug:
   database:
     db-name: tomato_backend_debug
     server:
-      host: %(OS__DB_PORT_27017_TCP_ADDR)s
-      port: %(OS__DB_PORT_27017_TCP_PORT)s
+      host: "%(OS__DB_PORT_27017_TCP_ADDR)s"
+      port: "%(OS__DB_PORT_27017_TCP_PORT)s"
   tasks:
     max-workers: 25
 
@@ -213,3 +224,8 @@ user-quota:
 
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
+
+# this disables active debugging, i.e., executing internal commands via the API.
+# this may be a security issue if enabled!
+debugging:
+  enabled: false
