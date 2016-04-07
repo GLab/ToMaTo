@@ -744,7 +744,7 @@ if len(args) == 2:
 		exit(0)
 
 	if args[1] == "restart":
-		restart_all(tomato_modules+[db_module])
+		restart_all(tomato_modules.values()+[db_module])
 		exit(0)
 
 	if args[1] == "status":
