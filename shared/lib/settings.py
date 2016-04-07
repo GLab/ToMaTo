@@ -73,6 +73,10 @@ services:
       - port: 8001
         ssl: true
         protocol: https
+  backend_accounting:
+    host: dockerhost
+    port: 8007
+    protocol: sslrpc2
   backend_debug:
     host: dockerhost
     port: 8004
@@ -121,6 +125,15 @@ backend_api:
     ca:  /etc/tomato/ca.pem
   tasks:
     max-workers: 25
+
+backend_accounting:
+  data_path: /var/lib/tomato_backend_accounting
+  ssl:
+    cert_file:  /etc/tomato/backend_api_cert.pem
+    key_file:  /etc/tomato/backend_api_key.pem
+    ca_file:  /etc/tomato/ca.pem
+  dumps:
+    enabled: false
 
 backend_core:
   paths:
