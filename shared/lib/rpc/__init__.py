@@ -34,13 +34,13 @@ def isReusable(proxy):
 		return True
 	return True
 
-def createXmlRpcProxy(url, sslcert, timeout):
+def createXmlRpcProxy(url, sslcert, sslkey, timeout):
 	schema, address = url.split(":", 1)
 	schema, _ = schema.split("+")
 	if address.startswith("//"):
 		address = address[2:]
 	if schema == "https":
-		transport = xmlrpc.SafeTransportWithCerts(sslcert, sslcert, timeout=timeout)
+		transport = xmlrpc.SafeTransportWithCerts(sslkey, sslcert, timeout=timeout)
 	else:
 		transport = None
 	return xmlrpc.ServerProxy('%s://%s' % (schema, address), allow_none=True, transport=transport,
@@ -52,7 +52,7 @@ def unwrapJsonRpcError(err):
 		return Error.parse(err.data)
 	return TransportError(code="%s.%s" % (err.category, err.type), message=err.message, data=err.data)
 
-def createJsonRpcProxy(address, sslcert, timeout):
+def createJsonRpcProxy(address, sslcert, sslkey, sslca, timeout):
 	if address.startswith("//"):
 		address = address[2:]
 	if not ":" in address:
@@ -60,16 +60,16 @@ def createJsonRpcProxy(address, sslcert, timeout):
 								 message="address must contain port: %s" % address)
 	address, port = address.split(":")
 	port = int(port)
-	return sslrpc.RPCProxy((address, port), certfile=sslcert, keyfile=sslcert, onError=unwrapJsonRpcError)
+	return sslrpc.RPCProxy((address, port), certfile=sslcert, keyfile=sslkey, ca_certs=sslca, onError=unwrapJsonRpcError)
 
-def createProxy(url, sslcert, timeout=30):
+def createProxy(url, sslcert, sslkey, sslca, timeout=30):
 	if not ":" in url:
 		raise TransportError(code=TransportError.INVALID_URL, message="invalid url: %s" % url)
 	schema, address = url.split(":", 1)
 	if schema == "http+xmlrpc" or schema == "https+xmlrpc":
-		return createXmlRpcProxy(url, sslcert, timeout)
+		return createXmlRpcProxy(url, sslcert, sslkey, timeout)
 	elif schema == "ssl+jsonrpc":
-		return createJsonRpcProxy(address, sslcert, timeout)
+		return createJsonRpcProxy(address, sslcert, sslkey, sslca, timeout)
 	else:
 		raise TransportError(code=TransportError.INVALID_URL, message="unsupported protocol: %s" % schema)
 

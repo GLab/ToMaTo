@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-# ToMaTo (Topology management software) 
+# Explicitly import all django models
+# ToMaTo (Topology management software)
 # Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,15 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from lib.settings import settings
+from .db import DataEntry
 
-def getPublicKey():
-	lines = []
-	ignore = False
-	with open(settings.get_ssl_cert_filename()) as key:
-		for line in key:
-			if "PRIVATE" in line:
-				ignore = not ignore
-			elif not ignore:
-				lines.append(line)
-	return "".join(lines)
+from dumpmanager.errorgroup import ErrorGroup

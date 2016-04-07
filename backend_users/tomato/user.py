@@ -184,9 +184,10 @@ class User(Entity, BaseDocument):
 		notf = Notification(title=subject, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
+		self.save()
 
 		# send email
-		if not Flags.NoMails:
+		if Flags.NoMails not in self.flags:
 			mail.send(self.realname, self.email, subject, message, fromUser.realname)
 
 
@@ -223,7 +224,7 @@ class User(Entity, BaseDocument):
 		"flags": Attribute(field=flags, set=modify_flags),
 		"organization": Attribute(get=lambda self: self.organization.name, set=modify_organization),
 		"quota": Attribute(get=lambda self: self.quota.info(), set=modify_quota),
-		"notification_count": Attribute(get=lambda self: len(self.notifications)),
+		"notification_count": Attribute(get=lambda self: len(filter(lambda n: not n.read, self.notifications))),
 		"client_data": Attribute(field=clientData),
 		"last_login": Attribute(get=lambda self: self.lastLogin),
 		"password_hash": Attribute(field=password)

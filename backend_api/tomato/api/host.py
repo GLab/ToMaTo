@@ -21,83 +21,6 @@ from api_helpers import checkauth, getCurrentUserInfo
 from ..lib.service import get_backend_users_proxy, get_backend_core_proxy
 from ..lib.remote_info import get_host_info, get_site_info
 
-def organization_list():
-	"""
-	undocumented
-	"""
-	api = get_backend_users_proxy()
-	return api.organization_list()
-
-def organization_create(name, label="", attrs={}):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_create_organizations()
-	api = get_backend_users_proxy()
-	return api.organization_create(name, label, attrs)
-
-def organization_info(name):
-	"""
-	undocumented
-	"""
-	api = get_backend_users_proxy()
-	return api.organization_info(name)
-
-def organization_modify(name, attrs):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_modify_organization(name)
-	api = get_backend_users_proxy()
-	return api.organization_modify(name, attrs)
-
-def organization_remove(name):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_delete_organization(name)
-	api = get_backend_users_proxy()
-	api.organization_remove(name)
-
-@checkauth
-def organization_usage(name): #@ReservedAssignment
-	#fixme: broken
-	orga = _getOrganization(name)
-	return orga.totalUsage.info()	
-
-def site_list(organization=None):
-	"""
-	undocumented
-	"""
-	return get_backend_core_proxy().site_list(organization)
-
-def site_create(name, organization, label="", attrs={}):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_create_sites(organization)
-	return get_backend_core_proxy().site_create(name, organization, label, attrs)
-
-def site_info(name):
-	"""
-	undocumented
-	"""
-	return get_backend_core_proxy().site_info(name)
-
-def site_modify(name, attrs):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_modify_site(get_site_info(name))
-	return get_backend_core_proxy().site_modify(name, attrs)
-
-def site_remove(name):
-	"""
-	undocumented
-	"""
-	getCurrentUserInfo().check_may_delete_site(get_site_info(name))
-	return get_backend_core_proxy().site_remove(name)
-
 def host_list(site=None, organization=None):
 	"""
 	undocumented
@@ -116,21 +39,24 @@ def host_info(name):
 	"""
 	undocumented
 	"""
-	return get_backend_core_proxy().host_info(name)
+	host = get_host_info(name)
+	return host.info()
 
 def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_modify_host(get_host_info(name))
-	return get_backend_core_proxy().host_modify(name, attrs)
+	host = get_host_info(name)
+	getCurrentUserInfo().check_may_modify_host(host)
+	return host.modify(name, attrs)
 
 def host_remove(name):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_delete_host(get_host_info(name))
-	get_backend_core_proxy().host_remove(name)
+	host = get_host_info(name)
+	getCurrentUserInfo().check_may_delete_host(host)
+	host.remove(name)
 
 def host_users(name):
 	"""

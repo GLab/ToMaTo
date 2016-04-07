@@ -31,4 +31,4 @@ from docs import DOC_CONNECTION_BRIDGE, DOC_CONNECTION_FIXED_BRIDGE, DOC_ELEMENT
 
 from accounting import accounting_connection_statistics, accounting_element_statistics, accounting_statistics
 
-from dump import dump_count, dump_list, dump_info
+from dump import dump_count, dump_list

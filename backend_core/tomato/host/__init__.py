@@ -15,19 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..db import *
-from ..generic import *
+import base64
+import sys
+import threading
+import time
+import zlib
+
 from .. import starttime, scheduler
 from ..accounting.quota import UsageStatistics
+from ..db import *
+from ..generic import *
+from ..lib import anyjson as json
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
-from ..lib import anyjson as json
-from ..dumpmanager import DumpSource
-import time, hashlib, threading, datetime, zlib, base64, sys
+from ..lib.service import get_backend_users_proxy
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
-from ..lib.service import get_backend_users_proxy
+
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -81,7 +86,7 @@ def stopCaching():
 	global _caching
 	_caching = False
 
-class Host(DumpSource, Entity, BaseDocument):
+class Host(Entity, BaseDocument):
 	"""
 	:type totalUsage: UsageStatistics
 	:type site: tomato.host.site.Site
@@ -106,7 +111,6 @@ class Host(DumpSource, Entity, BaseDocument):
 	problemMailTime = FloatField(db_field='problem_mail_time')
 	availability = FloatField(default=1.0)
 	description = StringField()
-	dumpLastFetch = FloatField(db_field='dump_last_fetch')
 	templates = ListField(ReferenceField(Template, reverse_delete_rule=PULL))
 	hostNetworks = ListField(db_field='host_networks')
 	meta = {
@@ -144,7 +148,7 @@ class Host(DumpSource, Entity, BaseDocument):
 		),
 		"enabled": Attribute(field=enabled, schema=schema.Bool()),
 		"description": Attribute(field=description, schema=schema.String()),
-		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization.name, schema=schema.Identifier()),
+		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization, schema=schema.Identifier()),
 		"problems": Attribute(readOnly=True, get=lambda obj: obj.problems(), schema=schema.List(items=schema.String())),
 		"component_errors": Attribute(field=componentErrors, readOnly=True, schema=schema.Int()),
 		"load": Attribute(readOnly=True, get=lambda obj: obj.getLoad(), schema=schema.List(items=schema.Number())),
@@ -168,10 +172,9 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def getProxy(self):
 		if not _caching:
-			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), timeout=settings.get_rpc_timeout())
+			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		if not self.rpcurl in _proxies:
-			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(),
-												  timeout=settings.get_rpc_timeout())
+			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		return _proxies[self.rpcurl]
 
 	def incrementErrors(self):
@@ -438,7 +441,6 @@ class Host(DumpSource, Entity, BaseDocument):
 		return (el.upcast() for el in Element.objects.filter(host_elements__host=self))
 
 	def getUsers(self):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		res = []
 		for type_, obj in [("element", el) for el in self.elements.all()] + [("connection", con) for con in
 																			 self.connections.all()]:
@@ -455,11 +457,7 @@ class Host(DumpSource, Entity, BaseDocument):
 			res.append(data)
 		return res
 
-	def checkPermissions(self):
-		return self.site.checkPermissions()
-
 	def remove(self, params=None):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		if self.id:
 			UserError.check(not self.elements.all(), code=UserError.NOT_EMPTY, message="Host still has active elements")
 			UserError.check(not self.connections.all(), code=UserError.NOT_EMPTY, message="Host still has active connections")
@@ -589,35 +587,6 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def __repr__(self):
 		return "Host(%s)" % self.name
-
-	def dump_fetch_list(self, after):  # TODO: return None if unreachable
-		return self.getProxy().dump_list(after=after, list_only=False, include_data=False, compress_data=True)
-
-	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
-		# TODO: return None if unreachable, return dummy if it does not exist
-		dump = self.getProxy().dump_info(dump_id, include_data=True, compress_data=True, dump_on_error=False)
-		if not keep_compressed:
-			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
-		return dump
-
-	def dump_clock_offset(self):
-		if self.hostInfo and 'time_diff' in self.hostInfo:
-			return max(0, -self.hostInfo['time_diff'])
-		else:
-			return None
-
-	def dump_source_name(self):
-		return "host:%s" % self.info()['name']
-
-	def dump_matches_host(self, host_obj):
-		return host_obj.dump_source_name() == self.dump_source_name()
-
-	def dump_set_last_fetch(self, last_fetch):
-		self.dumpLastFetch = last_fetch
-		self.save()
-
-	def dump_get_last_fetch(self):
-		return self.dumpLastFetch
 
 	@classmethod
 	def get(cls, **kwargs):

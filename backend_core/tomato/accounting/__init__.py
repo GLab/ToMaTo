@@ -19,8 +19,17 @@ from ..db import *
 from ..lib.decorators import *
 import time
 from ..lib.service import get_backend_users_proxy
+from datetime import timedelta
 
 from quota import TYPES, KEEP_RECORDS
+
+MAX_AGE = {
+	"5minutes": timedelta(minutes=2*5*KEEP_RECORDS["5minutes"]),
+	"hour": timedelta(hours=2*KEEP_RECORDS["hour"]),
+	"day": timedelta(days=2*KEEP_RECORDS["day"]),
+	"month": timedelta(days=2*30*KEEP_RECORDS["month"]),
+	"year": timedelta(days=2*365*KEEP_RECORDS["year"])
+}
 
 #TODO: aggregate per user
 #TODO: fetch and save current records of to-be-deleted objects

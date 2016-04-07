@@ -12,7 +12,7 @@ from datetime import date
 from threading import Thread
 
 
-TOMATO_MODULES = ['web', 'backend_core', 'backend_users', 'backend_api']
+TOMATO_MODULES = ['web', 'backend_core', 'backend_users', 'backend_api', 'backend_debug']
 DB_MODULE = "db"
 CONFIG_PATHS = ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]
 
@@ -166,6 +166,7 @@ Other commands:
 
  gencerts:
    generate certs for the tomato inner communication.
+   this does not overwrite any existing files.
 
 examples:
  %(cmd)s db stop
@@ -354,6 +355,25 @@ def generate_default_config():
 			'shell_cmd': "/bin/bash"
 			# 'version'  (will be generated if not found in config)
 		},
+		'backend_debug': {
+			'enabled': True,
+			'image': 'tomato_backend_users',
+			'ports': [8005],
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(config)s', '/config'),
+				('%(logs)s', '/logs')
+			],
+			'directories': {
+				'config': os.path.join("backend_debug", "config"),
+				'logs': os.path.join("backend_debug", "logs")
+			},
+			'code_directories': ['backend_debug', 'shared'],
+			'shell_cmd': "/bin/bash"
+			# 'version'  (will be generated if not found in config)
+		},
+
 		'db': {
 			# enabled: True,
 			# is_database: True
@@ -641,6 +661,12 @@ def stop_all(modules):
 
 
 
+
+# expand module shortnames (e.g., api for backend_api)
+if len(args) >1:
+	for module in TOMATO_MODULES:
+		if "backend_%s" % args[1] == module:
+			args[1] = module
 
 if len(args) == 2:
 	if args[1] == "start":

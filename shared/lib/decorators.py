@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time
-
 """
 Synchronization decorator
   This decorator can be used to synchronize method calls. Synchronization is relative to 

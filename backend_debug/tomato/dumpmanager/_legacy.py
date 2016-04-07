@@ -1,17 +1,17 @@
 import time, zlib, threading, base64
-from .db import *
-from .lib import anyjson as json
+from backend_core.tomato.db import *
+from backend_core.tomato.lib import anyjson as json
 
-from lib import service
+from backend_core.tomato.lib import service
 
-import host
-from . import scheduler
-from .lib.error import InternalError, UserError, Error, TransportError  # @UnresolvedImport
-from .lib.rpc.sslrpc import RPCError
-from .lib import util
-from .lib.userflags import Flags
+import backend_core.tomato.host
+from backend_core.tomato import scheduler
+from backend_core.tomato.lib.error import InternalError, UserError, Error, TransportError  # @UnresolvedImport
+from backend_core.tomato.lib.rpc.sslrpc import RPCError
+from backend_core.tomato.lib import util
+from backend_core.tomato.lib.userflags import Flags
 
-from lib.settings import settings, Config
+from backend_core.tomato.lib.settings import settings, Config
 
 # Zero-th part: database stuff
 class ErrorDump(EmbeddedDocument):
@@ -219,7 +219,10 @@ def create_group(group_id, description=None):
 			desc = desc[:100] + " ..."
 		if not desc:
 			desc = group_id
-		return ErrorGroup(groupId=group_id, description=desc).save()
+		grp = ErrorGroup(groupId=group_id, description=desc)
+		grp.save()
+		return grp
+
 
 
 def get_group(group_id):
@@ -395,7 +398,7 @@ def getDumpSources(include_disabled=False):
 				sources.append(LocalDumpSource())
 			else:
 				sources.append(_create_api_dumpsource_for_module(tomato_module))
-	hosts = host.Host.getAll()
+	hosts = backend_core.tomato.host.Host.getAll()
 	for h in hosts:
 		if include_disabled or h.enabled:
 			sources.append(h)

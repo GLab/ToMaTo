@@ -5,11 +5,9 @@ RUN echo "deb http://httpredir.debian.org/debian unstable main" >> /etc/apt/sour
 ADD 01pinning /etc/apt/preferences.d/01pinning
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-install-recommends -y \
-  ca-certificates libssl-dev build-essential python-dev pypy busybox locales libsnappy1 libsnappy-dev wget \
+  ca-certificates libssl-dev build-essential libffi-dev python-dev pypy busybox locales libsnappy1 libsnappy-dev wget \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN rm /usr/bin/python; ln -s pypy /usr/bin/python; cp /usr/include/python2.7/* /usr/lib/pypy/include/
-  
 ADD get-pip.py /tmp/get-pip.py
 RUN python /tmp/get-pip.py; rm /tmp/get-pip.py
   

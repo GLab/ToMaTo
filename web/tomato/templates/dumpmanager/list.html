@@ -11,7 +11,9 @@
 <h1>Dump Manager</h1>
 
 {% if is_empty %}
-	Woo Hoo! No error dumps!
+	This installation of ToMaTo is 100% error-free.<br />
+	Or you're just ignoring the errors...
+	<div class="skip-sm"></div>
 {% else %}
 
 			<script src="/js/enhancetable.js"></script>
@@ -39,9 +41,7 @@
 				<tr>
 					<td>
 						<a href="{%url "dumpmanager.group_info" errorgroup.group_id %}">{{errorgroup.description}}</a>
-						(
-						{% for s in errorgroup.frontend_mod.sources %}{{s}}{% endfor %}
-						)
+						({{errorgroup.frontend_mod.sources}})
 					</td>
 					<td>{{errorgroup.count}}</td>
 					<td enhancetable_customkey="{{errorgroup.last_timestamp}}">{{errorgroup.last_timestamp|todate}}</td>

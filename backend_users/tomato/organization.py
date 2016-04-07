@@ -2,6 +2,7 @@ from .db import *
 from .lib import logging
 from .lib.error import UserError
 from .generic import *
+from .lib.service import get_backend_core_proxy
 
 class Organization(Entity, BaseDocument):
 	name = StringField(unique=True, required=True)
@@ -24,6 +25,8 @@ class Organization(Entity, BaseDocument):
 	def _checkRemove(self):
 		if self.id:
 			UserError.check(not self.users, code=UserError.NOT_EMPTY, message="Organization still has users")
+			UserError.check(not get_backend_core_proxy().site_list(organization=self.name),
+			                code = UserError.NOT_EMPTY, message="Organization still has sites")
 
 	def _remove(self):
 		logging.logMessage("remove", category="organization", name=self.name)

@@ -24,6 +24,7 @@ def docs():
     """
     undocumented
     """
+    # fixme: broken
     return {
         "elements": dict([(name, cls.DOC) for name, cls in elements.TYPES.iteritems()]),
         "connections": {"default": connections.Connection.DOC},
@@ -32,11 +33,11 @@ def docs():
 @cached(timeout=3600)
 def role_list():
     return {
-		"owner": {"title": "Owner", "description": "full topology control, permission changes, topology removal"},
-		"manager": {"title": "Manager", "description": "full topology control, no topology delete, no permission changes"},
-		"user": {"title": "User", "description": "no destroy/prepare, no topology changes, no permission changes"},
-		'null': {"title": "[no permission]", "description": "no access at all"}
-	}
+    "owner": {"title": "Owner", "description": "full topology control, permission changes, topology removal"},
+    "manager": {"title": "Manager", "description": "full topology control, no topology delete, no permission changes"},
+    "user": {"title": "User", "description": "no destroy/prepare, no topology changes, no permission changes"},
+    'null': {"title": "[no permission]", "description": "no access at all"}
+  }
 
 
 def _docFn(docstr):
