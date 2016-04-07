@@ -1,4 +1,4 @@
-import os, hashlib, re
+import os, hashlib, re, sys
 import httplib
 import inspect, traceback
 
@@ -146,6 +146,11 @@ class Error(Exception):
 
 	@classmethod
 	def wrap(cls, error, code=UNKNOWN, todump=None, message=None, trace=None, frame_trace=None, frame=None, *args, **kwargs):
+		if trace is None:
+			try:
+				trace = traceback.extract_tb(sys.exc_traceback)
+			except:
+				pass
 		return cls(code=code, message=message or repr(error), todump=todump, trace=trace, frame_trace=frame_trace, frame=frame, *args, **kwargs)
 
 	def __str__(self):
