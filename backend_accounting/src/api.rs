@@ -178,10 +178,14 @@ impl Api {
         Ok(true)
     }
 
-    pub fn server_stats(&self, _params: Params) -> Result<Value, Error> {
+    pub fn debug_stats(&self, _params: Params) -> Result<Value, Error> {
         Ok(to_value!{
-            "record_count" => self.0.records.read().expect("Lock poisoned").len()
+            "accounting_record_count" => self.0.records.read().expect("Lock poisoned").len()
         })
+    }
+
+    pub fn statistics(&self, _params: Params) -> Result<Value, Error> {
+        Ok(to_value!{})
     }
 
     pub fn server_info(&self, _params: Params) -> Result<Value, Error> {
@@ -225,8 +229,15 @@ impl ApiServer {
         );
         let tmp_api = api.clone();
         server.register_easy::<Value, Error>(
-            "server_stats".to_owned(),
-            Box::new(move |params| tmp_api.server_stats(params)),
+            "statistics".to_owned(),
+            Box::new(move |params| tmp_api.statistics(params)),
+            vec![],
+            Value::Nil
+        );
+        let tmp_api = api.clone();
+        server.register_easy::<Value, Error>(
+            "debug_stats".to_owned(),
+            Box::new(move |params| tmp_api.debug_stats(params)),
             vec![],
             Value::Nil
         );
