@@ -11,6 +11,8 @@ WORKDIR /code/backend_accounting
 RUN cargo build --release
 
 RUN rm -rf /code/backend_accounting/src
+RUN rm -rf /code/rust-shared
+RUN rm -rf /root/.cargo
 
 ADD init.sh /init.sh
 ADD inittab /etc/inittab
