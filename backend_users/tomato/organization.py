@@ -57,5 +57,5 @@ class Organization(Entity, BaseDocument):
 		"label": Attribute(field=label, schema=schema.String(minLength=3)),
 		"homepage_url": Attribute(field=homepageUrl, schema=schema.URL(null=True)),
 		"image_url": Attribute(field=imageUrl, schema=schema.URL(null=True)),
-		"description": Attribute(field=description, schema=schema.String())
+		"description": Attribute(field=description, schema=schema.String(null=True))
 	}

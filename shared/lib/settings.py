@@ -73,6 +73,10 @@ services:
       - port: 8001
         ssl: true
         protocol: https
+  backend_accounting:
+    host: dockerhost
+    port: 8007
+    protocol: sslrpc2
   backend_debug:
     host: dockerhost
     port: 8004
@@ -121,6 +125,15 @@ backend_api:
     ca:  /etc/tomato/ca.pem
   tasks:
     max-workers: 25
+
+backend_accounting:
+  data_path: /var/lib/tomato_backend_accounting
+  ssl:
+    cert_file:  /etc/tomato/backend_api_cert.pem
+    key_file:  /etc/tomato/backend_api_key.pem
+    ca_file:  /etc/tomato/ca.pem
+  dumps:
+    enabled: false
 
 backend_core:
   paths:
@@ -279,6 +292,9 @@ user-quota:
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
 
+debugging:
+  enabled: false
+
 """)
 
 settings = None
@@ -324,24 +340,28 @@ class Config:
 	TOMATO_MODULE_BACKEND_USERS = "backend_users"
 	TOMATO_MODULE_BACKEND_API = "backend_api"
 	TOMATO_MODULE_BACKEND_DEBUG = "backend_debug"
+	TOMATO_MODULE_BACKEND_ACCOUNTING = "backend_accounting"
 
 	# all existing modules
 	TOMATO_MODULES = {TOMATO_MODULE_WEB,
 										TOMATO_MODULE_BACKEND_CORE,
 										TOMATO_MODULE_BACKEND_USERS,
 										TOMATO_MODULE_BACKEND_API,
-										TOMATO_MODULE_BACKEND_DEBUG}
+										TOMATO_MODULE_BACKEND_DEBUG,
+										TOMATO_MODULE_BACKEND_ACCOUNTING}
 
 	# modules of backend (TOMATO_MODULES - web)
 	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE,
 														TOMATO_MODULE_BACKEND_USERS,
 														TOMATO_MODULE_BACKEND_API,
-														TOMATO_MODULE_BACKEND_DEBUG}
+														TOMATO_MODULE_BACKEND_DEBUG,
+														TOMATO_MODULE_BACKEND_ACCOUNTING}
 
 	# all modules that are reachable via an sslrpc2 API
 	TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES = {TOMATO_MODULE_BACKEND_CORE,
 																							 TOMATO_MODULE_BACKEND_USERS,
-																							 TOMATO_MODULE_BACKEND_DEBUG}
+																							 TOMATO_MODULE_BACKEND_DEBUG,
+																							 TOMATO_MODULE_BACKEND_ACCOUNTING}
 
 	EMAIL_NOTIFICATION = "notification"
 	EMAIL_NEW_USER_WELCOME = "new-user-welcome"
@@ -414,7 +434,16 @@ class SettingsProvider:
 		for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):
 			print >> sys.stderr, "Found old-style config at %s - This is no longer supported." % (path)
 
+		print "debugging is %s" % ("ENABLED" if self.debugging_enabled() else "disabled")
 
+
+	def debugging_enabled(self):
+		"""
+		get whether debugging is enabled (globally)
+		:return: whether debugging should be allowed
+		:rtype: bool
+		"""
+		return self.original_settings['debugging']['enabled']
 
 	def get_dumpmanager_enabled(self, tomato_module):
 		"""
@@ -497,7 +526,7 @@ class SettingsProvider:
 		return {
 			'database': self.original_settings[self.tomato_module]['database']['db-name'],
 			'host': self.original_settings[self.tomato_module]['database']['server']['host'],
-			'port': self.original_settings[self.tomato_module]['database']['server']['port']
+			'port': int(self.original_settings[self.tomato_module]['database']['server']['port'])
 		}
 
 	def get_bittorrent_settings(self):
@@ -847,6 +876,18 @@ class SettingsProvider:
 					print "Configuration ERROR at /dumpmanager/%s: is missing." % k
 					print " using default setting for %s" % k
 					self.original_settings['dumpmanager'][k] = v
+
+		# dumpmanager
+		if not self.original_settings.get('debugging', None):
+			print "Configuration ERROR at /debugging: is missing."
+			print " using default debugging settings."
+			self.original_settings['debugging'] = default_settings['debugging']
+		else:
+			for k, v in default_settings['debugging'].iteritems():
+				if not self.original_settings['debugging'].get(k, None):
+					print "Configuration ERROR at /debugging/%s: is missing." % k
+					print " using default setting for %s" % k
+					self.original_settings['debugging'][k] = v
 
 
 		# tomato modules' settings

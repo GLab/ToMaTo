@@ -27,6 +27,8 @@ from lib.settings import settings
 
 import ssl
 
+import traceback
+
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs)
 
@@ -36,6 +38,7 @@ def handleError(error, function, args, kwargs):
 			error = UserError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
 		else:
 			error = InternalError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
+	traceback.print_exc()
 	logging.logException()
 	error.dump()
 	return error

@@ -1,6 +1,5 @@
-from ..lib.service import get_backend_core_proxy
 from api_helpers import getCurrentUserInfo, checkauth
-from ..lib.remote_info import get_profile_info
+from ..lib.remote_info import get_profile_info, get_profile_list, ProfileInfo
 
 def profile_list(tech=None):
 	"""
@@ -14,7 +13,7 @@ def profile_list(tech=None):
 	  entry contains exactly the same information as returned by
 	  :py:func:`profile_info`. If no resource matches, the list is empty.
 	"""
-	return get_backend_core_proxy().profile_list(tech)
+	return get_profile_list(tech)
 
 
 def profile_create(tech, name, attrs=None):
@@ -38,7 +37,7 @@ def profile_create(tech, name, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_user_resources()
-	return get_backend_core_proxy().profile_create(tech, name, attrs)
+	return ProfileInfo.create(tech, name, attrs)
 
 
 def profile_modify(id, attrs):
@@ -111,4 +110,4 @@ def profile_info(id):
 	  If the given profile does not exist an exception *profile does not
 	  exist* is raised.
 	"""
-	return get_profile_info(id).remove()
+	return get_profile_info(id).info(update=True)

@@ -1,27 +1,25 @@
-from ..lib.service import get_backend_users_proxy
 from api_helpers import getCurrentUserInfo, checkauth
-from ..lib.remote_info import get_organization_info
+from ..lib.remote_info import get_organization_info, get_organization_list, OrganizationInfo
 
 def organization_list():
 	"""
 	undocumented
 	"""
-	api = get_backend_users_proxy()
-	return api.organization_list()
+	return get_organization_list()
 
-def organization_create(name, label="", attrs={}):
+def organization_create(name, label="", attrs=None):
 	"""
 	undocumented
 	"""
+	if attrs is None: attrs = {}
 	getCurrentUserInfo().check_may_create_organizations()
-	api = get_backend_users_proxy()
-	return api.organization_create(name, label, attrs)
+	return OrganizationInfo.create(name, label, attrs)
 
 def organization_info(name):
 	"""
 	undocumented
 	"""
-	return get_organization_info(name).info()
+	return get_organization_info(name).info(update=True)
 
 def organization_modify(name, attrs):
 	"""

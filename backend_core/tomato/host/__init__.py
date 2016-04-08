@@ -147,7 +147,7 @@ class Host(Entity, BaseDocument):
 			schema=schema.Identifier()
 		),
 		"enabled": Attribute(field=enabled, schema=schema.Bool()),
-		"description": Attribute(field=description, schema=schema.String()),
+		"description": Attribute(field=description, schema=schema.String(null=True)),
 		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization, schema=schema.Identifier()),
 		"problems": Attribute(readOnly=True, get=lambda obj: obj.problems(), schema=schema.List(items=schema.String())),
 		"component_errors": Attribute(field=componentErrors, readOnly=True, schema=schema.Int()),
@@ -813,5 +813,6 @@ def synchronizeComponents():
 from .site import Site
 from .. import handleError
 
-scheduler.scheduleRepeated(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL], scheduleHostChecks)  # @UndefinedVariable
+scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL],
+                              Host.getAll, synchronizeHost)
 scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable

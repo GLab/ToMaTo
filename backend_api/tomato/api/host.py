@@ -15,24 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#fixme: all.
-
 from api_helpers import checkauth, getCurrentUserInfo
-from ..lib.service import get_backend_users_proxy, get_backend_core_proxy
-from ..lib.remote_info import get_host_info, get_site_info
+from ..lib.service import get_backend_core_proxy
+from ..lib.remote_info import get_host_info, get_site_info, get_host_list, HostInfo
 
 def host_list(site=None, organization=None):
 	"""
 	undocumented
 	"""
-	return get_backend_core_proxy().host_list(site, organization)
+	return get_host_list(site, organization)
 
 def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
-	getCurrentUserInfo().check_may_create_hosts(get_site_info(site))
-	return get_backend_core_proxy().host_create(name, site, attrs)
+	site_info = get_site_info(site)
+	getCurrentUserInfo().check_may_create_hosts(site_info)
+	return HostInfo.create(name, site_info, attrs)
 
 @checkauth
 def host_info(name):
@@ -40,7 +39,7 @@ def host_info(name):
 	undocumented
 	"""
 	host = get_host_info(name)
-	return host.info()
+	return host.info(update=True)
 
 def host_modify(name, attrs):
 	"""

@@ -118,6 +118,13 @@ class AddEditForm(RenderableForm):
 			if self.message_after is not None:
 				self.message_after = self.message_after % data
 
+	def get_optimized_data(self):
+		res = self.cleaned_data
+		for k, v in res.iteritems():
+			if v == "":
+				res[k] = None
+		return res
+
 class ConfirmForm(RenderableForm):
 	buttons = Buttons.cancel_continue
 	formaction_haskeys = True

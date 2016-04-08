@@ -1,6 +1,5 @@
-from ..lib.service import get_backend_core_proxy
 from api_helpers import getCurrentUserInfo, checkauth
-from ..lib.remote_info import get_network_info
+from ..lib.remote_info import get_network_info, get_network_list, NetworkInfo
 
 def network_list():
 	"""
@@ -11,7 +10,7 @@ def network_list():
 	  entry contains exactly the same information as returned by
 	  :py:func:`network_info`. If no resource matches, the list is empty.
 	"""
-	return get_backend_core_proxy().network_list()
+	return get_network_list()
 
 
 def network_create(kind, attrs=None):
@@ -31,7 +30,7 @@ def network_create(kind, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_technical_resources()
-	return get_backend_core_proxy().network_create(kind, attrs)
+	return NetworkInfo.create(kind, attrs)
 
 
 def network_modify(id, attrs):
@@ -92,4 +91,4 @@ def network_info(id): #@ReservedAssignment
 	  If the given network does not exist an exception *network does not
 	  exist* is raised.
 	"""
-	return get_network_info(id).info()
+	return get_network_info(id).info(update=True)
