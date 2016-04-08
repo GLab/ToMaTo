@@ -1,4 +1,4 @@
-default: tomato_backend_core_image tomato_backend_users_image tomato_backend_api_image tomato_backend_debug_image tomato_web_image
+default: tomato_backend_core_image tomato_backend_users_image tomato_backend_api_image tomato_backend_debug_image tomato_web_image tomato_backend_accounting_image
 
 tomato_service_image:
 	./build.sh tomato_service
@@ -27,3 +27,10 @@ tomato_web_image:
 	mkdir -p tomato_web/code/web
 	rsync -aL ../../web/ tomato_web/code/web/ --filter 'merge web-files'
 	./build.sh tomato_web
+
+tomato_backend_accounting_image:
+	mkdir -p tomato_backend_accounting/code/backend_accounting
+	rsync -aL ../../backend_accounting/ tomato_backend_accounting/code/backend_accounting/ --filter 'merge backend_accounting-files'
+	mkdir -p tomato_backend_accounting/code/shared-rust
+	rsync -aL ../../shared-rust/ tomato_backend_accounting/code/shared-rust/ --filter 'merge backend_accounting-files'
+	./build.sh tomato_backend_accounting

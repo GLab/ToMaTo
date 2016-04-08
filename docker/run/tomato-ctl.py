@@ -12,7 +12,7 @@ from datetime import date
 from threading import Thread
 
 
-TOMATO_MODULES = ['web', 'backend_core', 'backend_users', 'backend_api', 'backend_debug']
+TOMATO_MODULES = ['web', 'backend_core', 'backend_users', 'backend_api', 'backend_debug', 'backend_accounting']
 DB_MODULE = "db"
 CONFIG_PATHS = ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]
 
@@ -320,6 +320,27 @@ def generate_default_config():
 				'logs': os.path.join("backend_api", "logs")
 			},
 			'code_directories': ['backend_api', 'shared'],
+			'shell_cmd': "/bin/bash",
+			'reload_cmd': None
+			# 'version'  (will be generated if not found in config)
+		},
+		'backend_accounting': {
+			'enabled': True,
+			'image': 'tomato_backend_accounting',
+			'ports': [8007],
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(data)s', '/data'),
+				('%(config)s', '/config'),
+				('%(logs)s', '/logs')
+			],
+			'directories': {
+				'data': os.path.join("backend_accounting", "data"),
+				'config': os.path.join("backend_accounting", "config"),
+				'logs': os.path.join("backend_accounting", "logs")
+			},
+			'code_directories': [],
 			'shell_cmd': "/bin/bash",
 			'reload_cmd': None
 			# 'version'  (will be generated if not found in config)
