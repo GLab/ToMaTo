@@ -115,6 +115,23 @@ pub struct Api(Arc<Data>);
 
 impl Api {
     pub fn get_record(&self, mut params: Params) -> Result<Record, Error> {
+        //! get_record(type: String, id: String) -> Result<Record, Error>
+        //!
+        //! Retrieves a full accounting record for the given object
+        //!
+        //! Parameters:
+        //! * type: A string describing the object type, "host_element", "host_connection",
+        //!         "element", "connection", "topology", "user", or "organization".
+        //! * id: A string specifying the object id.
+        //!
+        //! Return value:
+        //!   A mapping containing the fields "5minutes", "hour", "day", "month", and "year",
+        //!   where each field maps to a list of accounting entries.
+        //!   Each accounting entry is a mapping containing the following fields:
+        //!   - "start", "end": Unix timestamps of the start and end dates of the entry
+        //!   - "measurements": The number of measurement points aggregated in the entry.
+        //!   - "usage": A mapping of the usage containing the fields "traffic", "cputime",
+        //!              "memory", "disk"
         debug!("API call get_record {:?}", params);
         let type_ = param!(params, "type", RecordType);
         let id = param!(params, "id", String);
@@ -125,6 +142,17 @@ impl Api {
     }
 
     pub fn push_usage(&self, mut params: Params) -> Result<(), Error> {
+        //! push_usage(elements: Records, connections: Records) -> Result<(), Error>
+        //!
+        //! Stores the given usage records
+        //!
+        //! Parameters:
+        //! * elements: A mapping containing lists of usage measurements (values) for host_element ids (keys).
+        //!             Each usage measurement is a 5-tuple (timestamp, memory, disk, traffic, cputime).
+        //!             The timestamp is a unix timestamp as integer, all other fields are floating point numbers.
+        //! * connections: A mapping containing lists of usage measurements (values) for connection_element ids (keys).
+        //!
+        //! Return value: None
         debug!("API call push_usage {:?}", params);
         type Records = HashMap<String, Vec<(Time, f32, f32, f32, f32, u32)>>;
         let elements = param!(params, "elements", Records);
