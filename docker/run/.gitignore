@@ -4,5 +4,6 @@ backend/*/*
 backend_core/*/*
 backend_users/*/*
 backend_api/*/*
+backend_accounting/*/*
 backend_debug/*/*
 web/*/*
