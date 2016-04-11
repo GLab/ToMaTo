@@ -36,7 +36,7 @@ def errordump_info(group_id, source, dump_id, include_data=False):
     
     Parameter *include_data*:
       A boolean.
-      Every dump has environment data attatched to it. This data may be big (i.e., >1MB).
+      Every dump has environment data attached to it. This data may be big (i.e., >1MB).
       By default, the data of a dump has most likely not been loaded from its source.
       If include_data is False, this data will not be returned by this call.
       If it is True, this data will first be fetched from the source, if needed, and included in this call's return.

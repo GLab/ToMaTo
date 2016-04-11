@@ -1,4 +1,4 @@
-from api_helpers import getCurrentUserInfo, checkauth
+from api_helpers import getCurrentUserInfo
 from ..lib.remote_info import get_organization_info, get_organization_list, OrganizationInfo
 
 def organization_list():

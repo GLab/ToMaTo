@@ -17,7 +17,7 @@ def topology_import(data):
 		UserError.check('topology' in data, code=UserError.INVALID_VALUE, message="Data lacks field topology")
 		return _topology_import_v4(data['topology'])
 	else:
-		raise UserError(code=UserError.INVALID_VALUE, message="Unsuported topology version", data={"version": version})
+		raise UserError(code=UserError.INVALID_VALUE, message="Unsupported topology version", data={"version": version})
 
 def _topology_import_v3(top):
 	# changes in data model from 3 to 4:
@@ -104,7 +104,7 @@ def _topology_import_v4(top):
 	except:
 		topology_remove(top_id)
 		raise
-	return (top_id, elementIds.items(), connectionIds.items(), errors)
+	return top_id, elementIds.items(), connectionIds.items(), errors
 
 
 def topology_export(id): #@ReservedAssignment

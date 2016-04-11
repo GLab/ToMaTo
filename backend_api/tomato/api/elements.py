@@ -62,10 +62,10 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	getCurrentUserInfo().check_may_create_element(top_inf)
 	if not attrs: attrs = {}
 	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(get_element_info(id).get_type(), attrs['template']))
+		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(type, attrs['template']))
 	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(get_element_info(id).get_type(), attrs['profile']))
-	return ElementInfo.create.create(top_inf, type, parent, attrs)
+		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(type, attrs['profile']))
+	return ElementInfo.create(top_inf, type, parent, attrs)
 
 def element_modify(id, attrs): #@ReservedAssignment
 	"""

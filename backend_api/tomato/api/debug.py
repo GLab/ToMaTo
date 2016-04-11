@@ -14,10 +14,10 @@ def debug(method, args=None, kwargs=None, profile=None):
 def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
 	getCurrentUserInfo().check_may_view_debugging_info()
 	if is_self(tomato_module):
-		stats = {}
-		stats["scheduler"] = scheduler.info()
-		stats["threads"] = map(traceback.extract_stack, sys._current_frames().values())
-		return stats
+		return {
+			"scheduler": scheduler.info(),
+			"threads": map(traceback.extract_stack, sys._current_frames().values())
+		}
 	else:
 		api = get_tomato_inner_proxy(tomato_module)
 		return api.debug_stats()
