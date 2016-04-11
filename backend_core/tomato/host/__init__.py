@@ -426,7 +426,7 @@ class Host(Entity, BaseDocument):
 							data[type_][obj_id] = [new_rec]
 
 			get_backend_accounting_proxy().push_usage(data["elements"], data["connections"])
-			self.accountingTimestamp = max_timestamp
+			self.accountingTimestamp = max_timestamp + 1  # one second greater than last record.
 			self.save()
 		finally:
 			logging.logMessage("accounting_sync end", category="host", name=self.name)
