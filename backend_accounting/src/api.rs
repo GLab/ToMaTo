@@ -148,8 +148,8 @@ impl Api {
         //!
         //! Parameters:
         //! * elements: A mapping containing lists of usage measurements (values) for host_element ids (keys).
-        //!             Each usage measurement is a 5-tuple (timestamp, memory, disk, traffic, cputime).
-        //!             The timestamp is a unix timestamp as integer, all other fields are floating point numbers.
+        //!             Each usage measurement is a 6-tuple (timestamp, memory, disk, traffic, cputime, measurements).
+        //!             The timestamp is a unix timestamp as integer, measurements is an integer, all other fields are floating point numbers.
         //! * connections: A mapping containing lists of usage measurements (values) for connection_element ids (keys).
         //!
         //! Return value: None
