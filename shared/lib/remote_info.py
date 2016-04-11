@@ -1,7 +1,9 @@
 from error import InternalError
-from service import get_backend_users_proxy, get_backend_core_proxy
+from service import get_backend_users_proxy, get_backend_core_proxy, get_backend_accounting_proxy
 from cache import cached
+from hierarchy import ClassName
 import topology_role
+import time
 
 class ExistenceCheck(object):
 	"""
@@ -214,8 +216,26 @@ class ActionObj(InfoObj):
 
 
 
+class UsageObj(object):
+
+	__slots__ = ("_usage", "_usage_timestamp", "_class_name", "_id")
+
+	def __init__(self, class_name, id_):
+		self._usage = None
+		self._usage_timestamp = 0
+		self._class_name = class_name
+		self._id = id_
+
+	def get_usage(self):
+		if self._usage is None or time.time()-self._usage_timestamp > 60:
+			self._usage = get_backend_accounting_proxy().get_record(self._class_name, self._id)
+			self._usage_timestamp = time.time()
+		return self._usage
+
+
+
 class UserInfo(InfoObj):
-	__slots__ = ("name",)
+	__slots__ = ("name", "_usage_obj")
 
 	def invalidate_list(self):
 		get_user_list.invalidate()
@@ -223,6 +243,10 @@ class UserInfo(InfoObj):
 	def __init__(self, username):
 		super(UserInfo, self).__init__()
 		self.name = username
+		self._usage_obj = UsageObj(ClassName.USER, self.name)
+
+	def get_usage(self):
+		return self._usage_obj.get_usage()
 
 	@staticmethod
 	def create(username, organization, email, password, attrs):
@@ -264,7 +288,7 @@ class UserInfo(InfoObj):
 
 
 class OrganizationInfo(InfoObj):
-	__slots__ = ("name",)
+	__slots__ = ("name", "_usage_obj")
 
 	def invalidate_list(self):
 		get_organization_list.invalidate()
@@ -272,6 +296,10 @@ class OrganizationInfo(InfoObj):
 	def __init__(self, organization_name):
 		super(OrganizationInfo, self).__init__()
 		self.name = organization_name
+		self._usage_obj = UsageObj(ClassName.ORGANIZATION, self.name)
+
+	def get_usage(self):
+		return self._usage_obj.get_usage()
 
 	@staticmethod
 	def create(name, label="", attrs=None):
@@ -300,7 +328,7 @@ class OrganizationInfo(InfoObj):
 
 
 class TopologyInfo(ActionObj):
-	__slots__ = ("topology_id", )
+	__slots__ = ("topology_id", "_usage_obj")
 
 	def invalidate_list(self):
 		get_topology_list.invalidate()
@@ -314,9 +342,13 @@ class TopologyInfo(ActionObj):
 	def __init__(self, topology_id):
 		super(TopologyInfo, self).__init__()
 		self.topology_id = topology_id
+		self._usage_obj = UsageObj(ClassName.TOPOLOGY, self.topology_id)
 
 	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().topology_info(self.topology_id)
+
+	def get_usage(self):
+		return self._usage_obj.get_usage()
 
 	def user_has_role(self, username, role):
 		"""
@@ -512,7 +544,7 @@ class HostInfo(InfoObj):
 
 
 class ElementInfo(ActionObj):
-	__slots__ = ("eid",)
+	__slots__ = ("eid", "_usage_obj")
 
 	@staticmethod
 	def create(top, type, parent_id, attrs):
@@ -533,6 +565,7 @@ class ElementInfo(ActionObj):
 	def __init__(self, element_id):
 		super(ElementInfo, self).__init__()
 		self.eid = element_id
+		self._usage_obj = UsageObj(ClassName.ELEMENT, self.eid)
 
 	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().element_info(self.eid, fetch=fetch)
@@ -557,8 +590,11 @@ class ElementInfo(ActionObj):
 	def get_id(self):
 		return self.eid
 
+	def get_usage(self):
+		return self._usage_obj.get_usage()
+
 class ConnectionInfo(ActionObj):
-	__slots__ = ("cid",)
+	__slots__ = ("cid", "_usage_obj")
 
 	def _after_action(self, action, params):
 		super(ConnectionInfo, self)._after_action(action, params)
@@ -578,6 +614,7 @@ class ConnectionInfo(ActionObj):
 	def __init__(self, connection_id):
 		super(ConnectionInfo, self).__init__()
 		self.cid = connection_id
+		self._usage_obj = UsageObj(ClassName.CONNECTION, self.cid)
 
 	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().element_info(self.eid, fetch=fetch)
@@ -595,6 +632,9 @@ class ConnectionInfo(ActionObj):
 
 	def get_topology_info(self):
 		return get_topology_info(self.info()['topology'])
+
+	def get_usage(self):
+		return self._usage_obj.get_usage()
 
 class TemplateInfo(InfoObj):
 	__slots__ = ("template_id")

@@ -785,16 +785,6 @@ def synchronizeHost(host):
 			checkingHosts.remove(host)
 
 @util.wrap_task
-def scheduleHostChecks():
-	toSync = set((h for h in Host.getAll() if h.enabled))
-	syncTasks = {t.args[0]: tid for tid, t in scheduler.tasks.items() if t.fn == synchronizeHost}
-	syncing = set(syncTasks.keys())
-	for h in toSync - syncing:
-		scheduler.scheduleRepeated(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL], synchronizeHost, h)
-	for h in syncing - toSync:
-		scheduler.cancelTask(syncTasks[h])
-
-@util.wrap_task
 def synchronizeComponents():
 	from .element import HostElement
 	for hel in HostElement.objects.all():

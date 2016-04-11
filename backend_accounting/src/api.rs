@@ -180,7 +180,9 @@ impl Api {
 
     pub fn debug_stats(&self, _params: Params) -> Result<Value, Error> {
         Ok(to_value!{
-            "accounting_record_count" => self.0.records.read().expect("Lock poisoned").len()
+            "accounting" => to_value!{
+            	"record_count" => self.0.records.read().expect("Lock poisoned").len()
+            }
         })
     }
 

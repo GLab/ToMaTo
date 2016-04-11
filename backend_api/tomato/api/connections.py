@@ -206,6 +206,7 @@ def connection_usage(id): #@ReservedAssignment
 	  Usage statistics for the given connection according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	getCurrentUserInfo().check_may_view_connection(get_connection_info(id))
-	# fixme: broken
+	conn = get_connection_info(id)
+	getCurrentUserInfo().check_may_view_connection(conn)
+	return conn.get_usage()
 

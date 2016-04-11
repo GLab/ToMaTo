@@ -40,6 +40,9 @@ def get_backend_core_proxy():
 def get_backend_debug_proxy():
 	return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_DEBUG)
 
+def get_backend_accounting_proxy():
+	return get_tomato_inner_proxy(Config.TOMATO_MODULE_BACKEND_ACCOUNTING)
+
 def is_reachable(tomato_module):
 	if is_self(tomato_module):
 		return True

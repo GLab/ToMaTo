@@ -62,10 +62,10 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	getCurrentUserInfo().check_may_create_element(top_inf)
 	if not attrs: attrs = {}
 	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(get_element_info(id).get_type(), attrs['template']))
+		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(type, attrs['template']))
 	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(get_element_info(id).get_type(), attrs['profile']))
-	return ElementInfo.create.create(top_inf, type, parent, attrs)
+		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(type, attrs['profile']))
+	return ElementInfo.create(top_inf, type, parent, attrs)
 
 def element_modify(id, attrs): #@ReservedAssignment
 	"""
@@ -296,5 +296,6 @@ def element_usage(id): #@ReservedAssignment
 	  Usage statistics for the given element according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	getCurrentUserInfo().check_may_view_element(get_element_info(id))
-	# fixme: broken
+	elem = get_element_info(id)
+	getCurrentUserInfo().check_may_view_element(elem)
+	return elem.get_usage()
