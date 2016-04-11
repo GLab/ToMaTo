@@ -418,7 +418,7 @@ class Host(Entity, BaseDocument):
 			for type_ in ("elements", "connections"):
 				for obj_id, obj_recs in orig_data[type_].iteritems():
 					for obj_rec in obj_recs:
-						new_rec = (int(obj_rec["begin"]), obj_rec["usage"]["memory"], obj_rec["usage"]["diskspace"], obj_rec["usage"]["traffic"], obj_rec["usage"]["cputime"], int(obj_rec["measurements"]))
+						new_rec = (int(obj_rec["begin"]), obj_rec["usage"]["memory"], obj_rec["usage"]["diskspace"], obj_rec["usage"]["traffic"], obj_rec["usage"]["cputime"])
 						max_timestamp = max(obj_rec["begin"], max_timestamp)
 						if obj_id in data[type_]:
 							data[type_][obj_id].append(new_rec)
