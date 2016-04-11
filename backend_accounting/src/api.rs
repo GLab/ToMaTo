@@ -154,20 +154,20 @@ impl Api {
         //!
         //! Return value: None
         debug!("API call push_usage {:?}", params);
-        type Records = HashMap<String, Vec<(Time, f32, f32, f32, f32, u32)>>;
+        type Records = HashMap<String, Vec<(Time, f32, f32, f32, f32)>>;
         let elements = param!(params, "elements", Records);
         let connections = param!(params, "connections", Records);
         for (id, records) in elements {
             for rec in records {
                 let time = rec.0;
-                let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4, rec.5);
+                let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4, 1);
                 self.0.add_host_element_usage(&id, &mut usage, time);
             }
         }
         for (id, records) in connections {
             for rec in records {
                 let time = rec.0;
-                let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4, rec.5);
+                let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4, 1);
                 self.0.add_host_connection_usage(&id, &mut usage, time);
             }
         }
