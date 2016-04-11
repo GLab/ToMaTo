@@ -296,5 +296,6 @@ def element_usage(id): #@ReservedAssignment
 	  Usage statistics for the given element according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	getCurrentUserInfo().check_may_view_element(get_element_info(id))
-	# fixme: broken
+	elem = get_element_info(id)
+	getCurrentUserInfo().check_may_view_element(elem)
+	return elem.get_usage()

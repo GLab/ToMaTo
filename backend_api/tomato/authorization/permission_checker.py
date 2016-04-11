@@ -240,6 +240,19 @@ class PermissionChecker(UserInfo):
 			return
 		auth_fail("operation requires global or organization-internal admin flag")
 
+	def check_may_view_user_usage(self, userB):
+		"""
+		check whether this user may view the usage of userB.
+		:param UserInfo userB: user whose usage stats are requested.
+		"""
+		if userB.get_username() == self.get_username():
+			return
+		if Flags.GlobalAdmin in self.get_flags():
+			return
+		if Flags.OrgaAdmin in self.get_flags() and self.get_organization_name() == userB.get_organization_name():
+			return
+		auth_fail("operation requires global or organization-internal admin flag")
+
 	def check_may_delete_user(self, userB):
 		"""
 		check whether this user may delete userB
@@ -311,6 +324,17 @@ class PermissionChecker(UserInfo):
 		if (Flags.OrgaAdmin in self.get_flags() or Flags.OrgaHostManager in self.get_flags()) and self.get_organization_name() == organization:
 			return
 		auth_fail("operation requires global or organization-internal admin or hostmanager flag")
+
+	def check_may_view_organization_usage(self, organization):
+		"""
+		check whether this user may view the organization's usage
+		:param str organization: organization to be viewd
+		"""
+		if self.get_organization_name() == organization:
+			return
+		if Flags.GlobalAdmin in self.get_flags():
+			return
+		auth_fail("you are not allowed to view this organization's usage.")
 
 	def check_may_delete_organization(self, organization):
 		"""

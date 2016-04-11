@@ -63,8 +63,3 @@ def host_users(name):
 	"""
 	getCurrentUserInfo().check_may_list_host_users(get_host_info(name))
 	return get_backend_core_proxy().host_users(name)
-
-@checkauth
-def host_usage(name): #@ReservedAssignment
-	return get_backend_core_proxy().host_usage(name)
-

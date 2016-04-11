@@ -186,11 +186,6 @@ def account_remove(name=None):
 
 
 def account_usage(name): #@ReservedAssignment
-	#fixme: backend_users and stuff
-	_UserError.check(_currentUser(), code=_UserError.NOT_LOGGED_IN, message="Unauthorized")
-	acc = _getAccount(name)
-	return acc.totalUsage.info()
-
-
-# the following functions should be removed, and clients should use the respective library in shared
-from ..lib.error import UserError as _UserError
+	target_user = get_user_info(name)
+	getCurrentUserInfo().check_may_view_user_usage(target_user)
+	return target_user.get_usage()

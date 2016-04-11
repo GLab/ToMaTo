@@ -35,8 +35,6 @@ def organization_remove(name):
 	getCurrentUserInfo().check_may_delete_organization(name)
 	get_organization_info(name).remove()
 
-@checkauth
 def organization_usage(name): #@ReservedAssignment
-	#fixme: broken
-	orga = _getOrganization(name)
-	return orga.totalUsage.info()
+	getCurrentUserInfo().check_may_view_organization_usage(name)
+	return get_organization_info(name).get_usage()

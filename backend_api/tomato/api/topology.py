@@ -225,6 +225,6 @@ def topology_usage(id): #@ReservedAssignment
 	  Usage statistics for the given topology according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	# fixme: broken
-	getCurrentUserInfo().check_may_view_topology_usage(get_topology_info(id))
-	return get_backend_core_proxy().topology_usage(id)
+	target_topology = get_topology_info(id)
+	getCurrentUserInfo().check_may_view_topology_usage(target_topology)
+	return target_topology.get_usage()
