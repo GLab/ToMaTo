@@ -141,4 +141,4 @@ def list():
 @util.wrap_task
 def synchronize(num):
 	HostElement.objects.get(num=num).synchronize()
-scheduler.scheduleMaintenance(3600, list, synchronize)
+scheduler.scheduleMaintenance(min(3600, settings.get_host_connections_settings()['component-timeout']), list, synchronize)
