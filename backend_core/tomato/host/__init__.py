@@ -19,17 +19,17 @@ import base64
 import sys
 import threading
 import time
-import zlib
+import traceback
 
 from .. import starttime, scheduler
 from ..accounting.quota import UsageStatistics
 from ..db import *
 from ..generic import *
-from ..lib import anyjson as json
+from ..lib.dump import dumpException
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
-from ..lib.service import get_backend_users_proxy
+from ..lib.service import get_backend_users_proxy, get_backend_accounting_proxy
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
 
@@ -400,30 +400,36 @@ class Host(Entity, BaseDocument):
 
 	def updateAccountingData(self):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)
-		data = self.getProxy().accounting_statistics(type="5minutes", after=self.accountingTimestamp - 900)
-		for el in self.elements.all():
-			if not el.usageStatistics:
-				el.usageStatistics = UsageStatistics.objects.create()
-				el.save()
-			if not str(el.num) in data["elements"]:
-				print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (el.num, self.name)
-				continue
-			logging.logMessage("host_records", category="accounting", host=self.name,
-							   records=data["elements"][str(el.num)], object=("element", el.idStr))
-			el.usageStatistics.importRecords(data["elements"][str(el.num)])
-		for con in self.connections.all():
-			if not con.usageStatistics:
-				con.usageStatistics = UsageStatistics.objects.create()
-				con.save()
-			if not str(con.num) in data["connections"]:
-				print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
-				continue
-			logging.logMessage("host_records", category="accounting", host=self.name,
-							   records=data["connections"][str(con.num)], object=("connection", con.idStr))
-			con.usageStatistics.importRecords(data["connections"][str(con.num)])
-		self.accountingTimestamp = time.time()
-		self.save()
-		logging.logMessage("accounting_sync end", category="host", name=self.name)
+		try:
+			orig_data = self.getProxy().accounting_statistics(type="single", after=self.accountingTimestamp)
+			data = {"elements": {}, "connections": {}}
+			max_timestamp = self.accountingTimestamp
+
+			# check for completeness
+			for el in self.elements.all():
+				if not str(el.num) in orig_data["elements"]:
+					print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (el.num, self.name)
+			for con in self.connections.all():
+				if not str(con.num) in orig_data["connections"]:
+					print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
+					continue
+
+			# transform
+			for type_ in ("elements", "connections"):
+				for obj_id, obj_recs in orig_data[type_].iteritems():
+					for obj_rec in obj_recs:
+						new_rec = (int(obj_rec["begin"]), obj_rec["usage"]["memory"], obj_rec["usage"]["diskspace"], obj_rec["usage"]["traffic"], obj_rec["usage"]["cputime"], int(obj_rec["measurements"]))
+						max_timestamp = max(obj_rec["begin"], max_timestamp)
+						if obj_id in data[type_]:
+							data[type_][obj_id].append(new_rec)
+						else:
+							data[type_][obj_id] = [new_rec]
+
+			get_backend_accounting_proxy().push_usage(data["elements"], data["connections"])
+			self.accountingTimestamp = max_timestamp
+			self.save()
+		finally:
+			logging.logMessage("accounting_sync end", category="host", name=self.name)
 
 	def getNetworkKinds(self):
 		nets = [net.getKind() for net in self.networks.all()]
@@ -763,7 +769,8 @@ checkingHosts = set()
 
 
 @util.wrap_task
-def synchronizeHost(host):
+def synchronizeHost(host_name):
+	host = Host.objects.get(name=host_name)
 	with checkingHostsLock:
 		if host in checkingHosts:
 			return
@@ -772,17 +779,27 @@ def synchronizeHost(host):
 		try:
 			host.update()
 			host.synchronizeResources()
-			host.updateAccountingData()
 		except:
-			import traceback
-
 			traceback.print_exc()
 			logging.logException(host=host.name)
+			dumpException()
 			print >>sys.stderr, "Error updating information from %s" % host
 		host.checkProblems()
 	finally:
 		with checkingHostsLock:
 			checkingHosts.remove(host)
+
+@util.wrap_task
+def updateAccounting(host_name):
+	host = Host.objects.get(name=host_name)
+	try:
+		host.updateAccountingData()
+	except:
+		traceback.print_exc()
+		logging.logException(host=host.name)
+		dumpException()
+		print >>sys.stderr, "Error updating information from %s" % host
+
 
 @util.wrap_task
 def synchronizeComponents():
@@ -803,6 +820,11 @@ def synchronizeComponents():
 from .site import Site
 from .. import handleError
 
+def list_host_names():
+	return [h.name for h in Host.getAll()]
+
 scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL],
-                              Host.getAll, synchronizeHost)
+                              list_host_names, synchronizeHost)
+scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL],
+                              list_host_names, updateAccounting)
 scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
