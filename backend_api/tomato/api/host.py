@@ -47,7 +47,7 @@ def host_modify(name, attrs):
 	"""
 	host = get_host_info(name)
 	getCurrentUserInfo().check_may_modify_host(host)
-	return host.modify(name, attrs)
+	return host.modify(attrs)
 
 def host_remove(name):
 	"""
@@ -55,7 +55,7 @@ def host_remove(name):
 	"""
 	host = get_host_info(name)
 	getCurrentUserInfo().check_may_delete_host(host)
-	host.remove(name)
+	host.remove()
 
 def host_users(name):
 	"""
