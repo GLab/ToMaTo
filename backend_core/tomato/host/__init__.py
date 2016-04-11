@@ -800,25 +800,7 @@ def updateAccounting(host_name):
 		dumpException()
 		print >>sys.stderr, "Error updating information from %s" % host
 
-
-@util.wrap_task
-def synchronizeComponents():
-	from .element import HostElement
-	for hel in HostElement.objects.all():
-		try:
-			hel.synchronize()
-		except Exception:
-			handleError()
-	from .connection import HostConnection
-	for hcon in HostConnection.objects.all():
-		try:
-			hcon.synchronize()
-		except Exception:
-			handleError()
-
-
 from .site import Site
-from .. import handleError
 
 def list_host_names():
 	return [h.name for h in Host.getAll()]
@@ -827,4 +809,3 @@ scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HO
                               list_host_names, synchronizeHost)
 scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL],
                               list_host_names, updateAccounting)
-scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
