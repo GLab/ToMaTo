@@ -30,7 +30,7 @@ $(function () {
                 traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic / (rec.end-rec.begin)]);
                 memory[range].push([rec.end * 1000 - offset, rec.usage.memory]);
                 cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime / (rec.end-rec.begin)]);
-                diskspace[range].push([rec.end * 1000 - offset, rec.usage.diskspace]);
+                diskspace[range].push([rec.end * 1000 - offset, rec.usage.disk]);
             }
         }
         var formatSize = function(value) {

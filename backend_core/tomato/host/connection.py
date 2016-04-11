@@ -1,5 +1,6 @@
 from ..db import *
-from ..lib import logging, error
+from ..lib import logging, error, util
+from .. import scheduler
 
 from . import HostObject
 from .element import HostElement
@@ -109,3 +110,10 @@ class HostConnection(HostObject):
 			logging.logException(host=self.host.address)
 
 HostConnection.register_delete_rule(HostElement, "connection", NULLIFY)
+
+def list():
+	return [e.num for e in HostConnection.objects.all()]
+@util.wrap_task
+def synchronize(num):
+	HostConnection.objects.get(num=num).synchronize()
+scheduler.scheduleMaintenance(3600, list, synchronize)

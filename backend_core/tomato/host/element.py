@@ -1,6 +1,7 @@
 from ..db import *
-from ..lib import logging, error
+from ..lib import logging, error, util
 from ..lib.settings import settings
+from .. import scheduler
 import time
 from . import HostObject
 
@@ -133,3 +134,11 @@ class HostElement(HostObject):
 				raise
 		except:
 			logging.logException(host=self.host.address)
+
+
+def list():
+	return [e.num for e in HostElement.objects.all()]
+@util.wrap_task
+def synchronize(num):
+	HostElement.objects.get(num=num).synchronize()
+scheduler.scheduleMaintenance(min(3600, settings.get_host_connections_settings()['component-timeout']), list, synchronize)

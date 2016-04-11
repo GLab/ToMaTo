@@ -11,24 +11,24 @@ import topology
 # HostElement
 
 def hostelement_get(id_):
-	hostelement.HostElement.objects.get(id=id_)
+	hostelement.HostElement.objects.get(num=id_)
 
 def hostelement_exists(id_):
 	try:
-		hostelement.HostElement.objects.get(id=id_)
+		hostelement.HostElement.objects.get(num=id_)
 		return True
 	except:
 		return None
 
 def hostelement_parents(id_):
-	hel = hostelement.HostElement.objects.get(id=id_)
+	hel = hostelement.HostElement.objects.get(num=id_)
 	UserError.check(hel is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
 	res = []
 	if hel.topologyElement is not None:
-		res.append((hierarchy.ClassName.ELEMENT, hel.topologyElement.id))
+		res.append((hierarchy.ClassName.ELEMENT, str(hel.topologyElement.id)))
 	if hel.topologyConnection is not None:
-		res.append((hierarchy.ClassName.CONNECTION, hel.topologyConnection.id))
+		res.append((hierarchy.ClassName.CONNECTION, str(hel.topologyConnection.id)))
 	return res
 
 
@@ -41,7 +41,7 @@ def element_parents(id_):
 	el = elements.Element.get(id_)
 	UserError.check(el is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
-	return [(hierarchy.ClassName.TOPOLOGY, el.topology.id)]
+	return [(hierarchy.ClassName.TOPOLOGY, str(el.topology.id))]
 
 
 
@@ -49,24 +49,24 @@ def element_parents(id_):
 # HostConnection
 
 def hostconnection_get(id_):
-	hostconnection.HostConnection.objects.get(id=id_)
+	hostconnection.HostConnection.objects.get(num=id_)
 
 def hostconnection_exists(id_):
 	try:
-		hostconnection.HostConnection.objects.get(id=id_)
+		hostconnection.HostConnection.objects.get(num=id_)
 		return True
 	except:
 		return None
 
 def hostconnection_parents(id_):
-	hconn = hostconnection.HostConnection.objects.get(id=id_)
+	hconn = hostconnection.HostConnection.objects.get(num=id_)
 	UserError.check(hconn is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
 	res = []
 	if hconn.topologyElement is not None:
-		res.append((hierarchy.ClassName.ELEMENT, hconn.topologyElement.id))
+		res.append((hierarchy.ClassName.ELEMENT, str(hconn.topologyElement.id)))
 	if hconn.topologyConnection is not None:
-		res.append((hierarchy.ClassName.CONNECTION, hconn.topologyConnection.id))
+		res.append((hierarchy.ClassName.CONNECTION, str(hconn.topologyConnection.id)))
 	return res
 
 
@@ -81,7 +81,7 @@ def connection_parents(id_):
 	conn = connections.Connection.get(id_)
 	UserError.check(conn is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
-	return [(hierarchy.ClassName.TOPOLOGY, conn.topology.id)]
+	return [(hierarchy.ClassName.TOPOLOGY, str(conn.topology.id))]
 
 
 # topology
