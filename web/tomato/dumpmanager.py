@@ -219,21 +219,20 @@ def errorgroup_github(api, request, group_id):
 		dump_tofetch = info['dumps'][0]
 		dump_info = api.errordump_info(group_id, dump_tofetch['source'], dump_tofetch['dump_id'], include_data=True)
 
-		backend_dump = False
-		host_dump = 0
+		backend_modules = set()
+		host_names = set()
 		for source in info['dump_contents']['source']:
-			if source == "backend":
-				backend_dump = True
-			elif source.startswith('host'):
-				host_dump += 1
-		source_str = []
-		source_str_short = []
-		if backend_dump:
-			source_str.append('Backend')
-			if host_dump:
-				source_str.append(' and ')
-		if host_dump:
-			source_str.append('%s Hostmanager%s' % (str(host_dump), "s" if host_dump>1 else ""))
+			if source.startswith("backend:"):
+				backend_modules.add(source[8:])
+			elif source.startswith('host:'):
+				host_names.add(source)
+		source_str = ", ".join(backend_modules)
+		if len(host_names) > 0:
+			host_str = ('%d Hostmanager%s' % (len(host_names), "s" if len(host_names) > 1 else ""))
+			if source_str:
+				source_str = source_str+", "+host_str
+			else:
+				source_str = host_str
 
 		issue_title = info['description']
 		trace = []
