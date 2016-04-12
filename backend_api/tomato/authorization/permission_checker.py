@@ -209,7 +209,7 @@ class PermissionChecker(UserInfo):
 		"""
 		res = {}
 		for k, v in attrs.iteritems():
-			if k in allowed_keys:
+			if k in allowed_keys or k.startswith("_"):
 				if k == "flags":
 					final_flags = {}
 					for flag, toset in v.iteritems():

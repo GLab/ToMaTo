@@ -97,6 +97,7 @@ class User(Entity, BaseDocument):
 		from .quota import Quota, Usage
 		default_quota = settings.get_user_quota(Config.USER_QUOTA_DEFAULT)
 		obj = cls(lastLogin=time.time(),
+		          password=password,
 							quota=Quota(
 								used=Usage(cputime=0, memory=0, diskspace=0, traffic=0),
 								monthly=Usage.from_settings(default_quota),
@@ -105,8 +106,8 @@ class User(Entity, BaseDocument):
 								)
 							)
 		try:
+			obj.modify(name=name, organization=organization, email=email, **attrs)
 			obj.modify_password(password)
-			obj.modify(organization=organization, email=email, **attrs)
 			obj.save()
 		except:
 			if obj.id:

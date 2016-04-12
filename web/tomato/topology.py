@@ -26,6 +26,7 @@ from .lib import anyjson as json
 from tutorial import loadTutorial
 from web_resources import web_resources
 from lib import wrap_rpc, AuthError, serverInfo
+from lib.topology_role import role_descriptions
 
 from admin_common import BootstrapForm, Buttons
 from tomato.crispy_forms.layout import Layout
@@ -74,7 +75,7 @@ def _display(api, request, info, tutorial_state):
 	caps = api.capabilities()
 	resources = api.resources_map()
 	sites = api.site_list()
-	permission_list = api.topology_permissions()
+	permission_list = role_descriptions()
 	orgas = dict([(o["name"], o) for o in api.organization_list()])
 	for s in sites:
 		orga = orgas[s['organization']]
@@ -102,11 +103,13 @@ def _display(api, request, info, tutorial_state):
 		'res_web_json': json.dumps(web_resources()),
 		'sites_json': json.dumps(sites),
 		'caps_json': json.dumps(caps),
-		'tutorial_info':{'state': tutorial_state,
-						 'steps':tut_steps,
-						 'data': tut_data,
-						 'initscript': initscript},
-		'permission_list':permission_list,
+		'tutorial_info': {
+			'state': tutorial_state,
+			'steps':tut_steps,
+			'data': tut_data,
+			'initscript': initscript
+		},
+		'permission_list': permission_list,
 		'editor': {
 			'size': editor_size
 		}
