@@ -56,16 +56,17 @@ time.sleep(5)
 print ""
 
 # remove mongodb data
-print "Removing Database..."
-mongodb_path = os.path.abspath("./mongodb-data")
+print "Removing Data..."
 if os.path.exists(mongodb_path):
-	try:
-		shutil.rmtree(os.path.abspath("./mongodb-data"))
-	except:
-		print " this requires superuser privileges."
-		cmd = ["sudo", "rm", "-rf", mongodb_path]
-		print " [%s]" % " ".join(cmd)
-		subprocess.call(cmd)
+	for dir in ['mongodb-data', './backend_accounting/data']:
+		try:
+			path = path = os.path.abspath(dir)
+			shutil.rmtree(path)
+		except:
+			print " this requires superuser privileges."
+			cmd = ["sudo", "rm", "-rf", path]
+			print " [%s]" % " ".join(cmd)
+			subprocess.call(cmd)
 time.sleep(1)
 print ""
 
