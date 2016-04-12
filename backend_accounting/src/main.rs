@@ -20,7 +20,6 @@ pub mod api;
 
 //TODO: snappy compression?
 //TODO: f64?
-//TODO: save on terminate
 
 use std::thread;
 use std::time::Duration;
@@ -149,4 +148,5 @@ fn main() {
         }
         data.housekeep(config.store_interval, config.cleanup_interval, config.max_record_age);
     }
+    data.store_all().expect("Failed to save on exit");
 }
