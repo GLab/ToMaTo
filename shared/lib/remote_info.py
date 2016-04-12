@@ -556,7 +556,7 @@ class ElementInfo(ActionObj):
 		:param attrs: element attrs
 		:return:
 		"""
-		get_backend_core_proxy().element_create(top.get_id(), type, parent_id, attrs)
+		return get_backend_core_proxy().element_create(top.get_id(), type, parent_id, attrs)
 
 	def _after_action(self, action, params):
 		super(ElementInfo, self)._after_action(action, params)
@@ -617,18 +617,18 @@ class ConnectionInfo(ActionObj):
 		self._usage_obj = UsageObj(ClassName.CONNECTION, self.cid)
 
 	def _fetch_info(self, fetch=False):
-		return get_backend_core_proxy().element_info(self.eid, fetch=fetch)
+		return get_backend_core_proxy().element_info(self.cid, fetch=fetch)
 
 	def _modify(self, attrs):
-		return get_backend_core_proxy().connection_modify(self.eid, attrs)
+		return get_backend_core_proxy().connection_modify(self.cid, attrs)
 
 	def _remove(self):
-		get_backend_core_proxy().connection_remove(self.eid)
+		get_backend_core_proxy().connection_remove(self.cid)
 		self.get_topology_info().invalidate_info()
 
 	def _action(self, action, params):
 		self.get_topology_info().invalidate_info()
-		return get_backend_core_proxy().connection_action(self.eid, action, params)
+		return get_backend_core_proxy().connection_action(self.cid, action, params)
 
 	def get_topology_info(self):
 		return get_topology_info(self.info()['topology'])

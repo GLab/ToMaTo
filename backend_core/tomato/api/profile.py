@@ -105,7 +105,7 @@ def profile_id(tech, name):
 	"""
 	translate tech and name to a template id
 	"""
-	return Profile.objects.get(tech=tech, name=name).id
+	return str(Profile.objects.get(tech=tech, name=name).id)
 
 def profile_info(id):
 	"""

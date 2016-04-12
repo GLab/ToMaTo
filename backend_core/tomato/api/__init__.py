@@ -38,9 +38,9 @@ from network import network_create, network_info, network_list, network_modify, 
 from network_instance import network_instance_create, network_instance_info,\
 	network_instance_list, network_instance_modify, network_instance_remove
 
-from profile import profile_create, profile_info, profile_list, profile_modify, profile_remove
+from profile import profile_id, profile_create, profile_info, profile_list, profile_modify, profile_remove
 
-from template import template_info, template_create, template_list, template_modify, template_remove
+from template import template_id, template_info, template_create, template_list, template_modify, template_remove
 
 from site import site_create, site_info, site_list, site_modify, site_remove
 

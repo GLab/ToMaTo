@@ -105,7 +105,7 @@ def template_id(tech, name):
 	"""
 	translate tech and name to a template id
 	"""
-	return Template.objects.get(tech=tech, name=name).id
+	return str(Template.objects.get(tech=tech, name=name).id)
 
 def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	"""
