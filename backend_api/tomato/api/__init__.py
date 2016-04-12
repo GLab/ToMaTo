@@ -29,8 +29,6 @@ from connections import connection_create, connection_info, connection_modify, c
 
 from debug import debug, debug_stats, debug_services_reachable, debug_run_internal_api_call
 
-from docs import docs, role_list
-
 from dumpmanager import errordump_info, errordump_list, errordumps_force_refresh, errorgroup_favorite,\
 	errorgroup_hide, errorgroup_info, errorgroup_list, errorgroup_modify, errorgroup_remove
 

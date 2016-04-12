@@ -22,8 +22,6 @@ from connections import connection_create, connection_info, connection_modify, c
 
 from debug import debug, debug_stats, ping
 
-from docs import docs, role_list
-
 from dump import dump_list
 
 from elements import element_info, element_action, element_create, element_modify, element_remove, element_usage
