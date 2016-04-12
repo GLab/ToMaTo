@@ -208,5 +208,5 @@ def connection_usage(id): #@ReservedAssignment
 	"""
 	conn = get_connection_info(id)
 	getCurrentUserInfo().check_may_view_connection(conn)
-	return conn.get_usage()
+	return conn.get_usage(hide_no_such_record_error=True)
 

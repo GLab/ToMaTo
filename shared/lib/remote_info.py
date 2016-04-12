@@ -1,4 +1,4 @@
-from error import InternalError
+from error import InternalError, UserError
 from service import get_backend_users_proxy, get_backend_core_proxy, get_backend_accounting_proxy
 from cache import cached
 from hierarchy import ClassName
@@ -226,9 +226,24 @@ class UsageObj(object):
 		self._class_name = class_name
 		self._id = id_
 
-	def get_usage(self):
+	def get_usage(self, hide_no_such_record_error=False):
 		if self._usage is None or time.time()-self._usage_timestamp > 60:
-			self._usage = get_backend_accounting_proxy().get_record(self._class_name, self._id)
+			try:
+				self._usage = get_backend_accounting_proxy().get_record(self._class_name, self._id)
+			except UserError as e:
+				if hide_no_such_record_error:
+					if e.code == UserError.ENTITY_DOES_NOT_EXIST:
+						self._usage = {
+							'5minutes': [],
+							'hour': [],
+							'day': [],
+							'month': [],
+							'year': []
+						}
+					else:
+						raise
+				else:
+					raise
 			self._usage_timestamp = time.time()
 		return self._usage
 
@@ -245,8 +260,8 @@ class UserInfo(InfoObj):
 		self.name = username
 		self._usage_obj = UsageObj(ClassName.USER, self.name)
 
-	def get_usage(self):
-		return self._usage_obj.get_usage()
+	def get_usage(self, hide_no_such_record_error=False):
+		return self._usage_obj.get_usage(hide_no_such_record_error)
 
 	@staticmethod
 	def create(username, organization, email, password, attrs):
@@ -298,8 +313,8 @@ class OrganizationInfo(InfoObj):
 		self.name = organization_name
 		self._usage_obj = UsageObj(ClassName.ORGANIZATION, self.name)
 
-	def get_usage(self):
-		return self._usage_obj.get_usage()
+	def get_usage(self, hide_no_such_record_error=False):
+		return self._usage_obj.get_usage(hide_no_such_record_error)
 
 	@staticmethod
 	def create(name, label="", attrs=None):
@@ -347,8 +362,8 @@ class TopologyInfo(ActionObj):
 	def _fetch_info(self, fetch=False):
 		return get_backend_core_proxy().topology_info(self.topology_id)
 
-	def get_usage(self):
-		return self._usage_obj.get_usage()
+	def get_usage(self, hide_no_such_record_error=False):
+		return self._usage_obj.get_usage(hide_no_such_record_error)
 
 	def user_has_role(self, username, role):
 		"""
@@ -590,8 +605,8 @@ class ElementInfo(ActionObj):
 	def get_id(self):
 		return self.eid
 
-	def get_usage(self):
-		return self._usage_obj.get_usage()
+	def get_usage(self, hide_no_such_record_error=False):
+		return self._usage_obj.get_usage(hide_no_such_record_error)
 
 class ConnectionInfo(ActionObj):
 	__slots__ = ("cid", "_usage_obj")
@@ -633,8 +648,8 @@ class ConnectionInfo(ActionObj):
 	def get_topology_info(self):
 		return get_topology_info(self.info()['topology'])
 
-	def get_usage(self):
-		return self._usage_obj.get_usage()
+	def get_usage(self, hide_no_such_record_error=False):
+		return self._usage_obj.get_usage(hide_no_such_record_error)
 
 class TemplateInfo(InfoObj):
 	__slots__ = ("template_id")

@@ -188,4 +188,4 @@ def account_remove(name=None):
 def account_usage(name): #@ReservedAssignment
 	target_user = get_user_info(name)
 	getCurrentUserInfo().check_may_view_user_usage(target_user)
-	return target_user.get_usage()
+	return target_user.get_usage(hide_no_such_record_error=True)

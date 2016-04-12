@@ -227,4 +227,4 @@ def topology_usage(id): #@ReservedAssignment
 	"""
 	target_topology = get_topology_info(id)
 	getCurrentUserInfo().check_may_view_topology_usage(target_topology)
-	return target_topology.get_usage()
+	return target_topology.get_usage(hide_no_such_record_error=True)

@@ -298,4 +298,4 @@ def element_usage(id): #@ReservedAssignment
 	"""
 	elem = get_element_info(id)
 	getCurrentUserInfo().check_may_view_element(elem)
-	return elem.get_usage()
+	return elem.get_usage(hide_no_such_record_error=True)

@@ -37,4 +37,4 @@ def organization_remove(name):
 
 def organization_usage(name): #@ReservedAssignment
 	getCurrentUserInfo().check_may_view_organization_usage(name)
-	return get_organization_info(name).get_usage()
+	return get_organization_info(name).get_usage(hide_no_such_record_error=True)

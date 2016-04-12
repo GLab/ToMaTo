@@ -137,7 +137,7 @@ impl Api {
         let id = param!(params, "id", String);
         match self.0.get_record(type_, id) {
             Some(rec) => Ok(rec),
-            None => Err(Error::user("no_such_entity", "no such record", Value::Nil))
+            None => Err(Error::user("entity_does_not_exist", "no such record", Value::Nil))
         }
     }
 
