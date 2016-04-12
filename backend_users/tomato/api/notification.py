@@ -6,7 +6,7 @@ def send_message(toUser, subject, message, fromUser=None, ref=None, subject_grou
 	toUser = _getUser(toUser)
 	if fromUser:
 		fromUser = _getUser(fromUser)
-	return toUser.send_message(toUser=toUser, fromUser=fromUser, subject=subject, message=message,
+	return toUser.send_message(fromUser=fromUser, subject=subject, message=message,
 														 	ref=ref, subject_group=subject_group)
 
 def broadcast_message(title, message, fromUser=None, ref=None, subject_group=None,
