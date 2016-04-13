@@ -1,11 +1,7 @@
-from . import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
-from email.message import Message
-from email.utils import formataddr
 from .error import Error, ErrorType
-import sys, inspect
 from settings import settings, Config
 
 @ErrorType
@@ -27,7 +23,7 @@ def send(to_realname, to_addr, subject, message, from_realname=None, from_addr=N
 	try:
 		msg = MIMEText(mail_settings['body'] % {'realname': to_realname, 'message': message}, 'plain', 'utf-8')
 		msg['Subject'] = Header(mail_settings['subject'] % {'subject': subject}, 'utf-8')
-		msg['From'] = "%s <%s>" %(Header(from_realname, 'utf-8'), from_addr) if from_realname and from_addr else EMAIL_FROM
+		msg['From'] = "%s <%s>" %(Header(from_realname, 'utf-8'), from_addr) if from_realname and from_addr else mail_settings['from']
 		msg['To'] = "%s <%s>" % (Header(to_realname, 'utf-8'), to_addr)
 
 		s = smtplib.SMTP(mail_settings['smtp-server'])
