@@ -1,7 +1,7 @@
 import os, random, textwrap,threading, tarfile, re, urllib2, sys, json
 import argparse, getpass
 from time import sleep
-from lib import getConnection, upload
+from lib import getConnection, upload, createUrl
 
 
 def progname_short():
@@ -592,7 +592,8 @@ def parseArgs():
     return options
 
 options = parseArgs()
-api = getConnection(options.hostname, options.port, options.ssl, options.username, options.password, options.client_cert)
+api = getConnection(createUrl("http+xmlrpc", options.hostname, options.port, options.username, options.password))
+#api = getConnection(options.hostname, options.port, options.ssl, options.username, options.password, options.client_cert)
 
 with open(options.packetconfig) as f:
     template_configs = json.load(f)
