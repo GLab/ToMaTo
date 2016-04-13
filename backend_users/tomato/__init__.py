@@ -33,9 +33,6 @@ database_connection = connect(settings.settings.get_db_settings()['database'], h
 database_obj = getattr(database_connection, settings.settings.get_db_settings()['database'])
 
 from .lib import logging
-def handleError():
-	logging.logException()
-	dump.dumpException()
 
 from .lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=settings.settings.get_tasks_settings()['max-workers'])

@@ -20,7 +20,7 @@
 import sys
 
 from . import api, login, getCurrentUserInfo
-from .lib import util, rpc, logging #@UnresolvedImport
+from .lib import util, rpc, logging, exceptionhandling  #@UnresolvedImport
 from .lib.error import Error, UserError, InternalError
 from lib.settings import settings
 
@@ -33,8 +33,7 @@ def handleError(error, function, args, kwargs):
 			error = UserError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
 		else:
 			error = InternalError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
-	logging.logException()
-	error.dump()
+	exceptionhandling.writedown_current_exception(exc=error)
 	return error
 
 def afterCall(*args, **kwargs):
