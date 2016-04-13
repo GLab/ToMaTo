@@ -255,7 +255,16 @@ class Topology(Entity, BaseDocument):
 			data={"roles": Role.RANKING})
 		logging.logMessage("permission", category="topology", id=self.idStr, user=user.name, role=role)
 		self.set_role(user, role)
-			
+
+	def checkModify(self, attr):
+		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
+
+	def checkCompoundAction(self, action, **params):
+		if action in ["start", "prepare"]:
+			UserError.check(self.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
+		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
+		return True
+
 	def sendNotification(self, role, subject, message, fromUser=None):
 		user_api = get_backend_users_proxy()
 		for permission in self.permissions:
@@ -306,11 +315,11 @@ class Topology(Entity, BaseDocument):
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(_remove, check=checkRemove),
-		ActionName.START: Action(action_start, check=lambda self: self.checkAction(ActionName.START), paramSchema=schema.Constant({})),
-		ActionName.STOP: Action(action_stop, check=lambda self: self.checkAction(ActionName.STOP), paramSchema=schema.Constant({})),
-		ActionName.PREPARE: Action(action_prepare, check=lambda self: self.checkAction(ActionName.PREPARE), paramSchema=schema.Constant({})),
-		ActionName.DESTROY: Action(action_destroy, check=lambda self: self.checkAction(ActionName.DESTROY), paramSchema=schema.Constant({})),
-		ActionName.RENEW: Action(action_renew, check=lambda self, timeout: self.checkAction(ActionName.RENEW),
+		ActionName.START: Action(action_start, check=lambda self: self.checkCompoundAction(ActionName.START), paramSchema=schema.Constant({})),
+		ActionName.STOP: Action(action_stop, check=lambda self: self.checkCompoundAction(ActionName.STOP), paramSchema=schema.Constant({})),
+		ActionName.PREPARE: Action(action_prepare, check=lambda self: self.checkCompoundAction(ActionName.PREPARE), paramSchema=schema.Constant({})),
+		ActionName.DESTROY: Action(action_destroy, check=lambda self: self.checkCompoundAction(ActionName.DESTROY), paramSchema=schema.Constant({})),
+		ActionName.RENEW: Action(action_renew, check=lambda self, timeout: self.checkCompoundAction(ActionName.RENEW),
 			paramSchema=schema.StringMap(items={'timeout': schema.Number(minValue=0.0)}, required=['timeout'])),
 	}
 	ATTRIBUTES = {
