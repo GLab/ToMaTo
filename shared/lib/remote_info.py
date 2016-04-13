@@ -401,7 +401,7 @@ class TopologyInfo(ActionObj):
 		:param str user: username of target user
 		:param str role: role as in topology_role
 		"""
-		res = get_backend_core_proxy().topology_set_permission(id, user, role)  # fixme: do this in TopologyInfo
+		res = get_backend_core_proxy().topology_set_permission(self.topology_id, user, role)
 		if self._info is not None:
 			self._info['permissions'][user] = role
 		return res

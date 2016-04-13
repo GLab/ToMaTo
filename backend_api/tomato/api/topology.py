@@ -211,7 +211,7 @@ def topology_set_permission(id, user, role): #@ReservedAssignment
 	  if will be changed.
 	"""
 	topl = get_topology_info(id)
-	getCurrentUserInfo().check_may_grant_permission_for_topologies(topl)
+	getCurrentUserInfo().check_may_grant_permission_for_topologies(topl, role, user)
 	return topl.set_permission(user, role)
 	
 def topology_usage(id): #@ReservedAssignment
