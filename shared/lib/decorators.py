@@ -127,19 +127,6 @@ def profile(out, appendDate=False):
 	return wrap
 
 
-def handleErrors(handle):
-	def wrap(fn):
-		def call(*args, **kwargs):
-			try:
-				return fn(*args, **kwargs)
-			except Exception, exc:
-				handle(exc)
-		call.__name__ = fn.__name__
-		call.__doc__ = fn.__doc__
-		call.__dict__.update(fn.__dict__)
-		return call
-	return wrap
-
 def xmlRpcSafe(fn):
 	def call(*args, **kwargs):
 		res = fn(*args, **kwargs)

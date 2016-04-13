@@ -20,14 +20,12 @@
 import sys
 
 from . import api
-from .lib import util, sslrpc2, logging #@UnresolvedImport
+from .lib import util, sslrpc2, logging, exceptionhandling  #@UnresolvedImport
 from .lib.error import Error, UserError, InternalError
 
 from lib.settings import settings
 
 import ssl
-
-import traceback
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs)
@@ -38,9 +36,7 @@ def handleError(error, function, args, kwargs):
 			error = UserError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
 		else:
 			error = InternalError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
-	traceback.print_exc()
-	logging.logException()
-	error.dump()
+	exceptionhandling.writedown_current_exception(exc=error)
 	return error
 
 def runServer(server):

@@ -27,6 +27,7 @@ from .lib.topology_role import Role
 from .lib.remote_info import get_user_info
 from .lib.service import get_backend_users_proxy
 from .lib.constants import StateName, ActionName
+from .lib.exceptionhandling import wrap_and_handle_current_exception
 
 class TimeoutStep:
 	INITIAL = 0
@@ -360,30 +361,30 @@ def timeout_task():
 			top.sendNotification(subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
 			top.timeoutStep = TimeoutStep.WARNED
 			top.save()
-		except Exception:
-			handleError()
+		except:
+			wrap_and_handle_current_exception(re_raise=False)
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.WARNED, timeout__lte=now):
 		try:
 			logging.logMessage("timeout stop", category="topology", id=top.idStr)
 			top.action_stop()
 			top.timeoutStep = TimeoutStep.STOPPED
 			top.save()
-		except Exception:
-			handleError()
+		except:
+			wrap_and_handle_current_exception(re_raise=False)
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.STOPPED, timeout__lte=now-topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]):
 		try:
 			logging.logMessage("timeout destroy", category="topology", id=top.idStr)
 			top.action_destroy()
 			top.timeoutStep = TimeoutStep.DESTROYED
 			top.save()
-		except Exception:
-			handleError()
+		except:
+			wrap_and_handle_current_exception(re_raise=False)
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.DESTROYED, timeout__lte=now-topology_config[Config.TOPOLOGY_TIMEOUT_REMOVE]):
 		try:
 			logging.logMessage("timeout remove", category="topology", id=top.idStr)
 			top.remove()
-		except Exception:
-			handleError()
+		except:
+			wrap_and_handle_current_exception(re_raise=False)
 
 scheduler.scheduleRepeated(600, timeout_task)
 
@@ -391,4 +392,3 @@ import elements
 from .connections import Connection
 from lib.settings import settings, Config
 from .host.site import Site
-from . import handleError

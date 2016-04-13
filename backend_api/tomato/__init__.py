@@ -46,9 +46,6 @@ def login(credentials, sslCert):
 	return user_info or not credentials
 
 from lib import logging
-def handleError():
-	logging.logException()
-	dump.dumpException()
 
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=settings.settings.get_tasks_settings()[settings.Config.TASKS_MAX_WORKERS])

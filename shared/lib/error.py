@@ -3,11 +3,7 @@ import httplib
 import inspect, traceback
 
 from . import anyjson as json
-
-def dumpError(*args):
-	print "Warning: dump.py is not used."
-	print args
-	print args[0].trace
+import exceptionhandling
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
@@ -105,7 +101,7 @@ class Error(Exception):
 		"""
 		dump this error through the dump manager.
 		"""
-		dumpError(self)
+		exceptionhandling.writedown_current_exception()
 
 	@property
 	def raw(self):
