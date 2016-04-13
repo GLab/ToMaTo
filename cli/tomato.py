@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urlparse
-from lib import getConnection, createUrl
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+from lib import getConnection, createUrl
 
 def parseArgs():
 	"""
