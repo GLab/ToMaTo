@@ -104,3 +104,8 @@ def host_usage(name): #@ReservedAssignment
 	h = _getHost(name)
 	return h.totalUsage.info()
 
+
+
+
+def host_execute_function(name, function_name, *args, **kwargs):
+	return _getHost(name).getProxy().__getattr__(function_name)(*args, **kwargs)
