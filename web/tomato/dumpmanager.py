@@ -61,20 +61,19 @@ class EditErrorGroupForm(ErrorGroupForm):
 	
 
 @wrap_rpc
-def group_list(api, request, site=None, organization=None):	
+def group_list(api, request):
 	errorgroups = api.errorgroup_list()
 	for e in errorgroups:
 		e['frontend_mod'] = {'sources':[]}
 		host_count = 0
 		for s in e['dump_contents']['source']:
-			if s == 'backend':
-				e['frontend_mod']['sources'].append('backend')
 			if s.startswith('host'):
-				host_count+=1
-		if host_count>0:
-			if len(e['frontend_mod']['sources'])>0:
-				e['frontend_mod']['sources'].append(", ")
+				host_count += 1
+			else:
+				e['frontend_mod']['sources'].append(s.replace('backend:', ''))
+		if host_count > 0:
 			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
+		e['frontend_mod']['sources'] = ", ".join(e['frontend_mod']['sources'])
 
 	favorite_groups = []
 	other_groups = []
@@ -102,6 +101,9 @@ def group_info(api, request, group_id):
 		errordump['source___link'] = None
 		if errordump['source'].startswith('host:'):
 			errordump['source___link'] = errordump['source'].replace('host:', '')
+			errordump['source___displayname'] = errordump['source']
+		else:
+			errordump['source___displayname'] = errordump['source'].replace('backend:', '')
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	errorgroup['github_url'] = errorgroup.get('_github_url', False)
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup, 'github_enabled': github_enabled()})
@@ -157,7 +159,7 @@ def dump_info(api, request, source, dump_id,data=False):
 def dump_export(api, request, group_id, source, dump_id, data=False):
 	if not api.user:
 		raise AuthError()
-	dump = api.errordump_info(group_id, source, dump_id,data)
+	dump = api.errordump_info(group_id, source, dump_id, data)
 	filename = re.sub('[^\w\-_\. :]', '_', source.lower() + "__" + dump_id ) + ".errordump.json"
 	response = HttpResponse(json.orig.dumps(dump, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
@@ -215,26 +217,22 @@ def errorgroup_github(api, request, group_id):
 
 		info = api.errorgroup_info(group_id, include_dumps=True)
 		dump_tofetch = info['dumps'][0]
-		for dump in info['dumps']:
-			if dump['data_available']:
-				dump_tofetch = dump
 		dump_info = api.errordump_info(group_id, dump_tofetch['source'], dump_tofetch['dump_id'], include_data=True)
 
-		backend_dump = False
-		host_dump = 0
+		backend_modules = set()
+		host_names = set()
 		for source in info['dump_contents']['source']:
-			if source == "backend":
-				backend_dump = True
-			elif source.startswith('host'):
-				host_dump += 1
-		source_str = []
-		source_str_short = []
-		if backend_dump:
-			source_str.append('Backend')
-			if host_dump:
-				source_str.append(' and ')
-		if host_dump:
-			source_str.append('%s Hostmanager%s' % (str(host_dump), "s" if host_dump>1 else ""))
+			if source.startswith("backend:"):
+				backend_modules.add(source[8:])
+			elif source.startswith('host:'):
+				host_names.add(source)
+		source_str = ", ".join(backend_modules)
+		if len(host_names) > 0:
+			host_str = ('%d Hostmanager%s' % (len(host_names), "s" if len(host_names) > 1 else ""))
+			if source_str:
+				source_str = source_str+", "+host_str
+			else:
+				source_str = host_str
 
 		issue_title = info['description']
 		trace = []

@@ -1,5 +1,5 @@
 services:
-  backend_core:  # currently, this points to backend_core
+  backend_api:
     host: dockerhost
     interfaces:
       - port: 8000
@@ -8,6 +8,18 @@ services:
       - port: 8001
         ssl: true
         protocol: https
+  backend_accounting:
+    host: dockerhost
+    port: 8007
+    protocol: sslrpc2
+  backend_debug:
+    host: dockerhost
+    port: 8005
+    protocol: sslrpc2
+  backend_core:
+    host: dockerhost
+    port: 8004
+    protocol: sslrpc2
   backend_users:
     host: dockerhost
     port: 8003
@@ -34,17 +46,42 @@ github:
   repository-owner: GLab
   repository-name:  ToMaTo
 
+backend_api:
+  paths:
+    log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    auto-push:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
+  ssl:
+    cert:  /etc/tomato/backend_api_cert.pem
+    key:  /etc/tomato/backend_api_key.pem
+    ca:  /etc/tomato/ca.pem
+  tasks:
+    max-workers: 25
+
+backend_accounting:
+  data_path: /var/lib/tomato_backend_accounting
+  ssl:
+    cert_file:  /etc/tomato/backend_api_cert.pem
+    key_file:  /etc/tomato/backend_api_key.pem
+    ca_file:  /etc/tomato/ca.pem
+  dumps:
+    enabled: false
+
 backend_core:
   paths:
     templates:  /var/lib/tomato/templates
     log:    /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
-    cert:  /etc/tomato/backend_core.pem
-    key:  /etc/tomato/backend_core.pem
+    cert:  /etc/tomato/backend_core_cert.pem
+    key:  /etc/tomato/backend_core_key.pem
     ca:  /etc/tomato/ca.pem
   bittorrent:
     tracker-port: 8002
@@ -52,8 +89,8 @@ backend_core:
   database:
     db-name: tomato_backend_core
     server:
-      host: %(DB_PORT_27017_TCP_ADDR)s
-      port: %(DB_PORT_27017_TCP_PORT)s
+      host: "%(OS__DB_PORT_27017_TCP_ADDR)s"
+      port: "%(OS__DB_PORT_27017_TCP_PORT)s"
   host-connections:
     update-interval: 60
     availability-halftime: 7776000  # 90 days
@@ -68,17 +105,38 @@ backend_users:
     log:  /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
-    cert:  /etc/tomato/backend_users.pem
-    key:  /etc/tomato/backend_users.pem
+    cert:  /etc/tomato/backend_users_cert.pem
+    key:  /etc/tomato/backend_users_key.pem
     ca:  /etc/tomato/ca.pem
   database:
     db-name: tomato_backend_users
     server:
-      host: %(DB_PORT_27017_TCP_ADDR)s
-      port: %(DB_PORT_27017_TCP_PORT)s
+      host: "%(OS__DB_PORT_27017_TCP_ADDR)s"
+      port: "%(OS__DB_PORT_27017_TCP_PORT)s"
+  tasks:
+    max-workers: 25
+
+backend_debug:
+  paths:
+    log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    auto-push:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
+  ssl:
+    cert:  /etc/tomato/backend_debug_cert.pem
+    key:  /etc/tomato/backend_debug_key.pem
+    ca:  /etc/tomato/ca.pem
+  database:
+    db-name: tomato_backend_debug
+    server:
+      host: "%(OS__DB_PORT_27017_TCP_ADDR)s"
+      port: "%(OS__DB_PORT_27017_TCP_PORT)s"
   tasks:
     max-workers: 25
 
@@ -168,3 +226,8 @@ user-quota:
 
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
+
+# this disables active debugging, i.e., executing internal commands via the API.
+# this may be a security issue if enabled!
+debugging:
+  enabled: false

@@ -116,12 +116,15 @@ class String(Sequence):
 	def __init__(self, regex=None, **kwargs):
 		Sequence.__init__(self, **kwargs)
 		self.regex = regex
+	@property
+	def errormsg(self):
+		return "String must match regular expression"
 	def check(self, value):
 		Sequence.check(self, value)
 		if value is None or self.regex is None:
 			return
 		if not re.match("^%s$" % self.regex, value):
-			self._error("String must match regular expression", value)
+			self._error(self.errormsg, value)
 	def describe(self):
 		desc = Sequence.describe(self)
 		if not self.regex is None:
@@ -144,10 +147,19 @@ class URL(String):
 	def __init__(self, **kwargs):
 		String.__init__(self, regex="[a-z]+:[A-Za-z0-9_:/.$\-?]+", **kwargs)
 
+	@property
+	def errormsg(self):
+		return "String must be a valid URL"
+
 class Email(String):
 	__slots__ = ()
 	def __init__(self, **kwargs):
-		String.__init__(self, regex="[a-zA-Z0-9.-+_]+@[A-Za-z0-9.-+_]+", **kwargs)
+		String.__init__(self, regex="[a-zA-Z0-9\.\-+_]+@[A-Za-z0-9\.\-+_]+", **kwargs)
+
+	@property
+	def errormsg(self):
+		return "String must be a valid email address"
+
 
 
 class List(Sequence):

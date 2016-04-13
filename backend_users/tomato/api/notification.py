@@ -6,7 +6,7 @@ def send_message(toUser, subject, message, fromUser=None, ref=None, subject_grou
 	toUser = _getUser(toUser)
 	if fromUser:
 		fromUser = _getUser(fromUser)
-	return toUser.send_message(toUser=toUser, fromUser=fromUser, subject=subject, message=message,
+	return toUser.send_message(fromUser=fromUser, subject=subject, message=message,
 														 	ref=ref, subject_group=subject_group)
 
 def broadcast_message(title, message, fromUser=None, ref=None, subject_group=None,
@@ -33,7 +33,8 @@ def broadcast_message_multifilter(title, message, fromUser=None, ref=None, subje
 	for filter_pair in filters:
 
 		if filter_pair[0]:
-			users = User.objects(organization=filter_pair[0])
+			organization = _getOrganization(filter_pair[0])
+			users = User.objects(organization=organization)
 		else:
 			users = User.objects.all()
 
@@ -43,7 +44,7 @@ def broadcast_message_multifilter(title, message, fromUser=None, ref=None, subje
 		target_users.update([u.name for u in users])
 
 	for username in target_users:
-		_getUser(username).send_message(fromUser=fromUser, title=title, message=message,
+		_getUser(username).send_message(fromUser=fromUser, subject=title, message=message,
 												ref=ref, subject_group=subject_group)
 
 def notification_list(username, includeRead=False):

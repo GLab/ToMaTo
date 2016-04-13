@@ -3,7 +3,7 @@ import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip, ins
 from . import anyjson as json
 from .cmd import run, CommandError  # @UnresolvedImport
 from .. import scheduler
-from .error import InternalError, generate_inspect_trace
+from .error import InternalError, generate_inspect_trace, Error, TransportError
 
 from settings import settings, Config
 
@@ -21,6 +21,15 @@ tomato_version = None
 dumps = {}
 #when adding or removing keys to this array, it has to be locked.
 dumps_lock = threading.RLock()
+
+# will be called when a dump is created.
+# should be overwritten if needed.
+# important: do not dump exceptions that happen in here!
+def on_dump_create():
+	pass
+
+#use this to signal the pushing thread that there are new dumps
+must_autopush = threading.Event()
 
 boot_time = 0
 
@@ -133,6 +142,11 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 			fp.close()
 		dumps[dump_id] = dump_meta
 
+	try:
+		on_dump_create()
+	except:
+		pass  # exceptions from this shouldn't interrupt this, and shouldn't be dumped.
+
 	return dump_id
 
 
@@ -141,7 +155,7 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 #param push_to_dumps: if true, the dump will stored in the dumps dict. this is only useful for the init function.
 #param load_from_file: if true, the dump will be loaded from the meta file. if false, the dump will be taken from the dumps dict.
 #dump_on_error: set to true if you wish a dump to be created on error, i.e., this was an internal call.
-def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False, load_from_file=False, dump_on_error=False):
+def load_dump(dump_id, load_data=True, compress_data=False, push_to_dumps=False, load_from_file=False, dump_on_error=False):
 	global dumps
 	with dumps_lock:
 		dump = None
@@ -247,16 +261,17 @@ def getCount():
 #param list_only: if true, only return dumps with timestamp after this time (time.Time object)
 #param include_data: include environment data (may be about 1M!, or set compress_data true). Only used if not list_only
 #param compress_data: use zlib to compress environment data. only used if include_data==True. decompress with json.loads(zlib.decompress(base64.decode(dump['environment'])))
-def getAll(after=None, list_only=False, include_data=False, compress_data=True):
+def getAll(after=None, list_only=False, include_data=False):
 	global dumps
 	return_list = []
-	for d in dumps:
-		if (after is None) or (dumps[d]['timestamp'] >= after):
-			dump = dumps[d]
+	for dump_id, _dump in dumps.iteritems():
+		if (after is None) or (_dump['timestamp'] >= after):
 			if list_only:
-				dump = d
+				dump = dump_id
 			elif include_data:
-				dump = load_dump(d['dump_id'], True, True, dump_on_error=True)
+				dump = load_dump(dump_id, True, False, dump_on_error=True)
+			else:
+				dump = _dump
 			return_list.append(dump)
 	return return_list
 
@@ -290,8 +305,8 @@ def init(env_cmds, tomatoVersion):
 					except:
 						import traceback
 						traceback.print_exc()
-	scheduler.scheduleRepeated(60 * 60 * 24, auto_cleanup, immediate=True)
 
+	scheduler.scheduleRepeated(60 * 60 * 24, auto_cleanup, immediate=True)
 
 
 
@@ -352,6 +367,3 @@ def dumpError(error):
 		return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
 	except:
 		dumpException(originalError=str(error))
-
-import error
-error.dumpError = dumpError

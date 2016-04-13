@@ -6,11 +6,13 @@ def ping():
 
 def debug_stats():
 	from .. import database_obj
-	stats = {}
-	stats["db"] = database_obj.command("dbstats")
-	stats["db"]["collections"] = {name: database_obj.command("collstats", name) for name in database_obj.collection_names()}
-	stats["scheduler"] = scheduler.info()
-	stats["threads"] = map(traceback.extract_stack, sys._current_frames().values())
+	stats = {
+		"db": database_obj.command("dbstats"),
+		"scheduler": scheduler.info(),
+		"threads": map(traceback.extract_stack, sys._current_frames().values())
+	}
+	stats["db"]["collections"] = {name: database_obj.command("collstats", name) for name in
+	                              database_obj.collection_names()}
 	return stats
 
 def debug(method, args=None, kwargs=None, profile=None):

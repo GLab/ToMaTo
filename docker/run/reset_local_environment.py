@@ -1,18 +1,20 @@
 #!/usr/bin/python
 __author__ = 't-gerhard'
 
-import sys, os
+import sys
+import os
 import json
 import subprocess
 import shutil
 import time
 
-sys.path.insert(1, "../../cli/")
-import lib as tomato
-
+# check whether this is run in docker/run. exit otherwise.
 if not os.path.exists('tomato-ctl.py') or not os.path.exists('../../cli'):
 	print "this script must be executed in ToMaTo/docker/run."
 	exit(1)
+
+sys.path.insert(1, "../../cli/")
+import lib as tomato
 
 
 
@@ -56,16 +58,17 @@ time.sleep(5)
 print ""
 
 # remove mongodb data
-print "Removing Database..."
-mongodb_path = os.path.abspath("./mongodb-data")
+print "Removing Data..."
 if os.path.exists(mongodb_path):
-	try:
-		shutil.rmtree(os.path.abspath("./mongodb-data"))
-	except:
-		print " this requires superuser privileges."
-		cmd = ["sudo", "rm", "-rf", mongodb_path]
-		print " [%s]" % " ".join(cmd)
-		subprocess.call(cmd)
+	for dir in ['mongodb-data', './backend_accounting/data']:
+		try:
+			path = path = os.path.abspath(dir)
+			shutil.rmtree(path)
+		except:
+			print " this requires superuser privileges."
+			cmd = ["sudo", "rm", "-rf", path]
+			print " [%s]" % " ".join(cmd)
+			subprocess.call(cmd)
 time.sleep(1)
 print ""
 

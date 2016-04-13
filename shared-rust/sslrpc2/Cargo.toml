@@ -1,0 +1,14 @@
+[package]
+name = "sslrpc2"
+version = "0.1.0"
+authors = ["Dennis Schwerdel <schwerdel@informatik.uni-kl.de>"]
+
+[dependencies]
+rmp = "0.7"
+log = "0.3"
+env_logger = "*"
+net2 = "0.2"
+libc = "*"
+epoll = "0.2"
+openssl = "*"
+fnv = "1"

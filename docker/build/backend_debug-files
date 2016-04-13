@@ -1,0 +1,9 @@
+- logs
+- .*
+- templates
+- htmlcov
+- dumps
++ */
++ backend.conf.example
++ *.py
+- *

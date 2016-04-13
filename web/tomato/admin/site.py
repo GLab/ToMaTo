@@ -114,7 +114,7 @@ class AddSiteForm(SiteForm):
 			self.fields['organization'].initial = organization
 
 	def submit(self, api):
-		formData = self.cleaned_data
+		formData = self.get_optimized_data()
 		formData['geolocation'] = {'longitude': formData['geolocation_longitude'],
 								   'latitude': formData['geolocation_latitude']}
 		del formData['geolocation_longitude']
@@ -137,7 +137,7 @@ class EditSiteForm(SiteForm):
 		self.fields["name"].help_text = None
 
 	def submit(self, api):
-		formData = self.cleaned_data
+		formData = self.get_optimized_data()
 		formData['geolocation'] = {'longitude': formData['geolocation_longitude'],
 								   'latitude': formData['geolocation_latitude']}
 		del formData['geolocation_longitude']

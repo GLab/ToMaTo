@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time
-
 """
 Synchronization decorator
   This decorator can be used to synchronize method calls. Synchronization is relative to 
@@ -128,19 +126,6 @@ def profile(out, appendDate=False):
 		return call
 	return wrap
 
-
-def handleErrors(handle):
-	def wrap(fn):
-		def call(*args, **kwargs):
-			try:
-				return fn(*args, **kwargs)
-			except Exception, exc:
-				handle(exc)
-		call.__name__ = fn.__name__
-		call.__doc__ = fn.__doc__
-		call.__dict__.update(fn.__dict__)
-		return call
-	return wrap
 
 def xmlRpcSafe(fn):
 	def call(*args, **kwargs):

@@ -15,19 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..db import *
-from ..generic import *
+import base64
+import sys
+import threading
+import time
+import traceback
+
 from .. import starttime, scheduler
 from ..accounting.quota import UsageStatistics
+from ..db import *
+from ..generic import *
+from ..lib.dump import dumpException
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
-from ..lib import anyjson as json
-from ..dumpmanager import DumpSource
-import time, hashlib, threading, datetime, zlib, base64, sys
+from ..lib.service import get_backend_users_proxy, get_backend_accounting_proxy
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
-from ..lib.service import get_backend_users_proxy
+
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -81,7 +86,7 @@ def stopCaching():
 	global _caching
 	_caching = False
 
-class Host(DumpSource, Entity, BaseDocument):
+class Host(Entity, BaseDocument):
 	"""
 	:type totalUsage: UsageStatistics
 	:type site: tomato.host.site.Site
@@ -106,7 +111,6 @@ class Host(DumpSource, Entity, BaseDocument):
 	problemMailTime = FloatField(db_field='problem_mail_time')
 	availability = FloatField(default=1.0)
 	description = StringField()
-	dumpLastFetch = FloatField(db_field='dump_last_fetch')
 	templates = ListField(ReferenceField(Template, reverse_delete_rule=PULL))
 	hostNetworks = ListField(db_field='host_networks')
 	meta = {
@@ -143,8 +147,8 @@ class Host(DumpSource, Entity, BaseDocument):
 			schema=schema.Identifier()
 		),
 		"enabled": Attribute(field=enabled, schema=schema.Bool()),
-		"description": Attribute(field=description, schema=schema.String()),
-		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization.name, schema=schema.Identifier()),
+		"description": Attribute(field=description, schema=schema.String(null=True)),
+		"organization": Attribute(readOnly=True, get=lambda obj: obj.site.organization, schema=schema.Identifier()),
 		"problems": Attribute(readOnly=True, get=lambda obj: obj.problems(), schema=schema.List(items=schema.String())),
 		"component_errors": Attribute(field=componentErrors, readOnly=True, schema=schema.Int()),
 		"load": Attribute(readOnly=True, get=lambda obj: obj.getLoad(), schema=schema.List(items=schema.Number())),
@@ -168,10 +172,9 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def getProxy(self):
 		if not _caching:
-			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), timeout=settings.get_rpc_timeout())
+			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		if not self.rpcurl in _proxies:
-			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(),
-												  timeout=settings.get_rpc_timeout())
+			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		return _proxies[self.rpcurl]
 
 	def incrementErrors(self):
@@ -397,30 +400,36 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def updateAccountingData(self):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)
-		data = self.getProxy().accounting_statistics(type="5minutes", after=self.accountingTimestamp - 900)
-		for el in self.elements.all():
-			if not el.usageStatistics:
-				el.usageStatistics = UsageStatistics.objects.create()
-				el.save()
-			if not str(el.num) in data["elements"]:
-				print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (el.num, self.name)
-				continue
-			logging.logMessage("host_records", category="accounting", host=self.name,
-							   records=data["elements"][str(el.num)], object=("element", el.idStr))
-			el.usageStatistics.importRecords(data["elements"][str(el.num)])
-		for con in self.connections.all():
-			if not con.usageStatistics:
-				con.usageStatistics = UsageStatistics.objects.create()
-				con.save()
-			if not str(con.num) in data["connections"]:
-				print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
-				continue
-			logging.logMessage("host_records", category="accounting", host=self.name,
-							   records=data["connections"][str(con.num)], object=("connection", con.idStr))
-			con.usageStatistics.importRecords(data["connections"][str(con.num)])
-		self.accountingTimestamp = time.time()
-		self.save()
-		logging.logMessage("accounting_sync end", category="host", name=self.name)
+		try:
+			orig_data = self.getProxy().accounting_statistics(type="single", after=self.accountingTimestamp)
+			data = {"elements": {}, "connections": {}}
+			max_timestamp = self.accountingTimestamp
+
+			# check for completeness
+			for el in self.elements.all():
+				if not str(el.num) in orig_data["elements"]:
+					print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (el.num, self.name)
+			for con in self.connections.all():
+				if not str(con.num) in orig_data["connections"]:
+					print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
+					continue
+
+			# transform
+			for type_ in ("elements", "connections"):
+				for obj_id, obj_recs in orig_data[type_].iteritems():
+					for obj_rec in obj_recs:
+						new_rec = (int(obj_rec["begin"]), obj_rec["usage"]["memory"], obj_rec["usage"]["diskspace"], obj_rec["usage"]["traffic"], obj_rec["usage"]["cputime"])
+						max_timestamp = max(obj_rec["begin"], max_timestamp)
+						if obj_id in data[type_]:
+							data[type_][obj_id].append(new_rec)
+						else:
+							data[type_][obj_id] = [new_rec]
+
+			get_backend_accounting_proxy().push_usage(data["elements"], data["connections"])
+			self.accountingTimestamp = max_timestamp + 1  # one second greater than last record.
+			self.save()
+		finally:
+			logging.logMessage("accounting_sync end", category="host", name=self.name)
 
 	def getNetworkKinds(self):
 		nets = [net.getKind() for net in self.networks.all()]
@@ -438,7 +447,6 @@ class Host(DumpSource, Entity, BaseDocument):
 		return (el.upcast() for el in Element.objects.filter(host_elements__host=self))
 
 	def getUsers(self):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		res = []
 		for type_, obj in [("element", el) for el in self.elements.all()] + [("connection", con) for con in
 																			 self.connections.all()]:
@@ -455,11 +463,7 @@ class Host(DumpSource, Entity, BaseDocument):
 			res.append(data)
 		return res
 
-	def checkPermissions(self):
-		return self.site.checkPermissions()
-
 	def remove(self, params=None):
-		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		if self.id:
 			UserError.check(not self.elements.all(), code=UserError.NOT_EMPTY, message="Host still has active elements")
 			UserError.check(not self.connections.all(), code=UserError.NOT_EMPTY, message="Host still has active connections")
@@ -589,35 +593,6 @@ class Host(DumpSource, Entity, BaseDocument):
 
 	def __repr__(self):
 		return "Host(%s)" % self.name
-
-	def dump_fetch_list(self, after):  # TODO: return None if unreachable
-		return self.getProxy().dump_list(after=after, list_only=False, include_data=False, compress_data=True)
-
-	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
-		# TODO: return None if unreachable, return dummy if it does not exist
-		dump = self.getProxy().dump_info(dump_id, include_data=True, compress_data=True, dump_on_error=False)
-		if not keep_compressed:
-			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
-		return dump
-
-	def dump_clock_offset(self):
-		if self.hostInfo and 'time_diff' in self.hostInfo:
-			return max(0, -self.hostInfo['time_diff'])
-		else:
-			return None
-
-	def dump_source_name(self):
-		return "host:%s" % self.info()['name']
-
-	def dump_matches_host(self, host_obj):
-		return host_obj.dump_source_name() == self.dump_source_name()
-
-	def dump_set_last_fetch(self, last_fetch):
-		self.dumpLastFetch = last_fetch
-		self.save()
-
-	def dump_get_last_fetch(self):
-		return self.dumpLastFetch
 
 	@classmethod
 	def get(cls, **kwargs):
@@ -794,7 +769,8 @@ checkingHosts = set()
 
 
 @util.wrap_task
-def synchronizeHost(host):
+def synchronizeHost(host_name):
+	host = Host.objects.get(name=host_name)
 	with checkingHostsLock:
 		if host in checkingHosts:
 			return
@@ -803,12 +779,10 @@ def synchronizeHost(host):
 		try:
 			host.update()
 			host.synchronizeResources()
-			host.updateAccountingData()
 		except:
-			import traceback
-
 			traceback.print_exc()
 			logging.logException(host=host.name)
+			dumpException()
 			print >>sys.stderr, "Error updating information from %s" % host
 		host.checkProblems()
 	finally:
@@ -816,33 +790,22 @@ def synchronizeHost(host):
 			checkingHosts.remove(host)
 
 @util.wrap_task
-def scheduleHostChecks():
-	toSync = set((h for h in Host.getAll() if h.enabled))
-	syncTasks = {t.args[0]: tid for tid, t in scheduler.tasks.items() if t.fn == synchronizeHost}
-	syncing = set(syncTasks.keys())
-	for h in toSync - syncing:
-		scheduler.scheduleRepeated(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL], synchronizeHost, h)
-	for h in syncing - toSync:
-		scheduler.cancelTask(syncTasks[h])
-
-@util.wrap_task
-def synchronizeComponents():
-	from .element import HostElement
-	for hel in HostElement.objects.all():
-		try:
-			hel.synchronize()
-		except Exception:
-			handleError()
-	from .connection import HostConnection
-	for hcon in HostConnection.objects.all():
-		try:
-			hcon.synchronize()
-		except Exception:
-			handleError()
-
+def updateAccounting(host_name):
+	host = Host.objects.get(name=host_name)
+	try:
+		host.updateAccountingData()
+	except:
+		traceback.print_exc()
+		logging.logException(host=host.name)
+		dumpException()
+		print >>sys.stderr, "Error updating information from %s" % host
 
 from .site import Site
-from .. import handleError
 
-scheduler.scheduleRepeated(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL], scheduleHostChecks)  # @UndefinedVariable
-scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
+def list_host_names():
+	return [h.name for h in Host.getAll()]
+
+scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL],
+                              list_host_names, synchronizeHost)
+scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL],
+                              list_host_names, updateAccounting)

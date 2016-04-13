@@ -12,7 +12,7 @@ from datetime import date
 from threading import Thread
 
 
-TOMATO_MODULES = ['web', 'backend_core', 'backend_users']
+TOMATO_MODULES = ['web', 'backend_core', 'backend_users', 'backend_api', 'backend_debug', 'backend_accounting']
 DB_MODULE = "db"
 CONFIG_PATHS = ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]
 
@@ -124,6 +124,11 @@ available commands:
    This will also stop all modules that depend on the selected module.
    If no module is selected, all modules will be stopped.
 
+ reload:
+   Restart the program without restarting the container.
+   If reloading is not possible, restart the container instead.
+   The database will never be reloaded.
+
  restart:
    Restart the container
    This is equivalent to stop and then start.
@@ -166,6 +171,7 @@ Other commands:
 
  gencerts:
    generate certs for the tomato inner communication.
+   this does not overwrite any existing files.
 
 examples:
  %(cmd)s db stop
@@ -295,13 +301,54 @@ def generate_default_config():
 				'config': os.path.join("web", "config")
 			},
 			'code_directories': ['web', 'shared'],
-			'shell_cmd': "/bin/bash"
+			'shell_cmd': "/bin/bash",
+			'reload_cmd': ['service', 'apache2', 'reload']
+			# 'version'  (will be generated if not found in config)
+		},
+		'backend_api': {
+			'enabled': True,
+			'image': 'tomato_backend_api',
+			'ports': [8000, 8001],
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(config)s', '/config'),
+				('%(logs)s', '/logs')
+			],
+			'directories': {
+				'config': os.path.join("backend_api", "config"),
+				'logs': os.path.join("backend_api", "logs")
+			},
+			'code_directories': ['backend_api', 'shared'],
+			'shell_cmd': "/bin/bash",
+			'reload_cmd': None
+			# 'version'  (will be generated if not found in config)
+		},
+		'backend_accounting': {
+			'enabled': True,
+			'image': 'tomato_backend_accounting',
+			'ports': [8007],
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(data)s', '/data'),
+				('%(config)s', '/config'),
+				('%(logs)s', '/logs')
+			],
+			'directories': {
+				'data': os.path.join("backend_accounting", "data"),
+				'config': os.path.join("backend_accounting", "config"),
+				'logs': os.path.join("backend_accounting", "logs")
+			},
+			'code_directories': [],
+			'shell_cmd': "/bin/bash",
+			'reload_cmd': None
 			# 'version'  (will be generated if not found in config)
 		},
 		'backend_core': {
 			'enabled': True,
 			'image': 'tomato_backend_core',
-			'ports': [8000, 8001, 8002, 8006] + range(8010, 8021),
+			'ports': [8002, 8004, 8006] + range(8010, 8021),
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
@@ -315,7 +362,8 @@ def generate_default_config():
 				'logs': os.path.join("backend_core", "logs")
 			},
 			'code_directories': ['backend_core', 'shared'],
-			'shell_cmd': "/bin/bash"
+			'shell_cmd': "/bin/bash",
+			'reload_cmd': None
 			# 'version'  (will be generated if not found in config)
 		},
 		'backend_users': {
@@ -333,9 +381,30 @@ def generate_default_config():
 				'logs': os.path.join("backend_users", "logs")
 			},
 			'code_directories': ['backend_users', 'shared'],
-			'shell_cmd': "/bin/bash"
+			'shell_cmd': "/bin/bash",
+			'reload_cmd': None
 			# 'version'  (will be generated if not found in config)
 		},
+		'backend_debug': {
+			'enabled': True,
+			'image': 'tomato_backend_users',
+			'ports': [8005],
+			'timezone': 'Europe/Berlin',
+			'additional_args': [],
+			'additional_directories': [
+				('%(config)s', '/config'),
+				('%(logs)s', '/logs')
+			],
+			'directories': {
+				'config': os.path.join("backend_debug", "config"),
+				'logs': os.path.join("backend_debug", "logs")
+			},
+			'code_directories': ['backend_debug', 'shared'],
+			'shell_cmd': "/bin/bash",
+			'reload_cmd': None
+			# 'version'  (will be generated if not found in config)
+		},
+
 		'db': {
 			# enabled: True,
 			# is_database: True
@@ -349,7 +418,8 @@ def generate_default_config():
 				'data': "mongodb-data",
 				'backup': "mongodb-backup"
 			},
-			'shell_cmd': ['/usr/bin/mongo', "localhost:27017/tomato"]
+			'shell_cmd': ['/usr/bin/mongo', "localhost:27017/tomato"],
+			'reload_cmd': None
 		},
 		'docker_network_interface': 'docker0',
 		'docker_container_namespace': 'tomato',
@@ -374,7 +444,7 @@ def read_config():
 	def merge_dicts(dict_a, dict_b):
 		for k, v in dict_b.iteritems():
 			if k in dict_a:
-				if isinstance(v, list) and k not in  ("port", "shell_cmd", "code_directories"):
+				if isinstance(v, list) and k not in  ("port", "shell_cmd", "reload_cmd", "code_directories"):
 					assert isinstance(dict_a[k], list)
 					dict_a[k] = dict_a[k] + v
 				elif isinstance(v, dict):
@@ -503,6 +573,11 @@ class Module:
 		if not isinstance(self.shell_cmd, list):
 			self.shell_cmd = [self.shell_cmd]
 
+		self.reload_cmd = module_config['reload_cmd']
+		if self.reload_cmd is not None:
+			if not isinstance(self.reload_cmd, list):
+				self.reload_cmd = [self.reload_cmd]
+
 	def start(self, ignore_disabled=False):
 		if self.is_started():
 			return
@@ -519,6 +594,19 @@ class Module:
 		if self.is_started():
 			self.stop()
 			self.start()
+
+	def can_reload(self):
+		return (self.reload_cmd is not None)
+
+	def reload(self):
+		if self.can_reload():
+			if self.is_started():
+				docker_exec(self.container_name, *self.reload_cmd)
+			else:
+				print "container stopped."
+		else:
+			self.restart()
+
 
 	def is_started(self):
 		return docker_container_started(self.container_name)
@@ -603,6 +691,19 @@ args = sys.argv
 
 
 # shortcuts
+def restart_all(modules):
+	modules_nondb = set()
+	mod_db = None
+	for mod in modules:
+		if mod.is_db:
+			mod_db = mod
+		else:
+			if mod.is_started():
+				modules_nondb.add(mod)
+	stop_all(modules_nondb)
+	mod_db.restart()
+	start_all(modules_nondb)
+
 def start_all(modules):
 	threads = set()
 	for module in modules:
@@ -621,8 +722,59 @@ def stop_all(modules):
 	for t in threads:
 		t.join()
 
+def reload_all(modules):
+	threads = set()
+
+	for mod in modules:
+		if mod.is_db:
+			restart_all(modules)
+			return
+		threads.add(Thread(target=mod.reload))
+
+	for t in threads:
+		t.start()
+	for t in threads:
+		t.join()
 
 
+
+
+
+def gencerts(config):
+	ca_key = config["certs"]["ca_key"]
+	ca_cert = config["certs"]["ca_cert"]
+	new_ca = False
+	if not os.path.exists(ca_key):
+		run_observing("openssl", "genrsa", "-out", ca_key, "2048")
+		run_observing("openssl", "req", "-x509", "-new", "-nodes", "-extensions", "v3_ca", "-key", ca_key, "-days", "10240",
+		              "-out", ca_cert, "-sha512", "-subj", '/CN=ToMaTo CA')
+		new_ca = True
+	for module_name, module in tomato_modules.iteritems():
+		dir = config[module_name]["directories"]["config"]
+		service_key = os.path.join(dir, module_name + "_key.pem")
+		service_cert = os.path.join(dir, module_name + "_cert.pem")
+		service_csr = os.path.join(dir, module_name + "_csr.pem")
+		service_file = os.path.join(dir, module_name + ".pem")
+		ca_file = os.path.join(dir, "ca.pem")
+		if not os.path.exists(service_key):
+			run_observing("openssl", "genrsa", "-out", service_key, "2048")
+			run_observing("openssl", "req", "-new", "-key", service_key, "-out", service_csr, "-sha512", "-subj",
+			              "/CN=ToMaTo %s" % module_name)
+		if not os.path.exists(service_file) or new_ca:
+			run_observing("openssl", "x509", "-req", "-in", service_csr, "-CA", ca_cert, "-CAkey", ca_key, "-CAcreateserial",
+			              "-out", service_cert, "-days", "10240", "-sha512")
+			run_observing("sh", "-c", "cat %s %s %s > %s" % (service_cert, ca_cert, service_key, service_file))
+		if not os.path.exists(ca_file) or new_ca:
+			shutil.copy(ca_cert, ca_file)
+
+
+
+
+# expand module shortnames (e.g., api for backend_api)
+if len(args) >1:
+	for module in TOMATO_MODULES:
+		if "backend_%s" % args[1] == module:
+			args[1] = module
 
 if len(args) == 2:
 	if args[1] == "start":
@@ -635,11 +787,12 @@ if len(args) == 2:
 		db_module.stop()
 		exit(0)
 
+	if args[1] == "reload":
+		reload_all(tomato_modules.itervalues())
+		exit(0)
+
 	if args[1] == "restart":
-		modules_started = [mod for mod in tomato_modules.itervalues() if mod.is_started()]
-		stop_all(modules_started)
-		db_module.restart()
-		start_all(modules_started)
+		restart_all(tomato_modules.values()+[db_module])
 		exit(0)
 
 	if args[1] == "status":
@@ -655,35 +808,14 @@ if len(args) == 2:
 		exit(0)
 
 	if args[1] == "gencerts":
-		ca_key = config["certs"]["ca_key"]
-		ca_cert = config["certs"]["ca_cert"]
-		new_ca = False
-		if not os.path.exists(ca_key):
-			run_observing("openssl", "genrsa", "-out", ca_key, "2048")
-			run_observing("openssl", "req", "-x509", "-new", "-nodes", "-extensions", "v3_ca", "-key", ca_key, "-days", "10240", "-out", ca_cert, "-sha512", "-subj", '/CN=ToMaTo CA')
-			new_ca = True
-		for module_name, module in tomato_modules.iteritems():
-			dir = config[module_name]["directories"]["config"]
-			service_key = os.path.join(dir, module_name + "_key.pem")
-			service_cert = os.path.join(dir, module_name + "_cert.pem")
-			service_csr = os.path.join(dir, module_name + "_csr.pem")
-			service_file = os.path.join(dir, module_name + ".pem")
-			ca_file = os.path.join(dir, "ca.pem")
-			if not os.path.exists(service_key):
-				run_observing("openssl", "genrsa", "-out", service_key, "2048")
-				run_observing("openssl", "req", "-new", "-key", service_key, "-out", service_csr, "-sha512", "-subj", "/CN=ToMaTo %s" % module_name)
-			if not os.path.exists(service_file) or new_ca:
-				run_observing("openssl", "x509", "-req", "-in", service_csr, "-CA", ca_cert, "-CAkey", ca_key, "-CAcreateserial", "-out", service_cert, "-days", "10240", "-sha512")
-				run_observing("sh", "-c", "cat %s %s %s > %s" % (service_cert, ca_cert, service_key, service_file))
-			if not os.path.exists(ca_file) or new_ca:
-				shutil.copy(ca_cert, ca_file)
+		gencerts(config)
 		exit(0)
 
 	if args[1] in ('help-config', '--help-config'):
 		show_help_configure(config)
 		exit(0)
 
-if len(args) in [3,4]:
+if len(args) in [3, 4]:
 	module_name = args[1]
 	is_db_module = None
 	module = None
@@ -705,6 +837,13 @@ if len(args) in [3,4]:
 
 	if args[2] == "stop" and len(args) == 3:
 		module.stop()
+		exit(0)
+
+	if args[2] == "reload" and len(args) == 3:
+		if module.is_db:
+			print "cannot reload database"
+			exit(1)
+		module.reload()
 		exit(0)
 
 	if args[2] == "restart" and len(args) == 3:

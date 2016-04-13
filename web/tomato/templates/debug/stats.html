@@ -12,7 +12,7 @@
 
 <div class="skip-sm"></div>
 
-
+{% if stats.db %}
 <h2>Database</h2>
 
 {% load tomato %}
@@ -52,7 +52,9 @@
 
 
 <div class="skip-sm"></div>
+{% endif %}
 
+{% if stats.scheduler %}
 <h2>Tasks</h2>
 
 <table class="table table-striped">
@@ -96,8 +98,9 @@
 </table>
 
 <div class="skip-sm"></div>
+{% endif %}
 
-
+{% if stats.threads %}
 <h2>Threads</h2>
 
 {% for thread in stats.threads %}
@@ -111,5 +114,10 @@
 {% endfor %}
 
 <div class="skip-sm"></div>
+{% endif %}
+
+{% if stats.accounting %}
+	Record Count: {{stats.accounting.record_count}}
+{% endif %}
 
 {% endblock %}

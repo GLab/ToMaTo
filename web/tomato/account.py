@@ -369,6 +369,8 @@ def register(api, request):
 				del data["password2"]
 				del data["aup"]
 			try:
+				if "_reason" in data:
+					del data["_reason"]  # fixme: enable _reason when user data is working again
 				account = api.account_create(username, password=password, organization=organization, attrs=data)
 				if api.user:
 					api.account_send_notification(username,

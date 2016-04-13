@@ -64,7 +64,7 @@ from error import InternalError
 
 default_settings = yaml.load("""
 services:
-  backend_core:
+  backend_api:
     host: dockerhost
     interfaces:
       - port: 8000
@@ -73,6 +73,18 @@ services:
       - port: 8001
         ssl: true
         protocol: https
+  backend_accounting:
+    host: dockerhost
+    port: 8007
+    protocol: sslrpc2
+  backend_debug:
+    host: dockerhost
+    port: 8004
+    protocol: sslrpc2
+  backend_core:
+    host: dockerhost
+    port: 8004
+    protocol: sslrpc2
   backend_users:
     host: dockerhost
     port: 8003
@@ -99,12 +111,37 @@ github:
   repository-owner: GLab
   repository-name:  ToMaTo
 
+backend_api:
+  paths:
+    log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    auto-push:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
+  ssl:
+    cert:  /etc/tomato/backend_api.pem
+    key:  /etc/tomato/backend_api.pem
+    ca:  /etc/tomato/ca.pem
+  tasks:
+    max-workers: 25
+
+backend_accounting:
+  data_path: /var/lib/tomato_backend_accounting
+  ssl:
+    cert_file:  /etc/tomato/backend_api_cert.pem
+    key_file:  /etc/tomato/backend_api_key.pem
+    ca_file:  /etc/tomato/ca.pem
+  dumps:
+    enabled: false
+
 backend_core:
   paths:
     templates:  /var/lib/tomato/templates
     log:    /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
@@ -133,6 +170,7 @@ backend_users:
     log:  /var/log/tomato/main.log
   dumps:
     enabled:  true
+    auto-push:  true
     directory:  /var/log/tomato/dumps  # location where error dumps are stored
     lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
   ssl:
@@ -142,8 +180,28 @@ backend_users:
   database:
     db-name: tomato_backend_users
     server:
-      host: dockerhost  # you may need to use %(DB_PORT_27017_TCP_ADDR)s instead...
-      port: 27017  # you may need to use %(DB_PORT_27017_TCP_PORT)s instead...
+      host: dockerhost  # you may need to use %(OS__DB_PORT_27017_TCP_ADDR)s instead...
+      port: 27017  # you may need to use %(OS__DB_PORT_27017_TCP_PORT)s instead...
+  tasks:
+    max-workers: 25
+
+backend_debug:
+  paths:
+    log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    auto-push:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
+    lifetime:  604800  # 7 days. Dumps older than this will be deleted. This does not affect dumps that have been collected by the dump manager.
+  ssl:
+    cert:  /etc/tomato/backend_debug.pem
+    key:  /etc/tomato/backend_debug.pem
+    ca:  /etc/tomato/ca.pem
+  database:
+    db-name: tomato_backend_debug
+    server:
+      host: dockerhost  # you may need to use %(OS__DB_PORT_27017_TCP_ADDR)s instead...
+      port: 27017  # you may need to use %(OS__DB_PORT_27017_TCP_PORT)s instead...
   tasks:
     max-workers: 25
 
@@ -234,6 +292,9 @@ user-quota:
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
 
+debugging:
+  enabled: false
+
 """)
 
 settings = None
@@ -277,12 +338,30 @@ class Config:
 	TOMATO_MODULE_WEB = "web"
 	TOMATO_MODULE_BACKEND_CORE = "backend_core"
 	TOMATO_MODULE_BACKEND_USERS = "backend_users"
-	TOMATO_MODULE_BACKEND_API = "backend_core"
+	TOMATO_MODULE_BACKEND_API = "backend_api"
+	TOMATO_MODULE_BACKEND_DEBUG = "backend_debug"
+	TOMATO_MODULE_BACKEND_ACCOUNTING = "backend_accounting"
 
+	# all existing modules
 	TOMATO_MODULES = {TOMATO_MODULE_WEB,
 										TOMATO_MODULE_BACKEND_CORE,
-										TOMATO_MODULE_BACKEND_USERS}
-	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE, TOMATO_MODULE_BACKEND_USERS}
+										TOMATO_MODULE_BACKEND_USERS,
+										TOMATO_MODULE_BACKEND_API,
+										TOMATO_MODULE_BACKEND_DEBUG,
+										TOMATO_MODULE_BACKEND_ACCOUNTING}
+
+	# modules of backend (TOMATO_MODULES - web)
+	TOMATO_BACKEND_MODULES = {TOMATO_MODULE_BACKEND_CORE,
+														TOMATO_MODULE_BACKEND_USERS,
+														TOMATO_MODULE_BACKEND_API,
+														TOMATO_MODULE_BACKEND_DEBUG,
+														TOMATO_MODULE_BACKEND_ACCOUNTING}
+
+	# all modules that are reachable via an sslrpc2 API
+	TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES = {TOMATO_MODULE_BACKEND_CORE,
+																							 TOMATO_MODULE_BACKEND_USERS,
+																							 TOMATO_MODULE_BACKEND_DEBUG,
+																							 TOMATO_MODULE_BACKEND_ACCOUNTING}
 
 	EMAIL_NOTIFICATION = "notification"
 	EMAIL_NEW_USER_WELCOME = "new-user-welcome"
@@ -318,8 +397,13 @@ class Config:
 	DUMPS_ENABLED = "enabled"
 	DUMPS_DIRECTORY = "directory"
 	DUMPS_LIFETIME = "lifetime"
+	DUMPS_AUTO_PUSH = "auto-push"
 
 	TASKS_MAX_WORKERS = 'max-workers'
+
+	GITHUB_ACCESS_TOKEN = "access-token"
+	GITHUB_REPOSITORY_OWNER = "repository-owner"
+	GITHUB_REPOSITORY_NAME = "repository-name"
 
 class SettingsProvider:
 	def __init__(self, filename, tomato_module):
@@ -350,9 +434,24 @@ class SettingsProvider:
 		for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):
 			print >> sys.stderr, "Found old-style config at %s - This is no longer supported." % (path)
 
+		print "debugging is %s" % ("ENABLED" if self.debugging_enabled() else "disabled")
 
+
+	def debugging_enabled(self):
+		"""
+		get whether debugging is enabled (globally)
+		:return: whether debugging should be allowed
+		:rtype: bool
+		"""
+		return self.original_settings['debugging']['enabled']
 
 	def get_dumpmanager_enabled(self, tomato_module):
+		"""
+		get whether dumps on this module are enabled
+		:param str tomato_module: tomato module as in Config
+		:return: whether dumps on this module are enabled
+		:rtype: bool
+		"""
 		InternalError.check(tomato_module in Config.TOMATO_MODULES, code=InternalError.INVALID_PARAMETER, message="invalid tomato module", todump=False, data={'tomato_module': tomato_module})
 		return self.original_settings[tomato_module]['dumps']['enabled']
 
@@ -427,7 +526,7 @@ class SettingsProvider:
 		return {
 			'database': self.original_settings[self.tomato_module]['database']['db-name'],
 			'host': self.original_settings[self.tomato_module]['database']['server']['host'],
-			'port': self.original_settings[self.tomato_module]['database']['server']['port']
+			'port': int(self.original_settings[self.tomato_module]['database']['server']['port'])
 		}
 
 	def get_bittorrent_settings(self):
@@ -777,6 +876,18 @@ class SettingsProvider:
 					print "Configuration ERROR at /dumpmanager/%s: is missing." % k
 					print " using default setting for %s" % k
 					self.original_settings['dumpmanager'][k] = v
+
+		# dumpmanager
+		if not self.original_settings.get('debugging', None):
+			print "Configuration ERROR at /debugging: is missing."
+			print " using default debugging settings."
+			self.original_settings['debugging'] = default_settings['debugging']
+		else:
+			for k, v in default_settings['debugging'].iteritems():
+				if not self.original_settings['debugging'].get(k, None):
+					print "Configuration ERROR at /debugging/%s: is missing." % k
+					print " using default setting for %s" % k
+					self.original_settings['debugging'][k] = v
 
 
 		# tomato modules' settings

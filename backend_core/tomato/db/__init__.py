@@ -110,3 +110,29 @@ def js_code(name):
 
 def exec_js(code, *args, **options):
 	return DataEntry.objects.exec_js(code, *args, **options)
+
+def migrate():
+	def getMigration(version):
+		try:
+			return __import__("tomato.db.migrations.migration_%04d" % version, {}, {}, 'migration_%04d' % version).migrate
+		except ImportError:
+			return None
+	version = data.get('db_version', 0)
+	print("Database version: %04d" % version, file=sys.stderr)
+	if version > 0 and not getMigration(version):
+		raise Exception("Database is newer than code")
+	if not version and not getMigration(1):
+		raise Exception("Failed to migrate to initial version")
+	while True:
+		version += 1
+		migrate = getMigration(version)
+		if not migrate:
+			break
+		print(" - migrating to version %04d..." % version, file=sys.stderr)
+		try:
+			migrate()
+		except:
+			import traceback
+			traceback.print_exc()
+			raise
+		data.set('db_version', version)

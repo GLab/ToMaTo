@@ -41,7 +41,7 @@ class Flags:
 		for flag in [Flags.OrgaToplUser, Flags.OrgaToplManager, Flags.OrgaToplOwner]:
 			if flag in flags:
 				max_orga = flag
-		return Role.from_user_flag(max_global), Role.from_user_flag(max_orga)
+		return Flags.to_topology_role(max_global), Flags.to_topology_role(max_orga)
 
 	@staticmethod
 	def to_topology_role(flag):
