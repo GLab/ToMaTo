@@ -2,6 +2,7 @@ from ..db import *
 from .errordump import ErrorDump
 import threading
 from ..lib.error import UserError
+from ..lib.exceptionhandling import wrap_and_handle_current_exception
 from ..lib.service import get_backend_users_proxy
 from ..lib.userflags import Flags
 from ..lib import util
@@ -194,7 +195,7 @@ class ErrorGroup(BaseDocument):
 					flag_filter=Flags.ErrorNotify
 				)
 			except:
-				pass
+				wrap_and_handle_current_exception(re_raise=False)
 
 			return grp
 

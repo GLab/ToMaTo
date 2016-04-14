@@ -11,7 +11,7 @@ envCmds = {
   "routing (ipv6)": ["route", "-6", "-n"],
   "dmesg": ["dmesg", "-xT", "-s", "4096"],
   "syslog": ["tail", "/var/log/syslog"],
-  "vzctl.log": ["tail", "/var/log/vzctl.log"],
+  "vzctl_log": ["tail", "/var/log/vzctl.log"],  # key may not contain '.' character
   "openvz": ["vzlist", "-a"],
   "kvmqm": ["qm", "list"],
   "tc": ["tc", "-s", "qdisc", "show"],
