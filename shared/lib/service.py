@@ -1,6 +1,7 @@
 from .sslrpc2 import Proxy
 from .error import Error, TransportError
 from .settings import settings, Config
+from .cache import cached
 
 import ssl
 
@@ -11,6 +12,7 @@ def _convertError(error):
 		return Error.parse(error)
 	return error
 
+@cached(300)
 def createProxy(address, sslcert, sslkey, sslca):
 	if address.startswith("sslrpc2://"):
 		address = address[10:]
@@ -20,6 +22,7 @@ def createProxy(address, sslcert, sslkey, sslca):
 	port = int(port)
 	return Proxy((address, port), certfile=sslcert, keyfile=sslkey, ca_certs=sslca, cert_reqs=ssl.CERT_REQUIRED, onError=_convertError)
 
+@cached(3600)
 def get_tomato_inner_proxy(tomato_module):
 	protocol = 'sslrpc2'
 	conf = settings.get_interface(tomato_module, True, protocol)
