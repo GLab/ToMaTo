@@ -108,4 +108,4 @@ def host_usage(name): #@ReservedAssignment
 
 
 def host_execute_function(name, function_name, *args, **kwargs):
-	return _getHost(name).getProxy().__getattr__(function_name)(*args, **kwargs)
+	return getattr(_getHost(name).getProxy(), function_name)(*args, **kwargs)
