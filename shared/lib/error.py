@@ -101,6 +101,13 @@ class Error(Exception):
 		"""
 		dump this error through the dump manager.
 		"""
+		import dump
+		dump.dumpError(self)
+
+	def handle(self):
+		"""
+		pass this error to the exceptionhandling library
+		"""
 		exceptionhandling.writedown_current_exception()
 
 	@property
@@ -137,7 +144,6 @@ class Error(Exception):
 		if condition: return
 		exception = cls(code=code, message=message, todump=todump,
 										frame=inspect.currentframe(), trace=traceback.extract_stack(), *args, **kwargs)
-		exception.dump()
 		raise exception
 
 	@classmethod
