@@ -632,7 +632,7 @@ class ConnectionInfo(ActionObj):
 		self._usage_obj = UsageObj(ClassName.CONNECTION, self.cid)
 
 	def _fetch_info(self, fetch=False):
-		return get_backend_core_proxy().element_info(self.cid, fetch=fetch)
+		return get_backend_core_proxy().connection_info(self.cid, fetch=fetch)
 
 	def _modify(self, attrs):
 		return get_backend_core_proxy().connection_modify(self.cid, attrs)
