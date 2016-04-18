@@ -3,7 +3,7 @@ Created on Nov 20, 2014
 
 @author: Tim Gerhard
 '''
-from error import Error, UserError, InternalError, getCodeMsg, generate_inspect_trace #@UnresolvedImport
+from error import Error, UserError, InternalError, NetworkError, getCodeMsg, generate_inspect_trace #@UnresolvedImport
 from django.shortcuts import render, redirect
 import xmlrpclib, socket, sys, inspect
 from . import anyjson as json
@@ -16,8 +16,8 @@ def interpretError(error):
     entity_name = error.data['entity'] if 'entity' in error.data else "Entity"
     typemsg = getCodeMsg(error.code, entity_name.title()) # message to use as heading on error page
     
-    ajaxinfos = {} # information which the editor can use to handle the exception
-    responsecode = error.httpcode # which HTTP response status code to use
+    ajaxinfos = {}  # information which the editor can use to handle the exception
+    responsecode = error.httpcode  # which HTTP response status code to use
     
     data = error.data
     
@@ -27,8 +27,7 @@ def interpretError(error):
     ajaxinfos = data
 
     frame_trace = json.dumps(error.frame_trace)
-    
-    #now, return everything.
+
     if 'function' in debuginfos_dict:
       need_comma = False
       debuginfos_dict['function'] = debuginfos_dict['function']+'('
@@ -62,6 +61,10 @@ def interpretError(error):
 
 
 def renderError(request, error):
+
+    if isinstance(error, NetworkError):
+      return render(request, "error/backend_trouble.html", {'tomato_module': error.data.get("tomato_module"), 'code': error.code, 'text': error.onscreenmessage})
+
     typemsg, errormsg, debuginfos, _, responsecode, frame_trace = interpretError(error)
     return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos, 'frame_trace': frame_trace}, status=responsecode)
 
@@ -86,10 +89,10 @@ def renderFault (request, fault):
         if ecode in [401, 403]:
             request.session['forward_url'] = request.build_absolute_uri()
             return redirect("tomato.main.login")
-    elif isinstance(fault, xmlrpclib.Fault):
-        etype = "RPC call error"
-        ecode = fault.faultCode
-        etext = fault.faultString
+    elif isinstance(fault, NetworkError):
+        etype = "Backend Trouble"
+        ecode = fault.code
+        etext = fault.onscreenmessage
     else:
         etype = fault.__class__.__name__
         ecode = ""

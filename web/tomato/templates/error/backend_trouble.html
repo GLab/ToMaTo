@@ -1,0 +1,30 @@
+{% extends "main/base.html" %}
+
+{% load url from future %}
+
+{% block title %}
+<title>Backend Problems - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+<h1>Backend Problems</h1>
+
+<p>If this problem continues to occur, please contact an administrator.</p>
+
+<p>
+    <table>
+        <tr>
+            <th>ToMaTo Module</th>
+            <td>{{tomato_module}}</td>
+        </tr>
+        <tr>
+            <th>Code</th>
+            <td>{{code}}</td>
+        </tr>
+        <tr>
+            <th>Description</th>
+            <td>{{text}}</td>
+        </tr>
+    </table>
+</p>
+{% endblock %}          

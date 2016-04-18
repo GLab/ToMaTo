@@ -225,6 +225,11 @@ class TransportError(Error):
 	SSL = "ssl"
 	CONNECT = "connect"
 	RPC = "rpc"
+
+@ErrorType
+class NetworkError(Error):
+	TYPE = "network"
+	NOT_REACHABLE = "not reachable"
 	
 	
 # This is used by other functions. It maps error types to onscreen error types (i.e., better readable), and HTTP response codes.
