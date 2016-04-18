@@ -4,29 +4,29 @@ import traceback
 import sys
 
 
-def wrap_and_handle_current_exception(errorcls_func=None, re_raise=True, log_exception=True, dump_exception=True, print_exception=True):
+def wrap_and_handle_current_exception(errorcls_func=None, re_raise=True, log_exception=True, dump_exception=True, print_exception=True, ignore_todump=False):
 	type_, exc, trace = sys.exc_info()
 	if errorcls_func is None:
 		errorcls_func = lambda e: error.InternalError
 	if isinstance(exc, error.Error):
 		if exc.todump:
-			writedown_current_exception(log_exception=log_exception, dump_exception=dump_exception, print_exception=print_exception, exc=exc)
+			writedown_current_exception(log_exception=log_exception, dump_exception=dump_exception, print_exception=print_exception, exc=exc, ignore_todump=ignore_todump)
 		if re_raise:
 			raise
 	else:
 		newexc = errorcls_func(exc).wrap(exc)
 		writedown_current_exception(log_exception=log_exception, dump_exception=dump_exception and newexc.todump,
-		                            print_exception=print_exception, exc=exc)
+		                            print_exception=print_exception, exc=exc, ignore_todump=ignore_todump)
 		if re_raise:
 			newexc.todump = False
 			raise newexc.__class__, newexc, trace
 
-def writedown_current_exception(log_exception=True, dump_exception=True, print_exception=True, exc=None):
+def writedown_current_exception(log_exception=True, dump_exception=True, print_exception=True, exc=None, ignore_todump=False):
 	if exc is None:
 		_, exc, _ = sys.exc_info()
 
 	if isinstance(exc, error.Error):
-		if not exc.todump:
+		if not exc.todump and not ignore_todump:
 			return
 
 	if log_exception:

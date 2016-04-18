@@ -16,8 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import base64
-import sys
-import threading
 import time
 import traceback
 
@@ -29,6 +27,7 @@ from ..lib.dump import dumpException
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
+from ..lib.exceptionhandling import wrap_and_handle_current_exception
 from ..lib.service import get_backend_users_proxy, get_backend_accounting_proxy
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
@@ -781,10 +780,8 @@ def synchronizeHost(host_name):
 			host.update()
 			host.synchronizeResources()
 		except:
-			traceback.print_exc()
-			logging.logException(host=host.name)
-			dumpException()
-			print >>sys.stderr, "Error updating information from %s" % host
+			print >>sys.stderr, "Error updating host information from %s" % host
+			wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
 		host.checkProblems()
 	finally:
 		with checkingHostsLock:
@@ -796,10 +793,8 @@ def updateAccounting(host_name):
 	try:
 		host.updateAccountingData()
 	except:
-		traceback.print_exc()
-		logging.logException(host=host.name)
-		dumpException()
-		print >>sys.stderr, "Error updating information from %s" % host
+		print >>sys.stderr, "Error updating accounting information from %s" % host
+		wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
 
 from .site import Site
 
