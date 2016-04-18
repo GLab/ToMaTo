@@ -787,14 +787,24 @@ def synchronizeHost(host_name):
 		with checkingHostsLock:
 			checkingHosts.remove(host)
 
+updatingAccountingHostsLock = threading.RLock()
+updatingAccountingHosts = set()
+
 @util.wrap_task
 def updateAccounting(host_name):
 	host = Host.objects.get(name=host_name)
+	with updatingAccountingHostsLock:
+		if host in updatingAccountingHosts:
+			return
+		updatingAccountingHosts.add(host)
 	try:
 		host.updateAccountingData()
 	except:
 		print >>sys.stderr, "Error updating accounting information from %s" % host
 		wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
+	finally:
+		with updatingAccountingHostsLock:
+			updatingAccountingHosts.remove(host)
 
 from .site import Site
 
