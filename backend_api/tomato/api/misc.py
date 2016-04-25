@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.versioninfo import getVersionStr
-from api_helpers import checkauth, getCurrentUserInfo, getCurrentUserName
+from api_helpers import getCurrentUserInfo, getCurrentUserName
 from ..lib.service import get_backend_core_proxy, is_self, get_tomato_inner_proxy
 from ..lib.util import joinDicts
 from ..misc import getCAPublicKey
@@ -60,16 +60,4 @@ def statistics():
 			stats = joinDicts(stats, stat_update)
 	return stats
 
-@checkauth
-def task_list():
-	#fixme: should this check more authorization?
-	#fixme: this should query all possible backend services...
-	return scheduler.info()["tasks"]
-
-def task_execute(id):
-	# fixme: this should get the argument on which service to be executed...
-	getCurrentUserInfo().check_may_execute_tasks()
-	return scheduler.executeTask(id, force=True)
-
-from .. import scheduler
 from ..lib.settings import settings, Config

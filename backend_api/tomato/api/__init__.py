@@ -27,7 +27,8 @@ from config_infos import account_flag_categories, account_flag_configuration, ac
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
 	connection_action, connection_usage
 
-from debug import debug, debug_stats, debug_services_reachable, debug_run_internal_api_call, debug_run_host_api_call
+from debug import debug_stats, debug_services_reachable, debug_run_internal_api_call, debug_run_host_api_call,\
+	debug_execute_task, debug_debug_internal_api_call
 
 from dumpmanager import errordump_info, errordump_list, errordumps_force_refresh, errorgroup_favorite,\
 	errorgroup_hide, errorgroup_info, errorgroup_list, errorgroup_modify, errorgroup_remove
@@ -36,7 +37,7 @@ from elements import element_info, element_action, element_create, element_modif
 
 from host import host_users, host_info, host_create, host_list, host_modify, host_remove
 
-from misc import link_statistics, notifyAdmins, server_info, statistics, task_execute, task_list
+from misc import link_statistics, notifyAdmins, server_info, statistics
 
 from network import network_list, network_create, network_info, network_modify, network_remove
 

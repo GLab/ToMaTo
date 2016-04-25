@@ -20,7 +20,7 @@ from capabilities import capabilities, capabilities_connection, capabilities_ele
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
 	connection_action, connection_usage
 
-from debug import debug, debug_stats, ping
+from debug import debug_stats, ping, debug_execute_task, debug_debug_internal_api_call
 
 from dump import dump_list
 
@@ -29,7 +29,7 @@ from elements import element_info, element_action, element_create, element_modif
 from host import host_dump_list, host_name_list,\
 	host_modify, host_create, host_info, host_list, host_remove, host_usage, host_users, host_execute_function
 
-from misc import link_statistics, notifyAdmins, server_info, statistics, task_execute, task_list
+from misc import link_statistics, notifyAdmins, server_info, statistics
 
 from network import network_create, network_info, network_list, network_modify, network_remove
 

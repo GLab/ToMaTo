@@ -1,4 +1,5 @@
 from .. import scheduler
+from ..lib.debug import run
 import traceback, sys
 
 def ping():
@@ -15,8 +16,12 @@ def debug_stats():
 	                              database_obj.collection_names()}
 	return stats
 
-def debug(method, args=None, kwargs=None, profile=None):
-	func = globals().get(method)
-	from ..lib import debug
-	result = debug.run(func, args, kwargs, profile)
+def debug_debug_internal_api_call(_command, args=None, kwargs=None, profile=True):
+	from .. import api
+	func = getattr(api, _command)
+	result = run(func, args, kwargs, profile)
 	return result.marshal()
+
+
+def debug_execute_task(task_id):
+	return scheduler.executeTask(task_id, force=True)

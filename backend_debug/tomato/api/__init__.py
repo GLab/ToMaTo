@@ -1,4 +1,4 @@
-from debug import debug_stats, debug, ping
+from debug import debug_stats, ping, debug_execute_task, debug_debug_internal_api_call
 
 from misc import statistics
 

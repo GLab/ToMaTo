@@ -52,7 +52,6 @@ def notifyAdmins(subject, text, global_contact, issue, user_orga, user_name):
 
 @cached(timeout=3600)
 def statistics():
-	#fixme: broken
 	stats = {}
 	resources = {}
 	stats['resources'] = resources
@@ -94,11 +93,5 @@ def statistics():
 	usage['element_types'] = {key: cls.objects.count() for (key, cls) in elements.TYPES.items()}
 	return stats
 
-def task_list():
-	return scheduler.info()["tasks"]
-
-def task_execute(id):
-	return scheduler.executeTask(id, force=True)
-
-from .. import link, topology, elements, connections, scheduler
+from .. import link, topology, elements, connections
 from ..host import Host
