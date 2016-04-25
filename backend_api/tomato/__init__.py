@@ -40,7 +40,7 @@ def getCurrentUserInfo():
 def setCurrentUserInfo(user_info):
 	_currentUser.user_info = user_info
 
-def login(credentials, sslCert):
+def login(credentials, sslCert):  # fixme: login, currentUserInfo, etc should be moved to the authorization package
 	user_info = authorization.login(*credentials) if credentials else None
 	setCurrentUserInfo(user_info)
 	return user_info or not credentials

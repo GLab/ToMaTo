@@ -200,19 +200,3 @@ def connection_info(id, fetch=False): #@ReservedAssignment
 	if fetch:
 		con.fetchInfo()
 	return con.info()
-	
-def connection_usage(id): #@ReservedAssignment
-	"""
-	Retrieves usage statistics for a connection.
-	
-	Parameter *id*:
-	  The parameter *id* identifies the connection by giving its unique id.
-
-	Return value:
-	  Usage statistics for the given connection according to 
-	  :doc:`/docs/accountingdata`.
-	"""
-	# fixme: broken
-	con = _getConnection(id)
-	return con.totalUsage.info()
-

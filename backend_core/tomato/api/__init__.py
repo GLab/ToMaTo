@@ -18,13 +18,13 @@
 from capabilities import capabilities, capabilities_connection, capabilities_element
 
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
-	connection_action, connection_usage
+	connection_action
 
 from debug import debug_stats, ping, debug_execute_task, debug_debug_internal_api_call
 
 from dump import dump_list
 
-from elements import element_info, element_action, element_create, element_modify, element_remove, element_usage
+from elements import element_info, element_action, element_create, element_modify, element_remove
 
 from host import host_dump_list, host_name_list,\
 	host_modify, host_create, host_info, host_list, host_remove, host_usage, host_users, host_execute_function

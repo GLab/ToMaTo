@@ -278,21 +278,6 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	if fetch:
 		el.fetchInfo()
 	return el.info()
-	
-def element_usage(id): #@ReservedAssignment
-	"""
-	Retrieves usage statistics for an element.
-	
-	Parameter *id*:
-	  The parameter *id* identifies the element by giving its unique id.
-
-	Return value:
-	  Usage statistics for the given element according to 
-	  :doc:`/docs/accountingdata`.
-	"""
-	# fixme: broken
-	el = _getElement(id)
-	return el.totalUsage.info()	
 
 from ..elements import Element
 from .topology import _getTopology
