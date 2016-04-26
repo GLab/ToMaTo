@@ -741,6 +741,8 @@ def reload_all(modules):
 
 
 def gencerts(config):
+	if not os.path.exists(config["docker_dir"]):
+		os.makedirs(config["docker_dir"])
 	ca_key = config["certs"]["ca_key"]
 	ca_cert = config["certs"]["ca_cert"]
 	new_ca = False
@@ -751,6 +753,8 @@ def gencerts(config):
 		new_ca = True
 	for module_name, module in tomato_modules.iteritems():
 		dir = config[module_name]["directories"]["config"]
+		if not os.path.exists(dir):
+			os.makedirs(dir)
 		service_key = os.path.join(dir, module_name + "_key.pem")
 		service_cert = os.path.join(dir, module_name + "_cert.pem")
 		service_csr = os.path.join(dir, module_name + "_csr.pem")

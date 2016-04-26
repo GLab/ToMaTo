@@ -67,7 +67,10 @@ def start():
 	else:
 		print >>sys.stderr, "Skipping migrations"
 	global starttime
-	bittorrent.startTracker(settings.settings.get_bittorrent_settings()['tracker-port'], settings.settings.get_template_dir())
+	bittorrent_path = settings.settings.get_template_dir()
+	if not os.path.exists(bittorrent_path):
+		os.makedirs(bittorrent_path)
+	bittorrent.startTracker(settings.settings.get_bittorrent_settings()['tracker-port'], bittorrent_path)
 	bittorrent.startClient(settings.settings.get_template_dir())
 	rpcserver.start()
 	starttime = time.time()
