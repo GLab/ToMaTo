@@ -51,9 +51,9 @@ def parseArgs():
 	parser.add_argument("--file", "-f", help="a file to execute")
 	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
 	options = parser.parse_args()
-	if not options.username and not options.client_cert:
+	if not options.username and not (options.client_cert or options.url):
 		options.username=raw_input("Username: ")
-	if not options.password and not options.client_cert:
+	if not options.password and not (options.client_cert or options.url):
 		options.password=getpass.getpass("Password: ")
 	if options.ssl and options.protocol == "http+xmlrpc":
 		options.protocol = "https+xmlrpc"
