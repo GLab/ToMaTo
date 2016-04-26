@@ -1,4 +1,4 @@
-from proxies import ProxyHoldingTestCase
+from proxies import ProxyHoldingTestCase, UserError
 import unittest
 
 class GeneralTestCase(ProxyHoldingTestCase):
@@ -21,7 +21,10 @@ class ExampleUserTestCase(ProxyHoldingTestCase):
 		for address in self.test_host_addresses:
 			self.add_host_if_missing(address)
 			self.assertEqual(self.proxy_holder.backend_api.host_info(self.get_host_name(address))["address"], address)
-
+			self.add_host_if_missing(address)
+			self.remove_host_if_available(address)
+			self.assertRaises(UserError, self.proxy_holder.backend_api.host_info(self.get_host_name(address)))
+		self.delete_site_if_exists()
 
 
 

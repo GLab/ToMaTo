@@ -83,6 +83,13 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			                                          self.proxy_holder.backend_api.organization_list()[0]['name'],
 			                                          self.host_site_name)
 
+	def delete_site_if_exists(self):
+		try:
+			self.proxy_holder.backend_api.site_remove(self.host_site_name)
+		except UserError, e:
+			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
+				raise
+
 	def get_host_name(self, address):
 		"""
 		resolve a host address to a name (to be used as identifier in tomato)
@@ -99,3 +106,10 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			                                          'rpcurl': "ssl+jsonrpc://%s:8003"%address,
 		                                            'address': address
 		                                          })
+
+	def remove_host_if_available(self, address):
+		try:
+			self.proxy_holder.backend_api.host_remove(self.get_host_name(address))
+		except UserError, e:
+			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
+				raise
