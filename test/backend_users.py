@@ -15,6 +15,13 @@ class ExampleUserTestCase(ProxyHoldingTestCase):
 	def test_notexists(self):
 		self.assertRaises(Exception, self.proxy_holder.backend_users.user_exists, "adminfjdkahfdlkshfsklfhjkdsl")
 
+	def test_host_example(self):
+		self.create_site_if_missing()
+		self.assertEqual(self.host_site_name, self.proxy_holder.backend_api.site_info(self.host_site_name)["name"])
+		for address in self.test_host_addresses:
+			self.add_host_if_missing(address)
+			self.assertEqual(self.proxy_holder.backend_api.host_info(self.get_host_name(address))["address"], address)
+
 
 
 
