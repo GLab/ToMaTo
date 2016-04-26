@@ -64,8 +64,8 @@ backend_api:
 backend_accounting:
   data_path: /var/lib/tomato_backend_accounting
   ssl:
-    cert_file:  /etc/tomato/backend_api_cert.pem
-    key_file:  /etc/tomato/backend_api_key.pem
+    cert_file:  /etc/tomato/backend_accounting_cert.pem
+    key_file:  /etc/tomato/backend_accounting_key.pem
     ca_file:  /etc/tomato/ca.pem
   dumps:
     enabled: false
