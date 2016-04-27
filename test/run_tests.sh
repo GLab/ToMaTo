@@ -15,6 +15,11 @@ with open("testhosts.json") as f:
  hosts = json.load(f)
 print " ".join(hosts)' | python -)
 
+if [ -e "$DOCKER_DIR" ]; then
+	echo "ERROR: Please remove $DOCKER_DIR before starting."
+	exit 1
+fi
+
 # stop tomato
 echo -n "stopping current ToMaTo instance... "
 ../docker/run/tomato-ctl.py stop > /dev/null
@@ -89,3 +94,7 @@ echo "done"
 
 # remove files
 rm -rf "$DOCKER_DIR"
+if [ -e "$DOCKER_DIR" ]; then
+	echo "failed removing $DOCKER_DIR"
+	echo "Please remove it before running the next test."
+fi
