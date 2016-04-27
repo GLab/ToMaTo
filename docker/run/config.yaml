@@ -62,11 +62,11 @@ backend_api:
     max-workers: 25
 
 backend_accounting:
-  data_path: /var/lib/tomato_backend_accounting
+  data-path: /var/lib/tomato_backend_accounting
   ssl:
-    cert_file:  /etc/tomato/backend_accounting_cert.pem
-    key_file:  /etc/tomato/backend_accounting_key.pem
-    ca_file:  /etc/tomato/ca.pem
+    cert:  /etc/tomato/backend_accounting_cert.pem
+    key:  /etc/tomato/backend_accounting_key.pem
+    ca:  /etc/tomato/ca.pem
   dumps:
     enabled: false
 

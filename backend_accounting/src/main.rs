@@ -85,19 +85,19 @@ impl Config {
         let doc = &docs[0]["backend_accounting"];
         Config {
             ssl_ciphers: doc["ssl"]["ciphers"].as_str().unwrap_or(DEFAULT_CIPHERS).to_owned(),
-            ssl_key_file: doc["ssl"]["key_file"].as_str().expect("SSL key file unset").to_owned(),
-            ssl_cert_file: doc["ssl"]["cert_file"].as_str().expect("SSL cert file unset").to_owned(),
-            ssl_ca_file: doc["ssl"]["ca_file"].as_str().expect("SSL ca file unset").to_owned(),
-            data_path: doc["data_path"].as_str().expect("Data path unset").to_owned(),
-            hierarchy_cache_timeout: doc["hierarchy_cache_timeout"].as_i64().unwrap_or(3600),
-            store_interval: doc["store_interval"].as_i64().unwrap_or(60),
-            cleanup_interval: doc["cleanup_interval"].as_i64().unwrap_or(3600),
-            max_record_age: doc["max_record_age"].as_i64().unwrap_or(24*3600*14),
+            ssl_key_file: doc["ssl"]["key"].as_str().expect("SSL key file unset").to_owned(),
+            ssl_cert_file: doc["ssl"]["cert"].as_str().expect("SSL cert file unset").to_owned(),
+            ssl_ca_file: doc["ssl"]["ca"].as_str().expect("SSL ca file unset").to_owned(),
+            data_path: doc["data-path"].as_str().expect("Data path unset").to_owned(),
+            hierarchy_cache_timeout: doc["hierarchy-cache-timeout"].as_i64().unwrap_or(3600),
+            store_interval: doc["store-interval"].as_i64().unwrap_or(60),
+            cleanup_interval: doc["cleanup-interval"].as_i64().unwrap_or(3600),
+            max_record_age: doc["max-record-age"].as_i64().unwrap_or(24*3600*14),
             listen_address: listen_addr,
-            log_level: log::LogLevelFilter::from_str(doc["log_level"].as_str().unwrap_or("info")).expect("Invalid log level"),
+            log_level: log::LogLevelFilter::from_str(doc["log-level"].as_str().unwrap_or("info")).expect("Invalid log level"),
             user_service_address: user_service_addr,
             core_service_address: core_service_addr,
-            service_timeout: doc["service_timeout"].as_i64().unwrap_or(30),
+            service_timeout: doc["service-timeout"].as_i64().unwrap_or(30),
         }
     }
 }
