@@ -187,7 +187,7 @@ examples:
 def show_help_configure(config):
 	defconfig = generate_default_config()
 	print """Config files may be stored at:
- %(config_paths)s
+      %(config_paths)s
    Config files are interpreted in this order.
    If multiple config files specify the same variable, the latest config file wins.
 
@@ -202,6 +202,10 @@ The following settings can be set in the root dict:
    Directory of the ToMaTo code.
    This is used for determining the ToMaTo version, and for mounting code to the containers.
    If not set, this is assumed to be docker_dir/../..
+
+ config.yaml_path (string, path)
+   The config.yaml file to be used for all ToMaTo containers.
+   If not set, this is assumed to be docker_dir/config.yaml
 
  docker_network_interface:
    Network interface of the host for communicating with containers.
@@ -241,6 +245,7 @@ Configuration parameters for all modules:
    If an entry is an integer, it is treated as a tuple (entry, entry).
    This forwards ports on the host to specific ports on the container.
    The first entry is the port on the host, the second one on the container.
+   %(DB_MODULE)s does not support ports.
    Defaults:
     %(default_ports)s
 
@@ -272,7 +277,7 @@ Configuration parameters for all modules:
    The first directory will be mounted as /code/service, The other directories will be mounted with their own name in /code.
    Defaults:
     %(default_code_directories)s""" % {
-		'config_paths': CONFIG_PATHS,
+		'config_paths': "\n      ".join(CONFIG_PATHS),
 		'modules': ", ".join([DB_MODULE] + TOMATO_MODULES),
 		'DB_MODULE': DB_MODULE,
 		'default_timezone': defconfig[DB_MODULE]['timezone'],
@@ -281,7 +286,7 @@ Configuration parameters for all modules:
 		'default_docker_interface': defconfig['docker_network_interface'],
 		'default_docker_namespace': defconfig['docker_container_namespace'],
 		'default_db_image': defconfig[DB_MODULE]['image'],
-		'default_ports': "\n    ".join([append_to_str(module, ": ", TOMATO_MODULES+[DB_MODULE]) + (repr(defconfig[module]['ports'])) for module in sorted([DB_MODULE]+TOMATO_MODULES)]),
+		'default_ports': "\n    ".join([append_to_str(module, ": ", TOMATO_MODULES) + (repr(defconfig[module]['ports'])) for module in sorted(TOMATO_MODULES)]),
 		'default_code_directories': "\n    ".join(append_to_str(module, ": ", TOMATO_MODULES+[DB_MODULE]) + (", ".join(defconfig[module]['code_directories'])) for module in sorted(TOMATO_MODULES)),
 		'default_shell_cmds': "\n    ".join([append_to_str(module, ": ", TOMATO_MODULES+[DB_MODULE]) + (" ".join(defconfig[module]['shell_cmd']) if isinstance(defconfig[module]['shell_cmd'], list) else defconfig[module]['shell_cmd']) for module in sorted([DB_MODULE]+TOMATO_MODULES)])
 	}
