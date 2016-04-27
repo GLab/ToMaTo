@@ -51,10 +51,11 @@ class ProxyHolder(object):
 	a class which has for each backend_* module an attribute holding a proxy which can execute API commands
 	  on the respective module.
 	"""
-	__slots__ = TOMATO_MODULES
+	__slots__ = TOMATO_MODULES + ("username",)
 
 	def __init__(self):
-		self.backend_api = tomato.getConnection(tomato.createUrl("http+xmlrpc", "localhost", 8000, "admin", "changeme"))
+		self.username = "admin"
+		self.backend_api = tomato.getConnection(tomato.createUrl("http+xmlrpc", "localhost", 8000, self.username, "changeme"))
 		for module in TOMATO_MODULES:
 			if module != TOMATO_BACKEND_API_MODULE:
 				setattr(self, module, InternalAPIProxy(self.backend_api, module))
@@ -68,10 +69,13 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	:type proxy_holder: ProxyHolder
 	:type test_host_addresses: list(str)
 	"""
-	def setUp(self):
+
+	def __init__(self, methodName='runTest'):
+		super(ProxyHoldingTestCase, self).__init__(methodName)
 		self.proxy_holder = proxy_holder
 		self.test_host_addresses = test_hosts
 		self.host_site_name = "testhosts"
+		self.default_organization_name = self.proxy_holder.backend_api.organization_list()[0]['name']
 
 	def create_site_if_missing(self):
 		try:
@@ -80,7 +84,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
 			self.proxy_holder.backend_api.site_create(self.host_site_name,
-			                                          self.proxy_holder.backend_api.organization_list()[0]['name'],
+			                                          self.default_organization_name,
 			                                          self.host_site_name)
 
 	def delete_site_if_exists(self):

@@ -36,65 +36,9 @@ echo -n "giving services some time to start. Waiting 20 seconds... "
 sleep 20
 echo "done"
 
-# todo: test which checks reachability of all tomato modules
+# todo: check reachability of all tomato modules
 
 # copy backend's key to hosts
 for host in ${HOSTS}; do
 	../cli/register_backend_on_host.sh http+xmlrpc://localhost:8000 $host
 done
-
-# run tests
-echo ""
-echo ""
-echo ""
-echo "backend_users"
-echo "-------------"
-echo ""
-python -m unittest -v backend_users
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_core"
-echo "-------------"
-echo ""
-python -m unittest -v backend_core
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_accounting"
-echo "-------------"
-echo ""
-python -m unittest -v backend_accounting
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_debug"
-echo "-------------"
-echo ""
-python -m unittest -v backend_debug
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_api"
-echo "-------------"
-echo ""
-python -m unittest -v backend_api
-echo ""
-echo ""
-echo ""
-
-# stop tomato
-echo -n "stopping test ToMaTo instance... "
-../docker/run/tomato-ctl.py stop > /dev/null
-echo "done"
-
-# remove files
-rm -rf "$DOCKER_DIR"
-if [ -e "$DOCKER_DIR" ]; then
-	echo "failed removing $DOCKER_DIR"
-	echo "Please remove it before running the next test."
-fi
