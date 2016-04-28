@@ -59,8 +59,8 @@ print ""
 
 # remove mongodb data
 print "Removing Data..."
-if os.path.exists(mongodb_path):
-	for dir in ['mongodb-data', './backend_accounting/data']:
+for dir in ['mongodb-data', './backend_accounting/data']:
+	if os.path.exists(dir):
 		try:
 			path = path = os.path.abspath(dir)
 			shutil.rmtree(path)
