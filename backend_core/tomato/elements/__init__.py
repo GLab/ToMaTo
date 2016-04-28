@@ -100,7 +100,6 @@ class Element(LockedStatefulEntity, BaseDocument):
 		self.topology = topology
 		self.permissions = topology.permissions
 		self.parent = parent
-		self.totalUsage = UsageStatistics.objects.create()
 		Entity.init(self, attrs)
 
 	@property
@@ -211,7 +210,6 @@ class Element(LockedStatefulEntity, BaseDocument):
 			self.connection.remove()
 		if self.id:
 			self.delete()
-		self.totalUsage.remove()
 
 	def onChildAdded(self, child):
 		pass
