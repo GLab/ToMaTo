@@ -45,10 +45,11 @@ def _topology_import_v4(top):
 	elementIds = {}
 	connectionIds = {}
 	errors = []
-	try:
-		# step 0: create new topology
-		top_id = topology_create()['id']
 
+	# step 0: create new topology
+	top_id = topology_create()['id']
+
+	try:
 		# step 1: apply all topology attributes
 		attributes = {key: value for key, value in top.iteritems() if key != "elements" and key != "connections"}
 		try:
