@@ -19,7 +19,6 @@ from ..generic import *
 from ..db import *
 from ..topology import Topology
 from ..lib import logging
-from ..accounting.quota import UsageStatistics
 from ..lib.decorators import *
 from ..lib.cache import cached
 from ..lib.error import UserError
@@ -44,7 +43,6 @@ class Element(LockedStatefulEntity, BaseDocument):
 	parentId = ReferenceFieldId(parent)
 	connection = ReferenceField(Connection, reverse_delete_rule=NULLIFY)
 	connectionId = ReferenceFieldId(connection)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	hostElements = ListField(ReferenceField('HostElement', reverse_delete_rule=PULL), db_field='host_elements')
 	hostConnections = ListField(ReferenceField('HostConnection', reverse_delete_rule=PULL), db_field='host_connections')
 	clientData = DictField(db_field='client_data')

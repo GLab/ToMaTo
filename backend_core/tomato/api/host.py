@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.cache import cached, invalidates
-
 from ..host import Host, Site
 from ..lib.error import UserError
 from .site import _getSite
@@ -99,13 +97,6 @@ def host_users(name):
 	"""
 	h = _getHost(name)
 	return h.getUsers()
-
-def host_usage(name): #@ReservedAssignment
-	h = _getHost(name)
-	return h.totalUsage.info()
-
-
-
 
 def host_execute_function(name, function_name, *args, **kwargs):
 	return getattr(_getHost(name).getProxy(), function_name)(*args, **kwargs)

@@ -20,7 +20,6 @@ import time
 import traceback
 
 from .. import starttime, scheduler
-from ..accounting.quota import UsageStatistics
 from ..db import *
 from ..generic import *
 from ..lib.dump import dumpException
@@ -87,7 +86,6 @@ def stopCaching():
 
 class Host(Entity, BaseDocument):
 	"""
-	:type totalUsage: UsageStatistics
 	:type site: tomato.host.site.Site
 	:type templates: list of Template
 	"""
@@ -97,7 +95,6 @@ class Host(Entity, BaseDocument):
 	rpcurl = StringField(required=True, unique=True)
 	from .site import Site
 	site = ReferenceField(Site, required=True, reverse_delete_rule=DENY)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	elementTypes = DictField(db_field='element_types')
 	connectionTypes = DictField(db_field='connection_types')
 	hostInfo = DictField(db_field='host_info')
@@ -161,7 +158,6 @@ class Host(Entity, BaseDocument):
 
 	def init(self, attrs=None):
 		self.attrs = {}
-		self.totalUsage = UsageStatistics.objects.create()
 		self.hostInfoTimestamp = 0
 		self.accountingTimestamp = 0
 		self.lastResourcesSync = 0
@@ -284,7 +280,6 @@ class Host(Entity, BaseDocument):
 			raise
 		from .element import HostElement
 		hel = HostElement(type=el["type"], state=el["state"], host=self, num=el["id"], topologyElement=ownerElement, topologyConnection=ownerConnection)
-		hel.usageStatistics = UsageStatistics.objects.create()
 		hel.objectInfo = el
 		hel.save()
 		if ownerElement:
@@ -322,7 +317,6 @@ class Host(Entity, BaseDocument):
 		hcon = HostConnection(host=self, num=con["id"], topologyElement=ownerElement,
 							  topologyConnection=ownerConnection, state=con["state"], type=con["type"],
 							  elementFrom=hel1, elementTo=hel2)
-		hcon.usageStatistics = UsageStatistics.objects.create()
 		hcon.objectInfo = con
 		hcon.save()
 		hel1.connection = hcon
@@ -629,13 +623,11 @@ class HostObject(BaseDocument):
 	:type host: Host
 	:type topologyElement: element.Element
 	:type topologyConnection: connection.Connection
-	:type usageStatistics: UsageStatistics
 	"""
 	host = ReferenceField(Host, required=True, reverse_delete_rule=CASCADE)
 	num = IntField(unique_with='host', required=True)
 	topologyElement = ReferenceField('Element', db_field='topology_element') #reverse_delete_rule=NULLIFY defined at bottom of element/__init__.py
 	topologyConnection = ReferenceField('Connection', db_field='topology_connection')  #reverse_delete_rule=NULLIFY defined at bottom of connections.py
-	usageStatistics = ReferenceField(UsageStatistics, db_field='usage_statistics', required=True, reverse_delete_rule=DENY)
 	state = StringField(required=True)
 	type = StringField(required=True)
 	objectInfo = DictField(db_field='object_info')

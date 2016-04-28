@@ -11,7 +11,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-instal
 ADD get-pip.py /tmp/get-pip.py
 RUN python /tmp/get-pip.py; rm /tmp/get-pip.py
   
-RUN pip install mongoengine\>=0.10,\<0.11 pymongo\>=3.0,\<3.1 pyopenssl\<0.16 msgpack-python\<0.5 pyyaml
+RUN pip install mongoengine\>=0.10,\<0.11 pymongo\>=3.0,\<3.1 pyopenssl\<0.16 msgpack-python\<0.5 pyyaml\<4
 
 RUN mkdir -p /tmp/snappy; cd /tmp/snappy; \
     wget https://github.com/andrix/python-snappy/archive/ca913c70193441045f7c95ddcf0de419f195d0b6.tar.gz -O - | tar -xzv; \

@@ -27,6 +27,8 @@ def patch_mongoengine_from_son():
 			import traceback
 			traceback.print_exc()
 		return obj
+
+	# noinspection PyUnresolvedReferences
 	BaseDocument._from_son = classmethod(from_son)
 
 def patch_all():

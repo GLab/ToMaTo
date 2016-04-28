@@ -173,6 +173,7 @@ def schedulePings():
 		for siteB in Site.objects.all():
 			if siteA.id > siteB.id:
 				continue
+		# noinspection PyUnboundLocalVariable
 		toSync.add((siteA, siteB))
 	syncTasks = {(t.args[0], t.args[1]): tid for tid, t in scheduler.tasks.items() if t.fn == ping}
 	syncing = set(syncTasks.keys())

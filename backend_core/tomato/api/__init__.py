@@ -27,7 +27,7 @@ from dump import dump_list
 from elements import element_info, element_action, element_create, element_modify, element_remove
 
 from host import host_dump_list, host_name_list,\
-	host_modify, host_create, host_info, host_list, host_remove, host_usage, host_users, host_execute_function
+	host_modify, host_create, host_info, host_list, host_remove, host_users, host_execute_function
 
 from misc import link_statistics, notifyAdmins, server_info, statistics
 
