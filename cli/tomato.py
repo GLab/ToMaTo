@@ -3,6 +3,7 @@
 
 import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urlparse
 from lib import getConnection, createUrl
+from lib.upload_download import upload, download, upload_and_use_rextfv, upload_and_use_image, download_image, download_rextfv
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
@@ -167,6 +168,10 @@ def run():
 	url = options.url if options.url else createUrl(options.protocol, options.hostname, options.port, options.username, options.password)
 	api = getConnection(url, options.client_cert)
 	locals = getLocals(api)
+	locals["upload_and_use_rextfv"] = lambda element_id, filename: upload_and_use_rextfv(api, element_id, filename)
+	locals["upload_and_use_image"] = lambda element_id, filename: upload_and_use_image(api, element_id, filename)
+	locals["download_rextfv"] = lambda element_id, filename: download_rextfv(api, element_id, filename)
+	locals["download_image"] = lambda element_id, filename: download_image(api, element_id, filename)
 	if options.arguments:
 		runSource(locals, "\n".join(options.arguments))
 	elif options.file:

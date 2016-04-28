@@ -1,7 +1,8 @@
 import os, random, textwrap,threading, tarfile, re, urllib2, sys, json
 import argparse, getpass
 from time import sleep
-from lib import getConnection, upload, createUrl
+from lib import getConnection, createUrl
+from lib.upload_download import upload, upload_and_use_rextfv
 
 
 def progname_short():
@@ -202,11 +203,7 @@ class TestTopology:
 	
 	
     def uploadAndUseArchive(self,filename):
-        elinfo=self.api.element_info(self.el_id)
-        grant = self.api.element_action(self.el_id,"rextfv_upload_grant")
-        upload_url = "http://%(hostname)s:%(port)s/%(grant)s/upload" % {"hostname":elinfo['attrs']['host_info']["address"], "port":elinfo['attrs']['host_info']["fileserver_port"], "grant":grant }
-        upload(upload_url,filename)
-        self.api.element_action(self.el_id,"rextfv_upload_use")
+	      upload_and_use_rextfv(self.api, self.el_id, filename)
 	
     def getArchiveResult(self):
         elinfo=self.api.element_info(self.el_id)
