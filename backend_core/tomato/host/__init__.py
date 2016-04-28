@@ -470,7 +470,6 @@ class Host(Entity, BaseDocument):
 				pass
 		if self.id:
 			self.delete()
-		self.totalUsage.remove()
 
 	def problems(self):
 		problems = []
