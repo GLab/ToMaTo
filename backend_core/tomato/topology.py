@@ -19,7 +19,6 @@ from .db import *
 from .generic import *
 import time
 from lib import logging #@UnresolvedImport
-from accounting.quota import UsageStatistics
 from . import scheduler
 from .lib.error import UserError #@UnresolvedImport
 from .lib import util
@@ -37,27 +36,21 @@ class TimeoutStep:
 
 class Permission(ExtDocument, EmbeddedDocument):
 	"""
-	:type user: auth.User
+	:type user: str
 	:type role: str
 	"""
 	user = StringField(required=True)
 	role = StringField(choices=[Role.owner, Role.manager, Role.user], required=True)
 
 
-
-
-
-
 class Topology(Entity, BaseDocument):
 	"""
 	:type permissions: list of Permission
-	:type totalUsage: UsageStatistics
 	:type site: Site
 	:type clientData: dict
 	"""
 	from .host import Site
 	permissions = ListField(EmbeddedDocumentField(Permission))
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	timeout = FloatField(required=True)
 	timeoutStep = IntField(db_field='timeout_step', required=True, default=TimeoutStep.INITIAL)
 	site = ReferenceField(Site, reverse_delete_rule=NULLIFY)
@@ -87,7 +80,6 @@ class Topology(Entity, BaseDocument):
 		"""
 		if not attrs: attrs = {}
 		self.set_role(owner, Role.owner, skip_save=True)
-		self.totalUsage = UsageStatistics.objects.create()
 		self.timeout = time.time() + settings.get_topology_settings()[Config.TOPOLOGY_TIMEOUT_INITIAL]
 		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
 		self.save()
@@ -245,7 +237,6 @@ class Topology(Entity, BaseDocument):
 			for con in self.connections:
 				con._remove(recurse=recurse)
 			self.delete()
-		self.totalUsage.remove()
 
 	def modify_site(self, val):
 		self.site = Site.get(val)
@@ -367,7 +358,7 @@ def timeout_task():
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.INITIAL, timeout__lte=now+topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]):
 		try:
 			logging.logMessage("timeout warning", category="topology", id=top.idStr)
-			top.sendNotification(subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
+			top.sendNotification(role=Role.owner, subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
 			top.timeoutStep = TimeoutStep.WARNED
 			top.save()
 		except:

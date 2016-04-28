@@ -415,6 +415,7 @@ def generate_default_config():
 			# is_database: True
 			'image': 'mongo:latest',
 			'timezone': 'Europe/Berlin',
+			'ports': [("127.0.0.1:27017", 27017)],
 			'additional_args': [],
 			'additional_directories': [
 				('%(data)s', '/data/db')
@@ -647,7 +648,7 @@ class Module:
 			['-v', '%s:/backup' % backup_dir],
 			['--rm'],
 			[self.image],
-			['sh', '-c', 'mongodump -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" -d tomato --out /backup; chmod -R ogu+rwX /backup']
+			['sh', '-c', 'mongodump -h "$MONGO_PORT_27017_TCP_ADDR:$MONGO_PORT_27017_TCP_PORT" --out /backup; chmod -R ogu+rwX /backup']
 		])
 		run_observing(*cmd)
 		if not backup_name.endswith(".tar.gz"):
@@ -896,17 +897,17 @@ if len(args) in [3, 4]:
 		else:
 			backup_name = args[3]
 
-		is_started = db_status(config)
+		is_started = module.is_started()
 		if not is_started:
-			db_start(config)
+			module.start()
 
 		if comm == 'backup':
-			db_backup(config, backup_name)
+			module.create_backup(backup_name)
 		else:
-			db_restore(config, backup_name)
+			module.restore_backup(backup_name)
 
 		if not is_started:
-			db_stop(config)
+			module.stop()
 
 		exit(0)
 

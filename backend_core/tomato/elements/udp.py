@@ -89,7 +89,7 @@ class UDPEndpoint(Element):
 
 	def action_stop(self):
 		if self.element:
-			self.element.action(Action.STOP)
+			self.element.action(ActionName.STOP)
 		self.setState(ST_PREPARED, True)
 		self.triggerConnectionStop()
 

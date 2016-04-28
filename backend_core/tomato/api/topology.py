@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.topology_role import role_descriptions
 from ..lib.service import get_backend_users_proxy
 
 def _getTopology(id_):

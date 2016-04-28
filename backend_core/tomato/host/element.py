@@ -81,7 +81,6 @@ class HostElement(HostObject):
 		try:
 			if self.id:
 				self.delete()
-			self.usageStatistics.delete()
 		except OperationError:
 			from .connection import HostConnection
 			for hcon in HostConnection.objects(elementFrom=self):

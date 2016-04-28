@@ -22,7 +22,6 @@ from .generic import *
 from .topology import Topology
 from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
-from .accounting.quota import UsageStatistics
 from .lib.cache import cached #@UnresolvedImport
 from .lib.constants import ActionName, StateName
 
@@ -65,7 +64,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	topology = ReferenceField(Topology, required=True, reverse_delete_rule=DENY)
 	topologyId = ReferenceFieldId(topology)
 	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
-	totalUsage = ReferenceField(UsageStatistics, db_field='total_usage', required=True, reverse_delete_rule=DENY)
 	elementFrom = ReferenceField('Element', db_field='element_from', required=True) #reverse_delete_rule=DENY defined at bottom of element/__init__.py
 	elementFromId = ReferenceFieldId(elementFrom)
 	elementTo = ReferenceField('Element', db_field='element_to', required=True) #reverse_delete_rule=DENY defined at bottom of element/__init__.py
@@ -101,7 +99,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if not attrs: attrs = {}
 		self.topology = topology
 		self.state = ST_CREATED
-		self.totalUsage = UsageStatistics.objects.create()
 		self.elementFrom = el1
 		self.elementTo = el2
 		Entity.init(self, attrs)
@@ -170,7 +167,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			self.mainConnection.modify(self._remoteAttrs)
 
 	def checkUnknownAction(self, action, params=None):
-		if action in [Action.PREPARE, Action.START, Action.UPLOAD_GRANT]:
+		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT]:
 			UserError.check(self.topology.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
 			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
@@ -229,7 +226,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			except:
 				pass
 			self.delete()
-		self.totalUsage.remove()
 
 	def setState(self, state):
 		self.state = state

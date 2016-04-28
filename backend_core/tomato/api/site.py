@@ -16,10 +16,12 @@ def site_list(organization=None):
 		sites = Site.objects.all()
 	return [s.info() for s in sites]
 
-def site_create(name, organization, label="", attrs={}):
+def site_create(name, organization, label="", attrs=None):
 	"""
 	undocumented
 	"""
+	if attrs is None:
+		attrs = {}
 	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
