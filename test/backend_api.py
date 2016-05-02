@@ -73,14 +73,6 @@ class OtherAccountTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_users.user_info, self.testuser_username)
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.account_info, self.testuser_username)
 
-class AuthorizationTestCase(ProxyHoldingTestCase):
-	"""
-	Tests whether the authorization module works properly.
-	"""
-	# todo: implement.
-	pass
-
-
 
 def suite():
 	return unittest.TestSuite([
