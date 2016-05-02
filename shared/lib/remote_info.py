@@ -958,7 +958,7 @@ def _profile_id(tech, name):
 	:param name: profile name
 	:return: profile id
 	"""
-	return get_backend_core_proxy().template_id(tech, name)
+	return get_backend_core_proxy().profile_id(tech, name)
 def get_profile_info_by_techname(tech, name):
 	"""
 	return ProfileInfo object for the respective profile
