@@ -1,5 +1,6 @@
 from ..resources.template import Template
 from ..lib.error import UserError
+from ..lib.exceptionhandling import wrap_errors
 
 def _getTemplate(id_):
 	res = Template.objects.get(id=id_)
@@ -101,6 +102,7 @@ def template_remove(id):
 	res.remove()
 	return {}
 
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def template_id(tech, name):
 	"""
 	translate tech and name to a template id

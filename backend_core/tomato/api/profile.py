@@ -1,5 +1,6 @@
 from ..resources.profile import Profile
 from ..lib.error import UserError
+from ..lib.exceptionhandling import wrap_errors
 
 def _getProfile(id_):
 	res = Profile.objects.get(id=id_)
@@ -101,6 +102,7 @@ def profile_remove(id):
 	res.remove()
 	return {}
 
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def profile_id(tech, name):
 	"""
 	translate tech and name to a template id
