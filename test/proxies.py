@@ -51,7 +51,8 @@ class ProxyHolder(object):
 	a class which has for each backend_* module an attribute holding a proxy which can execute API commands
 	  on the respective module.
 	"""
-	__slots__ = TOMATO_MODULES + ("username",)
+	__slots__ = ("backend_api", "backend_core", "backend_debug", "backend_users", "backend_accounting",
+	             "username")
 
 	def __init__(self):
 		self.username = "admin"
