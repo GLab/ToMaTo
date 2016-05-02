@@ -23,7 +23,7 @@ class ExampleUserTestCase(ProxyHoldingTestCase):
 			self.assertEqual(self.proxy_holder.backend_api.host_info(self.get_host_name(address))["address"], address)
 			self.add_host_if_missing(address)
 			self.remove_host_if_available(address)
-			self.assertRaises(UserError, self.proxy_holder.backend_api.host_info(self.get_host_name(address)))
+			self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.host_info, self.get_host_name(address))
 		self.delete_site_if_exists()
 
 

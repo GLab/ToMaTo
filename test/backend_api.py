@@ -63,8 +63,6 @@ class OtherAccountTestCase(ProxyHoldingTestCase):
 
 		self.set_user(self.testuser_username, self.testuser_organization, self.testuser_email, self.testuser_password, self.testuser_realname, self.testuser_flags)
 
-		self.proxy_holder.backend_users.user_create(self.testuser_username, self.testuser_organization, self.testuser_email, self.testuser_password, self.testuser_attrs)
-
 	def tearDown(self):
 		self.remove_all_other_accounts()
 
@@ -77,5 +75,5 @@ class OtherAccountTestCase(ProxyHoldingTestCase):
 def suite():
 	return unittest.TestSuite([
 		unittest.TestLoader().loadTestsFromTestCase(NoOtherAccountTestCase),
-		unittest.TestLoader().loadTestsFromTestCase(AuthorizationTestCase)
+		unittest.TestLoader().loadTestsFromTestCase(OtherAccountTestCase),
 	])

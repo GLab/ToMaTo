@@ -78,7 +78,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		self.proxy_holder = proxy_holder
 		self.test_host_addresses = test_hosts
 		self.host_site_name = "testhosts"
-		self.default_organization_name = "default"
+		self.default_organization_name = "others"
 		self.default_user_name = "admin"
 
 	def assertRaisesError(self, excClass, errorCode, callableObj=None, *args, **kwargs):
@@ -92,11 +92,11 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	def create_site_if_missing(self):
 		try:
-			self.proxy_holder.backend_api.site_info(self.host_site_name)
+			self.proxy_holder.backend_core.site_info(self.host_site_name)
 		except UserError as e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
-			self.proxy_holder.backend_api.site_create(self.host_site_name,
+			self.proxy_holder.backend_core.site_create(self.host_site_name,
 			                                          self.default_organization_name,
 			                                          self.host_site_name)
 
@@ -118,7 +118,12 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	def add_host_if_missing(self, address):
 		self.create_site_if_missing()
-		self.proxy_holder.backend_api.host_create(self.get_host_name(address), self.host_site_name,
+		try:
+			self.proxy_holder.backend_core.host_info(self.get_host_name(address))
+		except UserError, e:
+			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
+				raise
+			self.proxy_holder.backend_core.host_create(self.get_host_name(address), self.host_site_name,
 		                                          {
 			                                          'rpcurl': "ssl+jsonrpc://%s:8003"%address,
 		                                            'address': address

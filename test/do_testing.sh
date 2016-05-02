@@ -15,11 +15,6 @@ with open("testhosts.json") as f:
  hosts = json.load(f)
 print " ".join(hosts)' | python -)
 
-if [ -e "$DOCKER_DIR" ]; then
-	echo "ERROR: Please remove $DOCKER_DIR before starting."
-	exit 1
-fi
-
 echo ""
 echo ""
 echo ""
