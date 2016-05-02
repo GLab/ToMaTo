@@ -98,7 +98,6 @@ class Element(LockedStatefulEntity, BaseDocument):
 			UserError.check(None in self.CAP_PARENT, code=UserError.INVALID_CONFIGURATION, message="Type needs parent",
 				data={"type": self.type})
 		self.topology = topology
-		self.permissions = topology.permissions
 		self.parent = parent
 		Entity.init(self, attrs)
 
