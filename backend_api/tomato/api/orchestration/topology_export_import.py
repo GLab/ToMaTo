@@ -93,7 +93,7 @@ def _topology_import_v4(top):
 			el2 = elementIds.get(con["elements"][1])
 			conId = connection_create(el1, el2)['id']
 			connectionIds[con['id']] = conId
-			attributes = {key: value for key, value in con.iteritems() if key != "elements" and key != "id"}
+			attributes = {key: value for key, value in con.iteritems() if key != "elements" and key != "id" and key != "type"}
 			try:
 				connection_modify(conId, attributes)
 			except:

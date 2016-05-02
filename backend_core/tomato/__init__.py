@@ -51,10 +51,7 @@ from lib import util, cache, exceptionhandling #@UnresolvedImport
 from lib.error import Error, InternalError
 
 def handleError():
-	exc, _, _ = sys.exc_info()
-	if not isinstance(exc, Error):
-		exc = InternalError.wrap(exc)
-	exceptionhandling.writedown_current_exception(exc=exc)
+	exceptionhandling.writedown_current_exception()
 
 scheduler.scheduleRepeated(settings.settings.get_bittorrent_settings()['bittorrent-restart'], util.wrap_task(bittorrent.restartClient))
 
