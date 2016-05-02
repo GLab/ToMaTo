@@ -15,11 +15,6 @@ import unittest
 
 class NoOtherAccountTestCase(ProxyHoldingTestCase):
 
-	def remove_all_other_accounts(self):
-		for user in self.proxy_holder.backend_users.user_list():
-			if user["name"] != self.proxy_holder.username:
-				self.proxy_holder.backend_users.user_remove(user["name"])
-
 	def setUp(self):
 		self.remove_all_other_accounts()
 
@@ -55,10 +50,6 @@ class NoOtherAccountTestCase(ProxyHoldingTestCase):
 		self.assertEqual(ainf, real_ainf)
 
 class OtherAccountTestCase(ProxyHoldingTestCase):
-	def remove_all_other_accounts(self):
-		for user in self.proxy_holder.backend_users.user_list():
-			if user["name"] != self.proxy_holder.username:
-				self.proxy_holder.backend_users.user_remove(user["name"])
 
 	def setUp(self):
 		self.remove_all_other_accounts()
@@ -67,10 +58,10 @@ class OtherAccountTestCase(ProxyHoldingTestCase):
 		self.testuser_password = "123"
 		self.testuser_organization = self.default_organization_name
 		self.testuser_email = "test@example.com"
-		self.testuser_attrs = {
-			"realname": "Test User",
-			"flags": {"over_quota": True}
-		}
+		self.testuser_realname = "Test User"
+		self.testuser_flags = ["over_quota"]
+
+		self.set_user(self.testuser_username, self.testuser_organization, self.testuser_email, self.testuser_password, self.testuser_realname, self.testuser_flags)
 
 		self.proxy_holder.backend_users.user_create(self.testuser_username, self.testuser_organization, self.testuser_email, self.testuser_password, self.testuser_attrs)
 

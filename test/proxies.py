@@ -13,6 +13,7 @@ TOMATO_MODULES = ("backend_api", "backend_accounting", "backend_core", "backend_
 sys.path.insert(1, "../cli/")
 import lib as tomato
 from lib.error import UserError
+from lib.userflags import flags as userflags
 
 
 class InternalMethodProxy(object):
@@ -52,17 +53,18 @@ class ProxyHolder(object):
 	  on the respective module.
 	"""
 	__slots__ = ("backend_api", "backend_core", "backend_debug", "backend_users", "backend_accounting",
-	             "username")
+	             "username", "password")
 
-	def __init__(self):
-		self.username = "admin"
-		self.backend_api = tomato.getConnection(tomato.createUrl("http+xmlrpc", "localhost", 8000, self.username, "changeme"))
+	def __init__(self, username, password):
+		self.username = username
+		self.password = password
+		self.backend_api = tomato.getConnection(tomato.createUrl("http+xmlrpc", "localhost", 8000, self.username, self.password))
 		for module in TOMATO_MODULES:
 			if module != TOMATO_BACKEND_API_MODULE:
 				setattr(self, module, InternalAPIProxy(self.backend_api, module))
 
 
-proxy_holder = ProxyHolder()
+proxy_holder = ProxyHolder("admin", "changeme")
 with open("testhosts.json") as f:
 	test_hosts = json.load(f)
 class ProxyHoldingTestCase(unittest.TestCase):
@@ -128,3 +130,36 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		except UserError, e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
+
+	def remove_all_other_accounts(self):
+		for user in self.proxy_holder.backend_users.user_list():
+			if user["name"] != self.proxy_holder.username:
+				self.proxy_holder.backend_users.user_remove(user["name"])
+
+	def set_user(self, username, organization, email, password, realname, flags):
+		"""
+		create user if missing.
+		set params if existing.
+		:param str username:
+		:param str organization:
+		:param str email:
+		:param str password:
+		:param str realname:
+		:param list(str) flags: all flags that the user shall have
+		:return:
+		"""
+		try:
+			self.proxy_holder.backend_users.user_create(username, organization, email, password, {
+				"realname": realname,
+				"flags": {f: f in flags for f in userflags.iterkeys()}
+			})
+		except UserError, e:
+			if e.code != UserError.ALREADY_EXISTS:
+				raise
+			self.proxy_holder.backend_users.user_modify({
+				"organization": organization,
+				"email": email,
+				"password": password,
+				"realname": realname,
+				"flags": {f: f in flags for f in userflags.iterkeys()}
+			})
