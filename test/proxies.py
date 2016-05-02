@@ -75,7 +75,17 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		self.proxy_holder = proxy_holder
 		self.test_host_addresses = test_hosts
 		self.host_site_name = "testhosts"
-		self.default_organization_name = self.proxy_holder.backend_api.organization_list()[0]['name']
+		self.default_organization_name = "default"
+		self.default_user_name = "admin"
+
+	def assertRaisesError(self, excClass, errorCode, callableObj=None, *args, **kwargs):
+		try:
+			callableObj(*args, **kwargs)
+			self.fail("no error was raised")
+		except excClass as e:
+			if e.code != errorCode:
+				self.fail("wrong error code")
+
 
 	def create_site_if_missing(self):
 		try:

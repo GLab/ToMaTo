@@ -79,19 +79,8 @@ class OtherAccountTestCase(ProxyHoldingTestCase):
 
 	def test_account_remove(self):
 		self.proxy_holder.backend_api.account_remove(self.testuser_username)
-		try:
-			self.proxy_holder.backend_users.user_info(self.testuser_username)
-			self.fail("user was not removed")
-		except UserError as e:
-			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
-				self.fail("wrong error code")
-		try:
-			self.proxy_holder.backend_api.user_info(self.testuser_username)
-			self.fail("user is still cached")
-		except UserError as e:
-			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
-				self.fail("wrong error code")
-
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_users.user_info, self.testuser_username)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.account_info, self.testuser_username)
 
 class AuthorizationTestCase(ProxyHoldingTestCase):
 	"""
