@@ -44,12 +44,9 @@ def profile_modify(id, attrs):
 	"""
 	Modifies a profile, configuring it with the given attributes.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  profile techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the profile.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  profiles.
 
 	Parameter *attrs*:
 	  The attributes of the profile can be given as the parameter *attrs*.
@@ -72,12 +69,9 @@ def profile_remove(id):
 	"""
 	Removes a profile.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  profile techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the profile.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  profiles.
 
 	Return value:
 	  The return value of this method is ``None``.
@@ -95,12 +89,9 @@ def profile_info(id):
 	"""
 	Retrieves information about a profile.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  profile techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the profile.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  profiles.
 
 	Return value:
 	  The return value of this method is a dict containing information
