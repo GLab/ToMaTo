@@ -84,6 +84,10 @@ class Profile(Entity, BaseDocument):
 
 	@classmethod
 	def create(cls, attrs):
+		prfls = Profile.objects.filter(name=attrs["name"], tech=attrs["tech"])
+		UserError.check(not prfls, code=UserError.ALREADY_EXISTS,
+						message="There exists already a profile for this technology with a similiar name",
+						data={"name":attrs["name"],"tech":attrs["tech"]})
 		obj = cls()
 		obj.init(attrs)
 		obj.save()

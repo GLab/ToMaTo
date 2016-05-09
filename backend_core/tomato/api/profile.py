@@ -2,7 +2,7 @@ from ..resources.profile import Profile
 from ..lib.error import UserError
 from ..lib.exceptionhandling import wrap_errors
 
-@wrap_errors(errorcls_func=lambda e: UserError, UserError.ENTITY_DOES_NOT_EXIST)
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def _getProfile(id_):
 	res = Profile.objects.get(id=id_)
 	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Profile does not exist", data={"id": id_})
@@ -96,6 +96,7 @@ def profile_remove(id):
 	res = _getProfile(id)
 	res.remove()
 	return {}
+
 
 @wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def profile_id(tech, name):
