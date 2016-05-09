@@ -18,6 +18,7 @@
 from ..generic import *
 from ..db import *
 from ..lib.error import UserError, InternalError
+from ..lib.exceptionhandling import wrap_errors
 
 TECHS = ["kvmqm", "openvz", "repy"]
 DEFAULTS = {
@@ -63,6 +64,7 @@ class Profile(Entity, BaseDocument):
 		"diskspace": Attribute(field=diskspace, schema=schema.Int(minValue=0))
 	}
 
+	@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.UNSUPPORTED_ATTRIBUTE)
 	def init(self, attrs):
 		for attr in ["name", "tech"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Profile needs attribute",
@@ -86,7 +88,7 @@ class Profile(Entity, BaseDocument):
 	def create(cls, attrs):
 		prfls = Profile.objects.filter(name=attrs["name"], tech=attrs["tech"])
 		UserError.check(not prfls, code=UserError.ALREADY_EXISTS,
-						message="There exists already a profile for this technology with a similiar name",
+						message="There exists already a profile for this technology with a similar name",
 						data={"name":attrs["name"],"tech":attrs["tech"]})
 		obj = cls()
 		obj.init(attrs)
