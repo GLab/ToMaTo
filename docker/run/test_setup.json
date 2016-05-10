@@ -36,8 +36,8 @@
   "hosts__example": [
     {
       "name": "test_1",
-      "rpcurl": "ssl+jsonrpc://192.168.2.104:8000",
-      "address": "192.168.2.104"
+      "rpcurl": "ssl+jsonrpc://131.246.112.51:8003",
+      "address": "131.246.112.51"
     }
   ]
 }

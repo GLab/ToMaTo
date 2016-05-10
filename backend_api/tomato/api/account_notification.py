@@ -28,7 +28,9 @@ def account_notification_set_read(notification_id, read):
 
 def account_send_notification(name, subject, message, ref=None, from_support=False, subject_group=None):
 	"""
-	Sends an email to the account
+	Sends an email to the account and also sends a message via the internal message system
+	:param str ref arbitrary string for referencing
+	:param str subject_group arbitrary string to reference desired subject_group for this message
 	"""
 	if from_support:
 		fromUser = None
@@ -39,6 +41,16 @@ def account_send_notification(name, subject, message, ref=None, from_support=Fal
 	api.send_message(name, subject, message, fromUser=fromUser, ref=ref, subject_group=subject_group)
 
 def broadcast_announcement(title, message, ref=None, show_sender=True, subject_group=None, organization_filter=None):
+	"""
+	takes a list of filters to broadcast a message.
+	sends one message to each user who matches at least one filter.
+	:param str title: message subject
+	:param str message: message body
+	:param NoneType or tuple(str, str) ref: ref pair
+	:param bool show_sender Either sender is shown as sender or field is marked with 'None'
+	:param NoneType or str subject_group: subject group
+	:param NoneType or list(tuple) filters: list of pairs (organization, flag). if this is None, send to every user.
+	"""
 	getCurrentUserInfo().check_may_broadcast_messages(organization_filter)
 	api = get_backend_users_proxy()
 	api.broadcast_message(title, message, fromUser=(getCurrentUserName() if show_sender else None), ref=ref,
