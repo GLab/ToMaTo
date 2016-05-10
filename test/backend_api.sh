@@ -1,5 +1,7 @@
 from proxies import ProxyHoldingTestCase
+from proxies import ProxyHolder
 from lib.error import UserError
+from .backend_api import account, organization
 import unittest
 
 # the API tests assume that all other backend services work properly.
@@ -21,15 +23,21 @@ class NoOtherAccountTestCase(ProxyHoldingTestCase):
 	def tearDown(self):
 		self.remove_all_other_accounts()
 
-	def test_account_recognition(self):
+	def test_account_info_no_argument(self):
 		"""
-		tests whether the correct account is recognized. assumes account_info is correct
+		tests whether account_info responds correctly when given no username. Should return current user info
 		"""
-		self.assertEqual(self.proxy_holder.backend_api.account_info()['name'], self.proxy_holder.username)
+		self.assertEqual(self.proxy_holder.backend_api.account_info(),self.proxy_holder.backend_api.account_info(self.proxy_holder.username))
 
-	def test_account_info(self):
+	def test_account_info_non_existent_username(self):
 		"""
-		tests whether account info is correct
+		tests whether account_info responds correctly when given non existent username. Should raise exception
+		"""
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.account_info, "NoUser")
+
+	def test_account_info_for_self(self):
+		"""
+		tests whether account info is correct for self (i.e., includes everything)
 		"""
 		self.assertEqual(self.proxy_holder.backend_api.account_info(self.proxy_holder.username),
 		                 self.proxy_holder.backend_users.user_info(self.proxy_holder.username))
@@ -72,8 +80,16 @@ class OtherAccountTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.account_info, self.testuser_username)
 
 
+
+
 def suite():
 	return unittest.TestSuite([
 		unittest.TestLoader().loadTestsFromTestCase(NoOtherAccountTestCase),
 		unittest.TestLoader().loadTestsFromTestCase(OtherAccountTestCase),
+		unittest.TestLoader().loadTestsFromTestCase(account.AccountListTestCases),
+		unittest.TestLoader().loadTestsFromTestCase(account.AccountModifyTestCases),
+		unittest.TestLoader().loadTestsFromTestCase(account.AccountCreateTestCases),
+		unittest.TestLoader().loadTestsFromTestCase(account.AccountRemoveTestCases),
+		unittest.TestLoader().loadTestsFromTestCase(account.AccountUsageTestCases),
+		unittest.TestLoader().loadTestsFromTestCase(account.AccountNotificationTestCases),
 	])
