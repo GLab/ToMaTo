@@ -317,7 +317,7 @@ class OrganizationInfo(InfoObj):
 		return self._usage_obj.get_usage(hide_no_such_record_error)
 
 	@staticmethod
-	def create(name, label="", attrs=None):
+	def create(name, label, attrs=None):
 		if attrs is None: attrs = {}
 		attrs['label'] = label
 		res = get_backend_users_proxy().organization_create(name, **attrs)

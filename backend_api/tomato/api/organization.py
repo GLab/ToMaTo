@@ -7,11 +7,14 @@ def organization_list():
 	"""
 	return get_organization_list()
 
-def organization_create(name, label="", attrs=None):
+def organization_create(name, label=None, attrs=None):
 	"""
 	undocumented
 	"""
-	if attrs is None: attrs = {}
+	if attrs is None:
+		attrs = {}
+	if label is None:
+		label = name
 	getCurrentUserInfo().check_may_create_organizations()
 	return OrganizationInfo.create(name, label, attrs)
 
