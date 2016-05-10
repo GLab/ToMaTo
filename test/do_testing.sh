@@ -53,7 +53,7 @@ echo ""
 echo "backend_api"
 echo "-------------"
 echo ""
-python -m unittest -v backend_api
+./backend_api.sh
 echo ""
 echo ""
 echo ""

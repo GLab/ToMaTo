@@ -189,7 +189,6 @@ class InternalError(Error):
 	RESOURCE_ERROR = "resource_error"
 	ASSERTION = "assertion"
 
-
 @ErrorType
 class UserError(Error):
 	TYPE = "user"

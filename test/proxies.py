@@ -141,6 +141,11 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			if user["name"] != self.proxy_holder.username:
 				self.proxy_holder.backend_users.user_remove(user["name"])
 
+	def remove_all_other_organizations(self):
+		for orga in self.proxy_holder.backend_users.organization_list():
+			if orga["name"] != self.default_organization_name:
+				self.proxy_holder.backend_users.organization_remove(orga["name"])
+
 	def set_user(self, username, organization, email, password, realname, flags):
 		"""
 		create user if missing.
