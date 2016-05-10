@@ -64,7 +64,6 @@ class Profile(Entity, BaseDocument):
 		"diskspace": Attribute(field=diskspace, schema=schema.Int(minValue=0))
 	}
 
-	@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.UNSUPPORTED_ATTRIBUTE)
 	def init(self, attrs):
 		for attr in ["name", "tech"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Profile needs attribute",

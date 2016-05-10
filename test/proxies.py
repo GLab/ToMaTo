@@ -6,6 +6,8 @@
 import sys
 import unittest
 import json
+import subprocess
+import time
 
 TOMATO_BACKEND_API_MODULE = "backend_api"
 TOMATO_MODULES = ("backend_api", "backend_accounting", "backend_core", "backend_debug", "backend_users")
@@ -67,6 +69,8 @@ class ProxyHolder(object):
 proxy_holder = ProxyHolder("admin", "changeme")
 with open("testhosts.json") as f:
 	test_hosts = json.load(f)
+with open("testtemplates.json") as f:
+	test_templates = json.load(f)
 class ProxyHoldingTestCase(unittest.TestCase):
 	"""
 	:type proxy_holder: ProxyHolder
@@ -136,10 +140,43 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
 
+	def add_templates_if_missing(self):
+		for host_address in test_hosts:
+			self.add_host_if_missing(host_address)
+		template_list = self.proxy_holder.backend_api.template_list()
+		if(template_list == []):
+			for template in test_templates:
+				tech = template['tech']
+				name = template['name']
+				del template['tech']
+				del template['name']
+				attrs = template
+				self.proxy_holder.backend_core.template_create(tech, name, attrs)
+
+		template_list = self.proxy_holder.backend_api.template_list()
+		synchronized_templates = 0
+		while(synchronized_templates != len(template_list)):
+			synchronized_templates = 0
+			for template in template_list:
+				if(template["ready"]["hosts"]["ready"] == len(test_hosts)):
+					synchronized_templates+=1
+			if(synchronized_templates != len(template_list)):
+				time.sleep(5)
+				print "Waiting 5 seconds for template synchronization"
+
+
 	def remove_all_other_accounts(self):
 		for user in self.proxy_holder.backend_users.user_list():
 			if user["name"] != self.proxy_holder.username:
 				self.proxy_holder.backend_users.user_remove(user["name"])
+
+	def remove_all_profiles(self):
+		for profile in self.proxy_holder.backend_core.profile_list():
+			self.proxy_holder.backend_core.profile_remove(profile["id"])
+
+	def remove_all_templates(self):
+		for template in self.proxy_holder.backend_core.template_list():
+			self.proxy_holder.backend_core.template_remove(template["id"])
 
 	def set_user(self, username, organization, email, password, realname, flags):
 		"""
