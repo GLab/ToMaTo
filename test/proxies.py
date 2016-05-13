@@ -63,6 +63,9 @@ class ProxyHolder(object):
 			if module != TOMATO_BACKEND_API_MODULE:
 				setattr(self, module, InternalAPIProxy(self.backend_api, module))
 
+	def get_proxy(self, tomato_module):
+		return getattr(self, tomato_module)
+
 
 proxy_holder = ProxyHolder("admin", "changeme")
 with open("testhosts.json") as f:
