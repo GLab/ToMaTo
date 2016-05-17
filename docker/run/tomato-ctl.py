@@ -755,7 +755,7 @@ def gencerts(config):
 	if not os.path.exists(ca_key):
 		run_observing("openssl", "genrsa", "-out", ca_key, "2048")
 		run_observing("openssl", "req", "-x509", "-new", "-nodes", "-extensions", "v3_ca", "-key", ca_key, "-days", "10240",
-		              "-out", ca_cert, "-sha512", "-subj", '/CN=ToMaTo CA')
+		              "-out", ca_cert, "-sha512", "-subj", '/CN=ToMaTo CA:%s_%f' % (get_hostname(), time.time()))
 		new_ca = True
 	for module_name, module in tomato_modules.iteritems():
 		dir = config[module_name]["directories"]["config"]
@@ -769,7 +769,7 @@ def gencerts(config):
 		if not os.path.exists(service_key):
 			run_observing("openssl", "genrsa", "-out", service_key, "2048")
 			run_observing("openssl", "req", "-new", "-key", service_key, "-out", service_csr, "-sha512", "-subj",
-			              "/CN=ToMaTo %s" % module_name)
+			              "/CN=ToMaTo %s: %s_%f" % (module_name, get_hostname(), time.time()))
 		if not os.path.exists(service_file) or new_ca:
 			run_observing("openssl", "x509", "-req", "-in", service_csr, "-CA", ca_cert, "-CAkey", ca_key, "-CAcreateserial",
 			              "-out", service_cert, "-days", "10240", "-sha512")
