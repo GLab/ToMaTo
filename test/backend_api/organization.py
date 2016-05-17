@@ -27,6 +27,9 @@ class OrganizationTestCases(ProxyHoldingTestCase):
     def tearDown(self):
         self.remove_all_other_accounts()
         self.remove_all_other_organizations()
+        for o in self.proxy_holder.backend_api.organization_list():
+            print o
+
 
     def test_organization_create(self):
         """

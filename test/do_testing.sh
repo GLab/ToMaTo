@@ -18,34 +18,34 @@ print " ".join(hosts)' | python -)
 echo ""
 echo ""
 echo ""
-echo "backend_users"
+#echo "backend_users"
 echo "-------------"
 echo ""
-python -m unittest -v backend_users
+#python -m unittest -v backend_users
 echo ""
 echo ""
 echo ""
 echo ""
-echo "backend_core"
+#echo "backend_core"
 echo "-------------"
 echo ""
-python -m unittest -v backend_core
+#python -m unittest -v backend_core
 echo ""
 echo ""
 echo ""
 echo ""
-echo "backend_accounting"
+#echo "backend_accounting"
 echo "-------------"
 echo ""
-python -m unittest -v backend_accounting
+#python -m unittest -v backend_accounting
 echo ""
 echo ""
 echo ""
 echo ""
-echo "backend_debug"
+#echo "backend_debug"
 echo "-------------"
 echo ""
-python -m unittest -v backend_debug
+#python -m unittest -v backend_debug
 echo ""
 echo ""
 echo ""
