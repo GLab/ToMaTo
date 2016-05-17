@@ -23,7 +23,28 @@ from ..misc import getCAPublicKey
 
 def server_info():
 	"""
-	undocumented
+	Retrieve configuration information about the running instance of ToMaTo backend.
+
+	Return value:
+	  The return value of this method is a dict containing the following
+	  information about the account:
+
+	  ``public_key``
+		public key that is used to authenticate on hostmanagers.
+
+	  ``version``
+		Version of backend_api.
+
+	  ``api_version``
+		Version of this API. If the API changes semantically or syntactically,
+		the version will be different.
+
+	  ``topology_timeout``
+		Timeout configuration for topologies. Clients that provide an interface for
+		setting timeouts should use this information to show options.
+
+	  ``TEMPLATE_TRACKER_URL``
+		Template tracker of this backend. Use this to create torrents for templates.
 	"""
 	try:
 		core_info = get_backend_core_proxy().server_info()
@@ -53,6 +74,19 @@ def notifyAdmins(subject, text, global_contact = True, issue="admin"):
 	get_backend_core_proxy().notifyAdmins(subject, text, global_contact, issue, user_orga, user_name)
 
 def statistics():
+	"""
+	get statistics about this testbed.
+
+	Return value:
+	  The return value of this method is a dict containing the following
+	  information about the account:
+
+	  ``usage``
+		information about the current number of users, active users, elements, topologies, etc.
+
+	  ``resources``
+		information about the testbed's resources (host load, host availability, available resources, ...)
+	"""
 	stats = {}
 	for mod in Config.TOMATO_BACKEND_MODULES:
 		if not is_self(mod):

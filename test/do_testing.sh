@@ -18,42 +18,11 @@ print " ".join(hosts)' | python -)
 echo ""
 echo ""
 echo ""
-echo "backend_users"
-echo "-------------"
-echo ""
-python -m unittest -v backend_users
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_core"
-echo "-------------"
-echo ""
-python -m unittest -v backend_core
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_accounting"
-echo "-------------"
-echo ""
-python -m unittest -v backend_accounting
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_debug"
-echo "-------------"
-echo ""
-python -m unittest -v backend_debug
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_api"
-echo "-------------"
-echo ""
-./backend_api.sh
-echo ""
-echo ""
-echo ""
+
+for tomato_module in backend_users backend_core backend_accounting backend_debug backend_api; do
+	echo ${tomato_module}
+	echo "-------------"
+	echo ""
+	./run_tests.sh "$tomato_module"
+	echo ""
+done
