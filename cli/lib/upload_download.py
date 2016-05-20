@@ -1,3 +1,5 @@
+import time
+
 def download(url, file):
 	"""
 	Downloads a network object from an URL to a local file.
@@ -58,12 +60,28 @@ def upload(url, file, name="upload"):
 
 
 
-def upload_and_use_rextfv(api, element_id, filename):
+def upload_and_use_rextfv(api, element_id, filename, wait_until_finished=False):
 	elinfo = api.element_info(element_id)
 	grant = api.element_action(element_id, "rextfv_upload_grant")
 	upload_url = "http://%(hostname)s:%(port)s/%(grant)s/upload" % {"hostname":elinfo['host_info']["address"], "port":elinfo['host_info']["fileserver_port"], "grant":grant }
 	upload(upload_url,filename)
 	api.element_action(element_id, "rextfv_upload_use")
+	if wait_until_finished:
+		while True:
+			time.sleep(1)
+			el_info = api.element_info(element_id)
+			rextfv_info = el_info.get("rextfv_run_status", None)
+
+			if rextfv_info is None:
+				continue
+
+			if rextfv_info.get("done", False):
+				return
+
+			if not rextfv_info.get("isAlive", False):
+				raise Exception("nlXTP crashed")
+
+			time.sleep(max(0, el_info.get("info_next_sync", 0) - el_info.get("info_last_sync", 0) - 1))  # time.time() is not an option due to timezones. 1 additional second of sleep at beginning of loop
 
 def upload_and_use_image(api, element_id, filename):
 	elinfo = api.element_info(element_id)
