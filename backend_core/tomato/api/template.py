@@ -109,6 +109,7 @@ def template_id(tech, name):
 	"""
 	return str(Template.objects.get(tech=tech, name=name).id)
 
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	"""
 	Retrieves information about a template.
