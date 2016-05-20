@@ -2,6 +2,7 @@ from ..resources.profile import Profile
 from ..lib.error import UserError
 from ..lib.exceptionhandling import wrap_errors
 
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def _getProfile(id_):
 	res = Profile.objects.get(id=id_)
 	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Profile does not exist", data={"id": id_})
@@ -55,12 +56,9 @@ def profile_modify(id, attrs):
 	"""
 	Modifies a profile, configuring it with the given attributes.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  profile techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the profile.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  profiles.
 
 	Parameter *attrs*:
 	  The attributes of the profile can be given as the parameter *attrs*.
@@ -84,12 +82,9 @@ def profile_remove(id):
 	"""
 	Removes a profile.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  profile techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the profile.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  profiles.
 
 	Return value:
 	  The return value of this method is ``None``.
@@ -102,10 +97,26 @@ def profile_remove(id):
 	res.remove()
 	return {}
 
+
 @wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def profile_id(tech, name):
 	"""
-	translate tech and name to a template id
+	Translate tech and name to a profile id
+
+	Parameter *tech*:
+	  The parameter *tech* must be a string identifying one of the supported
+	  profile techs.
+
+	Parameter *name*:
+	  The parameter *name* must be a string containing the name of the existing profile.
+
+	Return value:
+	  The return value pf this method is the id identifying the profile.
+
+	Exceptions:
+	  If the given profile does not exist an exception *profile does not
+	  exist* is raised.
+
 	"""
 	return str(Profile.objects.get(tech=tech, name=name).id)
 
@@ -113,12 +124,9 @@ def profile_info(id):
 	"""
 	Retrieves information about a profile.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  profile techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the profile.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  profiles.
 
 	Return value:
 	  The return value of this method is a dict containing information
