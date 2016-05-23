@@ -44,12 +44,9 @@ def template_modify(id, attrs):
 	"""
 	Modifies a template, configuring it with the given attributes.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  template techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the template.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  templates.
 
 	Parameter *attrs*:
 	  The attributes of the template can be given as the parameter *attrs*.
@@ -71,12 +68,9 @@ def template_remove(id):
 	"""
 	Removes a template.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  template techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the template.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  templates.
 
 	Return value:
 	  The return value of this method is ``None``.
@@ -93,12 +87,9 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	"""
 	Retrieves information about a template.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  template techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the template.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  templates.
 
 	Parameter *include_torrent_data*:
 	  boolean

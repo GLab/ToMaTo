@@ -194,6 +194,12 @@ class Template(Entity, BaseDocument):
 
 	@classmethod
 	def create(cls, attrs):
+
+		tmpls = Template.objects.filter(name=attrs["name"], tech=attrs["tech"])
+		UserError.check(not tmpls, code=UserError.ALREADY_EXISTS,
+						message="There exists already a profile for this technology with a similar name",
+						data={"name": attrs["name"], "tech": attrs["tech"]})
+
 		obj = cls()
 		try:
 			obj.init(attrs)

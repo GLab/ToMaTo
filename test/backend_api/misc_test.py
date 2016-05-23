@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from proxies import ProxyHolder, ProxyHoldingTestCase
+from proxies_test import ProxyHolder, ProxyHoldingTestCase
 from lib.settings import Config
 import unittest
 
