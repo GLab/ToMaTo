@@ -108,6 +108,7 @@ class ProfileTestCase(ProxyHoldingTestCase):
 		self.assertIsNotNone(profile_id)
 		ref_profile = self.proxy_holder.backend_core.profile_info(profile_id)
 		self.assertEqual(profile, ref_profile)
+		self.assertDictContainsSubset(profile_args, profile)
 
 	#Create a new correct profile without the user permission to do so
 	def test_profile_create_no_permission(self):
@@ -249,8 +250,8 @@ class ProfileTestCase(ProxyHoldingTestCase):
 
 		profile_info_api = self.proxy_holder.backend_api.profile_info(self.testprofile_id)
 		profile_info_core = self.proxy_holder.backend_core.profile_info(self.testprofile_id)
-
 		self.assertEqual(profile_info_api, profile_info_core)
+		self.assertDictContainsSubset(self.testprofile_args, profile_info_api)
 
 	#Try to get info about a non existing profile
 	def test_profile_info_non_existing(self):

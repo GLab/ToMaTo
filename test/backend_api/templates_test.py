@@ -2,6 +2,39 @@ from proxies_test import ProxyHolder, ProxyHoldingTestCase
 from lib.error import UserError
 import time
 
+
+'''
+## templates
+### template_list
+- Scenario 1: No parameters
+- Scenario 2: Correct parameter
+- Scenario 3: Non existing technology
+
+### template_create
+- Scenario 1: Correct parameters
+- Scenario 2: Correct parameters, without permission
+- Scenario 3: Non existing technology
+- Scenario 4: Already used name
+- Scenario 5: Incorrect attributes
+
+### template_modify
+- Scenario 1: Correct parameters
+- Scenario 2: Correct parameters, without permission
+- Scenario 3: Non existing template
+- Scenario 4: Incorrect attributes
+
+### template_remove
+- Scenario 1: Correct parameter
+- Scenario 2: Correct parameter, without permission
+- Scenario 3: Non existing template
+
+### template_info
+- Scenario 1: Correct parameters
+- Scenario 2: Correct parameters and including torrent data
+- Scenario 3: Non existing template
+'''
+
+
 class TemplateTestCase(ProxyHoldingTestCase):
 
 	def setUp(self):
@@ -37,7 +70,22 @@ class TemplateTestCase(ProxyHoldingTestCase):
 			 'creation_date': time.time(),
 			 }
 
-		#self.proxy_holder.backend_core.template_create(self.testtemplate_technology, self.testtemplate_name, self.testtemplate_attrs)
+		#second test_template
+		self.testtemplate_2 = {'technology': "kvmqm",
+			'name': "tinycore-4.6_x86",
+			'nlXTP_installed': False,
+			'description': '',
+			'icon': '',
+			'show_as_common': False,
+			'restricted': False,
+			'torrent_data': 'ZDg6YW5ub3VuY2U0MjpodHRwOi8vdG9tYXRvMy5nZXJtYW4tbGFiLmRlOjY5NjkvYW5ub3VuY2UxMzpjcmVhdGlvbiBkYXRlaTEzNjIzOTI3OTVlNDppbmZvZDY6bGVuZ3RoaTk2OTkzMjhlNDpuYW1lMjI6dGlueWNvcmUtNC42X3g4Ni5xY293MjEyOnBpZWNlIGxlbmd0aGk2NTUzNmU2OnBpZWNlczI5NjA6kQb6FJs21JXf7so0mqsqxujGCD3zQmiTAUtgFMp/hrPfdAjjIeqWsCuXSAxz9W1sWYSuCM8tdSxthCSsPeP6lkCa31UdnhkSxD8DpMrMauKK6hU7yuqhKMboC5xbAON/W/ZV85somMZsA6erogoYxZ50t/hSzFvusc0phVQmgiG6hBKCVAS9noQaS2IMvtJWqAcC0DHiv5hfyl24xRKV+g/qKRETZ4CKiwG37LcN5v4V6HNQyk5hmn6jBObN2X3drBVUS15tu6hbum8g+p2RND88NKiTRE/vIpwXSnmNxTrepiqq3GirREK2VXdlD1tGVWywGy9Rz3aAELj5epZA8BjGfKNrfua7PDt+80mJZlzVDPSHS6LqfKRgCHDNJvIDRo9wSlDb8tPr+c41cWp7d3m/B5wucCO0J2W0B7PKWTM0yYX2QdtNTsrE2RpJXv/iMCCMljXW+J0rA86L7roQsvN+nfcLOHIcRdo3oh+ycvAU1OLgezMyl76bOlpSRCOfznpEKqMpGUVyKmmpeyKlnFc5nTqPWo9PH1uoUzxK6lVEpML1+Qkkq3GLUdgwh1/5bXi5WhxKvafNl36hfgCb+ItSco4077NeGYmKqW095GK2k7R4Q95G8O+mucTjJRXo634K1kOvHxDXlk0yYmyCIH7CTtGyfxCeUJQmDI/PleW9w/1zBcrw/EVSPLzvZXuDZMfmNNwxwZckLb9ploFe1cNE4YEYaOMdMRO2BDZXlDIpDsU4NnNj0nAywWzMrQZ7MSqgM0Yyw7mAoSdOb1vXYzbVYhm2QH8wjJT78StUPLH2z01H3KrBs+hyxkSZWeEPNvLRHh+yHxR2dlIvUzvKDzi0pEfh7ancDdDj00t2YBQQP5DN3oPsS+AqMu8rGRCyO9XUfXCYldxDFa2c4KSgEONv8aeglmxmVtSdOc8MZcV9P5f9P5Z3kilCwdAFgR5ykJzBHWXw+QFcc0ZO9SbdGU/F/tPCHkAlvHXFbxa95ezqkb5qkHsMDDr0geCWyMvUffHvPq8zYm+0dgtfYFQj9E/ndEqbET1VcG4aa1MqIrP5xwxU3fXTyi7hgkFmfxfpK4FbhsiXZh6wz4lGN1+XbIUP43/GUM8tvqB6owrwxN+LugrAyTLdu7T2SdmfOoPt/xoQn82xH+5c4sUA9vLgOVrM2G55W1hccGcauLZ5zzEfm1uWjMV8ymyqr0LxpvQPKoqxRZEg3e/AUrF448M+hEReDzcsF2yxAiqzkZOexCwr2UGySmzKbI2HITiBh/pZ8kmbhZKDZnERvOnqtirPGmfM94VeN0i7QhQMJSrbS+oo+vK5kJLF0H3xBLzOu8JDfkoR22RthE9WJTGpmYeCPpEcKnC6+zDQRfCLFuxIDY4hWar8dvmb/ap25zdpg3IMesJXMfTaPGfpPpAM/HwK65aamHQUu5PQ8L4Evj8JbK/QokT3z0eoYXHvAg1p6pYe4jCWvoSsaddParPEqO+QtIUCqvR3uhU8uKAwrWrwIcFl5cEZ9ZeQA7Y822cjVqkW772ccXp+oVS3evHt4Ijvk8WASZmmN97gbvx1/0kOAQGkHYMNzvSKEOEQQG9d3I1jS6ifjt4GG8cHc63X/UV7q3GZIuI+LsPCljH/ma/HiY9RHYU7JuPsG5H5V9/eNHeQmjL9L7lsNaM5RUBTZz/oO1tuQ7+Y+qJh0PHeX2hy2+kE26I0wPd1mSs8GjEAwBsqt//xdzhIzjfPkbDhWg9/wJc4Bg5bl8dXusak72nPxIf1rDLoEQ+SmB2pEwNDkGS65rZSeTD78QFdgKiAufMailIKpKS9ViXgUCNDZk0J+fBhwN6u8Ybo97JedRAo+MAAAc1g/+9Kdz7fqp2br+6XhdLLRcxbmLwL5gAUOHr2DYIPS548bfETkkeRqbgoHulv0MzRQzcipYbqFdA5NQfv8M+jLBEpR1GR4kVJso7hcpoDw4+NIxYaXzlU7aRCiTq2JJszSjchix5gmT3b56oYGkT801mwASwpT0YRVU6TFfwMSATgCivQSU0pr6xoGfuq5xDvQ5MNiRl7gq4MEVn0m3hNFUFPNbejeOnF1Ey1aOrygi2MJCo4XWMLyeZkpA1C4iX+dhKIl6HKbTPFyNGFNFac+K8h5587hOOq3tI0kLjhFkVqcd2yktLo+b4SwLG4JAxbPwE1Vb3zj0r9BfioZ8NSHqqLQiW5xlToUbzDT9+rgC/ifmBFfrorO4CAaM9yuHfslPm+Tzq/2oyRoSwJk2M+lf8mJRlJZXUvBoF7/oSFBGI/HjnIEkYs3RRXqV5wDq1ZafhfwsMf9YWIJafNQU4fKJBqt0KDIn1tNoHgVtfe2z94NAZRD8UWhfBxbyBN97FwaxT4OYrM5Ov915R35wQ+YbIi9+0e+XNcgjNS0zgsoCj1w16D7EpoY39sPTeHqQkzlPltVK01lVQjtXKt0gIfcpb9ePz74NDYHyutLGDeDSDAJ6/71vpjlFfZr9FtQexxj/nKGBVM8AgMFoFwGcozvrXCZ0Y4YRBlHJDhvebZZb0byw9CnyldxOX3vhVqOdiCRuG3FLj7pzkQn0dP5gAKaewz7m3ZSoGNsbVceYmV88vL+jfUAfuN+6nRRfJ0HqhOZojyQdH8vt3vvkbDFSnLv3u2co1GZX9wFx5XaNf8ljbakDiMQZKt2D727CXNVWT+oGANW8V+vATDfQ9SnsPlBfvMl20NFrKf0Pt9FjeYx4WPc7ANcn6LJQgrNKY2m98djjX97NplG0s05inUW5KuMPDzOnU4HePz8gJL776LIg7yPuqCSkKY/6YqbezU4zzJ2nMD7pVDy68IIMP92qa3GoUu9kMJk3BFRHvrtkAyZjXAbxUsl3UuSTeYImkbZFO/o3FstnMJ5h9geJKf2VZr6qlHEe/givdR7+cEmQTN0tEkOpp5TiyKzkSpd8NiYc5Q3HVzp8saXCVODGRnwg+12ldozU2JhD6f3Z8VC5cXKDnv4cIDgDe82ZDK6wpoVhzU+l7MjVfY7Wu5Mg5hLcOABGOMJTM0o8oBUeu1G1Vh+cMHt7AVMS46nsQFaqHLzopF9ealQW4v0UB5Cnv4lQ8vwKrMQSn8YTM7irHq+SznVwStQYhv3frKOa85FqCrIJFPi2rIY0barXKalfBA6PHOLKdPyqvTtxNXjnoZ5ovyA87YwYKOyZr7xU8vUPVkZwFc7lWUcAtDEg/dRido5Y24qjLXrlTxFUC03Klcd78K7F61BHbQVGgzC+4/cB6/WEpAkk6yqxscXDAZ6L8O2yp04qswpAQZTNbOeN28pGzcpYYjs1OuO7nLzo7wnib9NctcrcPqjo49OAPRgjRKbwdlxBhjts+faYG/6ay5i2BHA8huoh2gu7elTkda2MurqbFqzx9B7MwQhLEcSfBqETP4Rld8JVRwXOjtxBrV7CHo0s9R0xewM258YF7eTBMeSlDP6gB7PicAUVskp4cg7G2XINTbQ/yrjqxQ3oGhw98OAalEDI43USKzQuzZmu/dlWga7aSYO/UOVHZWIpORGIcPdbAPZnxHyqclWVaENsZdB9OoTgUUXsjIYpu55asii8DhjZiExnS4Q9ET48ywCcqIxJgVF9dVi/V7KjJaWXOKnpuBHGPV2YbN9rMzwfaQzWGRZjlDCZK6Q+BVREybNWqK1H86TNVjjluANQFggKCkyyh1JhrVty8CtyJTSSc5RptVronDVY3AkSHniB40XOhu+v5FTZeqkS3wdrepnS7QDubo+25s3Z1o9TreuHISaa9bCDxb03S2aKV5QVCeKfOv+9AnSMXqhmgzgc4Hk0ycbVRciFuyF5NQF/fPXM1GkWX3PeF4l7Th2TKlUWmju7UHQHJIqi8DAglF444OF7okB6OM0+F00iuHKBaLx6F7HUO0oUssrGVekxFUVH2f0nXG4cNcMeOjhG6gkEA+su1lZQ==',
+			'label': 'TinyCore 4.6 (x86)',
+			'subtype': 'linux',
+			'preference': 0,
+			'creation_date': 1462881777.857998,
+			}
+
+		self.proxy_holder.backend_core.template_create(self.testtemplate_technology, self.testtemplate_name, self.testtemplate_attrs)
 
 		self.testtemplate_id = self.proxy_holder.backend_core.template_id(tech=self.testtemplate_technology, name=self.testtemplate_name)
 
@@ -47,11 +95,173 @@ class TemplateTestCase(ProxyHoldingTestCase):
 		self.remove_all_other_accounts()
 		self.remove_all_templates()
 
+	#Get template_list and check for correctness
+	def test_template_list(self):
 
+		template_list_api = self.proxy_holder.backend_api.template_list()
+		self.assertIsNotNone(template_list_api)
+		template_list_core = self.proxy_holder.backend_core.template_list()
+		self.assertIsNotNone(template_list_core)
+		self.assertEqual(template_list_api, template_list_core)
+
+
+	#Get template list for specific technology  and check for correctness
+	def test_template_list_with_parameter(self):
+
+		template_list_api = self.proxy_holder.backend_api.template_list(self.testtemplate_technology)
+		self.assertIsNotNone(template_list_api)
+		template_list_core = self.proxy_holder.backend_core.template_list(self.testtemplate_technology)
+		self.assertIsNotNone(template_list_core)
+		self.assertEqual(template_list_api, template_list_core)
+
+	#Get template list for non existing technology and check for emptiness
+	def test_template_list_non_existing_technology(self):
+
+		non_existing_technology = "closedvz"
+
+		template_list_api = self.proxy_holder.backend_api.template_list(non_existing_technology)
+		self.assertIsNotNone(template_list_api)
+		template_list_core = self.proxy_holder.backend_core.template_list(non_existing_technology)
+		self.assertIsNotNone(template_list_core)
+
+	#Create a template with correct parameters
+	def test_template_create(self):
+
+		template_attrs = self.testtemplate_2.copy()
+		del template_attrs['technology']
+		del template_attrs['name']
+
+		template_api = self.proxy_holder.backend_api.template_create(self.testtemplate_2['technology'], self.testtemplate_2['name'], template_attrs)
+		self.assertIsNotNone(template_api)
+		template_id = self.proxy_holder.backend_core.template_id(self.testtemplate_2['technology'], self.testtemplate_2['name'])
+		template_core = self.proxy_holder.backend_core.template_info(template_id)
+		self.assertEqual(template_api, template_core)
+		self.assertDictContainsSubset(template_attrs, template_api)
+
+	#Create a template without permission
+	def test_template_create_without_permission(self):
+
+		template_attrs = self.testtemplate_2.copy()
+		del template_attrs['technology']
+		del template_attrs['name']
+
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.template_create, self.testtemplate_2['technology'], self.testtemplate_2['name'], template_attrs)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.template_id, self.testtemplate_2['technology'], self.testtemplate_2['name'])
+
+	#Create a template with an non existing technology
+
+	def test_template_create_non_exsting_technology(self):
+
+		template_technology = "closedvz"
+		template_attrs = self.testtemplate_2.copy()
+		del template_attrs['technology']
+		del template_attrs['name']
+
+		self.assertRaisesError(UserError, UserError.INVALID_VALUE, self.proxy_holder.backend_api.template_create, template_technology, self.testtemplate_2['name'], template_attrs)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.template_id, template_technology, self.testtemplate_2['name'])
+
+	#Create a duplicate and check for correct error
+	def test_template_create_name_already_used(self):
+
+		self.assertRaisesError(UserError, UserError.ALREADY_EXISTS, self.proxy_holder.backend_api.template_create,self.testtemplate_technology,self.testtemplate_name, self.testtemplate_attrs)
+
+	#Try to create a invalid template
+	def test_template_create_incorrect_attributes(self):
+
+		template_attrs = self.testtemplate_2.copy()
+		template_attrs['asdha1'] = "attribute not existing"
+		del template_attrs['technology']
+		del template_attrs['name']
+
+		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ATTRIBUTE, self.proxy_holder.backend_api.template_create, self.testtemplate_2['technology'], self.testtemplate_2['name'], template_attrs)
+
+	#Modify a template and check for the correct changes
+	def test_template_modify(self):
+
+		template_attrs = self.testtemplate_attrs.copy()
+		template_attrs['label'] = "Modifed " + template_attrs['label']
+
+		template_api = self.proxy_holder.backend_api.template_modify(self.testtemplate_id, template_attrs)
+		self.assertIsNotNone(template_api)
+		template_core = self.proxy_holder.backend_core.template_info(self.testtemplate_id)
+		self.assertEqual(template_api, template_core)
+
+	#Modify a template without permission
+	def test_template_modify_without_permission(self):
+
+		template_attrs = self.testtemplate_attrs.copy()
+		template_attrs['label'] = "Modifed " + template_attrs['label']
+
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.template_modify, self.testtemplate_id, template_attrs)
+
+
+	#Modify a non existing template
+	def test_template_modify_non_existing_template(self):
+
+		template_attrs = self.testtemplate_attrs.copy()
+		template_attrs['label'] = "Modifed " + template_attrs['label']
+
+		self.proxy_holder.backend_api.template_remove(self.testtemplate_id)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.template_modify, self.testtemplate_id, template_attrs)
+
+
+	#Modify a template and add incorrect parameters
+	def test_template_modify_with_incorrect_parameters(self):
+
+		template_attrs = self.testtemplate_attrs.copy()
+		template_attrs['weight'] =  50
+		template_attrs['label'] = "Modifed " + template_attrs['label']
+
+		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ATTRIBUTE, self.proxy_holder.backend_api.template_modify, self.testtemplate_id, template_attrs)
+
+	#Remove a template
 	def test_template_remove(self):
 
 		self.proxy_holder.backend_api.template_remove(self.testtemplate_id)
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.template_info, self.testtemplate_id)
+
+	#Remove a template without permission
+	def test_template_remove_without_permission(self):
+
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.template_remove, self.testtemplate_id)
+		info_core = self.proxy_holder.backend_core.template_info(self.testtemplate_id)
+		self.assertIsNotNone(info_core)
+
+	#Remove a non existing template
+	def test_template_remove_non_existing(self):
+
+		#Non existing ID
+		test_id = self.testtemplate_id + self.testtemplate_id
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.template_remove, test_id)
+
+	#get template informations and check for correctness
+	def test_template_info(self):
+
+		test_info_api = self.proxy_holder.backend_api.template_info(self.testtemplate_id)
+
+		self.assertIsNotNone(test_info_api)
+		test_info_core = self.proxy_holder.backend_core.template_info(self.testtemplate_id)
+		self.assertIsNotNone(test_info_core)
+		self.assertEqual(test_info_api, test_info_core)
+		self.assertDictContainsSubset(self.testtemplate_attrs, test_info_api)
+
+	#Get template informations and  and check for correctness
+	def test_template_info_with_torrent_data(self):
+
+		test_info_api = self.proxy_holder.backend_api.template_info(self.testtemplate_id, True)
+
+		self.assertIsNotNone(test_info_api)
+		self.assertDictContainsSubset(self.testtemplate_attrs, test_info_api)
+		test_info_core = self.proxy_holder.backend_core.template_info(self.testtemplate_id, True)
+		self.assertDictContainsSubset(self.testtemplate_attrs, test_info_core)
+		self.assertIsNotNone(test_info_core)
+		self.assertEqual(test_info_api, test_info_core)
+
+	#Get template informations of a non existing template
+	def test_template_info_non_existing(self):
+		template_id = self.testtemplate_id + self.testtemplate_id
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.template_info, template_id)
+
 
 def suite():
 	return unittest.TestSuite([
