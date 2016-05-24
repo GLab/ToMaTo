@@ -1,0 +1,300 @@
+{
+  "file_information": {
+    "version": 4
+  }, 
+  "topology": {
+    "connections": [
+      {
+        "lossratio_to": 0, 
+        "jitter_to": 0, 
+        "duplicate_from": 0, 
+        "distribution_to": "uniform", 
+        "delay_from": 0, 
+        "capture_mode": "net", 
+        "lossratio_from": 0, 
+        "corrupt_to": 0, 
+        "id": "5710cc0138a48f0007226d38", 
+        "emulation": true, 
+        "jitter_from": 0, 
+        "distribution_from": "uniform", 
+        "duplicate_to": 0, 
+        "delay_to": 0, 
+        "elements": [
+          "5710cbf938a48f0007226d35", 
+          "5710cbf938a48f0007226d36"
+        ], 
+        "corrupt_from": 0, 
+        "capturing": true, 
+        "capture_filter": ""
+      }, 
+      {
+        "bandwidth_from": 10000, 
+        "lossratio_to": 0, 
+        "delay_to": 0, 
+        "duplicate_from": 0, 
+        "distribution_to": "uniform", 
+        "delay_from": 0, 
+        "capture_mode": "net", 
+        "lossratio_from": 0, 
+        "corrupt_to": 0, 
+        "id": "5710cce638a48f0007226d46", 
+        "capture_filter": "", 
+        "jitter_from": 0, 
+        "bandwidth_to": 10000, 
+        "distribution_from": "uniform", 
+        "duplicate_to": 0, 
+        "jitter_to": 0, 
+        "elements": [
+          "5710cce438a48f0007226d3c", 
+          "5710cce438a48f0007226d3b"
+        ], 
+        "corrupt_from": 0, 
+        "capturing": true, 
+        "emulation": true
+      }, 
+      {
+        "bandwidth_from": 8000, 
+        "lossratio_to": 0, 
+        "delay_to": 0, 
+        "duplicate_from": 0, 
+        "distribution_to": "uniform", 
+        "delay_from": 0, 
+        "capture_mode": "net", 
+        "lossratio_from": 0, 
+        "corrupt_to": 0, 
+        "id": "5710cce738a48f0007226d48", 
+        "capture_filter": "", 
+        "jitter_from": 0, 
+        "bandwidth_to": 8000, 
+        "distribution_from": "uniform", 
+        "duplicate_to": 0, 
+        "jitter_to": 0, 
+        "elements": [
+          "5710cce638a48f0007226d42", 
+          "5710cce638a48f0007226d40"
+        ], 
+        "corrupt_from": 0, 
+        "capturing": true, 
+        "emulation": true
+      }, 
+      {
+        "bandwidth_from": 10000, 
+        "lossratio_to": 0, 
+        "delay_to": 0, 
+        "duplicate_from": 0, 
+        "distribution_to": "uniform", 
+        "delay_from": 0, 
+        "capture_mode": "net", 
+        "lossratio_from": 0, 
+        "corrupt_to": 0, 
+        "id": "57148a2238a48f0007226dca", 
+        "capture_filter": "", 
+        "jitter_from": 0, 
+        "bandwidth_to": 10000, 
+        "distribution_from": "uniform", 
+        "duplicate_to": 0, 
+        "jitter_to": 0, 
+        "elements": [
+          "57148a1e38a48f0007226dc2", 
+          "57148a1e38a48f0007226dc4"
+        ], 
+        "corrupt_from": 0, 
+        "capturing": true, 
+        "emulation": true
+      }
+    ], 
+    "_notes": "", 
+    "elements": [
+      {
+        "profile": "normal", 
+        "info_next_sync": 0.0, 
+        "name": "Receiver", 
+        "parent": null, 
+        "hostname": "Receiver", 
+        "site": null, 
+        "_pos": {
+          "y": 0.5602189781021898, 
+          "x": 0.46657754010695196
+        }, 
+        "gateway6": "", 
+        "gateway4": "", 
+        "template": "debian-7.0_x86_64", 
+        "rootpassword": "", 
+        "type": "openvz", 
+        "id": "570e45c538a48f0007226b74", 
+        "_endpoint": true
+      }, 
+      {
+        "profile": "normal", 
+        "info_next_sync": 1463739939.2083333, 
+        "name": "Sender", 
+        "parent": null, 
+        "hostname": "Sender", 
+        "site": null, 
+        "rootpassword": "", 
+        "_pos": {
+          "y": 0.010948905109489052, 
+          "x": 0.4625668449197861
+        }, 
+        "gateway6": "", 
+        "gateway4": "", 
+        "template": "debian-7.0_x86_64", 
+        "rextfv_run_status": {
+          "readable": false
+        }, 
+        "type": "openvz", 
+        "id": "570e47bb38a48f0007226b78", 
+        "_endpoint": true
+      }, 
+      {
+        "profile": "normal", 
+        "info_next_sync": 1463739806.8333333, 
+        "name": "Controller",
+        "parent": null, 
+        "hostname": "RyuxOpenFlowxController", 
+        "site": null, 
+        "rootpassword": "", 
+        "_pos": {
+          "y": 0.2664233576642336, 
+          "x": 0.22058823529411764
+        }, 
+        "gateway6": "", 
+        "gateway4": "", 
+        "template": "ryu", 
+        "rextfv_run_status": {
+          "done": true, 
+          "custom": null, 
+          "isAlive": false, 
+          "readable": true
+        }, 
+        "type": "openvz", 
+        "id": "5710cbcf38a48f0007226d31", 
+        "_endpoint": true
+      }, 
+      {
+        "profile": "normal", 
+        "info_next_sync": 1463739811.2083333, 
+        "name": "OpenFlow Switch", 
+        "parent": null, 
+        "usbtablet": true, 
+        "kblang": "en-us", 
+        "site": null, 
+        "template": "openvswitch", 
+        "rextfv_run_status": {
+          "readable": false
+        }, 
+        "_pos": {
+          "y": 0.2664233576642336, 
+          "x": 0.46390374331550804
+        }, 
+        "type": "kvmqm", 
+        "id": "5710cbcf38a48f0007226d32", 
+        "_endpoint": false
+      }, 
+      {
+        "name": "eth0", 
+        "parent": "5710cbcf38a48f0007226d32", 
+        "mac": "2a:69:4e:0a:35:bb", 
+        "num": 1, 
+        "used_addresses": [], 
+        "type": "kvmqm_interface", 
+        "id": "5710cbf938a48f0007226d35"
+      }, 
+      {
+        "name": "eth0", 
+        "parent": "5710cbcf38a48f0007226d31", 
+        "mac": "2e:03:9e:86:99:46", 
+        "used_addresses": [], 
+        "ip4address": "10.0.0.3/24", 
+        "use_dhcp": false, 
+        "ip6address": "", 
+        "type": "openvz_interface", 
+        "id": "5710cbf938a48f0007226d36"
+      }, 
+      {
+        "name": "eth0", 
+        "parent": "570e47bb38a48f0007226b78", 
+        "mac": "e2:c0:2f:51:da:c8", 
+        "used_addresses": [], 
+        "ip4address": "10.0.0.1/24", 
+        "use_dhcp": false, 
+        "ip6address": "", 
+        "type": "openvz_interface", 
+        "id": "5710cce438a48f0007226d3b"
+      }, 
+      {
+        "name": "eth1", 
+        "parent": "5710cbcf38a48f0007226d32", 
+        "mac": "8e:e6:e2:4f:d4:4d", 
+        "num": 0, 
+        "used_addresses": [], 
+        "type": "kvmqm_interface", 
+        "id": "5710cce438a48f0007226d3c"
+      }, 
+      {
+        "name": "eth2", 
+        "parent": "5710cbcf38a48f0007226d32", 
+        "mac": "ea:06:77:42:b1:34", 
+        "num": 3, 
+        "used_addresses": [], 
+        "type": "kvmqm_interface", 
+        "id": "5710cce638a48f0007226d40"
+      }, 
+      {
+        "name": "eth0", 
+        "parent": "570e45c538a48f0007226b74", 
+        "mac": "42:b0:d3:d2:54:33", 
+        "used_addresses": [], 
+        "ip4address": "10.0.0.2/24", 
+        "use_dhcp": false, 
+        "ip6address": "", 
+        "type": "openvz_interface", 
+        "id": "5710cce638a48f0007226d42"
+      }, 
+      {
+        "profile": "normal", 
+        "info_next_sync": 1463739895.1666667, 
+        "name": "Compressor",
+        "parent": null, 
+        "hostname": "NFVxCompressor", 
+        "site": null, 
+        "rootpassword": "", 
+        "_pos": {
+          "y": 0.2664233576642336, 
+          "x": 0.7219251336898396
+        }, 
+        "gateway6": "", 
+        "gateway4": "", 
+        "template": "debian-7.0_x86_64", 
+        "rextfv_run_status": {
+          "readable": false
+        }, 
+        "type": "openvz", 
+        "id": "5714864c38a48f0007226dbe", 
+        "_endpoint": true
+      }, 
+      {
+        "name": "eth3", 
+        "parent": "5710cbcf38a48f0007226d32", 
+        "mac": "4e:7a:2d:06:e4:7d", 
+        "num": 2, 
+        "used_addresses": [], 
+        "type": "kvmqm_interface", 
+        "id": "57148a1e38a48f0007226dc2"
+      }, 
+      {
+        "name": "eth0", 
+        "parent": "5714864c38a48f0007226dbe", 
+        "mac": "26:b3:bf:26:64:c2", 
+        "used_addresses": [], 
+        "ip4address": "10.0.0.4/24", 
+        "use_dhcp": false, 
+        "ip6address": "", 
+        "type": "openvz_interface", 
+        "id": "57148a1e38a48f0007226dc4"
+      }
+    ], 
+    "site": null, 
+    "name": "NFV Demo"
+  }
+}
