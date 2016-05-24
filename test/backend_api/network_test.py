@@ -203,7 +203,78 @@ class NetworkTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_info, network_id)
 
 
+class NetworkInstanceTestCase(ProxyHoldingTestCase):
+
+	def setUp(self):
+		self.remove_all_other_accounts()
+		self.remove_all_networks()
+
+		#Create user without permission to create, remove or modify networks
+		testuser_username = "testuser"
+		testuser_password = "123"
+		testuser_organization = self.default_organization_name
+		testuser_attrs = {"realname": "Test User",
+			"email": "test@example.com",
+			"flags": {}
+		}
+		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
+		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+
+
+		#Create network
+		self.testnetwork_kind = "internet"
+		self.testnetwork_attrs = {
+				'description': '',
+				   'show_as_common': True,
+				   'restricted': False,
+				   'big_icon': True,
+				   'label': 'Internet',
+				   'preference': 100,
+		}
+		self.proxy_holder.backend_api.network_create(self.testnetwork_kind,self.testnetwork_attrs)
+		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+
+		self.testnetwork2_kind = "internet/small"
+		self.testnetwork2_attrs = {
+				'description': '',
+				   'show_as_common': False,
+				   'restricted': True,
+				   'big_icon': True,
+				   'label': 'Internet',
+				   'preference': 50,
+		}
+
+		#Create template
+		#{'bridge': 'vmbr0', 'host': 'tud.5', 'id': '5620a1a1b0f43a002473daf5', 'network': 'private_tud_213'}
+
+
+
+		self.testnetwork_id = self.proxy_holder.backend_core.network_list()[0]['id']
+		self.add_host_if_missing(self.test_host_addresses[0])
+
+		self.testnetwork_instance_kind = self.testnetwork_kind
+		self.testnetwork_instance_host = self.get_host_name(self.test_host_addresses[0])
+		self.testnetwork_instance_attrs = {'bridge': 'vmbr0'}
+
+		self.proxy_holder.backend_api.network_instance_create(self.testnetwork_instance_kind, self.testnetwork_instance_host, self.testnetwork_instance_attrs)
+
+		self.testnetwork2_instance_kind = self.testnetwork_kind
+		self.testnetwork2_instance_host = self.get_host_name(self.test_host_addresses[1])
+		self.testnetwork2_instance_attrs = {'bridge': 'vmbr0'}
+
+		self.proxy_holder.backend_api.network_instance_create(self.testnetwork_instance_kind, self.testnetwork_instance_host, self.testnetwork_instance_attrs)
+
+	def tearDown(self):
+		self.remove_all_other_accounts()
+		self.remove_all_networks()
+
+		for network_instance in self.proxy_holder.backend_api.network_instance_list():
+			self.proxy_holder.backend_api.network_instance_remove(network_instance['id'])
+
+	def test_network_instance(self):
+
 def suite():
 	return unittest.TestSuite([
 		unittest.TestLoader().loadTestsFromTestCase(NetworkTestCase),
+		unittest.TestLoader().loadTestsFromTestCase(NetworkInstanceTestCase),
 	])
