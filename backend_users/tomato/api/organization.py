@@ -1,6 +1,7 @@
 from ..organization import Organization
 from ..user import User
 from _shared import _getOrganization
+from ..lib.error import UserError
 
 def organization_exists(name):
 	if _getOrganization(name):
@@ -26,7 +27,7 @@ def organization_info(name):
 	orga = _getOrganization(name)
 	return orga.info()
 
-def organization_modify(name, **args):
+def organization_modify(name, args):
 	orga = _getOrganization(name)
 	orga.modify(**args)
 	return orga.info()
