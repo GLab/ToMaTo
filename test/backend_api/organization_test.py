@@ -1,8 +1,7 @@
 #!/usr/bin/python
 
-from proxies_test import ProxyHolder, ProxyHoldingTestCase
+from proxies import ProxyHolder, ProxyHoldingTestCase
 from lib.error import UserError
-from lib.hierarchy import ClassName
 import unittest
 
 # the API tests assume that all other backend services work properly.

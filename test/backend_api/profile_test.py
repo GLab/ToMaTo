@@ -1,4 +1,4 @@
-from proxies_test import ProxyHoldingTestCase, ProxyHolder
+from proxies import ProxyHoldingTestCase, ProxyHolder
 from lib.error import UserError
 import unittest
 import time
