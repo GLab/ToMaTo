@@ -4,8 +4,29 @@ import time
 
 
 '''
-## network
+##network
+### network_list
+- Execute and check for correctness
 
+## network_create
+- Scenario 1: Correct parameters
+- Scenario 2: Correct parameters without permissions
+- Scenario 3: Invalid attributes
+
+## network_modify
+- Scenario 1: Correct parameters
+- Scenario 2: Correct parameters without permission
+- Scenario 3: Non existing network
+- Scenario 5: Incorrect attribute modification
+
+## network_remove
+- Scenario 1: Correct parameter
+- Scenario 2: Correct parameters without permissions
+- Scenario 2: Non existing network
+
+## network_info
+- Scenario 1: Correct parameter
+- Scenario 2: Non existing network
 '''
 
 
@@ -113,7 +134,7 @@ class NetworkTestCase(ProxyHoldingTestCase):
 		self.assertDictContainsSubset(network_attrs, network_api)
 
 	#Modify a network without permission and check if backend denies
-	def test_network_create_without_permission(self):
+	def test_network_modify_without_permission(self):
 
 		network_attrs = self.testnetwork_attrs.copy()
 		network_attrs['preference'] == 50
@@ -123,6 +144,63 @@ class NetworkTestCase(ProxyHoldingTestCase):
 		network_core = self.proxy_holder.backend_core.network_info(self.testnetwork_id)
 
 		self.assertDictContainsSubset(self.testnetwork_attrs, network_core)
+
+	#Modify incorrect attribute of existing network
+	def test_network_modify_with_incorrect_attributes(self):
+
+		network_attrs = self.testnetwork_attrs.copy()
+		network_attrs['preferencer'] == 50
+
+		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ATTRIBUTE, self.proxy_holder.backend_api.network_modify, self.testnetwork_id, network_attrs)
+
+		network_core = self.proxy_holder.backend_core.network_info(self.testnetwork_id)
+
+		self.assertDictContainsSubset(self.testnetwork_attrs, network_core)
+
+	#Modify non existing network
+	def test_network_modify_with_incorrect_attributes(self):
+
+		network_attrs = self.testnetwork_attrs.copy()
+		network_attrs['preference'] == 50
+
+		network_id = self.testnetwork_id + self.testnetwork_id
+
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_modify, network_id, network_attrs)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.network_info, network_id)
+
+	#Remove existing network
+	def test_network_remove(self):
+
+		self.proxy_holder.backend_api.network_remove(self.testnetwork_id)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.network_info, self.testnetwork_id)
+
+
+	#Try removing existing network without the correct permission
+	def test_network_remove_without_permission(self):
+
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.network_remove, self.testnetwork_id)
+		network_core = self.proxy_holder.backend_core.network_info(self.testnetwork_id)
+
+		self.assertIsNotNone(network_core)
+
+	#Try to remove non existing network
+	def test_network_remove_non_existing(self):
+
+		network_id = self.testnetwork_id + self.testnetwork_id
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_remove, network_id)
+
+	#Get informations about existing element
+	def test_network_info(self):
+		network_api = self.proxy_holder.backend_api.network_info(self.testnetwork_id)
+		network_core = self.proxy_holder.backend_core.network_info(self.testnetwork_id)
+		self.assertEqual(network_api, network_core)
+		self.assertDictContainsSubset(network_api, self.testnetwork_attrs)
+
+	#Get informations about non existing element
+	def test_network_info(self):
+
+		network_id = self.testnetwork_id + self.testnetwork_id
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_info, network_id)
 
 
 def suite():
