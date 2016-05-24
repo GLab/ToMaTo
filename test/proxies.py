@@ -84,6 +84,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		super(ProxyHoldingTestCase, self).__init__(methodName)
 		self.proxy_holder = proxy_holder
 		self.test_host_addresses = test_hosts
+		self.test_temps = test_templates
 		self.host_site_name = "testhosts"
 		self.default_organization_name = "others"
 		self.default_user_name = "admin"
@@ -143,7 +144,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
 
-	def add_templates_if_missing(self):
+	def add_templates_if_missing(self, wait_for_synchronization=False):
 		for host_address in test_hosts:
 			self.add_host_if_missing(host_address)
 		template_list = self.proxy_holder.backend_api.template_list()
@@ -157,15 +158,16 @@ class ProxyHoldingTestCase(unittest.TestCase):
 				self.proxy_holder.backend_core.template_create(tech, name, attrs)
 
 		template_list = self.proxy_holder.backend_api.template_list()
-		synchronized_templates = 0
-		while(synchronized_templates != len(template_list)):
+		if wait_for_synchronization:
 			synchronized_templates = 0
-			for template in template_list:
-				if(template["ready"]["hosts"]["ready"] == len(test_hosts)):
-					synchronized_templates+=1
-			if(synchronized_templates != len(template_list)):
-				time.sleep(5)
-				print "Waiting 5 seconds for template synchronization"
+			while(synchronized_templates != len(template_list)):
+				synchronized_templates = 0
+				for template in template_list:
+					if(template["ready"]["hosts"]["ready"] == len(test_hosts)):
+						synchronized_templates+=1
+				if(synchronized_templates != len(template_list)):
+					time.sleep(5)
+					print "Waiting 5 seconds for template synchronization"
 
 
 	def remove_all_other_accounts(self):
@@ -180,6 +182,10 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	def remove_all_templates(self):
 		for template in self.proxy_holder.backend_core.template_list():
 			self.proxy_holder.backend_core.template_remove(template["id"])
+
+	def remove_all_networks(self):
+		for network in self.proxy_holder.backend_core.network_list():
+			self.proxy_holder.backend_core.network_remove(network["id"])
 
 	def remove_all_other_organizations(self):
 		for orga in self.proxy_holder.backend_users.organization_list():
