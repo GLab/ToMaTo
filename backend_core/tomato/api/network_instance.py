@@ -16,8 +16,11 @@ def network_instance_list(network=None, host=None):
 	"""
 	Retrieves information about all resources.
 
-	Parameter *kind*:
-	  If *kind* is set, only resources with a matching kind will be returned.
+	Parameter *network*:
+	  If *network* is set, only resources with a matching network will be returned.
+
+	Parameter *host*:
+	  If *host* is set, only resources with a matching host will be returned.
 
 	Return value:
 	  A list with information entries of all matching network_instances. Each list
@@ -36,9 +39,9 @@ def network_instance_create(network, host, attrs=None):
 	"""
 	Creates a network_instance of given kind and host, configuring it with the given attributes.
 
-	Parameter *kind*:
-	  The parameter *kind* must be a string identifying one of the supported
-	  network_instance kinds.
+	Parameter *network*:
+	  The parameter *network* must be a string identifying one of the supported
+	  network_instance networks.
 
 	Parameter *host*:
 	  The parameter *host* must be a string giving a host for the network_instance.
@@ -63,12 +66,8 @@ def network_instance_modify(id, attrs):
 	"""
 	Modifies a network_instance, configuring it with the given attributes.
 
-	Parameter *kind*:
-	  The parameter *kind* must be a string identifying one of the supported
-	  network_instance kinds.
-
-	Parameter *host*:
-	  The parameter *host* must be a string giving a host for the network_instance.
+	Parameter *id*:
+	  The parameter *id* must be an id of a existing network_instance
 
 	Parameter *attrs*:
 	  The attributes of the network_instance can be given as the parameter *attrs*.
@@ -92,12 +91,8 @@ def network_instance_remove(id):
 	"""
 	Removes a network_instance.
 
-	Parameter *kind*:
-	  The parameter *kind* must be a string identifying one of the supported
-	  network_instance kinds.
-
-	Parameter *host*:
-	  The parameter *host* must be a string giving a host for the network_instance.
+	Parameter *id*:
+	  The parameter *id* must be an id of a existing network_instance
 
 	Return value:
 	  The return value of this method is ``None``.
@@ -115,12 +110,8 @@ def network_instance_info(id):
 	"""
 	Retrieves information about a network_instance.
 
-	Parameter *kind*:
-	  The parameter *kind* must be a string identifying one of the supported
-	  network_instance kinds.
-
-	Parameter *host*:
-	  The parameter *host* must be a string giving a host for the network_instance.
+	Parameter *id*:
+	  The parameter *id* must be an id of a existing network_instance
 
 	Return value:
 	  The return value of this method is a dict containing information
