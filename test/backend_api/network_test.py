@@ -241,6 +241,39 @@ class NetworkTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_info, network_id)
 
 
+'''
+## network_instance
+### network_instance_list
+- Scenario 1: No parameters
+- Scenario 2: With network parameter
+- Scenario 3: With host parameter
+- Scenario 4: With both parameters
+- Scenario 5: Non existing parameter / host
+
+### network_instance_create
+- Scenario 1: Correct parameters
+- Scenario 2: Correct parameters, without permission
+- Scenario 3: Non existing network
+- Scenario 4: Non existing host
+
+### network_instance_modify
+- Scenario 1: Correct parameters
+- Scenario 2: Correct parameters, without permission
+- Scenario 3: Non existing network instance
+- Scenario 4: Incorrect attributes
+- Scenario 5: Non existing host
+- Scenario 6: Non existing network
+
+### network_instance_remove
+- Scenario 1: Correct parameter
+- Scenario 2: Correct parameter, without permission
+- Scenario 3: non existing network instance
+
+### network_instance_info
+- Scenario 1: Correct parameter
+- Scenario 2: Non existing network instance
+'''
+
 class NetworkInstanceTestCase(ProxyHoldingTestCase):
 
 	def setUp(self):
