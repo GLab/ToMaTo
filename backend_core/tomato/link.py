@@ -179,13 +179,13 @@ def ping(siteA, siteB, ignore_missing_site=False):
 def get_site_pairs():
 	pairs = set()
 	for siteA in Site.objects.all():
-		#if not siteA.hosts.count():
-		#	continue
+		if not siteA.hosts.count():
+			continue
 		for siteB in Site.objects.all():
 			if siteA.id >= siteB.id:
 				continue
-			#if not siteB.hosts.count():
-			#	continue
+			if not siteB.hosts.count():
+				continue
 			pairs.add((siteA.name, siteB.name))
 		pairs.add((siteA.name, siteA.name))
 	return pairs
