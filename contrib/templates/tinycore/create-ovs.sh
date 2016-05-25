@@ -1,6 +1,6 @@
 #!/bin/sh
 
-OVS_COMMIT=f8fe60beb18eab320456267f52b0267df425a76d
+OVS_COMMIT=v2.5.0
 TUNCTL_VERSION=1.5
 BRIDGE_UTILS_VERSION=1.5
 
@@ -30,18 +30,23 @@ expect_ret() {
   shift
   "$@"
   RES=$?
-  [ $RES == $EXPECTED ] && return 0 || return 1
+  if [ $RES == $EXPECTED ]; then
+    return 0
+  else
+    echo "Command $@ returned error code $RES instead of $EXPECTED"
+    return 1
+  fi
 }
 
 install() {
-  tce-load -wi "$@" || true
+  silent tce-load -wi "$@"
 }
 
 echo "Installing build env into ram..."
 cd /root
 rm /etc/sysconfig/tcedir; ln -s /tmp /etc/sysconfig/tcedir
-silent expect_ret 1 tce-load -wi compiletc perl5 autoconf automake openssl-1.0.1-dev linux-kernel-sources-env libtool libtool-dev python squashfs-tools
-silent expect_ret 6 linux-kernel-sources-env.sh
+install compiletc perl5 autoconf automake openssl-dev linux-kernel-sources-env libtool libtool-dev python squashfs-tools
+silent linux-kernel-sources-env.sh
 export CFLAGS="-march=i486 -mtune=i686 -Os -pipe"
 export CXXFLAGS="-march=i486 -mtune=i686 -Os -pipe"
 export CPPFLAGS="-march=i486 -mtune=i686 -Os -pipe"
@@ -90,7 +95,7 @@ cd /root
 silent mksquashfs openvswitch /mnt/sda1/tce/optional/openvswitch.tcz
 cat > /mnt/sda1/tce/optional/openvswitch.tcz.dep <<END
 gcc_libs.tcz
-openssl-1.0.1.tcz
+openssl.tcz
 tunctl.tcz
 bridge-utils.tcz
 END
@@ -109,7 +114,7 @@ export PATH="\$PATH:/usr/local/sbin:/usr/local/bin"
 modprobe openvswitch
 modprobe 8021q
 modprobe ipv6
-DATABASE=/opt/obs.db
+DATABASE=/opt/ovs.db
 if ! [ -f \$DATABASE ]; then
   ovsdb-tool create \$DATABASE
 fi
@@ -119,6 +124,7 @@ ovs-vswitchd --pidfile --detach
 if ! \$(ovs-vsctl list-br | fgrep br0 >/dev/null); then
   ovs-vsctl add-br br0
   ovs-vsctl set-controller br0 ptcp:6633
+  ovs-vsctl set bridge br0 protocols=OpenFlow10,OpenFlow11,OpenFlow12,OpenFlow13,OpenFlow14,OpenFlow15
 fi
 for path in /proc/sys/net/ipv4/conf/eth*; do
   iface=\$(basename \$path)
@@ -129,6 +135,9 @@ for path in /proc/sys/net/ipv4/conf/eth*; do
 done
 if [ -f "/opt/address" ]; then
  ifconfig br0 \$(cat /opt/address) up
+fi
+if [ -f "/opt/kmap" ]; then
+ loadkmap < /usr/share/kmap/\$(cat /opt/kmap).kmap
 fi
 
 /opt/bootlocal.sh &
@@ -144,28 +153,39 @@ END
 cat >>/root/.profile <<END
 alias save="filetool.sh -bs >/dev/null"
 address() {
-  ifconfig br0 $1 up
-  echo "$1" >/opt/address
+  ifconfig br0 "\$1" up
+  echo "\$1" >/opt/address
   save
+}
+kmap() {
+  LANG="\$1"
+  FILE="/usr/share/kmap/\$1.kmap"
+  if [ -f "\$FILE" ]; then
+    loadkmap < "\$FILE"
+    echo "\$LANG" >/opt/kmap
+    save
+  else
+    echo "Kmap not found"
+  fi
 }
 alias controller="ovs-vsctl set-controller br0"
 ovs() {
-  CMD="$1"
+  CMD="\$1"
   shift
-  ovs-vsctl "$CMD" br0 "$@"
+  ovs-vsctl "\$CMD" br0 "\$@"
 }
 of() {
-  CMD="$1"
+  CMD="\$1"
   shift
-  ovs-ofctl "$CMD" br0 "$@"
+  ovs-ofctl "\$CMD" br0 "\$@"
 }
 END
 sed -e 's/kmap=qwertz\/de-latin1-nodeadkeys/kmap=qwerty\/us/' -i /mnt/sda1/tce/boot/extlinux/extlinux.conf
 echo "/root/.profile" >> /opt/.filetool.lst
 silent expect_ret 1 filetool.sh -b
 rm /etc/sysconfig/tcedir; ln -s /mnt/sda1/tce /etc/sysconfig/tcedir
-silent expect_ret 1 tce-load -wi ipv6-3.16.6-tinycore
-cp /tmp/optional/gcc_libs.tcz* /tmp/optional/openssl-1.0.1.tcz* /mnt/sda1/tce/optional
+install ipv6-$(uname -r)
+cp /tmp/optional/gcc_libs.tcz* /tmp/optional/openssl.tcz* /mnt/sda1/tce/optional
 
 echo openvswitch >> /mnt/sda1/tce/onboot.lst
 
