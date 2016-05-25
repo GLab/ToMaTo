@@ -79,11 +79,14 @@ def start(api, request):
 		return render(request,"topology/tutorial_error.html",{"error_typ":"invalidurl", "error_msg":"Invalid url","url":url})
 	
 	_, _, top_dict, data, _ = loadTutorial(url)
-	top_dict['topology']['attrs']['_tutorial_state'] = {'enabled': True,
-														'url': url,
-													    'step': 0,
-													    'data': data}
 	top_id, _, _, _ = api.topology_import(top_dict)
+	api.topology_modify(top_id, {"_tutorial_state": {
+																	'enabled': True,
+																	'url': url,
+													        'step': 0,
+													        'data': data
+																}
+	                             })
 	return redirect("tomato.topology.info", id=top_id)
 
 def loadTutorial(url):

@@ -1,5 +1,7 @@
 from ..user import User
 from _shared import _getUser, _getOrganization
+from ..lib.error import UserError
+from ..lib.exceptionhandling import wrap_errors
 
 def _user_list(organization=None, with_flag=None):
 	if organization:
@@ -26,6 +28,7 @@ def user_info(name):
 	user = _getUser(name)
 	return user.info()
 
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ALREADY_EXISTS)
 def user_create(name, organization, email, password=None, attrs=None):
 	user = User.create(name, organization, email, password, attrs)
 	return user.info()

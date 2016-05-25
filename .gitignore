@@ -7,6 +7,7 @@ docs_build
 *.pydevproject
 *.sqlite
 *~
+.*.swp
 *.lyx#
 *Thumbs.db*
 ~$*.pptx

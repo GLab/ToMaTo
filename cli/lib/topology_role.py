@@ -1,0 +1,1 @@
+../../shared/lib/topology_role.py

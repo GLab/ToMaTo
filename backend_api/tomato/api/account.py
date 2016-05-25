@@ -51,7 +51,7 @@ def account_info(name=None):
 		The affiliation of the account holder, e.g. university, company, etc.
 	  
 	  ``email``
-		The email address of the account holder. This address wil be used to 
+		The email address of the account holder. This address wil be used to
 		send important notifications.
 		
 	Exceptions:

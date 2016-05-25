@@ -6,6 +6,8 @@
 import sys
 import unittest
 import json
+import subprocess
+import time
 
 TOMATO_BACKEND_API_MODULE = "backend_api"
 TOMATO_MODULES = ("backend_api", "backend_accounting", "backend_core", "backend_debug", "backend_users")
@@ -13,6 +15,7 @@ TOMATO_MODULES = ("backend_api", "backend_accounting", "backend_core", "backend_
 sys.path.insert(1, "../cli/")
 import lib as tomato
 from lib.error import UserError
+from lib.userflags import flags as userflags
 
 
 class InternalMethodProxy(object):
@@ -51,19 +54,26 @@ class ProxyHolder(object):
 	a class which has for each backend_* module an attribute holding a proxy which can execute API commands
 	  on the respective module.
 	"""
-	__slots__ = TOMATO_MODULES + ("username",)
+	__slots__ = ("backend_api", "backend_core", "backend_debug", "backend_users", "backend_accounting",
+	             "username", "password")
 
-	def __init__(self):
-		self.username = "admin"
-		self.backend_api = tomato.getConnection(tomato.createUrl("http+xmlrpc", "localhost", 8000, self.username, "changeme"))
+	def __init__(self, username, password):
+		self.username = username
+		self.password = password
+		self.backend_api = tomato.getConnection(tomato.createUrl("http+xmlrpc", "localhost", 8000, self.username, self.password))
 		for module in TOMATO_MODULES:
 			if module != TOMATO_BACKEND_API_MODULE:
 				setattr(self, module, InternalAPIProxy(self.backend_api, module))
 
+	def get_proxy(self, tomato_module):
+		return getattr(self, tomato_module)
 
-proxy_holder = ProxyHolder()
+
+proxy_holder = ProxyHolder("admin", "changeme")
 with open("testhosts.json") as f:
 	test_hosts = json.load(f)
+with open("testtemplates.json") as f:
+	test_templates = json.load(f)
 class ProxyHoldingTestCase(unittest.TestCase):
 	"""
 	:type proxy_holder: ProxyHolder
@@ -74,16 +84,27 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		super(ProxyHoldingTestCase, self).__init__(methodName)
 		self.proxy_holder = proxy_holder
 		self.test_host_addresses = test_hosts
+		self.test_temps = test_templates
 		self.host_site_name = "testhosts"
-		self.default_organization_name = self.proxy_holder.backend_api.organization_list()[0]['name']
+		self.default_organization_name = "others"
+		self.default_user_name = "admin"
+
+	def assertRaisesError(self, excClass, errorCode, callableObj=None, *args, **kwargs):
+		try:
+			callableObj(*args, **kwargs)
+			self.fail("no error was raised")
+		except excClass as e:
+			if e.code != errorCode:
+				self.fail("wrong error code")
+
 
 	def create_site_if_missing(self):
 		try:
-			self.proxy_holder.backend_api.site_info(self.host_site_name)
+			self.proxy_holder.backend_core.site_info(self.host_site_name)
 		except UserError as e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
-			self.proxy_holder.backend_api.site_create(self.host_site_name,
+			self.proxy_holder.backend_core.site_create(self.host_site_name,
 			                                          self.default_organization_name,
 			                                          self.host_site_name)
 
@@ -105,7 +126,12 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	def add_host_if_missing(self, address):
 		self.create_site_if_missing()
-		self.proxy_holder.backend_api.host_create(self.get_host_name(address), self.host_site_name,
+		try:
+			self.proxy_holder.backend_core.host_info(self.get_host_name(address))
+		except UserError, e:
+			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
+				raise
+			self.proxy_holder.backend_core.host_create(self.get_host_name(address), self.host_site_name,
 		                                          {
 			                                          'rpcurl': "ssl+jsonrpc://%s:8003"%address,
 		                                            'address': address
@@ -117,3 +143,83 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		except UserError, e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
+
+	def add_templates_if_missing(self, wait_for_synchronization=False):
+		for host_address in test_hosts:
+			self.add_host_if_missing(host_address)
+		template_list = self.proxy_holder.backend_api.template_list()
+		if(template_list == []):
+			for template in test_templates:
+				tech = template['tech']
+				name = template['name']
+				del template['tech']
+				del template['name']
+				attrs = template
+				self.proxy_holder.backend_core.template_create(tech, name, attrs)
+
+		template_list = self.proxy_holder.backend_api.template_list()
+		if wait_for_synchronization:
+			synchronized_templates = 0
+			while(synchronized_templates != len(template_list)):
+				synchronized_templates = 0
+				for template in template_list:
+					if(template["ready"]["hosts"]["ready"] == len(test_hosts)):
+						synchronized_templates+=1
+				if(synchronized_templates != len(template_list)):
+					time.sleep(5)
+					print "Waiting 5 seconds for template synchronization"
+
+
+	def remove_all_other_accounts(self):
+		for user in self.proxy_holder.backend_users.user_list():
+			if user["name"] != self.proxy_holder.username:
+				self.proxy_holder.backend_users.user_remove(user["name"])
+
+	def remove_all_profiles(self):
+		for profile in self.proxy_holder.backend_core.profile_list():
+			self.proxy_holder.backend_core.profile_remove(profile["id"])
+
+	def remove_all_templates(self):
+		for template in self.proxy_holder.backend_core.template_list():
+			self.proxy_holder.backend_core.template_remove(template["id"])
+
+	def remove_all_networks(self):
+		for network in self.proxy_holder.backend_core.network_list():
+			self.proxy_holder.backend_core.network_remove(network["id"])
+
+	def remove_all_other_sites(self):
+		for site in self.proxy_holder.backend_core.site_list():
+			self.proxy_holder.backend_core.site_remove(site["name"])
+
+	def remove_all_other_organizations(self):
+		for orga in self.proxy_holder.backend_users.organization_list():
+			if orga["name"] != self.default_organization_name:
+				self.proxy_holder.backend_api.organization_remove(orga["name"])
+
+	def set_user(self, username, organization, email, password, realname, flags):
+		"""
+		create user if missing.
+		set params if existing.
+		:param str username:
+		:param str organization:
+		:param str email:
+		:param str password:
+		:param str realname:
+		:param list(str) flags: all flags that the user shall have
+		:return:
+		"""
+		try:
+			self.proxy_holder.backend_users.user_create(username, organization, email, password, {
+				"realname": realname,
+				"flags": {f: f in flags for f in userflags.iterkeys()}
+			})
+		except UserError, e:
+			if e.code != UserError.ALREADY_EXISTS:
+				raise
+			self.proxy_holder.backend_users.user_modify({
+				"organization": organization,
+				"email": email,
+				"password": password,
+				"realname": realname,
+				"flags": {f: f in flags for f in userflags.iterkeys()}
+			})

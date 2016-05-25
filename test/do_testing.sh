@@ -15,50 +15,14 @@ with open("testhosts.json") as f:
  hosts = json.load(f)
 print " ".join(hosts)' | python -)
 
-if [ -e "$DOCKER_DIR" ]; then
-	echo "ERROR: Please remove $DOCKER_DIR before starting."
-	exit 1
-fi
+echo ""
+echo ""
+echo ""
 
-echo ""
-echo ""
-echo ""
-echo "backend_users"
-echo "-------------"
-echo ""
-python -m unittest -v backend_users
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_core"
-echo "-------------"
-echo ""
-python -m unittest -v backend_core
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_accounting"
-echo "-------------"
-echo ""
-python -m unittest -v backend_accounting
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_debug"
-echo "-------------"
-echo ""
-python -m unittest -v backend_debug
-echo ""
-echo ""
-echo ""
-echo ""
-echo "backend_api"
-echo "-------------"
-echo ""
-python -m unittest -v backend_api
-echo ""
-echo ""
-echo ""
+for tomato_module in backend_users backend_core backend_accounting backend_debug backend_api; do
+	echo ${tomato_module}
+	echo "-------------"
+	echo ""
+	./run_tests.sh "$tomato_module"
+	echo ""
+done

@@ -9,6 +9,24 @@ def progname_short():
 	return "rextfv-packetmanager"
 
 
+def retryThreeTimes(func):
+	def call(*args, **kwargs):
+		try:
+			res = func(*args, **kwargs)
+			assert res is not None
+			return res
+		except:
+			try:
+				print "Don't worry, I'll retry."
+				res = func(*args, **kwargs)
+				assert res is not None
+				return res
+			except:
+				print "Don't worry, I'll retry."
+				return func(*args, **kwargs)
+	return call
+
+
 class DefaultDebugger:
 	step = ""
 	substep = ""
@@ -201,12 +219,12 @@ class TestTopology:
 
 	def getArchiveResult(self):
 		elinfo = self.api.element_info(self.el_id)
-		while not elinfo["attrs"]["rextfv_run_status"]["done"]:
-			if not elinfo["attrs"]["rextfv_run_status"]["isAlive"]:
+		while not elinfo["rextfv_run_status"]["done"]:
+			if not elinfo["rextfv_run_status"]["isAlive"]:
 				return None
 			sleep(1)
 			elinfo = self.api.element_info(self.el_id)
-		return elinfo["attrs"]["rextfv_run_status"]["custom"]
+		return elinfo["rextfv_run_status"]["custom"]
 
 
 ###### Build the archive
@@ -369,7 +387,9 @@ class GetPacketArchive(object):
 		self._writeAdditionalContents()
 		return self._createArchiveFile()
 
+	@retryThreeTimes
 	def uploadAndRun(self, test_topology):
+		result_raw = None
 		if not self.archive_filename:
 			return None
 		debugger.log(subStep="creating topology")
@@ -393,7 +413,7 @@ class GetPacketArchive(object):
 			debugger.log(subStep="destroying topology.", indent=1)
 			test_topology.destroy()
 			debugger.log(subStep="removing topology.", indent=1)
-			test_topology.delete()
+			#test_topology.delete()
 		debugger.log(subStep="done.")
 		return result_raw
 

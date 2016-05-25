@@ -2,10 +2,12 @@ from ..resources.template import Template
 from ..lib.error import UserError
 from ..lib.exceptionhandling import wrap_errors
 
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def _getTemplate(id_):
 	res = Template.objects.get(id=id_)
 	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Template does not exist", data={"id": id_})
 	return res
+
 
 
 def template_list(tech=None):
@@ -55,12 +57,9 @@ def template_modify(id, attrs):
 	"""
 	Modifies a template, configuring it with the given attributes.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  template techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the template.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  templates.
 
 	Parameter *attrs*:
 	  The attributes of the template can be given as the parameter *attrs*.
@@ -84,12 +83,9 @@ def template_remove(id):
 	"""
 	Removes a template.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  template techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the template.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  templates.
 
 	Return value:
 	  The return value of this method is ``None``.
@@ -109,16 +105,14 @@ def template_id(tech, name):
 	"""
 	return str(Template.objects.get(tech=tech, name=name).id)
 
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	"""
 	Retrieves information about a template.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  template techs.
-
-	Parameter *name*:
-	  The parameter *name* must be a string giving a name for the template.
+	Parameter *id*:
+	  The parameter *id* must be a string identifying one of the existing
+	  templates.
 
 	Parameter *include_torrent_data*:
 	  boolean
