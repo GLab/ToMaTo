@@ -2,7 +2,10 @@ from ..resources.network import NetworkInstance
 from .network import _getNetwork
 from .host import _getHost
 from ..lib.error import UserError
+from ..lib.exceptionhandling import wrap_errors
 
+
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def _getNetworkInstance(id_):
 	res = NetworkInstance.objects.get(id=id_)
 	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network instance does not exist", data={"id": id_})
@@ -25,7 +28,7 @@ def network_instance_list(network=None, host=None):
 	if network:
 		res = res.filter(network=_getNetwork(network))
 	if host:
-		res = res.filter(hosT=_getHost(host))
+		res = res.filter(host=_getHost(host))
 	return [r.info() for r in res]
 
 

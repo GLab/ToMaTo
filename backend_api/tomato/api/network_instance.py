@@ -9,6 +9,9 @@ def network_instance_list(network=None, host=None):
 	Parameter *kind*:
 	  If *kind* is set, only resources with a matching kind will be returned.
 
+	Parameter *host*:
+	  If *host* is set, only resources with a matching host will be returned.
+
 	Return value:
 	  A list with information entries of all matching network_instances. Each list
 	  entry contains exactly the same information as returned by

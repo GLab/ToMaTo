@@ -34,6 +34,7 @@ class NetworkTestCase(ProxyHoldingTestCase):
 
 	def setUp(self):
 		self.remove_all_other_accounts()
+		self.remove_all_network_instances()
 		self.remove_all_networks()
 
 		#Create user without permission to create, remove or modify networks
@@ -78,6 +79,7 @@ class NetworkTestCase(ProxyHoldingTestCase):
 
 	def tearDown(self):
 		self.remove_all_other_accounts()
+		self.remove_all_network_instances()
 		self.remove_all_networks()
 
 	#Get network_list and check for correctness
@@ -207,6 +209,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 
 	def setUp(self):
 		self.remove_all_other_accounts()
+		self.remove_all_network_instances()
 		self.remove_all_networks()
 
 		#Create user without permission to create, remove or modify networks
@@ -220,6 +223,10 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
 		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
+		#We need some hosts to test our network instances
+		for host_address in self.test_host_addresses:
+			self.add_host_if_missing(host_address)
+
 
 		#Create network
 		self.testnetwork_kind = "internet"
@@ -231,47 +238,102 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 				   'label': 'Internet',
 				   'preference': 100,
 		}
-		self.proxy_holder.backend_api.network_create(self.testnetwork_kind,self.testnetwork_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
-
-		self.testnetwork2_kind = "internet/small"
+		#Create network
+		self.testnetwork2_kind = "internet/TU"
 		self.testnetwork2_attrs = {
 				'description': '',
 				   'show_as_common': False,
-				   'restricted': True,
+				   'restricted': False,
 				   'big_icon': True,
 				   'label': 'Internet',
-				   'preference': 50,
+				   'preference': 90,
 		}
 
-		#Create template
-		#{'bridge': 'vmbr0', 'host': 'tud.5', 'id': '5620a1a1b0f43a002473daf5', 'network': 'private_tud_213'}
-
-
+		self.proxy_holder.backend_api.network_create(self.testnetwork_kind,self.testnetwork_attrs)
+		self.proxy_holder.backend_api.network_create(self.testnetwork2_kind,self.testnetwork2_attrs)
+		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 		self.testnetwork_id = self.proxy_holder.backend_core.network_list()[0]['id']
-		self.add_host_if_missing(self.test_host_addresses[0])
+		self.testnetwork2_id = self.proxy_holder.backend_core.network_list()[1]['id']
+
+		#Create network instances
+
 
 		self.testnetwork_instance_kind = self.testnetwork_kind
 		self.testnetwork_instance_host = self.get_host_name(self.test_host_addresses[0])
+		self.testnetwork_instance_host2 = self.get_host_name(self.test_host_addresses[0])
 		self.testnetwork_instance_attrs = {'bridge': 'vmbr0'}
 
 		self.proxy_holder.backend_api.network_instance_create(self.testnetwork_instance_kind, self.testnetwork_instance_host, self.testnetwork_instance_attrs)
+		self.proxy_holder.backend_api.network_instance_create(self.testnetwork_instance_kind, self.testnetwork_instance_host2, self.testnetwork_instance_attrs)
 
 		self.testnetwork2_instance_kind = self.testnetwork_kind
 		self.testnetwork2_instance_host = self.get_host_name(self.test_host_addresses[1])
 		self.testnetwork2_instance_attrs = {'bridge': 'vmbr0'}
 
-		self.proxy_holder.backend_api.network_instance_create(self.testnetwork_instance_kind, self.testnetwork_instance_host, self.testnetwork_instance_attrs)
+		self.proxy_holder.backend_api.network_instance_create(self.testnetwork2_instance_kind, self.testnetwork2_instance_host, self.testnetwork2_instance_attrs)
 
 	def tearDown(self):
 		self.remove_all_other_accounts()
+		self.remove_all_network_instances()
 		self.remove_all_networks()
 
-		for network_instance in self.proxy_holder.backend_api.network_instance_list():
-			self.proxy_holder.backend_api.network_instance_remove(network_instance['id'])
+	#Get a list of all network_instances and check for correctness
+	def test_network_instance_list(self):
 
-	def test_network_instance(self):
+		network_instance_list_api = self.proxy_holder.backend_api.network_instance_list()
+		self.assertIsNotNone(network_instance_list_api)
+		network_instance_list_core = self.proxy_holder.backend_core.network_instance_list()
+		self.assertIsNotNone(network_instance_list_core)
+		self.assertEqual(network_instance_list_api, network_instance_list_core)
+
+	#Get a list of all network instances of kind *testnetwork2* and check for correctness
+	def test_network_instance_list_with_kind(self):
+
+		network_instance_list_api = self.proxy_holder.backend_api.network_instance_list(network=self.testnetwork2_id)
+		self.assertIsNotNone(network_instance_list_api)
+		network_instance_list_core = self.proxy_holder.backend_core.network_instance_list(network=self.testnetwork2_id)
+		self.assertIsNotNone(network_instance_list_core)
+		self.assertEqual(network_instance_list_api, network_instance_list_core)
+
+		for network in network_instance_list_api:
+			self.assertEqual(network['kind'] == self.testnetwork2_kind)
+
+	#Get a list of all network instances provided by host[0] and check for correctness
+	def test_network_instance_list_with_host(self):
+
+		network_instance_list_api = self.proxy_holder.backend_api.network_instance_list(host=self.get_host_name(self.test_host_addresses[0]))
+		self.assertIsNotNone(network_instance_list_api)
+		network_instance_list_core = self.proxy_holder.backend_core.network_instance_list(host=self.get_host_name(self.test_host_addresses[0]))
+		self.assertIsNotNone(network_instance_list_core)
+		self.assertEqual(network_instance_list_api, network_instance_list_core)
+
+		for network in network_instance_list_api:
+			self.assertEqual(network['host'] == self.get_host_name(self.test_host_addresses[0]))
+
+	#Get a list of all network instances provided by host[0] and kind testnetwork_kind and check for correctness
+	def test_network_instance_list_with_kind_and_host(self):
+
+		network_instance_list_api = self.proxy_holder.backend_api.network_instance_list(network=self.testnetwork_id, host=self.get_host_name(self.test_host_addresses[0]))
+		self.assertIsNotNone(network_instance_list_api)
+		network_instance_list_core = self.proxy_holder.backend_core.network_instance_list(network=self.testnetwork_id, host=self.get_host_name(self.test_host_addresses[0]))
+		self.assertIsNotNone(network_instance_list_core)
+		self.assertEqual(network_instance_list_api, network_instance_list_core)
+
+		for network in network_instance_list_api:
+			self.assertEqual(network['host'] == self.get_host_name(self.test_host_addresses[0]))
+			self.assertEqual(network['kind'] == self.testnetwork_kind)
+
+	#Get a list of all network instances of non existing networks
+	def test_network_instance_list_with_kind_and_host(self):
+
+		network_kind = self.testnetwork_id + self.testnetwork_id
+		network_instance_list_api = self.proxy_holder.backend_api.network_instance_list(network=network_kind)
+		self.assertEqual(network_instance_list_api,[])
+		network_instance_list_core = self.proxy_holder.backend_core.network_instance_list(network=network_kind)
+		self.assertEqual(network_instance_list_core,[])
+
+
 
 def suite():
 	return unittest.TestSuite([
