@@ -20,6 +20,7 @@ from . import scheduler
 from datetime import timedelta
 from .host.site import Site
 from lib import util, logging #@UnresolvedImport
+from lib.error import UserError
 import time, random, threading
 
 TYPES = ["single", "5minutes", "hour", "day", "month", "year"]
@@ -164,6 +165,7 @@ def ping(siteA, siteB):
 			pinging.remove(key)
 
 
+# fixme: use maintenance scheduling here
 @util.wrap_task
 def schedulePings():
 	toSync = set()
@@ -187,15 +189,20 @@ def housekeep():
 	exec_js(js_code("link_housekeep"), now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
 
 def getStatistics(siteA, siteB): #@ReservedAssignment
-	siteA = Site.get(siteA)
-	siteB = Site.get(siteB)
-	if siteA.id > siteB.id:
-		siteA, siteB = siteB, siteA
+	_siteA = Site.get(siteA)
+	_siteB = Site.get(siteB)
+	UserError.check(_siteA is not None, UserError.ENTITY_DOES_NOT_EXIST, "site does not exist", data={"site": siteA})
+	UserError.check(_siteB is not None, UserError.ENTITY_DOES_NOT_EXIST, "site does not exist", data={"site": siteB})
+	if _siteA.id > _siteB.id:
+		_siteA, _siteB = _siteB, _siteA
 	try:
-		stats = LinkStatistics.objects.get(siteA=siteA, siteB=siteB)
+		stats = LinkStatistics.objects.get(siteA=_siteA, siteB=_siteB)
 		return stats.info()
 	except LinkStatistics.DoesNotExist:
-		return None
+		ping(_siteA, _siteB)
+		stats = LinkStatistics.objects.get(siteA=_siteA, siteB=_siteB)
+		return stats.info()
+
 
 scheduler.scheduleRepeated(60, schedulePings) #every minute
 scheduler.scheduleRepeated(60, housekeep) #every minute
