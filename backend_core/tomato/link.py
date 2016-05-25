@@ -124,7 +124,19 @@ pingingLock = threading.RLock()
 pinging = set()
 
 @util.wrap_task
-def ping(siteA, siteB):
+def ping(siteA, siteB, ignore_missing_site=False):
+
+	if isinstance(siteA, str):
+		siteA = Site.get(siteA)
+	if isinstance(siteB, str):
+		siteB = Site.get(siteB)
+	if (siteA is None or siteB is None) and ignore_missing_site:
+		return
+	if siteA is None:
+		raise UserError(UserError.ENTITY_DOES_NOT_EXIST, "site does not exist", data={"site": siteA})
+	if siteB is None:
+		raise UserError(UserError.ENTITY_DOES_NOT_EXIST, "site does not exist", data={"site": siteB})
+
 	key = (siteA.name, siteB.name)
 	with pingingLock:
 		if key in pinging:
@@ -164,25 +176,20 @@ def ping(siteA, siteB):
 		with pingingLock:
 			pinging.remove(key)
 
-
-# fixme: use maintenance scheduling here
-@util.wrap_task
-def schedulePings():
-	toSync = set()
+def get_site_pairs():
+	pairs = set()
 	for siteA in Site.objects.all():
-		if not siteA.hosts.count():
-			continue
+		#if not siteA.hosts.count():
+		#	continue
 		for siteB in Site.objects.all():
-			if siteA.id > siteB.id:
+			if siteA.id >= siteB.id:
 				continue
-		# noinspection PyUnboundLocalVariable
-		toSync.add((siteA, siteB))
-	syncTasks = {(t.args[0], t.args[1]): tid for tid, t in scheduler.tasks.items() if t.fn == ping}
-	syncing = set(syncTasks.keys())
-	for siteA, siteB in toSync - syncing:
-		scheduler.scheduleRepeated(60, ping, siteA, siteB)
-	for siteA, siteB in syncing - toSync:
-		scheduler.cancelTask(syncTasks[(siteA, siteB)])
+			#if not siteB.hosts.count():
+			#	continue
+			pairs.add((siteA.name, siteB.name))
+		pairs.add((siteA.name, siteA.name))
+	return pairs
+
 
 @util.wrap_task
 def housekeep():
@@ -204,5 +211,5 @@ def getStatistics(siteA, siteB): #@ReservedAssignment
 		return stats.info()
 
 
-scheduler.scheduleRepeated(60, schedulePings) #every minute
-scheduler.scheduleRepeated(60, housekeep) #every minute
+scheduler.scheduleMaintenance(60, get_site_pairs, lambda pair: ping(pair[0], pair[1], ignore_missing_site=True))  # every minute
+scheduler.scheduleRepeated(60, housekeep)  # every minute
