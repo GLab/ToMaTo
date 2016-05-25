@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urlparse
-<<<<<<< HEAD
 from lib import getConnection, createUrl
 from lib.upload_download import upload, download, upload_and_use_rextfv, upload_and_use_image, download_image, download_rextfv
-=======
->>>>>>> 1c1a22604ff22c6a041dfd8dbacede3391676608
+
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 

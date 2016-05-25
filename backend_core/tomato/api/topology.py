@@ -222,13 +222,7 @@ def topology_set_permission(id, user, role): #@ReservedAssignment
 	  if will be changed.
 	"""
 	top = _getTopology(id)
-<<<<<<< HEAD
 	top.set_role(user, role)
-=======
-	user = _getAccount(user)
-	top.setRole(user, role)
-	top.save()
->>>>>>> 1c1a22604ff22c6a041dfd8dbacede3391676608
 	
 def topology_usage(id): #@ReservedAssignment
 	"""
