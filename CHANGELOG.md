@@ -20,10 +20,11 @@ Entries should be sorted by component and status with important entries and entr
 - [backend, fixed] Fixed profiling when server does not terminate
 - [backend, fixed] Fixed problem when stopping external networks with inconsistent states
 - [backend_core, fixed] Fixed problem when generating vpncloud networkids (BSON 8 byte ints)
-- [backend, removed] Removed useless dump environment infos
+- [backend_code, fixed] Fixed problem with changing permissions
 - [backend_core, fixed] Fixed problem with dumpmanager collecting errors
+- [backend, removed] Removed useless dump environment infos
 - [web, fixed] Fixed small menu display issue for vpncloud switches
-- [hostmanager] Fixed problem with vpncloud dropping ARP packets
+- [hostmanager, fixed] Fixed problem with vpncloud dropping ARP packets
 
 ### UNRELEASED (NOT RUNNING ON SERVERS)
 - [backend_users, added] Created new user management service
@@ -34,6 +35,6 @@ Entries should be sorted by component and status with important entries and entr
 - [backend, web, changed] Changed docker mount points of tomato code
 - [backend_core, changed] Backend_core no longer uses two separate ssl keys
 - [web, fixed] Fixed problem with default executable archives
-
+- [misc, fixed] Fixed data link in tutorial
 ### PLANNED UNTIL RELEASE
 - [backend_core, backend_users, web] Old config files will not work anymore.
