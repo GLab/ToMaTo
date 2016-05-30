@@ -350,6 +350,9 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 		self.remove_all_network_instances()
 		self.remove_all_networks()
 
+		for host_address in self.test_host_addresses:
+			self.remove_host_if_available(host_address)
+
 	#Get a list of all network_instances and check for correctness
 	def test_network_instance_list(self):
 
