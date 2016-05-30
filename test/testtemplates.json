@@ -28,16 +28,16 @@
   },
   {
     "tech": "repy",
-    "name": "test.repy",
+    "name": "pingable_node",
     "nlXTP_installed": false,
     "description": "",
     "icon": "",
     "show_as_common": false,
     "restricted": false,
-    "torrent_data": "ZDg6YW5ub3VuY2U0MjpodHRwOi8vdG9tYXRvMy5nZXJtYW4tbGFiLmRlOjY5NjkvYW5ub3VuY2UxMzpjcmVhdGlvbiBkYXRlaTEzNjIzOTI4NDBlNDppbmZvZDY6bGVuZ3RoaTQzNTRlNDpuYW1lMTE6c3dpdGNoLnJlcHkxMjpwaWVjZSBsZW5ndGhpMzI3NjhlNjpwaWVjZXMyMDobgzas8eVPnEWLVcRgcmC4hbQSRmVl",
-    "label": "Switch",
-    "subtype": "network",
-    "preference": 5,
+    "torrent_data": "ZDg6YW5ub3VuY2U0MjpodHRwOi8vdG9tYXRvMy5nZXJtYW4tbGFiLmRlOjY5NjkvYW5ub3VuY2UxMzpjcmVhdGlvbiBkYXRlaTEzNjIzOTI4NDBlNDppbmZvZDY6bGVuZ3RoaTE0MTI3ZTQ6bmFtZTE4OnBpbmdhYmxlX25vZGUucmVweTEyOnBpZWNlIGxlbmd0aGkzMjc2OGU2OnBpZWNlczIwOm22H4khkjudKCONAYGfwA4p4KjmZWU=",
+    "label": "Pingable Node",
+    "subtype": "device",
+    "preference": 10,
     "creation_date": 1462881777.857998
   }
 ]
