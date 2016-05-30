@@ -18,7 +18,7 @@
 from account import account_create, account_info, account_list, account_modify, account_remove, account_usage
 
 from account_notification import account_notifications, account_notification_set_read, account_send_notification,\
-	broadcast_announcement
+	broadcast_announcement, notifyAdmins
 
 from capabilities import capabilities, capabilities_connection, capabilities_element
 
@@ -37,7 +37,7 @@ from elements import element_info, element_action, element_create, element_modif
 
 from host import host_users, host_info, host_create, host_list, host_modify, host_remove
 
-from misc import link_statistics, notifyAdmins, server_info, statistics
+from misc import link_statistics, server_info, statistics
 
 from network import network_list, network_create, network_info, network_modify, network_remove
 

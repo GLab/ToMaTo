@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.versioninfo import getVersionStr
-from api_helpers import getCurrentUserInfo, getCurrentUserName
 from ..lib.service import get_backend_core_proxy, is_self, get_tomato_inner_proxy
 from ..lib.util import joinDicts
+from ..lib.versioninfo import getVersionStr
 from ..misc import getCAPublicKey
+
 
 def server_info():
 	"""
@@ -68,10 +68,6 @@ def server_info():
 def link_statistics(siteA, siteB):
 	return get_backend_core_proxy().link_statistics(siteA, siteB)
 
-def notifyAdmins(subject, text, global_contact = True, issue="admin"):
-	user_orga = getCurrentUserInfo().get_organization_name()
-	user_name = getCurrentUserName()
-	get_backend_core_proxy().notifyAdmins(subject, text, global_contact, issue, user_orga, user_name)
 
 def statistics():
 	"""
