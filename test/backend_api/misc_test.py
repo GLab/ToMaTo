@@ -2,6 +2,7 @@
 
 from proxies import ProxyHolder, ProxyHoldingTestCase
 from lib.settings import Config
+from lib.error import UserError
 import unittest
 
 # the API tests assume that all other backend services work properly.
@@ -9,6 +10,10 @@ import unittest
 """
 ### server_info
 - Scenario 1: Execute
+
+### link_statisctics
+- Scenario 1: Correct Parameters (only to check for non-empty response and no error)
+- Scenario 2: One site doesn't exist
 
 ### statistics
 - Scenario 1: Execute
@@ -35,6 +40,23 @@ def dict_in_dict(dictA, dictB):
 				return False
 	return True
 
+
+class TwoSitesTestCase(ProxyHoldingTestCase):
+	def setUp(self):
+		self.remove_all_other_sites()
+		self.site_1 = "site_1"
+		self.site_2 = "site_2"
+		self.proxy_holder.backend_core.site_create(self.site_1, self.default_organization_name, self.site_1)
+		self.proxy_holder.backend_core.site_create(self.site_2, self.default_organization_name, self.site_2)
+
+	def tearDown(self):
+		self.remove_all_other_sites()
+
+	def test_link_statistics(self):
+		self.assertIsNotNone(self.proxy_holder.backend_api.link_statistics(self.site_1, self.site_2))
+
+	def test_link_statistics_nonexisting_site(self):
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.link_statistics, self.site_1, "i_dont_exist")
 
 class MiscTestCase(ProxyHoldingTestCase):
 	def setUp(self):
