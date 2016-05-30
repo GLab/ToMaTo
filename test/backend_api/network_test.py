@@ -152,7 +152,8 @@ class NetworkTestCase(ProxyHoldingTestCase):
 	def test_network_modify_with_incorrect_attributes(self):
 
 		network_attrs = self.testnetwork_attrs.copy()
-		network_attrs['preferencer'] = 50
+		#Use non existing attribute
+		network_attrs['weight'] = 50
 
 		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ATTRIBUTE, self.proxy_holder.backend_api.network_modify, self.testnetwork_id, network_attrs)
 
