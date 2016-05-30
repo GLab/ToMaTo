@@ -66,6 +66,67 @@ def server_info():
 	}
 
 def link_statistics(siteA, siteB):
+	"""
+	get statistics about the link between two sites.
+	the statistics between a site and itself are measurements inside the respective site.
+
+	Parameter *siteA*
+		name of first site
+
+	Parameter *siteB*
+		name of second site
+
+	Return value:
+		link statistics.
+		A dict containing multiple measurements
+
+		 ``siteA``
+		 name of siteA
+
+		 ``siteB``
+		 name of siteB
+
+		 ``single``
+		 last measurement. Measurement is done every minute.
+
+		 ``5minutes``
+		 mean measurement of last five minutes
+
+		 ``hour"``
+		 mean measurement of last 60 minutes
+
+		 ``day"``
+		 mean measurement of last 24 hours
+
+		 ``month``
+		 mean measurement of last 30 days
+
+		 ``year``
+		 mean measurement of last 12 months
+
+
+
+		 Every measurement is a dict containing the keys:
+
+		 ``begin``
+		 begin of period
+
+		 ``end``
+		 end of period
+
+		 ``measurements``
+		 number of measurements in period
+
+		 ``loss``
+		 mean loss rate of the measurements
+
+		 ``delay_avg``
+		 mean delay of the measurements
+
+		 ``delay_stddev``
+		 standard deviation of the delay measurements
+
+	"""
 	return get_backend_core_proxy().link_statistics(siteA, siteB)
 
 
