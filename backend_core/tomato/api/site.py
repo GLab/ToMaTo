@@ -22,6 +22,7 @@ def site_create(name, organization, label="", attrs=None):
 	"""
 	if attrs is None:
 		attrs = {}
+
 	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
