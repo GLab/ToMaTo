@@ -5,7 +5,10 @@ import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, 
 from lib import getConnection, createUrl
 from lib.upload_download import upload, download, upload_and_use_rextfv, upload_and_use_image, download_image, download_rextfv
 
+
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+from lib import getConnection, createUrl
 
 def parseArgs():
 	"""
