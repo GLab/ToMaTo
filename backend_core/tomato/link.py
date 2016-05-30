@@ -127,9 +127,9 @@ pinging = set()
 def ping(siteA, siteB, ignore_missing_site=False):
 
 	if isinstance(siteA, str):
-		siteA = Site.get(siteA, None)
+		siteA = Site.get(siteA)
 	if isinstance(siteB, str):
-		siteB = Site.get(siteB, None)
+		siteB = Site.get(siteB)
 	if (siteA is None or siteB is None) and ignore_missing_site:
 		return
 	if siteA is None:
