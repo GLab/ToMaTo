@@ -192,10 +192,15 @@ class SiteTestCasesWithHost(ProxyHoldingTestCase):
         self.proxy_holder.backend_api.account_create(username, password, organization, attrs)
         self.proxy_holder_tester = ProxyHolder("testuser","123")
 
+        self.proxy_holder.backend_api.site_create("DummySite", "DummyCorp1")
+        host_1 = self.test_host_addresses[0]
+        self.add_host_if_missing(host_1)
+        self.proxy_holder.backend_core.host_modify(self.get_host_name(host_1), {'site': "DummySite"})
+
 
     def tearDown(self):
         host_1 = self.test_host_addresses[0]
-        self.remove_host_if_available(host_1)
+        self.remove_host_if_available(self.get_host_name(host_1))
         self.remove_all_other_accounts()
         self.remove_all_other_sites()
         self.remove_all_other_organizations()
@@ -205,11 +210,6 @@ class SiteTestCasesWithHost(ProxyHoldingTestCase):
         """
         tests whether site remove correctly responds when called with a site as parameter that still contains hosts
         """
-        self.proxy_holder.backend_api.site_create("DummySite", "DummyCorp1")
-        host_1 = self.test_host_addresses[0]
-        self.add_host_if_missing(host_1)
-        self.proxy_holder.backend_core.host_modify(self.get_host_name(host_1), {'site': "DummySite"})
-
         self.assertRaisesError(UserError,UserError.NOT_EMPTY,self.proxy_holder.backend_api.site_remove,"DummySite")
 
 

@@ -23,10 +23,6 @@ def site_create(name, organization, label="", attrs=None):
 	if attrs is None:
 		attrs = {}
 
-	for site in site_list():
-		if site["name"] == name:
-			raise UserError(UserError.ALREADY_EXISTS, message="Site already exists")
-
 	s = Site.create(name, organization, label, attrs)
 	return s.info()
 
