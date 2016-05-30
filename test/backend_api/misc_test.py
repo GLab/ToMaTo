@@ -50,7 +50,7 @@ class TwoSitesTestCase(ProxyHoldingTestCase):
 		self.proxy_holder.backend_core.site_create(self.site_2, self.default_organization_name, self.site_2)
 
 	def tearDown(self):
-		pass#self.remove_all_other_sites()
+		self.remove_all_other_sites()
 
 	def test_link_statistics(self):
 		self.assertIsNotNone(self.proxy_holder.backend_api.link_statistics(self.site_1, self.site_2))
