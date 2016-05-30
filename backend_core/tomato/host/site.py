@@ -84,6 +84,7 @@ class Site(Entity, BaseDocument):
 		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Site name may not include a '/'")
 		UserError.check(get_organization_info(organization).exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
 			data={"name": organization})
+		UserError.check(Site.get(name) is None, code=UserError.ALREADY_EXISTS, message="Site with that name already exists"  )
 		logging.logMessage("create", category="site", name=name, label=label)
 		site = Site(name=name, organization=organization, label=label)
 		try:

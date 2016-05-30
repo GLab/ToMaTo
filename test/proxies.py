@@ -110,7 +110,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	def delete_site_if_exists(self):
 		try:
-			self.proxy_holder.backend_api.site_remove(self.host_site_name)
+			self.proxy_holder.backend_core.site_remove(self.host_site_name)
 		except UserError, e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
@@ -139,7 +139,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	def remove_host_if_available(self, address):
 		try:
-			self.proxy_holder.backend_api.host_remove(self.get_host_name(address))
+			self.proxy_holder.backend_core.host_remove(self.get_host_name(address))
 		except UserError, e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise

@@ -1,5 +1,5 @@
-from api_helpers import getCurrentUserName, getCurrentUserInfo
-from ..lib.service import get_backend_users_proxy
+from api_helpers import getCurrentUserInfo, getCurrentUserName, checkauth
+from ..lib.service import get_backend_users_proxy, get_backend_core_proxy
 from ..lib.remote_info import get_user_info
 
 def account_notifications(include_read=False):
@@ -55,3 +55,17 @@ def broadcast_announcement(title, message, ref=None, show_sender=True, subject_g
 	api = get_backend_users_proxy()
 	api.broadcast_message(title, message, fromUser=(getCurrentUserName() if show_sender else None), ref=ref,
 												subject_group=subject_group, organization_filter=organization_filter)
+
+@checkauth
+def notifyAdmins(subject, text, global_contact = True, issue="admin"):
+	"""
+	Request assistence by sending a notification to all AdminContact or HostContact users.
+	:param subject: notification subject
+	:param text: notification body
+	:param global_contact: if True, send to Global*Contact. Otherwise to Orga*Contact.
+	:param issue: if issue is "admin", the notification is sent to *AdminContact. Otherwise, it is sent to *HostContact.
+	:return:
+	"""
+	user_orga = getCurrentUserInfo().get_organization_name()
+	user_name = getCurrentUserName()
+	get_backend_core_proxy().notifyAdmins(subject, text, global_contact, issue, user_orga, user_name)

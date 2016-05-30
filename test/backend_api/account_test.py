@@ -76,6 +76,11 @@ import unittest
 - Scenario 1: Correct parameters
 - Scenario 3: show_sender=False
 
+### notify_admins
+- Scenario 1: Correct parameters
+- Scenario 2: Global_contact = False
+- Scenario 3: Global = False, "admin" = false
+
 """
 
 class NoOtherAccountTestCase(ProxyHoldingTestCase):
@@ -625,10 +630,47 @@ class AccountNotificationTestCases(ProxyHoldingTestCase):
 		attrs = {
 			"realname": "Test User2",
 			"email": "test@example.com",
-			"flags": {"over_quota": True}
+			"flags": {"over_quota": True,
+					  "orga_admin_contact": True}
 		}
 		self.proxy_holder.backend_api.account_create(username, password, organization, attrs)
 		self.proxy_holder_tester_broadcast = ProxyHolder("testuser3","123")
+
+		username = "testuser4"
+		password = "123"
+		organization = "DummyCorp2"
+		attrs = {
+			"realname": "Test User2",
+			"email": "test@example.com",
+			"flags": {"over_quota": True,
+					  "global_admin_contact": True}
+		}
+		self.proxy_holder.backend_api.account_create(username, password, organization, attrs)
+		self.proxy_holder_tester_global_admin = ProxyHolder("testuser4","123")
+
+		username = "testuser5"
+		password = "123"
+		organization = "DummyCorp1"
+		attrs = {
+			"realname": "Test User2",
+			"email": "test@example.com",
+			"flags": {"over_quota": True,
+					  "global_host_contact": True}
+		}
+		self.proxy_holder.backend_api.account_create(username, password, organization, attrs)
+		self.proxy_holder_tester_global_host = ProxyHolder("testuser5","123")
+
+		username = "testuser6"
+		password = "123"
+		organization = "DummyCorp2"
+		attrs = {
+			"realname": "Test User2",
+			"email": "test@example.com",
+			"flags": {"over_quota": True,
+					  "orga_host_contact": True}
+		}
+		self.proxy_holder.backend_api.account_create(username, password, organization, attrs)
+		self.proxy_holder_tester_orga_host = ProxyHolder("testuser6","123")
 
 		self.proxy_holder.backend_api.account_send_notification("testuser", "test", "message")
 		self.proxy_holder.backend_api.account_send_notification("testuser", "test2", "message2")
@@ -673,6 +715,42 @@ class AccountNotificationTestCases(ProxyHoldingTestCase):
 		self.proxy_holder_tester.backend_api.account_notification_set_read(self.proxy_holder_tester.backend_api.account_notifications()[0]["id"], True)
 		self.proxy_holder_tester.backend_api.account_notification_set_read(self.proxy_holder_tester.backend_api.account_notifications(True)[0]["id"], True)
 
+	def test_notifyAdmins_correct(self):
+		self.proxy_holder.backend_api.notifyAdmins("NoSubject","NoText")
+		msg_received = False
+
+		for msg in self.proxy_holder_tester_global_admin.backend_api.account_notifications():
+			if msg['title'] == "NoSubject":
+				msg_received = True
+
+		self.assertTrue(msg_received)
+
+	def test_notifyAdmins_correct_not_global(self):
+		self.proxy_holder_tester_global_admin.backend_api.notifyAdmins("NoSubject","NoText",False)
+		msg_received = False
+
+		for msg in self.proxy_holder_tester_broadcast.backend_api.account_notifications():
+			if msg['title'] == "NoSubject":
+				msg_received = True
+
+		self.assertTrue(msg_received)
+
+	def test_notifyAdmins_correct_not_global_not_admin(self):
+		self.proxy_holder_tester_global_admin.backend_api.notifyAdmins("NoSubject","NoText",False,"notadmin")
+		msg_received = False
+
+		for msg in self.proxy_holder_tester_orga_host.backend_api.account_notifications():
+			if msg['title'] == "NoSubject":
+				msg_received = True
+
+		self.assertTrue(msg_received)
+
+		msg_received = False
+		for msg in self.proxy_holder_tester_global_host.backend_api.account_notifications():
+			if msg['title'] == "NoSubject":
+				msg_received = True
+
+		self.assertFalse(msg_received)
 
 
 def suite():
