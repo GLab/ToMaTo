@@ -222,6 +222,13 @@ def topology_permission(id, user, role): #@ReservedAssignment
 	user = _getAccount(user)
 	top.setRole(user, role)
 	top.save()
+	for el in top.elements:
+		el.setRole(user, role)
+		el.save()
+	for con in top.connections:
+		con.setRole(user, role)
+		con.save()
+
 	
 def topology_usage(id): #@ReservedAssignment
 	"""

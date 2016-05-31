@@ -113,7 +113,8 @@ class PermissionMixin(object):
 	def setRole(self, user=None, role=Role.user):
 		if not user:
 			user = currentUser()
-		self.permissions = 	filter(lambda perm: perm.user != user, self.permissions)
-		self.permissions.append(Permission(user=user, role=role))
+		self.permissions = filter(lambda perm: perm.user != user, self.permissions)
+		if role and role != Role.null:
+			self.permissions.append(Permission(user=user, role=role))
 
 from . import Flags
