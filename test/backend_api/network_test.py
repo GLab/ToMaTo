@@ -50,6 +50,8 @@ class NetworkTestCase(ProxyHoldingTestCase):
 		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 
+
+
 		#Create network
 		self.testnetwork_kind = "internet"
 		self.testnetwork_attrs = {
@@ -82,6 +84,7 @@ class NetworkTestCase(ProxyHoldingTestCase):
 		self.remove_all_other_accounts()
 		self.remove_all_network_instances()
 		self.remove_all_networks()
+
 
 	#Get network_list and check for correctness
 	def test_network_list(self):
@@ -172,6 +175,105 @@ class NetworkTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_modify, network_id, network_attrs)
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.network_info, network_id)
 
+
+	#Remove existing network
+	def test_network_remove(self):
+
+		self.proxy_holder.backend_api.network_remove(self.testnetwork_id)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.network_info, self.testnetwork_id)
+
+
+	#Try removing existing network without the correct permission
+	def test_network_remove_without_permission(self):
+
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.network_remove, self.testnetwork_id)
+		network_core = self.proxy_holder.backend_core.network_info(self.testnetwork_id)
+
+		self.assertIsNotNone(network_core)
+
+	#Try to remove non existing network
+	def test_network_remove_non_existing(self):
+
+		network_id = self.testnetwork_id + self.testnetwork_id
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_remove, network_id)
+
+
+	#Get informations about existing element
+	def test_network_info(self):
+		network_api = self.proxy_holder.backend_api.network_info(self.testnetwork_id)
+		network_core = self.proxy_holder.backend_core.network_info(self.testnetwork_id)
+		self.assertEqual(network_api, network_core)
+		self.assertDictContainsSubset(network_api, self.testnetwork_attrs)
+
+	#Get informations about non existing element
+	def test_network_info(self):
+
+		network_id = self.testnetwork_id + self.testnetwork_id
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_info, network_id)
+
+
+class NetworkTestWithHosts(ProxyHoldingTestCase):
+
+	def setUp(self):
+		self.remove_all_other_accounts()
+		self.remove_all_network_instances()
+		self.remove_all_networks()
+
+		#Create user without permission to create, remove or modify networks
+		testuser_username = "testuser"
+		testuser_password = "123"
+		testuser_organization = self.default_organization_name
+		testuser_attrs = {"realname": "Test User",
+			"email": "test@example.com",
+			"flags": {}
+		}
+		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
+		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+
+
+
+
+		#Create network
+		self.testnetwork_kind = "internet"
+		self.testnetwork_attrs = {
+				'description': '',
+				   'show_as_common': True,
+				   'restricted': False,
+				   'big_icon': True,
+				   'label': 'Internet',
+				   'preference': 100,
+		}
+		self.proxy_holder.backend_api.network_create(self.testnetwork_kind,self.testnetwork_attrs)
+		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+
+		self.testnetwork2_kind = "internet/small"
+		self.testnetwork2_attrs = {
+				'description': '',
+				   'show_as_common': False,
+				   'restricted': True,
+				   'big_icon': True,
+				   'label': 'Internet',
+				   'preference': 50,
+		}
+
+		#Create template
+
+		self.testnetwork_id = self.proxy_holder.backend_core.network_list()[0]['id']
+
+		#We need some hosts to test our network instances
+		for host_address in self.test_host_addresses:
+			self.add_host_if_missing(host_address)
+
+	def tearDown(self):
+		self.remove_all_other_accounts()
+		self.remove_all_network_instances()
+		self.remove_all_networks()
+
+		for host_address in self.test_host_addresses:
+			self.remove_host_if_available(host_address)
+
+		self.remove_all_other_sites()
+
 	def test_network_modify_change_kind_with_existing_instances(self):
 
 		#Create a valid network instance
@@ -196,28 +298,6 @@ class NetworkTestCase(ProxyHoldingTestCase):
 
 		self.assertEqual(network_instance_api['network'], network_attrs['kind'])
 
-
-	#Remove existing network
-	def test_network_remove(self):
-
-		self.proxy_holder.backend_api.network_remove(self.testnetwork_id)
-		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.network_info, self.testnetwork_id)
-
-
-	#Try removing existing network without the correct permission
-	def test_network_remove_without_permission(self):
-
-		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.network_remove, self.testnetwork_id)
-		network_core = self.proxy_holder.backend_core.network_info(self.testnetwork_id)
-
-		self.assertIsNotNone(network_core)
-
-	#Try to remove non existing network
-	def test_network_remove_non_existing(self):
-
-		network_id = self.testnetwork_id + self.testnetwork_id
-		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_remove, network_id)
-
 	#Try to remove existing network with existing network_instances
 	def test_network_remove_existing_network_with_instances(self):
 
@@ -227,19 +307,6 @@ class NetworkTestCase(ProxyHoldingTestCase):
 
 		self.proxy_holder.backend_api.network_instance_create(testnetwork_instance_network, testnetwork_instance_host, testnetwork_instance_attrs)
 		self.assertRaisesError(UserError, UserError.NOT_EMPTY,	self.proxy_holder.backend_api.network_remove, self.testnetwork_id)
-
-	#Get informations about existing element
-	def test_network_info(self):
-		network_api = self.proxy_holder.backend_api.network_info(self.testnetwork_id)
-		network_core = self.proxy_holder.backend_core.network_info(self.testnetwork_id)
-		self.assertEqual(network_api, network_core)
-		self.assertDictContainsSubset(network_api, self.testnetwork_attrs)
-
-	#Get informations about non existing element
-	def test_network_info(self):
-
-		network_id = self.testnetwork_id + self.testnetwork_id
-		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_info, network_id)
 
 
 '''
@@ -352,6 +419,9 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 
 		for host_address in self.test_host_addresses:
 			self.remove_host_if_available(host_address)
+
+
+		self.remove_all_other_sites()
 
 	#Get a list of all network_instances and check for correctness
 	def test_network_instance_list(self):
