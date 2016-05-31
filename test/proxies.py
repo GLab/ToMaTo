@@ -144,10 +144,9 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
 
+	#Requires available test hosts
 	def add_templates_if_missing(self, wait_for_synchronization=False):
-		for host_address in test_hosts:
-			self.add_host_if_missing(host_address)
-		template_list = self.proxy_holder.backend_api.template_list()
+		template_list = self.proxy_holder.backend_core.template_list()
 		if(template_list == []):
 			for template in test_templates:
 				tech = template['tech']
@@ -157,7 +156,8 @@ class ProxyHoldingTestCase(unittest.TestCase):
 				attrs = template
 				self.proxy_holder.backend_core.template_create(tech, name, attrs)
 
-		template_list = self.proxy_holder.backend_api.template_list()
+		template_list = self.proxy_holder.backen_core.template_list()
+
 		if wait_for_synchronization:
 			synchronized_templates = 0
 			while(synchronized_templates != len(template_list)):
