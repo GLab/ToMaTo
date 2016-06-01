@@ -80,6 +80,20 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	:type test_host_addresses: list(str)
 	"""
 
+
+
+	"""
+	ProxyHolder for unqualified user (used in most TestCases for unauthorized access)
+	"""
+	proxy_holder = proxy_holder
+	proxy_holder_tester = None
+	host_site_name = "testhosts"
+	default_organization_name = "others"
+	default_user_name = "admin"
+	test_host_addresses = test_hosts
+	test_temps = test_templates
+
+
 	def __init__(self, methodName='runTest'):
 		super(ProxyHoldingTestCase, self).__init__(methodName)
 		self.proxy_holder = proxy_holder
@@ -89,33 +103,36 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		self.default_organization_name = "others"
 		self.default_user_name = "admin"
 
-	def assertRaisesError(self, excClass, errorCode, callableObj=None, *args, **kwargs):
+	@classmethod
+	def assertRaisesError(cls,excClass, errorCode, callableObj=None, *args, **kwargs):
 		try:
 			callableObj(*args, **kwargs)
-			self.fail("no error was raised")
+			cls.fail("no error was raised")
 		except excClass as e:
 			if e.code != errorCode:
-				self.fail("wrong error code")
+				cls.fail("wrong error code")
 
-
-	def create_site_if_missing(self):
+	@classmethod
+	def create_site_if_missing(cls):
 		try:
-			self.proxy_holder.backend_core.site_info(self.host_site_name)
+			proxy_holder.backend_core.site_info(cls.host_site_name)
 		except UserError as e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
-			self.proxy_holder.backend_core.site_create(self.host_site_name,
-			                                          self.default_organization_name,
-			                                          self.host_site_name)
+			proxy_holder.backend_core.site_create(cls.host_site_name,
+												  	cls.default_organization_name,
+												  	cls.host_site_name)
 
-	def delete_site_if_exists(self):
+	@classmethod
+	def delete_site_if_exists(cls):
 		try:
-			self.proxy_holder.backend_core.site_remove(self.host_site_name)
+			proxy_holder.backend_core.site_remove(cls.host_site_name)
 		except UserError, e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
 
-	def get_host_name(self, address):
+	@classmethod
+	def get_host_name(cls, address):
 		"""
 		resolve a host address to a name (to be used as identifier in tomato)
 		:param str address: host address
@@ -124,29 +141,36 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		"""
 		return address.replace(".", "_")
 
-	def add_host_if_missing(self, address):
-		self.create_site_if_missing()
+	@classmethod
+	def add_host_if_missing(cls, address):
+		"""
+		Check if host is already added, otherwise add him
+		:param str address: host address
+		"""
+		cls.create_site_if_missing()
 		try:
-			self.proxy_holder.backend_core.host_info(self.get_host_name(address))
+			proxy_holder.backend_core.host_info(cls.get_host_name(address))
 		except UserError, e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
-			self.proxy_holder.backend_core.host_create(self.get_host_name(address), self.host_site_name,
+			proxy_holder.backend_core.host_create(cls.get_host_name(address), cls.host_site_name,
 		                                          {
 			                                          'rpcurl': "ssl+jsonrpc://%s:8003"%address,
 		                                            'address': address
 		                                          })
 
-	def remove_host_if_available(self, address):
+	@classmethod
+	def remove_host_if_available(cls, address):
 		try:
-			self.proxy_holder.backend_core.host_remove(self.get_host_name(address))
+			proxy_holder.backend_core.host_remove(cls.get_host_name(address))
 		except UserError, e:
 			if e.code != UserError.ENTITY_DOES_NOT_EXIST:
 				raise
 
 	#Requires available test hosts
-	def add_templates_if_missing(self, wait_for_synchronization=False):
-		template_list = self.proxy_holder.backend_core.template_list()
+	@classmethod
+	def add_templates_if_missing(cls, wait_for_synchronization=False):
+		template_list = proxy_holder.backend_core.template_list()
 		if(template_list == []):
 			for template in test_templates:
 				tech = template['tech']
@@ -154,9 +178,9 @@ class ProxyHoldingTestCase(unittest.TestCase):
 				del template['tech']
 				del template['name']
 				attrs = template
-				self.proxy_holder.backend_core.template_create(tech, name, attrs)
+				proxy_holder.backend_core.template_create(tech, name, attrs)
 
-		template_list = self.proxy_holder.backen_core.template_list()
+		template_list = proxy_holder.backen_core.template_list()
 
 		if wait_for_synchronization:
 			synchronized_templates = 0
@@ -170,37 +194,45 @@ class ProxyHoldingTestCase(unittest.TestCase):
 					print "Waiting 5 seconds for template synchronization"
 
 
-	def remove_all_other_accounts(self):
-		for user in self.proxy_holder.backend_users.user_list():
-			if user["name"] != self.proxy_holder.username:
-				self.proxy_holder.backend_users.user_remove(user["name"])
+	@classmethod
+	def remove_all_other_accounts(cls):
+		for user in proxy_holder.backend_users.user_list():
+			if user["name"] != proxy_holder.username:
+				proxy_holder.backend_users.user_remove(user["name"])
 
-	def remove_all_profiles(self):
-		for profile in self.proxy_holder.backend_core.profile_list():
-			self.proxy_holder.backend_core.profile_remove(profile["id"])
+	@classmethod
+	def remove_all_profiles(cls):
+		for profile in proxy_holder.backend_core.profile_list():
+			proxy_holder.backend_core.profile_remove(profile["id"])
 
-	def remove_all_templates(self):
-		for template in self.proxy_holder.backend_core.template_list():
-			self.proxy_holder.backend_core.template_remove(template["id"])
+	@classmethod
+	def remove_all_templates(cls):
+		for template in proxy_holder.backend_core.template_list():
+			proxy_holder.backend_core.template_remove(template["id"])
 
-	def remove_all_networks(self):
-		for network in self.proxy_holder.backend_core.network_list():
-			self.proxy_holder.backend_core.network_remove(network["id"])
+	@classmethod
+	def remove_all_networks(cls):
+		for network in proxy_holder.backend_core.network_list():
+			proxy_holder.backend_core.network_remove(network["id"])
 
-	def remove_all_network_instances(self):
-		for network_instance in self.proxy_holder.backend_api.network_instance_list():
-			self.proxy_holder.backend_api.network_instance_remove(network_instance['id'])
+	@classmethod
+	def remove_all_network_instances(cls):
+		for network_instance in proxy_holder.backend_api.network_instance_list():
+			proxy_holder.backend_api.network_instance_remove(network_instance['id'])
 
-	def remove_all_other_sites(self):
-		for site in self.proxy_holder.backend_core.site_list():
-			self.proxy_holder.backend_core.site_remove(site["name"])
+	@classmethod
+	def remove_all_other_sites(cls):
+		for site in proxy_holder.backend_core.site_list():
+			proxy_holder.backend_core.site_remove(site["name"])
 
-	def remove_all_other_organizations(self):
-		for orga in self.proxy_holder.backend_users.organization_list():
-			if orga["name"] != self.default_organization_name:
-				self.proxy_holder.backend_api.organization_remove(orga["name"])
+	@classmethod
+	def remove_all_other_organizations(cls):
+		for orga in proxy_holder.backend_users.organization_list():
+			if orga["name"] != cls.default_organization_name:
+				proxy_holder.backend_api.organization_remove(orga["name"])
 
-	def set_user(self, username, organization, email, password, realname, flags):
+	@classmethod
+	def set_user(cls, username, organization, email, password, realname, flags):
 		"""
 		create user if missing.
 		set params if existing.
@@ -213,14 +245,14 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		:return:
 		"""
 		try:
-			self.proxy_holder.backend_users.user_create(username, organization, email, password, {
+			proxy_holder.backend_users.user_create(username, organization, email, password, {
 				"realname": realname,
 				"flags": {f: f in flags for f in userflags.iterkeys()}
 			})
 		except UserError, e:
 			if e.code != UserError.ALREADY_EXISTS:
 				raise
-			self.proxy_holder.backend_users.user_modify({
+			proxy_holder.backend_users.user_modify({
 				"organization": organization,
 				"email": email,
 				"password": password,
