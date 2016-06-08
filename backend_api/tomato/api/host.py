@@ -21,13 +21,25 @@ from ..lib.remote_info import get_host_info, get_site_info, get_host_list, HostI
 
 def host_list(site=None, organization=None):
 	"""
-	undocumented
+	Returns a list of hosts. Depending on the parameter it either returns:
+		Site given: All hosts belonging to this site
+		Organization given: All hosts belonging to this organization
+		Both given: All hosts belonging to the given site, ignoring organization
+	:param site: Site name to filter hosts belonging to this site
+	:param organization: Organization name to filter hosts belonging to this organization
+	:return: list of hosts
 	"""
 	return get_host_list(site, organization)
 
 def host_create(name, site, attrs=None):
 	"""
-	undocumented
+	Used to create a host on the given site with the provided name
+	:param name: Name of the host
+	:param site: Name of the site, the host should be located at
+	:param attrs: dict with at least two key, value pairs:
+		'rpcurl' like this: 'rpcurl': "ssl+jsonrpc://%s:8003" % host_address
+		'address'
+	:return: Returns the host info of the newly created host
 	"""
 	site_info = get_site_info(site)
 	getCurrentUserInfo().check_may_create_hosts(site_info)
@@ -36,14 +48,19 @@ def host_create(name, site, attrs=None):
 @checkauth
 def host_info(name):
 	"""
-	undocumented
+	Returns the host_info object of the host with the given name
+	:param name: name of the host
+	:return: host_info object
 	"""
 	host = get_host_info(name)
 	return host.info(update=True)
 
 def host_modify(name, attrs):
 	"""
-	undocumented
+	Modifies the host with the given name and the provided attributes
+	:param name: Name of the host
+	:param attrs: Attribute list to be changed
+	:return: host info object of the modified host
 	"""
 	host = get_host_info(name)
 	getCurrentUserInfo().check_may_modify_host(host)
@@ -59,7 +76,8 @@ def host_action(name, action, params=None): #@ReservedAssignment
 
 def host_remove(name):
 	"""
-	undocumented
+	Removes the host with the given name, if the host has no elements
+	:param name: Name of the host to be removed
 	"""
 	host = get_host_info(name)
 	getCurrentUserInfo().check_may_delete_host(host)
@@ -67,7 +85,9 @@ def host_remove(name):
 
 def host_users(name):
 	"""
-	undocumented
+	List all user that are connected to an element running on the host
+	:param name: Name of the host
+	:return: List of users
 	"""
 	getCurrentUserInfo().check_may_list_host_users(get_host_info(name))
 	return get_backend_core_proxy().host_users(name)

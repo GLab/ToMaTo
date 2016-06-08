@@ -268,6 +268,13 @@ class ProxyHoldingTestCase(unittest.TestCase):
 				proxy_holder.backend_api.organization_remove(orga["name"])
 
 	@classmethod
+	def remove_all_hosts(cls):
+		hosts = cls.proxy_holder.backend_core.host_list()
+		for host in hosts:
+				cls.proxy_holder.backend_core.host_remove(host['name'])
+
+
+	@classmethod
 	def set_user(cls, username, organization, email, password, realname, flags):
 		"""
 		create user if missing.
