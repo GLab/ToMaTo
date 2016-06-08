@@ -19,8 +19,10 @@ from ..db import *
 from ..generic import *
 from .. lib.settings import settings
 from ..lib.error import UserError, InternalError #@UnresolvedImport
+from ..lib.newcmd import aria2
+from ..lib.newcmd.util import fs
 from .. import scheduler
-import os, os.path, base64, hashlib, shutil
+import os, os.path, shutil
 
 
 kblang_options = {
@@ -99,7 +101,7 @@ class Template(Entity, BaseDocument):
 		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
-		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL())),
+		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL()), set=lambda obj, value: obj.modify_urls(value)),
 		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
 		"label": Attribute(field=label, schema=schema.String()),
 		"description": Attribute(field=description, schema=schema.String()),
@@ -135,6 +137,13 @@ class Template(Entity, BaseDocument):
 		Entity.init(self, attrs)
 		if kblang:
 			self.modify({'kblang':kblang})
+		self.fetch()
+
+	def fetch(self):
+		path = self.getPath()
+		aria2.download(self.urls, path)
+		self.size = fs.file_size(path)
+		self.checksum = "sha1:%s" % fs.checksum(path, "sha1")
 
 	def getPath(self):
 		return os.path.join(settings.get_template_dir(), PATTERNS[self.tech] % self.name)
@@ -142,6 +151,10 @@ class Template(Entity, BaseDocument):
 	def modify_kblang(self, val):
 		UserError.check(self.tech == "kvmqm", UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute for %s template: kblang" % (self.tech), data={"tech":self.tech,"attr_name":"kblang","attr_val":val})
 		self.kblang = val
+
+	def modify_urls(self, val):
+		self.urls = val
+		self.fetch()
 
 	def isReady(self):
 		try:
@@ -180,7 +193,7 @@ class Template(Entity, BaseDocument):
 	def create(cls, attrs):
 		tmpls = Template.objects.filter(name=attrs["name"], tech=attrs["tech"])
 		UserError.check(not tmpls, code=UserError.ALREADY_EXISTS,
-						message="There exists already a profile for this technology with a similar name",
+						message="There exists already a template for this technology with a similar name",
 						data={"name": attrs["name"], "tech": attrs["tech"]})
 		obj = cls()
 		try:

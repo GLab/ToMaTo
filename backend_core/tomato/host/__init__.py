@@ -380,7 +380,7 @@ class Host(Entity, BaseDocument):
 			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
-			attrs = {"tech": tpl.tech, "name": tpl.name, "preference": tpl.preference, "torrent_data": base64.b64encode(tpl.torrentData), "kblang": tpl.kblang}
+			attrs = tpl.info()
 			if not (attrs["tech"], attrs["name"]) in tpls:
 				# create resource
 				self.getProxy().resource_create("template", attrs)
@@ -388,7 +388,7 @@ class Host(Entity, BaseDocument):
 			else:
 				hTpl = tpls[(attrs["tech"], attrs["name"])]
 				isAttrs = dict(hTpl["attrs"])
-				if hTpl["attrs"]["torrent_data_hash"] != tpl.torrentDataHash:
+				if hTpl["attrs"]["checksum"] != tpl.checksum:
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
 				elif isAttrs["ready"]:
