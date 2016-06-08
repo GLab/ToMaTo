@@ -18,7 +18,6 @@
 from ..db import *
 from ..generic import *
 from .. lib.settings import settings
-from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 from .. import scheduler
 import os, os.path, base64, hashlib, shutil
@@ -44,11 +43,14 @@ class Template(Entity, BaseDocument):
 	name = StringField(required=True, unique_with='tech')
 	popularity = FloatField(default=0)
 	preference = IntField(default=0)
+	urls = ListField()
+	checksum = StringField()
+	size = IntField()
 	label = StringField()
 	description = StringField()
 	restricted = BooleanField(default=False)
 	subtype = StringField()
-	torrentData = BinaryField(db_field='torrent_data')
+	#torrentData = BinaryField(db_field='torrent_data')
 	kblang = StringField(default='en-us')
 	nlXTPInstalled = BooleanField(db_field='nlxtp_installed')
 	showAsCommon = BooleanField(db_field='show_as_common')
@@ -70,17 +72,6 @@ class Template(Entity, BaseDocument):
 		from ..elements.generic import VMElement
 		return VMElement.objects(template=self)
 
-	@property
-	def torrentDataHash(self):
-		return hashlib.md5(self.torrentData).hexdigest() if self.torrentData else None
-
-	@property
-	def size(self):
-		try:
-			return bittorrent.fileSize(self.torrentData)
-		except:
-			return -1
-
 	def getReadyInfo(self):
 		from ..host import Host
 		return {
@@ -92,8 +83,6 @@ class Template(Entity, BaseDocument):
 		}
 
 	def remove(self, **kwargs):
-		if self.tech and os.path.exists(self.getTorrentPath()):
-			os.remove(self.getTorrentPath())
 		if self.tech and os.path.exists(self.getPath()):
 			if os.path.isdir(self.getPath()):
 				shutil.rmtree(self.getPath())
@@ -110,21 +99,20 @@ class Template(Entity, BaseDocument):
 		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
+		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL())),
 		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
 		"label": Attribute(field=label, schema=schema.String()),
 		"description": Attribute(field=description, schema=schema.String()),
 		"restricted": Attribute(field=restricted, schema=schema.Bool()),
 		"subtype": Attribute(field=subtype, schema=schema.String()),
-		"torrent_data": Attribute(field=torrentData, set=lambda obj, value: obj.modify_torrent_data(value), get=lambda obj: base64.b64encode(obj.torrentData),
-			schema=schema.String()),
 		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
 			schema=schema.String(options=kblang_options.keys())),
-		"torrent_data_hash": Attribute(readOnly=True, schema=schema.String(null=True), get=lambda obj: obj.torrentDataHash),
 		"nlXTP_installed": Attribute(field=nlXTPInstalled),
 		"show_as_common": Attribute(field=showAsCommon),
 		"creation_date": Attribute(field=creationDate, schema=schema.Number(null=True)),
 		"icon": Attribute(field=icon),
-		"size": Attribute(readOnly=True, schema=schema.Int(null=False), get=lambda obj: obj.size),
+		"size": Attribute(field=size, readOnly=True, schema=schema.Int(null=False)),
+		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
 		"ready": Attribute(readOnly=True, get=getReadyInfo, schema=schema.StringMap(items={
 				'backend': schema.Bool(),
 				'hosts': schema.StringMap(items={
@@ -147,33 +135,13 @@ class Template(Entity, BaseDocument):
 		Entity.init(self, attrs)
 		if kblang:
 			self.modify({'kblang':kblang})
-		self.modify_torrent_data(base64.b64encode(self.torrentData)) #might have been set before name or tech
-				
+
 	def getPath(self):
 		return os.path.join(settings.get_template_dir(), PATTERNS[self.tech] % self.name)
 	
-	def getTorrentPath(self):
-		return self.getPath() + ".torrent"
-
 	def modify_kblang(self, val):
 		UserError.check(self.tech == "kvmqm", UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute for %s template: kblang" % (self.tech), data={"tech":self.tech,"attr_name":"kblang","attr_val":val})
 		self.kblang = val
-
-	def modify_torrent_data(self, val):
-		raw = base64.b64decode(val)
-		try:
-			info = bittorrent.torrentInfo(raw)
-		except:
-			raise UserError(code=UserError.INVALID_VALUE, message="Invalid torrent file")
-		UserError.check(not "files" in info or len(info["files"]) == 1, code=UserError.INVALID_VALUE,
-			message="Torrent must contain exactly one file")
-		self.torrentData = raw
-		if self.name and self.tech:
-			shouldName = PATTERNS[self.tech] % self.name
-			UserError.check(info["name"] == shouldName, code=UserError.INVALID_VALUE,
-				message="Torrent content must be named like the template", data={"expected_name": shouldName})
-			with open(self.getTorrentPath(), "w") as fp:
-				fp.write(raw)
 
 	def isReady(self):
 		try:
@@ -210,12 +178,10 @@ class Template(Entity, BaseDocument):
 
 	@classmethod
 	def create(cls, attrs):
-
 		tmpls = Template.objects.filter(name=attrs["name"], tech=attrs["tech"])
 		UserError.check(not tmpls, code=UserError.ALREADY_EXISTS,
 						message="There exists already a profile for this technology with a similar name",
 						data={"name": attrs["name"], "tech": attrs["tech"]})
-
 		obj = cls()
 		try:
 			obj.init(attrs)
