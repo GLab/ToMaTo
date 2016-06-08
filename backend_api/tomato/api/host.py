@@ -49,6 +49,14 @@ def host_modify(name, attrs):
 	getCurrentUserInfo().check_may_modify_host(host)
 	return host.modify(attrs)
 
+def host_action(name, action, params=None): #@ReservedAssignment
+	"""
+	undocumented
+	"""
+	if not params: params = {}
+	host = get_host_info(name)
+	return host.action(action, params)
+
 def host_remove(name):
 	"""
 	undocumented
