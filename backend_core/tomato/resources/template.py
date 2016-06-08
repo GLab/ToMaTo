@@ -20,6 +20,7 @@ from ..generic import *
 from .. lib.settings import settings
 from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError #@UnresolvedImport
+from .. import scheduler
 import os, os.path, base64, hashlib, shutil
 
 
@@ -41,6 +42,7 @@ PATTERNS = {
 class Template(Entity, BaseDocument):
 	tech = StringField(required=True)
 	name = StringField(required=True, unique_with='tech')
+	popularity = FloatField(default=0)
 	preference = IntField(default=0)
 	label = StringField()
 	description = StringField()
@@ -64,6 +66,11 @@ class Template(Entity, BaseDocument):
 		return Host.objects(templates=self)
 
 	@property
+	def elements(self):
+		from ..elements.generic import VMElement
+		return VMElement.objects(template=self)
+
+	@property
 	def torrentDataHash(self):
 		return hashlib.md5(self.torrentData).hexdigest() if self.torrentData else None
 
@@ -84,7 +91,7 @@ class Template(Entity, BaseDocument):
 			}
 		}
 
-	def remove(self):
+	def remove(self, **kwargs):
 		if self.tech and os.path.exists(self.getTorrentPath()):
 			os.remove(self.getTorrentPath())
 		if self.tech and os.path.exists(self.getPath()):
@@ -102,6 +109,7 @@ class Template(Entity, BaseDocument):
 		"id": IdAttribute(),
 		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
 		"name": Attribute(field=name, schema=schema.Identifier()),
+		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
 		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
 		"label": Attribute(field=label, schema=schema.String()),
 		"description": Attribute(field=description, schema=schema.String()),
@@ -179,6 +187,14 @@ class Template(Entity, BaseDocument):
 		info = Entity.info(self)
 		return info
 
+	def on_selected(self):
+		self.popularity += 1
+		self.save()
+
+	def update_popularity(self):
+		self.popularity = 0.9 * (self.popularity + self.elements.count())
+		self.save()
+
 	@classmethod
 	def get(cls, tech, name):
 		try:
@@ -208,3 +224,9 @@ class Template(Entity, BaseDocument):
 		except:
 			obj.remove()
 			raise
+
+def update_popularity():
+	for t in Template.objects():
+		t.update_popularity()
+
+scheduler.scheduleRepeated(24*60*60, update_popularity)
