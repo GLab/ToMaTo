@@ -200,6 +200,11 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			if orga["name"] != self.default_organization_name:
 				self.proxy_holder.backend_api.organization_remove(orga["name"])
 
+	def remove_all_hosts(self):
+		hosts = self.proxy_holder.backend_core.host_list()
+		for host in hosts:
+				self.proxy_holder.backend_core.host_remove(host['name'])
+
 	def set_user(self, username, organization, email, password, realname, flags):
 		"""
 		create user if missing.
