@@ -37,21 +37,23 @@ import time
 
 class TemplateTestCase(ProxyHoldingTestCase):
 
-	def setUp(self):
-		self.remove_all_profiles()
-		self.remove_all_other_accounts()
+	@classmethod
+	def setUpClass(cls):
+		cls.remove_all_profiles()
+		cls.remove_all_other_accounts()
 
 		#Create user without permission to create profiles
 		testuser_username = "testuser"
 		testuser_password = "123"
-		testuser_organization = self.default_organization_name
+		testuser_organization = cls.default_organization_name
 		testuser_attrs = {"realname": "Test User",
 			"email": "test@example.com",
 			"flags": {}
 		}
-		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
+		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
+	def setUp(self):
 
 		#Create template
 		self.testtemplate_attrs = self.test_temps[0].copy()
@@ -69,9 +71,13 @@ class TemplateTestCase(ProxyHoldingTestCase):
 
 
 	def tearDown(self):
-		self.remove_all_profiles()
-		self.remove_all_other_accounts()
 		self.remove_all_templates()
+
+	@classmethod
+	def tearDownClass(cls):
+		cls.remove_all_profiles()
+		cls.remove_all_other_accounts()
+
 
 	#Get template_list and check for correctness
 	def test_template_list(self):

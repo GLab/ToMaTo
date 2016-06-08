@@ -223,7 +223,7 @@ def topology_set_permission(id, user, role): #@ReservedAssignment
 	"""
 	top = _getTopology(id)
 	top.set_role(user, role)
-	
+
 def topology_usage(id): #@ReservedAssignment
 	"""
 	Retrieves aggregated usage statistics for a topology.

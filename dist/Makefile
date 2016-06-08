@@ -1,4 +1,4 @@
-MODULES = hostserver meta web backend cli
+MODULES = hostmanager meta web backend cli
 
 default: build
 

@@ -33,33 +33,41 @@ covered API functions:
 
 class ProfileTestCase(ProxyHoldingTestCase):
 
+	@classmethod
+	def setUpClass(cls):
+		cls.remove_all_other_accounts()
+
+		#Create user without permission to create profiles
+		testuser_username = "testuser"
+		testuser_password = "123"
+		testuser_organization = cls.default_organization_name
+		testuser_attrs = {"realname": "Test User",
+			"email": "test@example.com",
+			"flags": {}
+		}
+		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
+		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+
 	def setUp(self):
 		self.remove_all_profiles()
-		self.remove_all_other_accounts()
 
 		#Create test profile for openvz
 		self.testprofile_tech = "openvz"
 		self.testprofile_name = "normal"
 		self.testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
-		#Create user without permission to create profiles
-		testuser_username = "testuser"
-		testuser_password = "123"
-		testuser_organization = self.default_organization_name
-		testuser_attrs = {"realname": "Test User",
-			"email": "test@example.com",
-			"flags": {}
-		}
-		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 
 		self.proxy_holder.backend_core.profile_create(self.testprofile_tech,self.testprofile_name, self.testprofile_args)
 		self.testprofile_id = self.proxy_holder.backend_core.profile_id(self.testprofile_tech, self.testprofile_name)
 
+	@classmethod
+	def tearDownClass(cls):
+		cls.remove_all_other_accounts()
+		
+
 	def tearDown(self):
 		self.remove_all_profiles()
-		self.remove_all_other_accounts()
 
 
 	#Receive a list by calling profile_list() without any parameters and check correctness

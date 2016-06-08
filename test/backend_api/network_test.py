@@ -33,24 +33,25 @@ import time
 
 class NetworkTestCase(ProxyHoldingTestCase):
 
-	def setUp(self):
-		self.remove_all_other_accounts()
-		self.remove_all_network_instances()
-		self.remove_all_networks()
+	@classmethod
+	def setUpClass(cls):
+		cls.remove_all_other_accounts()
 
-		#Create user without permission to create, remove or modify networks
+		# Create user without permission to create, remove or modify networks
 		testuser_username = "testuser"
 		testuser_password = "123"
-		testuser_organization = self.default_organization_name
+		testuser_organization = cls.default_organization_name
 		testuser_attrs = {"realname": "Test User",
-			"email": "test@example.com",
-			"flags": {}
-		}
-		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+						  "email": "test@example.com",
+						  "flags": {}
+						  }
+		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization,
+													 testuser_attrs)
+		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
-
-
+	def setUp(self):
+		self.remove_all_network_instances()
+		self.remove_all_networks()
 
 		#Create network
 		self.testnetwork_kind = "internet"
@@ -63,7 +64,6 @@ class NetworkTestCase(ProxyHoldingTestCase):
 				   'preference': 100,
 		}
 		self.proxy_holder.backend_api.network_create(self.testnetwork_kind,self.testnetwork_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 		self.testnetwork2_kind = "internet/small"
 		self.testnetwork2_attrs = {
@@ -79,11 +79,14 @@ class NetworkTestCase(ProxyHoldingTestCase):
 
 		self.testnetwork_id = self.proxy_holder.backend_core.network_list()[0]['id']
 
+	@classmethod
+	def tearDownClass(cls):
+		cls.remove_all_other_accounts()
 
 	def tearDown(self):
-		self.remove_all_other_accounts()
 		self.remove_all_network_instances()
 		self.remove_all_networks()
+
 
 
 	#Get network_list and check for correctness
@@ -214,24 +217,27 @@ class NetworkTestCase(ProxyHoldingTestCase):
 
 class NetworkTestWithHosts(ProxyHoldingTestCase):
 
-	def setUp(self):
-		self.remove_all_other_accounts()
-		self.remove_all_network_instances()
-		self.remove_all_networks()
-
+	@classmethod
+	def setUpClass(cls):
+		cls.remove_all_other_accounts()
 		#Create user without permission to create, remove or modify networks
 		testuser_username = "testuser"
 		testuser_password = "123"
-		testuser_organization = self.default_organization_name
+		testuser_organization = cls.default_organization_name
 		testuser_attrs = {"realname": "Test User",
 			"email": "test@example.com",
 			"flags": {}
 		}
-		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
+		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
+		#We need some hosts to test our network instances
+		for host_address in cls.test_host_addresses:
+			cls.add_host_if_missing(host_address)
 
-
+	def setUp(self):
+		self.remove_all_network_instances()
+		self.remove_all_networks()
 
 		#Create network
 		self.testnetwork_kind = "internet"
@@ -244,7 +250,6 @@ class NetworkTestWithHosts(ProxyHoldingTestCase):
 				   'preference': 100,
 		}
 		self.proxy_holder.backend_api.network_create(self.testnetwork_kind,self.testnetwork_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 		self.testnetwork2_kind = "internet/small"
 		self.testnetwork2_attrs = {
@@ -260,19 +265,21 @@ class NetworkTestWithHosts(ProxyHoldingTestCase):
 
 		self.testnetwork_id = self.proxy_holder.backend_core.network_list()[0]['id']
 
-		#We need some hosts to test our network instances
-		for host_address in self.test_host_addresses:
-			self.add_host_if_missing(host_address)
+	@classmethod
+	def tearDownClass(cls):
+		cls.remove_all_other_accounts()
+
+		for host_address in cls.test_host_addresses:
+			cls.remove_host_if_available(host_address)
+
+		cls.remove_all_other_sites()
 
 	def tearDown(self):
-		self.remove_all_other_accounts()
+
 		self.remove_all_network_instances()
 		self.remove_all_networks()
 
-		for host_address in self.test_host_addresses:
-			self.remove_host_if_available(host_address)
 
-		self.remove_all_other_sites()
 
 	def test_network_modify_change_kind_with_existing_instances(self):
 
@@ -344,26 +351,30 @@ class NetworkTestWithHosts(ProxyHoldingTestCase):
 
 class NetworkInstanceTestCase(ProxyHoldingTestCase):
 
-	def setUp(self):
-		self.remove_all_other_accounts()
-		self.remove_all_network_instances()
-		self.remove_all_networks()
+	@classmethod
+	def setUpClass(cls):
+		cls.remove_all_other_accounts()
 
-		#Create user without permission to create, remove or modify networks
+		# We need some hosts to test our network instances
+		for host_address in cls.test_host_addresses:
+			cls.add_host_if_missing(host_address)
+
+		# Create user without permission to create, remove or modify networks
 		testuser_username = "testuser"
 		testuser_password = "123"
-		testuser_organization = self.default_organization_name
+		testuser_organization = cls.default_organization_name
 		testuser_attrs = {"realname": "Test User",
-			"email": "test@example.com",
-			"flags": {}
-		}
-		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+						  "email": "test@example.com",
+						  "flags": {}
+						  }
+		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization,
+													 testuser_attrs)
+		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
-		#We need some hosts to test our network instances
-		for host_address in self.test_host_addresses:
-			self.add_host_if_missing(host_address)
 
+	def setUp(self):
+		self.remove_all_network_instances()
+		self.remove_all_networks()
 
 		#Create network
 		self.testnetwork_network = "internet"
@@ -388,14 +399,11 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 
 		self.proxy_holder.backend_api.network_create(self.testnetwork_network,self.testnetwork_attrs)
 		self.proxy_holder.backend_api.network_create(self.testnetwork2_network,self.testnetwork2_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 		self.testnetwork_id = self.proxy_holder.backend_core.network_list()[0]['id']
 		self.testnetwork2_id = self.proxy_holder.backend_core.network_list()[1]['id']
 
 		#Create network instances
-
-
 		self.testnetwork_instance_network = self.testnetwork_network
 		self.testnetwork_instance_host = self.get_host_name(self.test_host_addresses[0])
 		self.testnetwork_instance_host2 = self.get_host_name(self.test_host_addresses[1])
@@ -412,16 +420,23 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 
 		self.proxy_holder.backend_api.network_instance_create(self.testnetwork2_instance_network, self.testnetwork2_instance_host, self.testnetwork2_instance_attrs)
 
+
+	@classmethod
+	def tearDownClass(cls):
+		cls.remove_all_other_accounts()
+
+		for host_address in cls.test_host_addresses:
+			cls.remove_host_if_available(host_address)
+
+		cls.remove_all_other_sites()
+
+
 	def tearDown(self):
-		self.remove_all_other_accounts()
 		self.remove_all_network_instances()
 		self.remove_all_networks()
 
-		for host_address in self.test_host_addresses:
-			self.remove_host_if_available(host_address)
 
 
-		self.remove_all_other_sites()
 
 	#Get a list of all network_instances and check for correctness
 	def test_network_instance_list(self):
