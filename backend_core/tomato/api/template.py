@@ -106,18 +106,13 @@ def template_id(tech, name):
 	return str(Template.objects.get(tech=tech, name=name).id)
 
 @wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
-def template_info(id, include_torrent_data=False): #@ReservedAssignment
+def template_info(id): #@ReservedAssignment
 	"""
 	Retrieves information about a template.
 
 	Parameter *id*:
 	  The parameter *id* must be a string identifying one of the existing
 	  templates.
-
-	Parameter *include_torrent_data*:
-	  boolean
-	  if true, the return value includes the base64-encoded torrent file.
-	  This may throw an error when a user without access to it tries to access a restricted template.
 
 	Return value:
 	  The return value of this method is a dict containing information
@@ -128,4 +123,4 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	  exist* is raised.
 	"""
 	res = _getTemplate(id)
-	return res.info(include_torrent_data=include_torrent_data)
+	return res.info()

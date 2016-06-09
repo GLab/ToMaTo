@@ -6,7 +6,6 @@ class Aria2Error(Error):
 	CODE_UNKNOWN="aria2.unknown"
 	CODE_UNSUPPORTED="aria2.unsupported"
 	CODE_DEST_PATH_DOES_NOT_EXIST="aria2.dest_path_does_not_exist"
-	CODE_DEST_FILE_EXISTS = "aria2.dest_file_exists"
 
 
 @cache.cached(timeout=SUPPORT_CHECK_PERIOD)
@@ -36,10 +35,9 @@ def checkSupport():
 def download(urls, dest, hash=None):
 	urls = params.convert(urls, convert=list)
 	dest = params.convert(dest, convert=os.path.realpath)
-	hash = params.convert(hash, convert=str)
+	hash = params.convert(hash, convert=str, null=True)
 	path, fname = os.path.split(dest)
 	Aria2Error.check(os.path.exists(path), Aria2Error.CODE_DEST_PATH_DOES_NOT_EXIST, "Destination path does not exit", {"path": path})
-	Aria2Error.check(not os.path.exists(dest), Aria2Error.CODE_DEST_FILE_EXISTS, "Destination file exists", {"file": dest})
 	args = ["aria2c", "-d", path, "-o", fname, "-c", "-V", "--auto-file-renaming=false", "--allow-overwrite=true"]
 	if hash:
 		args.append("--checksum=%s" % hash)

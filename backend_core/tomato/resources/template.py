@@ -22,7 +22,7 @@ from ..lib.error import UserError, InternalError #@UnresolvedImport
 from ..lib.newcmd import aria2
 from ..lib.newcmd.util import fs
 from .. import scheduler
-import os, os.path, shutil
+import os, os.path, shutil, threading
 
 
 kblang_options = {
@@ -52,7 +52,6 @@ class Template(Entity, BaseDocument):
 	description = StringField()
 	restricted = BooleanField(default=False)
 	subtype = StringField()
-	#torrentData = BinaryField(db_field='torrent_data')
 	kblang = StringField(default='en-us')
 	nlXTPInstalled = BooleanField(db_field='nlxtp_installed')
 	showAsCommon = BooleanField(db_field='show_as_common')
@@ -137,13 +136,14 @@ class Template(Entity, BaseDocument):
 		Entity.init(self, attrs)
 		if kblang:
 			self.modify({'kblang':kblang})
-		self.fetch()
+		threading.Thread(target=self.fetch).start()
 
 	def fetch(self):
 		path = self.getPath()
 		aria2.download(self.urls, path)
 		self.size = fs.file_size(path)
 		self.checksum = "sha1:%s" % fs.checksum(path, "sha1")
+		self.save()
 
 	def getPath(self):
 		return os.path.join(settings.get_template_dir(), PATTERNS[self.tech] % self.name)
@@ -154,7 +154,7 @@ class Template(Entity, BaseDocument):
 
 	def modify_urls(self, val):
 		self.urls = val
-		self.fetch()
+		threading.Thread(target=self.fetch).start()
 
 	def isReady(self):
 		try:
