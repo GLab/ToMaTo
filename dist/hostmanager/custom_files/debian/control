@@ -9,7 +9,7 @@ Package: tomato-hostmanager
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python (>=2.6),
  python-django (>=1.2), python-django-south (>=0.7), python-psycopg2, postgresql, dbconfig-common,
- daemon, bittorrent, openssl, ssl-cert, python-openssl, websockify, ebtables
+ daemon, aria2, openssl, ssl-cert, python-openssl, websockify, ebtables, busybox
 Recommends: ${misc:Depends}, pve-qemu-kvm, vzctl, vzdump, bridge-utils, iproute,
  tinc, ucspi-tcp, rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.5), vtun,
  logrotate, dosfstools, tomato-updater, ipspy, vpncloud-tomato

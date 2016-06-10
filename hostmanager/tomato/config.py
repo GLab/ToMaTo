@@ -167,12 +167,7 @@ This field defines the maximum element timeout value which also is the default
 timeout.
 """
 
-BITTORRENT_RESTART = 60 * 30 # 30 minutes
-"""
-This field defines how often the bittorrent client should be restarted.
-"""
-
-BITTORRENT_PORT_RANGE = (8010, 8020)
+HTTPD_PORT = 8010
 
 RESOURCES = {
 	'port': xrange(6000, 7000),

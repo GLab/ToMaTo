@@ -136,9 +136,11 @@ class Template(Entity, BaseDocument):
 		Entity.init(self, attrs)
 		if kblang:
 			self.modify({'kblang':kblang})
-		threading.Thread(target=self.fetch).start()
+		self.fetch(detached=True)
 
-	def fetch(self):
+	def fetch(self, detached=False):
+		if detached:
+			return threading.Thread(target=self.fetch).start()
 		path = self.getPath()
 		aria2.download(self.urls, path)
 		self.size = fs.file_size(path)
@@ -154,7 +156,7 @@ class Template(Entity, BaseDocument):
 
 	def modify_urls(self, val):
 		self.urls = val
-		threading.Thread(target=self.fetch).start()
+		self.fetch(detached=True)
 
 	def isReady(self):
 		try:
