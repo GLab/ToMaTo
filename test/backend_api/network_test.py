@@ -223,7 +223,6 @@ class NetworkTestWithHosts(ProxyHoldingTestCase):
 		cls.remove_all_other_accounts()
 		cls.remove_all_hosts()
 		#We need some hosts to test our network instances
-		print cls.test_host_addresses
 		for host_address in cls.test_host_addresses:
 			cls.add_host_if_missing(host_address)
 
