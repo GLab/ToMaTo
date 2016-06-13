@@ -163,6 +163,7 @@ class InfoObj(ExistenceCheck):
 		:return: None
 		"""
 		self._remove()
+		self.invalidate_list()
 		self.set_exists(False)
 
 
@@ -340,7 +341,6 @@ class OrganizationInfo(InfoObj):
 
 	def _remove(self):
 		get_backend_users_proxy().organization_remove(self.name)
-		get_organization_list.invalidate()
 
 
 class TopologyInfo(ActionObj):
@@ -451,7 +451,8 @@ class SiteInfo(InfoObj):
 	@staticmethod
 	def create(name, organization_name, label, attrs):
 		res = get_backend_core_proxy().site_create(name, organization_name, label, attrs)
-		get_network_instance_list.invalidate()
+		get_site_list.invalidate()
+
 		return res
 
 	def invalidate_list(self):
@@ -489,6 +490,7 @@ class SiteInfo(InfoObj):
 	def _remove(self):
 		orga = self.get_organization_name()
 		get_backend_core_proxy().site_remove(self.name)
+		self.invalidate_list()
 		get_organization_info(orga).invalidate_info()
 
 	def get_organization_name(self):
