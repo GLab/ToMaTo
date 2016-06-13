@@ -131,7 +131,12 @@ class Host(Entity, BaseDocument):
 		from ..resources.network import NetworkInstance
 		return NetworkInstance.objects(host=self)
 
-	ACTIONS = {}
+
+	def action_forced_update(self):
+		self.update()
+		self.synchronizeResources(True)
+
+	ACTIONS = {"forced_update": Action(fn=action_forced_update)}
 	ATTRIBUTES = {
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"address": Attribute(field=address, schema=schema.String(regex="\d+\.\d+.\d+.\d+")),
@@ -349,8 +354,8 @@ class Host(Entity, BaseDocument):
 	def grantUrl(self, grant, action):
 		return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
 
-	def synchronizeResources(self):
-		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL]:
+	def synchronizeResources(self, forced=False):
+		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL] and not forced:
 			return
 		if not self.enabled:
 			return

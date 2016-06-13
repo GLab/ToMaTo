@@ -37,6 +37,7 @@ class NetworkTestCase(ProxyHoldingTestCase):
 	def setUpClass(cls):
 		cls.remove_all_other_accounts()
 
+
 		# Create user without permission to create, remove or modify networks
 		testuser_username = "testuser"
 		testuser_password = "123"
@@ -220,6 +221,11 @@ class NetworkTestWithHosts(ProxyHoldingTestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.remove_all_other_accounts()
+		cls.remove_all_hosts()
+		#We need some hosts to test our network instances
+		for host_address in cls.test_host_addresses:
+			cls.add_host_if_missing(host_address)
+
 		#Create user without permission to create, remove or modify networks
 		testuser_username = "testuser"
 		testuser_password = "123"
@@ -231,9 +237,7 @@ class NetworkTestWithHosts(ProxyHoldingTestCase):
 		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
 		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
-		#We need some hosts to test our network instances
-		for host_address in cls.test_host_addresses:
-			cls.add_host_if_missing(host_address)
+
 
 	def setUp(self):
 		self.remove_all_network_instances()
@@ -268,14 +272,10 @@ class NetworkTestWithHosts(ProxyHoldingTestCase):
 	@classmethod
 	def tearDownClass(cls):
 		cls.remove_all_other_accounts()
-
-		for host_address in cls.test_host_addresses:
-			cls.remove_host_if_available(host_address)
-
+		cls.remove_all_hosts()
 		cls.remove_all_other_sites()
 
 	def tearDown(self):
-
 		self.remove_all_network_instances()
 		self.remove_all_networks()
 
@@ -354,7 +354,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.remove_all_other_accounts()
-
+		cls.remove_all_hosts()
 		# We need some hosts to test our network instances
 		for host_address in cls.test_host_addresses:
 			cls.add_host_if_missing(host_address)
@@ -424,10 +424,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 	@classmethod
 	def tearDownClass(cls):
 		cls.remove_all_other_accounts()
-
-		for host_address in cls.test_host_addresses:
-			cls.remove_host_if_available(host_address)
-
+		cls.remove_all_hosts()
 		cls.remove_all_other_sites()
 
 

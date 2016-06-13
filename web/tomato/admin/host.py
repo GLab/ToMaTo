@@ -190,3 +190,12 @@ def remove(api, request, name):
 			return HttpResponseRedirect(reverse('tomato.admin.host.list'))
 	form = RemoveHostForm(name=name)
 	return form.create_response(request)
+
+@wrap_rpc
+def forced_update(api, request, name):
+	host = api.host_action("forced_update", name)
+	host['element_types'].sort()
+	host['connection_types'].sort()
+	site = api.site_info(host["site"])
+	organization = api.organization_info(host["organization"])
+	return render(request, "host/info.html", {'host': host, 'organization': organization, 'site': site})
