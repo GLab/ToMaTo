@@ -8,8 +8,8 @@ time = "0.1"
 fnv = "1"
 yaml-rust = "0.3"
 log = "0.3"
-signal = "0.1"
-nix = "0.5"
+signal = "0.2"
+nix = "0.6"
 libc = "0.2"
 sslrpc2 = { path="../shared-rust/sslrpc2" }
 

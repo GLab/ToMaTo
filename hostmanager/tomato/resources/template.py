@@ -67,8 +67,7 @@ class Template(resources.Resource):
 			return threading.Thread(target=self.fetch).start()
 		path = self.getPath()
 		aria2.download(self.urls, path)
-		self.size = fs.file_size(path)
-		self.checksum = "sha1:%s" % fs.checksum(path, "sha1")
+		self.ready = True
 		self.save()
 
 	def upcast(self):
