@@ -17,7 +17,7 @@ import lib as tomato
 from lib.error import UserError
 from lib.userflags import flags as userflags
 import json
-import os, base64, hashlib
+import os, base64, hashlib, copy
 
 
 class InternalMethodProxy(object):
@@ -88,24 +88,28 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	"""
 
 
-
+	"""
+	Proxyholder for admin user
+	"""
+	proxy_holder = proxy_holder
 	"""
 	ProxyHolder for unqualified user (used in most TestCases for unauthorized access)
 	"""
-	proxy_holder = proxy_holder
 	proxy_holder_tester = None
+
+
 	host_site_name = "testhosts"
 	default_organization_name = "others"
 	default_user_name = "admin"
 	test_host_addresses = test_hosts
-	test_temps = test_templates
+	test_temps = copy.deepcopy(test_templates)
 
 
 	def __init__(self, methodName='runTest'):
 		super(ProxyHoldingTestCase, self).__init__(methodName)
 		self.proxy_holder = proxy_holder
 		self.test_host_addresses = test_hosts
-		self.test_temps = test_templates
+		self.test_temps = copy.deepcopy(test_templates)
 		self.host_site_name = "testhosts"
 		self.default_organization_name = "others"
 		self.default_user_name = "admin"
@@ -190,7 +194,9 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 		#If we want to wait with our tests till the templates are synchronized, we speed it up a little bit
 		if wait_for_synchronization:
-			for template in test_templates_with_path:
+			#We need the filepath, so use the second version
+			templates = test_templates_with_path
+			for template in templates:
 				PATTERNS = {
 					"kvmqm": "%s.qcow2",
 					"openvz": "%s.tar.gz",
@@ -199,11 +205,11 @@ class ProxyHoldingTestCase(unittest.TestCase):
 				hash = hashlib.md5(base64.b64decode(template["torrent_data"])).hexdigest()
 				hash_name = PATTERNS[template["tech"]] % hash
 
-				print "Copying template "+template["name"]+"("+hash+") to..."
+				#print "Copying template "+template["name"]+"("+hash+") to..."
 
 				#Use rsync to copy every file to the hosts
 				for host in cls.test_host_addresses:
-					print "... "+host
+					#print "... "+host
 					from subprocess import call
 					call(["rsync", template["path_to_file"], "root@"+host+":/var/lib/tomato/templates/"+hash_name])
 
@@ -253,8 +259,8 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	@classmethod
 	def remove_all_network_instances(cls):
-		for network_instance in proxy_holder.backend_api.network_instance_list():
-			proxy_holder.backend_api.network_instance_remove(network_instance['id'])
+		for network_instance in proxy_holder.backend_core.network_instance_list():
+			proxy_holder.backend_core.network_instance_remove(network_instance['id'])
 
 	@classmethod
 	def remove_all_other_sites(cls):
@@ -263,16 +269,14 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	@classmethod
 	def remove_all_other_organizations(cls):
-		for orga in proxy_holder.backend_users.organization_list():
+		for orga in proxy_holder.backend_api.organization_list():
 			if orga["name"] != cls.default_organization_name:
 				proxy_holder.backend_api.organization_remove(orga["name"])
 
 	@classmethod
 	def remove_all_hosts(cls):
-		hosts = cls.proxy_holder.backend_core.host_list()
-		for host in hosts:
-				cls.proxy_holder.backend_core.host_remove(host['name'])
-
+		for host in proxy_holder.backend_core.host_list():
+			proxy_holder.backend_core.host_remove(host["name"])
 
 	@classmethod
 	def set_user(cls, username, organization, email, password, realname, flags):

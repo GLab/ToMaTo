@@ -328,7 +328,7 @@ class OrganizationInfo(InfoObj):
 		return get_backend_users_proxy().organization_info(self.name)
 
 	def get_organization_name(self):
-		return self.get_organization_name()
+		return self.name
 
 	def _check_exists(self):
 		if self._info is not None:
@@ -340,6 +340,7 @@ class OrganizationInfo(InfoObj):
 
 	def _remove(self):
 		get_backend_users_proxy().organization_remove(self.name)
+		get_organization_list.invalidate()
 
 
 class TopologyInfo(ActionObj):
