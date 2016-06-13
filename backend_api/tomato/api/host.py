@@ -68,7 +68,11 @@ def host_modify(name, attrs):
 
 def host_action(name, action, params=None): #@ReservedAssignment
 	"""
-	undocumented
+	Performs an action on the host.
+	:param name: Name of the host on which the action should be performed
+	:param action: Action which should be executed
+	:param params: Dict which contains parameters for the action
+	:return: This method returns the result of the action.
 	"""
 	if not params: params = {}
 	host = get_host_info(name)
