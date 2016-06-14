@@ -186,8 +186,8 @@ def get_site_pairs():
 				continue
 			if not siteB.hosts.count():
 				continue
-			pairs.add((siteA.name, siteB.name))
-		pairs.add((siteA.name, siteA.name))
+			pairs.add((siteA, siteB))
+		pairs.add((siteA, siteA))
 	return pairs
 
 

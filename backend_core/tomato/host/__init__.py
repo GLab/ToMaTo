@@ -385,18 +385,19 @@ class Host(Entity, BaseDocument):
 			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
-			attrs = {"tech": tpl.tech, "name": tpl.name, "preference": tpl.preference, "torrent_data": base64.b64encode(tpl.torrentData), "kblang": tpl.kblang}
+			attrs = tpl.info()
 			if not (attrs["tech"], attrs["name"]) in tpls:
 				# create resource
+				attrs["urls"] = tpl.all_urls
 				self.getProxy().resource_create("template", attrs)
 				logging.logMessage("template create", category="host", name=self.name, template=attrs)
 			else:
 				hTpl = tpls[(attrs["tech"], attrs["name"])]
-				isAttrs = dict(hTpl["attrs"])
-				if hTpl["attrs"]["torrent_data_hash"] != tpl.torrentDataHash:
+				if hTpl["attrs"]["checksum"] != tpl.checksum:
+					attrs["urls"] = tpl.all_urls
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
-				elif isAttrs["ready"]:
+				elif hTpl["attrs"]["ready"]:
 					avail.append(tpl)
 		self.templates = avail
 		logging.logMessage("resource_sync end", category="host", name=self.name)
@@ -783,6 +784,7 @@ def synchronizeHost(host_name):
 			host.synchronizeResources()
 		except:
 			print >>sys.stderr, "Error updating host information from %s" % host
+			traceback.print_exc()
 			wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
 		host.checkProblems()
 	finally:

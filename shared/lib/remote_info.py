@@ -452,7 +452,6 @@ class SiteInfo(InfoObj):
 	def create(name, organization_name, label, attrs):
 		res = get_backend_core_proxy().site_create(name, organization_name, label, attrs)
 		get_site_list.invalidate()
-
 		return res
 
 	def invalidate_list(self):

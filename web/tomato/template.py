@@ -63,13 +63,13 @@ class TemplateForm(BootstrapForm):
 	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
 	icon = forms.URLField(label="Icon", help_text="URL of a 32x32 icon to use for elements of this template, leave empty to use the default icon", required=False)
 	kblang = forms.CharField(max_length=50,label="Keyboard Layout",widget = forms.widgets.Select(choices=kblang_options), help_text="Only for KVM templates", required=False)
+	urls = forms.CharField(widget = forms.Textarea, required=True)
 	def __init__(self, *args, **kwargs):
 		super(TemplateForm, self).__init__(*args, **kwargs)
 		self.fields['creation_date'].initial=datetime.date.today()
 		self.fields['kblang'].initial="en_US"
 	
 class AddTemplateForm(TemplateForm):
-	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="http://tomato.readthedocs.org/en/latest/docs/templates" target="_blank">Help</a>')
 	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
 	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=techs_choices()))
 	def __init__(self, *args, **kwargs):
@@ -88,7 +88,7 @@ class AddTemplateForm(TemplateForm):
             'kblang',
             'icon',
             'creation_date',
-            'torrentfile',
+			'urls',
             Buttons.cancel_add
         )
 	def is_valid(self):
@@ -117,7 +117,8 @@ class EditTemplateForm(TemplateForm):
 				'icon',
 	            'creation_date',
 	            'kblang',
-	            Buttons.cancel_save
+				'urls',
+				Buttons.cancel_save
 	        )
 		else:
 			del self.fields['kblang']
@@ -132,24 +133,10 @@ class EditTemplateForm(TemplateForm):
 	            'nlXTP_installed',
 				'icon',
 	            'creation_date',
-	            Buttons.cancel_save
+				'urls',
+				Buttons.cancel_save
 	        )
 	
-class ChangeTemplateTorrentForm(BootstrapForm):
-	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}))
-	torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')	
-	def __init__(self, res_id, *args, **kwargs):
-		super(ChangeTemplateTorrentForm, self).__init__(*args, **kwargs)
-		self.fields['creation_date'].initial=datetime.date.today()
-		self.helper.form_action = reverse(edit_torrent, kwargs={"res_id": res_id})
-		self.helper.layout = Layout(
-            'res_id',
-            'creation_date',
-            'torrentfile',
-            Buttons.cancel_save
-        )
-
 @wrap_rpc
 def list(api, request, tech):
 	templ_list = api.template_list()
@@ -173,35 +160,32 @@ def info(api, request, res_id):
 
 @wrap_rpc
 def add(api, request, tech=None):
-	message_after = '<h2>Tracker URL</h2>	The torrent tracker of this backend is:	<pre><tt>'+serverInfo()["TEMPLATE_TRACKER_URL"]+'</tt></pre>'
 	if request.method == 'POST':
 		form = AddTemplateForm(request.POST, request.FILES)
 		if form.is_valid():
 			formData = form.cleaned_data
 			creation_date = formData['creation_date']
-			f = request.FILES['torrentfile']
-			torrent_data = base64.b64encode(f.read())
 			attrs = {	'label':formData['label'],
 						'subtype':formData['subtype'],
 						'preference':formData['preference'],
 						'restricted': formData['restricted'],
-						'torrent_data':torrent_data,
 						'description':formData['description'],
 						'nlXTP_installed':formData['nlXTP_installed'],
 						'creation_date':dateToTimestamp(creation_date) if creation_date else None,
 						'icon':formData['icon'],
-						'show_as_common':formData['show_as_common']}
+						'show_as_common':formData['show_as_common'],
+						'urls': formData['urls'].splitlines()}
 			if formData['tech'] == "kvmqm":
 				attrs['kblang'] = formData['kblang']
 			res = api.template_create(formData['tech'], formData['name'], attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
 		else:
-			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
+			return render(request, "form.html", {'form': form, "heading":"Add Template"})
 	else:
 		form = AddTemplateForm()
 		if tech:
 			form.fields['tech'].initial = tech
-		return render(request, "form.html", {'form': form, "heading":"Add Template", 'hide_errors':True, 'message_after':message_after})
+		return render(request, "form.html", {'form': form, "heading":"Add Template", 'hide_errors':True})
 
 @wrap_rpc
 def remove(api, request, res_id=None):
@@ -213,29 +197,6 @@ def remove(api, request, res_id=None):
 	form = RemoveConfirmForm.build(reverse("tomato.template.remove", kwargs={"res_id": res_id}))
 	res = api.template_info(res_id)
 	return render(request, "form.html", {"heading": "Remove Template", "message_before": "Are you sure you want to remove the template '"+res["name"]+"'?", 'form': form})
-
-@wrap_rpc
-def edit_torrent(api, request, res_id=None):
-	if request.method=='POST':
-		form = ChangeTemplateTorrentForm(res_id, request.POST,request.FILES)
-		if form.is_valid():
-			formData = form.cleaned_data
-			f = request.FILES['torrentfile']
-			torrent_data = base64.b64encode(f.read())
-			res_info = api.template_info(formData['res_id'])
-			creation_date = formData['creation_date']
-			api.template_modify(formData["res_id"],{'torrent_data':torrent_data,
-													'creation_date':dateToTimestamp(creation_date) if creation_date else None})
-			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
-		label = request.POST["label"]
-		UserError.check(label, UserError.INVALID_DATA, "Form transmission failed.")
-		return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+label+"' ("+request.POST["tech"]+")"})
-	else:
-		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
-		res_info = api.template_info(res_id)
-		form = ChangeTemplateTorrentForm(res_id, {'res_id': res_id})
-		return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['label']+"' ("+res_info['tech']+")"})
-		
 
 @wrap_rpc
 def edit(api, request, res_id=None):
@@ -253,7 +214,8 @@ def edit(api, request, res_id=None):
 						'creation_date':dateToTimestamp(creation_date) if creation_date else None,
 						'nlXTP_installed':formData['nlXTP_installed'],
 						'icon':formData['icon'],
-						'show_as_common':formData['show_as_common']}
+						'show_as_common':formData['show_as_common'],
+						'urls': formData['urls'].splitlines()}
 			if res_inf['tech'] == "kvmqm":
 				attrs['kblang'] = formData['kblang']
 			api.template_modify(res_id,attrs)
@@ -265,15 +227,6 @@ def edit(api, request, res_id=None):
 		UserError.check(res_id, UserError.INVALID_DATA, "No resource specified.")
 		res_inf['res_id'] = res_id
 		res_inf['creation_date'] = datetime.date.fromtimestamp(float(res_inf['creation_date'] or "0.0"))
+		res_inf['urls'] = "\n".join(res_inf['urls'])
 		form = EditTemplateForm(res_id, (res_inf['tech']=="kvmqm"), res_inf)
 		return render(request, "form.html", {'label': res_inf['label'], 'form': form, "heading":"Edit Template Data for '"+str(res_inf['label'])+"' ("+res_inf['tech']+")"})
-		
-@wrap_rpc
-def download_torrent(api, request, res_id):
-	res_inf = api.template_info(res_id, include_torrent_data=True)
-	UserError.check('torrent_data' in res_inf,UserError.NO_DATA_AVAILABLE,"This template does not have a torrent file", data={'id':res_inf['id']})
-	tdata = base64.b64decode(res_inf['torrent_data'])
-	filename = re.sub('[^\w\-_\. :]', '_', '%s__%s' % (res_inf['name'],res_inf['tech']) ) + ".torrent"
-	response = HttpResponse(tdata, content_type="application/json")
-	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
-	return response

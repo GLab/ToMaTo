@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::io::{Read, Write, Cursor};
+use std::io::{Write, Cursor};
 use std::io;
 use std::borrow::Cow;
 use std::hash::BuildHasherDefault;
@@ -73,7 +73,7 @@ pub trait Message: Sized {
             SslStreamError::ZeroReturn => Error::ConnectionEnded,
             SslStreamError::Stream(ref err) if err.kind() == io::ErrorKind::UnexpectedEof => Error::ConnectionEnded,
             SslStreamError::WantRead(_) | SslStreamError::WantWrite(_) => unreachable!(),
-            _ => Error::NetworkError(NetworkError::ReadError)
+            _ => Error::NetworkError(NetworkError::Read)
         }));
         let mut size = ((header[1] as usize) << 16) + ((header[2] as usize) << 8) + (header[3] as usize);
         let mut body = Vec::with_capacity(size);
@@ -82,7 +82,7 @@ pub trait Message: Sized {
             SslStreamError::ZeroReturn => Error::ConnectionEnded,
             SslStreamError::Stream(ref err) if err.kind() == io::ErrorKind::UnexpectedEof => Error::ConnectionEnded,
             SslStreamError::WantRead(_) | SslStreamError::WantWrite(_) => unreachable!(),
-            _ => Error::NetworkError(NetworkError::ReadError)
+            _ => Error::NetworkError(NetworkError::Read)
         }));
         match header[0] {
             0 => (),

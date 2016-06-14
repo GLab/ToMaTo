@@ -400,7 +400,7 @@ class SettingsProvider:
 		"""
 		get the tasks settings of the current module
 		:return: dict containing Config.TASKS_MAX_WORKERS
-		:rtype: int
+		:rtype: dict
 		"""
 		InternalError.check('tasks' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="tasks configuration missing")
 		return self.original_settings[self.tomato_module]['tasks']
