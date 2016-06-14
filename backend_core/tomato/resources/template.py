@@ -76,6 +76,8 @@ class Template(Entity, BaseDocument):
 	@property
 	def all_urls(self):
 		urls = list(self.urls)
+		if not self.checksum:
+			return urls
 		_, checksum = self.checksum.split(":")
 		for h in self.hosts:
 			urls.append(("http://%s:%d/" + PATTERNS[self.tech])%(h.address, h.hostInfo["templateserver_port"], checksum))
