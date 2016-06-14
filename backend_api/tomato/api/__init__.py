@@ -35,7 +35,7 @@ from dumpmanager import errordump_info, errordump_list, errordumps_force_refresh
 
 from elements import element_info, element_action, element_create, element_modify, element_remove, element_usage
 
-from host import host_users, host_info, host_create, host_list, host_modify, host_remove
+from host import host_users, host_info, host_create, host_list, host_action, host_modify, host_remove
 
 from misc import link_statistics, server_info, statistics
 

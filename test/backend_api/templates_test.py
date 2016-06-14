@@ -57,7 +57,7 @@ class TemplateTestCase(ProxyHoldingTestCase):
 
 		#Create template
 		self.testtemplate_attrs = self.test_temps[0].copy()
-		self.testtemplate_technology =  self.testtemplate_attrs['tech']
+		self.testtemplate_technology = self.testtemplate_attrs['tech']
 		self.testtemplate_name = self.testtemplate_attrs['name']
 		del self.testtemplate_attrs['name']
 		del self.testtemplate_attrs['tech']
