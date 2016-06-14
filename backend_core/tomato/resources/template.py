@@ -73,6 +73,14 @@ class Template(Entity, BaseDocument):
 		from ..elements.generic import VMElement
 		return VMElement.objects(template=self)
 
+	@property
+	def all_urls(self):
+		urls = list(self.urls)
+		_, checksum = self.checksum.split(":")
+		for h in self.hosts:
+			urls.append(("http://%s:%d/" + PATTERNS[self.tech])%(h.address, h.hostInfo["templateserver_port"], checksum))
+		return urls
+
 	def getReadyInfo(self):
 		from ..host import Host
 		return {
@@ -101,6 +109,7 @@ class Template(Entity, BaseDocument):
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
 		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL()), set=lambda obj, value: obj.modify_urls(value)),
+		"all_urls": Attribute(schema=schema.List(items=schema.URL()), readOnly=True, get=lambda obj: obj.all_urls),
 		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
 		"label": Attribute(field=label, schema=schema.String()),
 		"description": Attribute(field=description, schema=schema.String()),
@@ -125,7 +134,7 @@ class Template(Entity, BaseDocument):
 	}
 
 	def init(self, attrs):
-		for attr in ["name", "tech", "torrent_data"]:
+		for attr in ["name", "tech", "urls"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Template needs attribute",
 				data={"attribute": attr})
 		if 'kblang' in attrs:

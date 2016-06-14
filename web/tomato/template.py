@@ -70,7 +70,6 @@ class TemplateForm(BootstrapForm):
 		self.fields['kblang'].initial="en_US"
 	
 class AddTemplateForm(TemplateForm):
-	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="http://tomato.readthedocs.org/en/latest/docs/templates" target="_blank">Help</a>')
 	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
 	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=techs_choices()))
 	def __init__(self, *args, **kwargs):

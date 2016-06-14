@@ -53,7 +53,7 @@ class Template(resources.Resource):
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		attrs = args[0]
-		for attr in ["name", "tech", "torrent_data"]:
+		for attr in ["name", "tech", "urls"]:
 			UserError.check(attr in attrs, UserError.INVALID_CONFIGURATION, "Attribute missing", data={"attribute": attr})
 		self.modify_tech(attrs["tech"])
 		self.modify_name(attrs["name"])
