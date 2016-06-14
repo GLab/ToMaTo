@@ -170,12 +170,7 @@ class Template(Entity, BaseDocument):
 		self.fetch(detached=True)
 
 	def isReady(self):
-		try:
-			path = self.getPath()
-			size = os.path.getsize(path)
-			return size == self.size
-		except:
-			return False
+		return not self.checksum is None
 
 	def info(self, include_torrent_data = False):
 		info = Entity.info(self)

@@ -15,14 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import base64
 import time
-import traceback
+import traceback, threading
 
 from .. import starttime, scheduler
 from ..db import *
 from ..generic import *
-from ..lib.dump import dumpException
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
@@ -168,6 +166,7 @@ class Host(Entity, BaseDocument):
 		if attrs:
 			self.modify(attrs)
 		self.update()
+		self.synchronizeResources()
 
 	def save_if_exists(self):
 		try:
