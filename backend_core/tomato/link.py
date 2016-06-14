@@ -137,7 +137,7 @@ def ping(siteA, siteB, ignore_missing_site=False):
 	if siteB is None:
 		raise UserError(UserError.ENTITY_DOES_NOT_EXIST, "site does not exist", data={"site": siteB})
 
-	key = (siteA.name, siteB.name)
+	key = (siteA, siteB)
 	with pingingLock:
 		if key in pinging:
 			return
