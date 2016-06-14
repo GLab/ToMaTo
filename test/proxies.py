@@ -76,10 +76,6 @@ with open("testhosts.json") as f:
 	test_hosts = json.load(f)
 with open("testtemplates.json") as f:
 	test_templates = json.load(f)
-	for temp in test_templates:
-		del temp['path_to_file']
-with open("testtemplates.json") as f:
-	test_templates_with_path = json.load(f)
 
 class ProxyHoldingTestCase(unittest.TestCase):
 	"""
@@ -180,11 +176,12 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	#Requires available test hosts
 	@classmethod
-	def add_templates_if_missing(cls, wait_for_synchronization=False):
+	def add_templates_if_missing(cls):
 		template_list = proxy_holder.backend_core.template_list()
 		#if the template list is empty, use the api to add all test templates
 		if(template_list == []):
-			for template in test_templates:
+			templates = copy.deepcopy(cls.test_temps)
+			for template in templates:
 				tech = template['tech']
 				name = template['name']
 				del template['tech']
@@ -192,48 +189,10 @@ class ProxyHoldingTestCase(unittest.TestCase):
 				attrs = template
 				proxy_holder.backend_core.template_create(tech, name, attrs)
 
-		#If we want to wait with our tests till the templates are synchronized, we speed it up a little bit
-		if wait_for_synchronization:
-			#We need the filepath, so use the second version
-			templates = test_templates_with_path
-			for template in templates:
-				PATTERNS = {
-					"kvmqm": "%s.qcow2",
-					"openvz": "%s.tar.gz",
-					"repy": "%s.repy",
-				}
-				hash = hashlib.md5(base64.b64decode(template["torrent_data"])).hexdigest()
-				hash_name = PATTERNS[template["tech"]] % hash
-
-				#print "Copying template "+template["name"]+"("+hash+") to..."
-
-				#Use rsync to copy every file to the hosts
-				for host in cls.test_host_addresses:
-					#print "... "+host
-					from subprocess import call
-					call(["rsync", template["path_to_file"], "root@"+host+":/var/lib/tomato/templates/"+hash_name])
-
-			#Force update to see if hosts are already synchronize
-			for host in cls.test_host_addresses:
-				host_name = cls.get_host_name(host)
-				proxy_holder.backend_core.host_action(host_name, "forced_update")
-
-			template_list = proxy_holder.backend_core.template_list()
-
-			#Check if templates are synchronized and wait for synchronization otherwise
-			synchronized_templates = 0
-			while(synchronized_templates != len(template_list)):
-				template_list = proxy_holder.backend_core.template_list()
-				synchronized_templates = 0
-				for template in template_list:
-					if(template["ready"]["hosts"]["ready"] == len(test_hosts)):
-						synchronized_templates+=1
-				if(synchronized_templates != len(template_list)):
-					time.sleep(5)
-					for host in cls.test_host_addresses:
-						host_name = cls.get_host_name(host)
-						proxy_holder.backend_core.host_action(host_name, "forced_update")
-					print "Waiting 5 seconds for template synchronization"
+		#Force update
+		for host in cls.test_host_addresses:
+			host_name = cls.get_host_name(host)
+			proxy_holder.backend_core.host_action(host_name, "forced_update")
 
 
 	@classmethod
@@ -277,6 +236,23 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	def remove_all_hosts(cls):
 		for host in proxy_holder.backend_core.host_list():
 			proxy_holder.backend_core.host_remove(host["name"])
+
+	@classmethod
+	def remove_all_topologies(cls):
+		for topology in proxy_holder.backend_core.topology_list():
+			proxy_holder.backend_core.topology_remove(topology["id"])
+
+	@classmethod
+	def remove_all_elements(cls):
+		for topology in proxy_holder.backend_core.topology_list():
+			for element in topology['elements']:
+				proxy_holder.backend_core.element_remove(element)
+
+	@classmethod
+	def remove_all_connections(cls):
+		for topology in proxy_holder.backend_core.topology_list():
+			for connection in topology['connections']:
+				proxy_holder.backend_core.connection_remove(connection)
 
 	@classmethod
 	def set_user(cls, username, organization, email, password, realname, flags):
