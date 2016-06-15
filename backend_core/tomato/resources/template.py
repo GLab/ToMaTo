@@ -218,4 +218,9 @@ def update_popularity():
 	for t in Template.objects():
 		t.update_popularity()
 
+def try_fetch():
+	for t in Template.objects(checksum=None):
+		t.fetch(True)
+
 scheduler.scheduleRepeated(24*60*60, update_popularity)
+scheduler.scheduleRepeated(60*60, try_fetch)
