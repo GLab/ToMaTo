@@ -40,5 +40,5 @@ echo "done"
 
 # copy backend's key to hosts
 for host in ${HOSTS}; do
-	../cli/register_backend_on_host.sh http+xmlrpc://localhost:8000 $host
+	../cli/register_backend_on_host.sh http+xmlrpc://localhost:8000 $host testing
 done

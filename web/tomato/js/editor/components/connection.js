@@ -54,7 +54,8 @@ var Connection = Component.extend({
 		this.path = this.canvas.path(this.getPath());
 		this.path.toBack();
 		var pos = this.getAbsPos();
-		this.handle = this.canvas.rect(pos.x-5, pos.y-5, 10, 10).attr({fill: "#4040FF", transform: "R"+this.getAngle()});
+		var width = settings.connectionHandleWidth;
+		this.handle = this.canvas.rect(pos.x-(width/2), pos.y-(width/2), width, width).attr({fill: "#4040FF", transform: "R"+this.getAngle()});
 		$(this.handle.node).attr("class", "tomato connection");
 		this.handle.node.obj = this;
 		var t = this;
@@ -84,7 +85,13 @@ var Connection = Component.extend({
 		this.path.attr({"stroke-width": bw < 10000 ? 1 : ( bw > 10000 ? 4 : 2.5 )});
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
-		this.handle.attr({x: pos.x-5, y: pos.y-5, transform: "R"+this.getAngle()});
+		var width = settings.connectionHandleWidth;
+		this.handle.attr({x: pos.x-(width/2), y: pos.y-(width/2), transform: "R"+this.getAngle()});
+		if (this.editor.options.show_connection_controls) {
+			this.handle.attr({'width': width});  //fixme: this should be a global parameter
+		} else {
+			this.handle.attr({'width': 0});
+		}
 		this.handle.conditionalClass("removable", this.isRemovable());
 	},
 	calculateSegment: function(els, cons) {

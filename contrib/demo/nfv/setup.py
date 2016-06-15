@@ -56,6 +56,9 @@ def parseArgs():
 	parser.add_argument("--password", "-P", help="the password to use for login")
 	parser.add_argument("--file", "-f", help="a file to execute")
 	parser.add_argument("--topology", "-t", required=False, help="ID of the topology to use. If not set, a new topology will be created")
+	parser.add_argument("--site", required=False, help="site for elements")
+	parser.add_argument("--html", required=False, help="if set, create a demo html client file for this.")
+	parser.add_argument("--skip-software", action="store_true", default=False, help="when set, no additional software will be installed. Only useful in combination with --topology")
 	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
 	options = parser.parse_args()
 	if not options.username and not (options.client_cert or options.url):
@@ -69,11 +72,18 @@ def parseArgs():
 
 
 
-def import_topology_and_get_config(api):
+def import_topology_and_get_config(api, site=None):
 	print "creating topology"
 	with open("nfv_demo.tomato4.json") as f:
 		to_import = json.load(f)
 	top_id, _, _, _ = api.topology_import(to_import)
+	if site is not None:
+		top_info = api.topology_info(top_id, True)
+		for element in top_info["elements"]:
+			try:
+				api.element_modify(element["id"], {"site": site})
+			except:
+				pass
 	return examine_topology_and_get_config(api, top_id), top_id
 
 
@@ -128,9 +138,37 @@ def get_config(options, api):
 	:rtype: dict
 	"""
 	if options.topology is None:
-		return import_topology_and_get_config(api)
+		return import_topology_and_get_config(api, options.site)
 	else:
-		return examine_topology_and_get_config(api, options.topology), None
+		return examine_topology_and_get_config(api, options.topology), options.topology
+
+def create_html(options, config, topology_id):
+	"""
+	Create the html file if required.
+	:param options: parsed program arguments
+	:param config: config from get_config
+	:param topology_id: topology ID of target topology
+	:return: URL to HTML file, or None, depending on whether the HTML file should be created.
+	:rtype: str or NoneType
+	"""
+	if options.html is None:
+		return None
+	with open(os.path.join("gui", "nfv_demo.html"), "r") as f:
+		htmlcontent = f.read()
+	for name, info in config.iteritems():
+		htmlcontent = htmlcontent.replace(
+		  '<iframe class="vnc" id="%s" src="request.html"></iframe>' % name,
+			'<iframe class="vnc" id="%s" src="http://%s/element/%s/console_novnc"></iframe>' % (name, options.hostname, info["element_id"])
+		)
+	htmlcontent = htmlcontent.replace("</body>", '<a style="color:black;position:absolute;bottom:0;" href="http://%s/topology/%s" target="_blank">Open Editor</a></body>' % (options.hostname, topology_id))
+	htmlcontent = htmlcontent.replace("topology.png", os.path.basename(options.html)+".topology.png")
+	htmldir = os.path.abspath(os.path.dirname(options.html))
+	if not os.path.exists(htmldir):
+		os.makedirs(htmldir)
+	shutil.copy(os.path.join("gui", "topology.png"), os.path.join(htmldir, os.path.basename(options.html)+".topology.png"))
+	with open(options.html, "w+") as f:
+		f.write(htmlcontent)
+	return os.path.abspath(options.html)
 
 
 
@@ -140,27 +178,50 @@ api = getConnection(url, options.client_cert)
 
 config, top_id = get_config(options, api)
 
-randint = random.randint(0, 100000)
-while os.path.exists(os.path.join("/tmp", "tomato_demo_setup_%d" % randint)):
+
+if not options.skip_software:
+
 	randint = random.randint(0, 100000)
-installer_dir = os.path.join("/tmp", "tomato_demo_setup_%d" % randint)
-installer_archive = os.path.join(installer_dir, "install_demo.tar.gz")
+	while os.path.exists(os.path.join("/tmp", "tomato_demo_setup_%d" % randint)):
+		randint = random.randint(0, 100000)
+	installer_dir = os.path.join("/tmp", "tomato_demo_setup_%d" % randint)
+	installer_archive = os.path.join(installer_dir, "install_demo.tar.gz")
 
-shutil.copytree("archive_content", installer_dir)
-with open(os.path.join(installer_dir, "config.json"), "w+") as f:
-	json.dump(config, f)
-with tarfile.open(installer_archive, 'w:gz') as tar:
-	tar.add(installer_dir, arcname='.')
+	shutil.copytree("archive_content", installer_dir)
+	with open(os.path.join(installer_dir, "config.json"), "w+") as f:
+		json.dump(config, f)
+	with tarfile.open(installer_archive, 'w:gz') as tar:
+		tar.add(installer_dir, arcname='.')
 
-for name, inf in config.iteritems():
-	print "Installing software on '%s'" % name
-	print "  python"
-	upload_and_use_rextfv(api, inf["element_id"], "install_python.tar.gz", True)
-	print "  demo software"
-	upload_and_use_rextfv(api, inf["element_id"], installer_archive, True)
+	for name, inf in config.iteritems():
+		print "Installing software on '%s'" % name
+		print "  python"
+		upload_and_use_rextfv(api, inf["element_id"], "install_python.tar.gz", True)
+		print "  demo software"
+		upload_and_use_rextfv(api, inf["element_id"], installer_archive, True)
 
-shutil.rmtree(installer_dir)
+	shutil.rmtree(installer_dir)
 
-if top_id is not None:
-	print "New topology's ID is [%s]"
-	print "Probably available at http://%s/topology/%s" % (options.hostname, top_id)
+htmlfile = create_html(options, config, top_id)
+
+print ""
+print "Configuration complete"
+print ""
+print "IDs:"
+print "  topology:", top_id
+for name, info in config.iteritems():
+	print "  "+name+":", info["element_id"]
+print ""
+print "Topology is probably available at"
+print "  http://%s/topology/%s" % (options.hostname, top_id)
+
+if htmlfile:
+	print ""
+	print "HTML client file available at:"
+	print "  file://"+htmlfile
+
+print ""
+print "To complete setup, please run these commands on the OpenFlow switch:"
+print "  address 10.0.0.100"
+print "  ovs-vsctl set-fail-mode br0 standalone"
+print "  ovs-vsctl set-controller br0 tcp:10.0.0.3:6633"

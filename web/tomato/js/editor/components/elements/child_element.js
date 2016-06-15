@@ -19,7 +19,7 @@ var ChildElement = Element.extend({
 	},
 	paint: function() {
 		var pos = this.getHandlePos();
-		this.circle = this.canvas.circle(pos.x, pos.y, 7).attr({fill: "#CDCDB3"});
+		this.circle = this.canvas.circle(pos.x, pos.y, settings.childElementRadius).attr({fill: "#CDCDB3"});
 		$(this.circle.node).attr("class", "tomato element");
 		this.circle.node.obj = this;
 		this.enableClick(this.circle);
@@ -30,6 +30,11 @@ var ChildElement = Element.extend({
 	paintUpdate: function() {
 		var pos = this.getHandlePos();
 		this.circle.attr({cx: pos.x, cy: pos.y});
+		if (this.editor.options.show_connection_controls) {
+			this.circle.attr({'r': settings.childElementRadius});
+		} else {
+			this.circle.attr({'r': 0});
+		}
 	},
 	updateData: function(data) {
 		this._super(data);

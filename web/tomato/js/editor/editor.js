@@ -125,8 +125,11 @@ var Editor = Class.extend({
 		this.topology.onOptionChanged(name);
 		this.workspace.onOptionChanged(name);
 		this.workspace.updateTopologyTitle();
-		for(elements in this.topology.elements) {
-			this.topology.elements[elements].paintUpdate();
+		for(element in this.topology.elements) {
+			this.topology.elements[element].paintUpdate();
+		}
+		for(connection in this.topology.connections) {
+			this.topology.connections[connection].paintUpdate();
 		}
 	},
 	optionMenuItem: function(options) {
@@ -593,7 +596,9 @@ var Editor = Class.extend({
 
 		var tab = this.menu.addTab("Options");
 
-		var group = tab.addGroup("Editor");
+		var top_group = tab.addGroup("Topology");
+		var view_group = tab.addGroup("View");
+
 		this.optionCheckboxes = {
 			safe_mode: this.optionMenuItem({
 				name:"safe_mode",
@@ -646,17 +651,27 @@ var Editor = Class.extend({
 		        label:"Names on Top",
 		        tooltip:"Show element name on top of element the element."
 		    }),
+
+		    show_connection_controls: this.optionMenuItem({
+		    	name:"show_connection_controls",
+		    	label:"Show Connection Controls",
+		    	tooltip:"Show network interfaces on elements, and a connection control handle on connections. These might be useful to hide when taking screenshots."
+		    })
 		};
 
-		group.addStackedElements([this.optionCheckboxes.safe_mode, 
+		top_group.addStackedElements([
+									this.optionCheckboxes.safe_mode,
 									this.optionCheckboxes.snap_to_grid,
-									this.optionCheckboxes.colorify_segments,
 									this.optionCheckboxes.fixed_pos,
 									this.optionCheckboxes.big_editor,
+									this.optionCheckboxes.debug_mode
+								]);
+		view_group.addStackedElements([
+									this.optionCheckboxes.show_connection_controls,
+									this.optionCheckboxes.colorify_segments,
 									this.optionCheckboxes.show_ids,
 									this.optionCheckboxes.show_sites_on_elements,
-									this.optionCheckboxes.debug_mode,
-									this.optionCheckboxes.element_name_on_top,
+									this.optionCheckboxes.element_name_on_top
 								]);
 
 		
