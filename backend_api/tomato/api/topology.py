@@ -69,7 +69,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  attribute changes.	
 	"""
 	topl = get_topology_info(id)
-	getCurrentUserInfo().check_may_modify_topology(topl)
+	getCurrentUserInfo().check_may_modify_topology(topl, attrs)
 	return topl.modify(attrs)
 
 def topology_action(id, action, params=None): #@ReservedAssignment
