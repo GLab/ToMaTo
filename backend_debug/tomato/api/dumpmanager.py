@@ -89,7 +89,7 @@ def errorgroup_list(show_empty, as_user=None):
 		"""
 		Returns a list of all error groups.
 		"""
-		res = [grp.info(as_user) for grp in ErrorGroup.objects.all()]
+		res = [grp.info(as_user) for grp in ErrorGroup.objects.filter(hidden=False)]
 		if show_empty:
 			return res
 		else:
