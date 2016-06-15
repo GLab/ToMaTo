@@ -558,7 +558,7 @@ class Host(Entity, BaseDocument):
 				self.problemMailTime = time.time()
 				self.sendMessageToHostManagers(
 					title="Host %s: Problems" % self,
-					message="Host %s has the following problems:\n\n%s" % self,
+					message="Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)),
 					ref=['host', self.name],
 					subject_group="host failure"
 				)
