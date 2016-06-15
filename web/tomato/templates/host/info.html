@@ -188,7 +188,8 @@
   {% endif %}
   {% if request.session.user|args:organization.name|call:"isHostManager" %}
   	<a class="btn btn-info" onclick="window.open('{%url "usage.host" host.name%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
-  	<button type="submit" formaction="{%url "admin.host.edit" host.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> Edit Host</button>
+  	<button type="submit" formaction="{%url "admin.host.forced_update" host.name%}" class="btn btn-success"><span class="glyphicon glyphicon-repeat"></span> Refresh Host Information</button>
+	<button type="submit" formaction="{%url "admin.host.edit" host.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> Edit Host</button>
 	<button type="submit" formaction="{%url "admin.host.remove" host.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> Remove Host</button>
   {% endif %}
 </form>

@@ -12,7 +12,7 @@ def wrap_and_handle_current_exception(errorcls_func=None, errorcode=None, re_rai
 		errorcls_func = lambda e: error.InternalError
 	if isinstance(exc, error.Error):
 		if exc.todump:
-			writedown_current_exception(log_exception=log_exception, dump_exception=dump_exception, print_exception=print_exception, exc=newexc, ignore_todump=ignore_todump)
+			writedown_current_exception(log_exception=log_exception, dump_exception=dump_exception, print_exception=print_exception, exc=exc, ignore_todump=ignore_todump)
 		if re_raise:
 			raise
 	else:

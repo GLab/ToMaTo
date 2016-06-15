@@ -27,9 +27,9 @@ $(function () {
     		});
             for (var j=0; j<data[range].length; j++) {
                 var rec = data[range][j];
-                traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic / (rec.end-rec.begin)]);
+                traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic / (rec.end-rec.start)]);
                 memory[range].push([rec.end * 1000 - offset, rec.usage.memory]);
-                cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime / (rec.end-rec.begin)]);
+                cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime / (rec.end-rec.start)]);
                 diskspace[range].push([rec.end * 1000 - offset, rec.usage.disk]);
             }
         }
@@ -57,13 +57,13 @@ $(function () {
         	return Math.round(value*100)/100 + " CPUs";
         };
         var formatCPUsEx = function(value) {
-        	return formatCPUs(value) + " (" + formatTime(value*(data[currentRange][0].end-data[currentRange][0].begin)) + ")";
+        	return formatCPUs(value) + " (" + formatTime(value*(data[currentRange][0].end-data[currentRange][0].start)) + ")";
         };
         var formatTraffic = function(value) {
         	return formatSize(value) + "/s";
         };
         var formatTrafficEx = function(value) {
-        	return formatTraffic(value) + " (" + formatSize(value*(data[currentRange][0].end-data[currentRange][0].begin)) + ")"
+        	return formatTraffic(value) + " (" + formatSize(value*(data[currentRange][0].end-data[currentRange][0].start)) + ")"
         };
         var colors = Highcharts.getOptions().colors;
         var symbols = Highcharts.getOptions().symbols;

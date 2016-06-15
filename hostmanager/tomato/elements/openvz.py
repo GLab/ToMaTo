@@ -432,13 +432,16 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self.template = template.get(self.TYPE, tmplName)
 		if tmplName:
 			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
-			UserError.check(self.template.isReady(), code=UserError.INVALID_VALUE, message="The selected template's image is not yet synced to this host.")
+		templ = self._template()
+		templ.fetch()
 		if self.state == ST_PREPARED:
-			self._useImage(self._template().getPath())
+			self._useImage(templ.getPath())
 
 	def action_prepare(self):
 		self._checkState()
-		tplPath = self._template().getPath()
+		templ = self._template()
+		templ.fetch()
+		tplPath = templ.getPath()
 		if tplPath.endswith(".tar.gz"):
 			tplPath = tplPath[:-len(".tar.gz")]
 		tplPath = os.path.relpath(tplPath, "/var/lib/vz/template/cache") #calculate relative path to trick openvz

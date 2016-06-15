@@ -8,7 +8,6 @@ use std::fs::File;
 use epoll;
 use openssl::ssl::SslStream;
 use openssl::ssl::error::Error as SslStreamError;
-use net2::TcpStreamExt;
 
 pub struct Connection {
     epoll_read: RawFd,

@@ -83,18 +83,13 @@ def template_remove(id):
 	return get_template_info(id).remove()
 
 @checkauth
-def template_info(id, include_torrent_data=False): #@ReservedAssignment
+def template_info(id): #@ReservedAssignment
 	"""
 	Retrieves information about a template.
 
 	Parameter *id*:
 	  The parameter *id* must be a string identifying one of the existing
 	  templates.
-
-	Parameter *include_torrent_data*:
-	  boolean
-	  if true, the return value includes the base64-encoded torrent file.
-	  This may throw an error when a user without access to it tries to access a restricted template.
 
 	Return value:
 	  The return value of this method is a dict containing information
@@ -105,8 +100,4 @@ def template_info(id, include_torrent_data=False): #@ReservedAssignment
 	  exist* is raised.
 	"""
 	templ = get_template_info(id)
-	if include_torrent_data:
-		getCurrentUserInfo().check_may_get_template_torrent_data(templ)
-		return get_backend_core_proxy().template_info(id, include_torrent_data)
-	else:
-		return templ.info(update=True)
+	return templ.info(update=True)

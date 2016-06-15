@@ -18,6 +18,7 @@
 from ..host import Host, Site
 from ..lib.error import UserError
 from .site import _getSite
+from ..lib.remote_info import get_organization_info
 
 def _getHost(name):
 	"""
@@ -29,12 +30,20 @@ def _getHost(name):
 
 def _host_list(site=None, organization=None):
 	"""
-	undocumented
+	Returns a list of hosts. Depending on the parameter it either returns:
+		Site given: All hosts belonging to this site
+		Organization given: All hosts belonging to this organization
+		Both given: All hosts belonging to the given site, ignoring organization
+	:param site: Site name to filter hosts belonging to this site
+	:param organization: Organization name to filter hosts belonging to this organization
+	:return: list of hosts
 	"""
 	if site:
+		UserError.check(Site.get(site) is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist")
 		site = Site.get(site)
 		return Host.objects(site=site)
 	elif organization:
+		UserError.check(get_organization_info(organization).exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist")
 		sites = Site.objects(organization=organization)
 		return Host.objects(site__in=sites)
 	else:
@@ -90,6 +99,14 @@ def host_remove(name):
 	"""
 	h = _getHost(name)
 	h.remove()
+
+def host_action(name, action, params=None): #@ReservedAssignment
+	"""
+	undocumented
+	"""
+	if not params: params = {}
+	host = _getHost(name)
+	return host.action(action, params)
 
 def host_users(name):
 	"""

@@ -339,7 +339,9 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
 			UserError.check(self.template.isReady(), code=UserError.INVALID_VALUE, message="The selected template's image is not yet synced to this host.")
 		if self.state == ST_PREPARED:
-			self._useImage(self._template().getPath(), backing=True)
+			templ = self._template()
+			templ.fetch()
+			self._useImage(templ.getPath(), backing=True)
 
 	def _useImage(self, path_, backing=False):
 		assert self.state == ST_PREPARED
@@ -354,7 +356,9 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		self._checkState()
 		qm.create(self.vmid)
 		self.setState(ST_PREPARED, True)
-		self._useImage(self._template().getPath(), backing=True)
+		templ = self._template()
+		templ.fetch()
+		self._useImage(templ.getPath(), backing=True)
 		self._nlxtp_create_device_and_mountpoint()
 		self._configure()
 		# add all interfaces

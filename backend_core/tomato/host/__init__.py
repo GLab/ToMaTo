@@ -15,14 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import base64
 import time
-import traceback
+import traceback, threading
 
 from .. import starttime, scheduler
 from ..db import *
 from ..generic import *
-from ..lib.dump import dumpException
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
@@ -131,7 +129,12 @@ class Host(Entity, BaseDocument):
 		from ..resources.network import NetworkInstance
 		return NetworkInstance.objects(host=self)
 
-	ACTIONS = {}
+
+	def action_forced_update(self):
+		self.update()
+		self.synchronizeResources(True)
+
+	ACTIONS = {"forced_update": Action(fn=action_forced_update)}
 	ATTRIBUTES = {
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"address": Attribute(field=address, schema=schema.String(regex="\d+\.\d+.\d+.\d+")),
@@ -157,13 +160,20 @@ class Host(Entity, BaseDocument):
 	}
 
 	def init(self, attrs=None):
-		self.attrs = {}
 		self.hostInfoTimestamp = 0
 		self.accountingTimestamp = 0
 		self.lastResourcesSync = 0
 		if attrs:
 			self.modify(attrs)
 		self.update()
+		self.synchronizeResources()
+
+	def save_if_exists(self):
+		try:
+			Host.objects.get(id=self.id)
+		except Host.DoesNotExist:
+			return
+		self.save()
 
 	def getProxy(self):
 		if not _caching:
@@ -178,11 +188,11 @@ class Host(Entity, BaseDocument):
 		# this value is reset on every sync
 		logging.logMessage("component error", category="host", host=self.name)
 		self.componentErrors += 1
-		self.save()
+		self.save_if_exists()
 
 	def update(self):
 		self.availability *= settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
-		self.save()
+		self.save_if_exists()
 		if not self.enabled:
 			return
 		before = time.time()
@@ -201,7 +211,7 @@ class Host(Entity, BaseDocument):
 		self.componentErrors = max(0, self.componentErrors / 2)
 		if not self.problems():
 			self.availability += 1.0 - settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
-		self.save()
+		self.save_if_exists()
 		logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)
 		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
 
@@ -343,8 +353,8 @@ class Host(Entity, BaseDocument):
 	def grantUrl(self, grant, action):
 		return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
 
-	def synchronizeResources(self):
-		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL]:
+	def synchronizeResources(self, forced=False):
+		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL] and not forced:
 			return
 		if not self.enabled:
 			return
@@ -374,23 +384,24 @@ class Host(Entity, BaseDocument):
 			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
-			attrs = {"tech": tpl.tech, "name": tpl.name, "preference": tpl.preference, "torrent_data": base64.b64encode(tpl.torrentData), "kblang": tpl.kblang}
+			attrs = tpl.info()
 			if not (attrs["tech"], attrs["name"]) in tpls:
 				# create resource
+				attrs["urls"] = tpl.all_urls
 				self.getProxy().resource_create("template", attrs)
 				logging.logMessage("template create", category="host", name=self.name, template=attrs)
 			else:
 				hTpl = tpls[(attrs["tech"], attrs["name"])]
-				isAttrs = dict(hTpl["attrs"])
-				if hTpl["attrs"]["torrent_data_hash"] != tpl.torrentDataHash:
+				if hTpl["attrs"]["checksum"] != tpl.checksum:
+					attrs["urls"] = tpl.all_urls
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
-				elif isAttrs["ready"]:
+				elif hTpl["attrs"]["ready"]:
 					avail.append(tpl)
 		self.templates = avail
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()
-		self.save()
+		self.save_if_exists()
 
 	def updateAccountingData(self):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)
@@ -421,7 +432,7 @@ class Host(Entity, BaseDocument):
 
 			get_backend_accounting_proxy().push_usage(data["elements"], data["connections"])
 			self.accountingTimestamp = max_timestamp + 1  # one second greater than last record.
-			self.save()
+			self.save_if_exists()
 		finally:
 			logging.logMessage("accounting_sync end", category="host", name=self.name)
 
@@ -547,7 +558,7 @@ class Host(Entity, BaseDocument):
 				self.problemMailTime = time.time()
 				self.sendMessageToHostManagers(
 					title="Host %s: Problems" % self,
-					message="Host %s has the following problems:\n\n%s" % self,
+					message="Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)),
 					ref=['host', self.name],
 					subject_group="host failure"
 				)
@@ -563,7 +574,7 @@ class Host(Entity, BaseDocument):
 						ref=['host', self.name],
 						subject_group="host failure"
 					)
-		self.save()
+		self.save_if_exists()
 
 	def getLoad(self):
 		"""
@@ -600,6 +611,7 @@ class Host(Entity, BaseDocument):
 
 	@classmethod
 	def create(cls, name, site, attrs=None):
+		UserError.check(Host.get(name=name) is None, code=UserError.ALREADY_EXISTS, message="Host with that name (\"\") already exists")
 		if not attrs: attrs = {}
 		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Host name may not include a '/'") #FIXME: find out if still used
 		for attr in ["address", "rpcurl"]:
@@ -607,7 +619,6 @@ class Host(Entity, BaseDocument):
 		host = Host(name=name, site=site)
 		try:
 			attrs_ = attrs.copy()
-			attrs_['name'] = name
 			host.init(attrs_)
 			host.save()
 			logging.logMessage("create", category="host", info=host.info())
@@ -772,6 +783,7 @@ def synchronizeHost(host_name):
 			host.synchronizeResources()
 		except:
 			print >>sys.stderr, "Error updating host information from %s" % host
+			traceback.print_exc()
 			wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
 		host.checkProblems()
 	finally:

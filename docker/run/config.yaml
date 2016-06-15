@@ -62,7 +62,7 @@ backend_api:
     max-workers: 25
 
 backend_accounting:
-  data-path: /var/lib/tomato_backend_accounting
+  data-path: /data
   ssl:
     cert:  /etc/tomato/backend_accounting_cert.pem
     key:  /etc/tomato/backend_accounting_key.pem

@@ -46,14 +46,12 @@ scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=setti
 starttime = time.time()
 
 from . import db, host, rpcserver #@UnresolvedImport
-from lib.cmd import bittorrent, process #@UnresolvedImport
+from lib.cmd import process #@UnresolvedImport
 from lib import util, cache, exceptionhandling #@UnresolvedImport
 from lib.error import Error, InternalError
 
 def handleError():
 	exceptionhandling.writedown_current_exception()
-
-scheduler.scheduleRepeated(settings.settings.get_bittorrent_settings()['bittorrent-restart'], util.wrap_task(bittorrent.restartClient))
 
 import threading
 stopped = threading.Event()
@@ -71,11 +69,9 @@ def start():
 	else:
 		print >>sys.stderr, "Skipping migrations"
 	global starttime
-	bittorrent_path = settings.settings.get_template_dir()
-	if not os.path.exists(bittorrent_path):
-		os.makedirs(bittorrent_path)
-	bittorrent.startTracker(settings.settings.get_bittorrent_settings()['tracker-port'], bittorrent_path)
-	bittorrent.startClient(settings.settings.get_template_dir())
+	template_dir = settings.settings.get_template_dir()
+	if not os.path.exists(template_dir):
+		os.makedirs(template_dir)
 	rpcserver.start()
 	starttime = time.time()
 	if not os.environ.has_key("TOMATO_NO_TASKS"):
@@ -127,8 +123,6 @@ def stop(*args):
 	rpcserver.stop()
 	host.stopCaching()
 	scheduler.stop()
-	bittorrent.stopTracker()
-	bittorrent.stopClient()
 	logging.closeDefault()
 	stopped.set()
 

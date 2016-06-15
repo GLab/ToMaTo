@@ -37,25 +37,27 @@ import time
 
 class TemplateTestCase(ProxyHoldingTestCase):
 
-	def setUp(self):
-		self.remove_all_profiles()
-		self.remove_all_other_accounts()
+	@classmethod
+	def setUpClass(cls):
+		cls.remove_all_profiles()
+		cls.remove_all_other_accounts()
 
 		#Create user without permission to create profiles
 		testuser_username = "testuser"
 		testuser_password = "123"
-		testuser_organization = self.default_organization_name
+		testuser_organization = cls.default_organization_name
 		testuser_attrs = {"realname": "Test User",
 			"email": "test@example.com",
 			"flags": {}
 		}
-		self.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
-		self.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization, testuser_attrs)
+		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
+	def setUp(self):
 
 		#Create template
 		self.testtemplate_attrs = self.test_temps[0].copy()
-		self.testtemplate_technology =  self.testtemplate_attrs['tech']
+		self.testtemplate_technology = self.testtemplate_attrs['tech']
 		self.testtemplate_name = self.testtemplate_attrs['name']
 		del self.testtemplate_attrs['name']
 		del self.testtemplate_attrs['tech']
@@ -69,9 +71,13 @@ class TemplateTestCase(ProxyHoldingTestCase):
 
 
 	def tearDown(self):
-		self.remove_all_profiles()
-		self.remove_all_other_accounts()
 		self.remove_all_templates()
+
+	@classmethod
+	def tearDownClass(cls):
+		cls.remove_all_profiles()
+		cls.remove_all_other_accounts()
+
 
 	#Get template_list and check for correctness
 	def test_template_list(self):
@@ -222,18 +228,6 @@ class TemplateTestCase(ProxyHoldingTestCase):
 		self.assertIsNotNone(test_info_core)
 		self.assertEqual(test_info_api, test_info_core)
 		self.assertDictContainsSubset(self.testtemplate_attrs, test_info_api)
-
-	#Get template informations and  and check for correctness
-	def test_template_info_with_torrent_data(self):
-
-		test_info_api = self.proxy_holder.backend_api.template_info(self.testtemplate_id, True)
-
-		self.assertIsNotNone(test_info_api)
-		self.assertDictContainsSubset(self.testtemplate_attrs, test_info_api)
-		test_info_core = self.proxy_holder.backend_core.template_info(self.testtemplate_id, True)
-		self.assertDictContainsSubset(self.testtemplate_attrs, test_info_core)
-		self.assertIsNotNone(test_info_core)
-		self.assertEqual(test_info_api, test_info_core)
 
 	#Get template informations of a non existing template
 	def test_template_info_non_existing(self):

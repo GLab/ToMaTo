@@ -2,8 +2,8 @@ use rmp;
 
 #[derive(Debug, PartialEq)]
 pub enum NetworkError {
-    ReadError,
-    WriteError
+    Read,
+    Write
 }
 
 #[derive(Debug, PartialEq)]
@@ -48,18 +48,18 @@ impl MessageErrorCode {
     }
 
     pub fn to_code(&self) -> u64 {
-        match self {
-            &MessageErrorCode::UnknownError => 0,
-            &MessageErrorCode::InvalidBaseType => 1,
-            &MessageErrorCode::InvalidBaseSize => 2,
-            &MessageErrorCode::InvalidIdType => 3,
-            &MessageErrorCode::InvalidMethodType => 4,
-            &MessageErrorCode::InvalidArgsType => 5,
-            &MessageErrorCode::InvalidKwArgsType => 6,
-            &MessageErrorCode::InvalidKwArgsKeyType => 7,
-            &MessageErrorCode::InvalidReplyTypeType => 8,
-            &MessageErrorCode::InvalidErrorType => 9,
-            &MessageErrorCode::UnknownReplyType => 10
+        match *self {
+            MessageErrorCode::UnknownError => 0,
+            MessageErrorCode::InvalidBaseType => 1,
+            MessageErrorCode::InvalidBaseSize => 2,
+            MessageErrorCode::InvalidIdType => 3,
+            MessageErrorCode::InvalidMethodType => 4,
+            MessageErrorCode::InvalidArgsType => 5,
+            MessageErrorCode::InvalidKwArgsType => 6,
+            MessageErrorCode::InvalidKwArgsKeyType => 7,
+            MessageErrorCode::InvalidReplyTypeType => 8,
+            MessageErrorCode::InvalidErrorType => 9,
+            MessageErrorCode::UnknownReplyType => 10
         }
     }
 }

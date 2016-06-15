@@ -129,6 +129,7 @@ def host_info():
 			"updater": hostinfo.updaterVersion()
 		},
 		"fileserver_port": config.FILESERVER["PORT"],
+		"templateserver_port": config.HTTPD_PORT,
 		"address": config.PUBLIC_ADDRESS,
 		"time": time.time(),
 		"problems": hostinfo.problems(),
