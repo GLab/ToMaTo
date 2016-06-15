@@ -198,7 +198,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "big_editor", "debug_mode", "show_ids", "show_sites_on_elements","element_name_on_top"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "big_editor", "debug_mode", "show_ids", "show_sites_on_elements","element_name_on_top","show_connection_controls"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data["_"+opts[i]]);
 		}
