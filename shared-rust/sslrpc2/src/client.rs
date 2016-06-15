@@ -39,7 +39,7 @@ impl Deref for Client {
 
 impl Client {
     pub fn new<A: ToSocketAddrs>(addr: A, ssl: SslContext) -> Result<ClientCloseGuard, SslError> {
-        let tcp_con = try!(TcpStream::connect(addr).map_err(|err| SslError::StreamError(err)));
+        let tcp_con = try!(TcpStream::connect(addr).map_err(SslError::StreamError));
         let ssl_con = try!(SslStream::connect(&ssl, tcp_con));
         let con = Arc::new(Connection::new(ssl_con));
         let client = Client(Arc::new(ClientInner{

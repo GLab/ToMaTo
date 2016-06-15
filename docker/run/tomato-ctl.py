@@ -338,14 +338,18 @@ def generate_default_config():
 			'additional_directories': [
 				('%(data)s', '/data'),
 				('%(config)s', '/config'),
-				('%(logs)s', '/logs')
+				('%(logs)s', '/logs'),
+				('%(cargo-cache)s', '/root/.cargo/registry'),
+				('%(target)s', '/code/service/target')
 			],
 			'directories': {
 				'data': os.path.join("backend_accounting", "data"),
 				'config': os.path.join("backend_accounting", "config"),
-				'logs': os.path.join("backend_accounting", "logs")
+				'logs': os.path.join("backend_accounting", "logs"),
+				'cargo-cache': os.path.join("backend_accounting", "cargo-cache"),
+				'target': os.path.join("backend_accounting", "target")
 			},
-			'code_directories': [],
+			'code_directories': ['backend_accounting', 'shared-rust'],
 			'shell_cmd': "/bin/bash",
 			'reload_cmd': None
 			# 'version'  (will be generated if not found in config)

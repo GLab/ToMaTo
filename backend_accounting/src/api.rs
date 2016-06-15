@@ -75,7 +75,7 @@ macro_rules! convert_series {
             rec.1 = end;
             end = start-1;
         }
-        let series: Vec<Value> = series.into_iter().map(|(start, end, usage)| to_value!{
+        series.into_iter().map(|(start, end, usage)| to_value!{
             "start" => start,
             "end" => end,
             "usage" => to_value!{
@@ -85,8 +85,7 @@ macro_rules! convert_series {
                 "traffic" => usage.traffic
             },
             "measurements" => usage.measurements
-        }).collect();
-        series
+        }).collect::<Vec<_>>()
     } }
 }
 

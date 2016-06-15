@@ -27,6 +27,7 @@ $(function () {
     		});
             for (var j=0; j<data[range].length; j++) {
                 var rec = data[range][j];
+                if (!rec.measurements) continue;
                 traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic / (rec.end-rec.start)]);
                 memory[range].push([rec.end * 1000 - offset, rec.usage.memory]);
                 cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime / (rec.end-rec.start)]);

@@ -28,9 +28,6 @@ impl Connection {
         epoll::ctl(epoll_read, epoll::util::ctl_op::ADD, fd, &mut event_read).expect("Epoll ctl failed");
         let mut event_write = epoll::EpollEvent{events: epoll::util::event_type::EPOLLOUT, data: 0};
         epoll::ctl(epoll_write, epoll::util::ctl_op::ADD, fd, &mut event_write).expect("Epoll ctl failed");
-        if epoll_read > 100 {
-            panic!("Unclosed fds!!!");
-        }
         Connection {
             epoll_read: epoll_read,
             epoll_write: epoll_write,

@@ -2,6 +2,8 @@ use rmp::Value;
 use rmp::value::{Integer, Float};
 
 use std::i64;
+use std::f64;
+use std::f32;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::mem;
@@ -45,8 +47,8 @@ impl ParseValue for u64 {
         match val {
             Value::Integer(Integer::U64(val)) => Ok(val),
             Value::Integer(Integer::I64(val)) if val >= 0 => Ok(val as u64),
-            Value::Float(Float::F64(val)) if val.trunc() == val => Ok(val.trunc() as u64),
-            Value::Float(Float::F32(val)) if val.trunc() == val => Ok(val.trunc() as u64),
+            Value::Float(Float::F64(val)) if val.fract().abs() < f64::EPSILON => Ok(val.trunc() as u64),
+            Value::Float(Float::F32(val)) if val.fract().abs() < f32::EPSILON => Ok(val.trunc() as u64),
             _ => Err(ParseError)
         }
     }
@@ -86,8 +88,8 @@ impl ParseValue for i64 {
         match val {
             Value::Integer(Integer::U64(val)) if val < i64::MAX as u64 => Ok(val as i64),
             Value::Integer(Integer::I64(val)) => Ok(val),
-            Value::Float(Float::F64(val)) if val.trunc() == val => Ok(val.trunc() as i64),
-            Value::Float(Float::F32(val)) if val.trunc() == val => Ok(val.trunc() as i64),
+            Value::Float(Float::F64(val)) if val.fract().abs() < f64::EPSILON => Ok(val.trunc() as i64),
+            Value::Float(Float::F32(val)) if val.fract().abs() < f32::EPSILON => Ok(val.trunc() as i64),
             _ => Err(ParseError)
         }
     }

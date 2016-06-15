@@ -3,6 +3,7 @@ use std::hash::BuildHasherDefault;
 use std::sync::{RwLock, RwLockReadGuard};
 use std::time::Duration;
 use std::fmt::Debug;
+use std::mem;
 
 use fnv::FnvHasher;
 use sslrpc2::{Client, ClientCloseGuard, KwArgs, ParseValue, ToValue, Error, Value, Args};
@@ -27,10 +28,13 @@ pub trait Hierarchy: Send + Sync {
     fn exists(&self, type_: RecordType, id: &str) -> Result<bool, HierarchyError>;
 }
 
+type CacheKey = (RecordType, RecordType);
+type CacheEntry = RwLock<HashMap<String, (Vec<String>, Time), Hash>>;
+
 pub struct HierarchyCache {
     timeout: Time,
     inner: Box<Hierarchy>,
-    cache: HashMap<(RecordType, RecordType), RwLock<HashMap<String, (Vec<String>, Time), Hash>>, Hash>
+    cache: HashMap<CacheKey, CacheEntry, Hash>
 }
 
 impl HierarchyCache {
@@ -123,10 +127,12 @@ impl RemoteHierarchy {
     }
 
     fn reconnect(&self) -> Result<(), SslError> {
-        let core_service = try!(Client::new(&self.core_service_address as &str, self.ssl_context.clone()));
-        *self.core_service.write().expect("Lock poisoned") = core_service;
-        let user_service = try!(Client::new(&self.user_service_address as &str, self.ssl_context.clone()));
-        *self.user_service.write().expect("Lock poisoned") = user_service;
+        let mut core_service = try!(Client::new(&self.core_service_address as &str, self.ssl_context.clone()));
+        mem::swap(&mut core_service, &mut self.core_service.write().expect("Lock poisoned"));
+        let mut user_service = try!(Client::new(&self.user_service_address as &str, self.ssl_context.clone()));
+        mem::swap(&mut user_service, &mut self.user_service.write().expect("Lock poisoned"));
+        core_service.close().expect("Failed to close");
+        user_service.close().expect("Failed to close");
         Ok(())
     }
 

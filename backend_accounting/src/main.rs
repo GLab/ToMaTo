@@ -104,12 +104,12 @@ impl Config {
 struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
-    #[inline(always)]
+    #[inline]
     fn enabled(&self, metadata: &log::LogMetadata) -> bool {
         metadata.target().starts_with(module_path!())
     }
 
-    #[inline(always)]
+    #[inline]
     fn log(&self, record: &log::LogRecord) {
         if self.enabled(record.metadata()) {
             println!("{} - {}", record.level(), record.args());

@@ -32,7 +32,6 @@ pub enum MessageErrorCode {
 impl MessageErrorCode {
     pub fn from_code(code: u64) -> Self {
         match code {
-            0 => MessageErrorCode::UnknownError,
             1 => MessageErrorCode::InvalidBaseType,
             2 => MessageErrorCode::InvalidBaseSize,
             3 => MessageErrorCode::InvalidIdType,
@@ -43,7 +42,7 @@ impl MessageErrorCode {
             8 => MessageErrorCode::InvalidReplyTypeType,
             9 => MessageErrorCode::InvalidErrorType,
             10 => MessageErrorCode::UnknownReplyType,
-            _ => MessageErrorCode::UnknownError
+            0 | _ => MessageErrorCode::UnknownError
         }
     }
 
