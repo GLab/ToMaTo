@@ -89,7 +89,8 @@ print ""
 # insert site and hosts
 
 print "Adding site and hosts..."
-conn = tomato.getConnection(tomato.createUrl("http+xmlrpc", "localhost", 8000, "admin", "changeme"))
+backend_url = tomato.createUrl("http+xmlrpc", "localhost", 8000, "admin", "changeme")
+conn = tomato.getConnection(backend_url)
 
 conn.site_create(config['site']['name'],
 								 'others',
@@ -98,13 +99,16 @@ conn.site_create(config['site']['name'],
 									'geolocation': config['site']['geolocation']}
 								 )
 for host in config['hosts']:
+	subprocess.call(["../../cli/register_backend_on_host.sh", backend_url, host["address"], "local"])
 	try:
 		conn.host_create(host['name'],
 										 config['site']['name'],
 										 {'address': host['address'],
 											'rpcurl': host['rpcurl']})
 	except:
-		print "error inserting %s" % host['name']
+		print "error inserting %s:" % host['name']
+		import traceback
+		traceback.print_exc()
 print ""
 
 
