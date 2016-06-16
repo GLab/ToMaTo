@@ -11,6 +11,8 @@ var Mode = {
 var Editor = Class.extend({
 	init: function(options) {
 		this.options = options;
+
+		this.optionsManager = new OptionsManager(this);
 		
 		this.rextfv_status_updater = new RexTFV_status_updater(); //has to be created before any element.
 		var t = this;
@@ -117,6 +119,7 @@ var Editor = Class.extend({
 	
 	setOption: function(name, value) {
 		this.options[name] = value;
+		this.optionsManager.saveOpt(name, this.options[name]);
 		this.optionCheckboxes[name].setChecked(value);
 		this.onOptionChanged(name);
 		this.triggerEvent({component: "editor", object: this, operation: "option", name: name, value: value});
@@ -143,7 +146,8 @@ var Editor = Class.extend({
 				t.setOption(options.name,value);
 				t.onOptionChanged(options.name);
 			},
-			checked: this.options[options.name]
+			checked: this.options[options.name],
+			enabled: (options.enabled == undefined) || options.enabled
 		});
 	},
 	onElementConnectTo: function(el) {
@@ -596,86 +600,8 @@ var Editor = Class.extend({
 
 		var tab = this.menu.addTab("Options");
 
-		var top_group = tab.addGroup("Topology");
-		var view_group = tab.addGroup("View");
-
-		this.optionCheckboxes = {
-			safe_mode: this.optionMenuItem({
-				name:"safe_mode",
-   				label:"Safe mode",
-   				tooltip:"Asks before all destructive actions"
-   			}),
-   			snap_to_grid: this.optionMenuItem({
-   				name:"snap_to_grid",
-   				label:"Snap to grid",
-   				tooltip:"All elements snap to an invisible "+this.options.grid_size+" pixel grid"
-   			}),
-   			fixed_pos: this.optionMenuItem({
-		        name:"fixed_pos",
-		        label:"Fixed positions",
-		        tooltip:"Elements can not be moved"
-		    }),
-
-		    colorify_segments: this.optionMenuItem({
-		        name:"colorify_segments",
-		        label:"Colorify segments",
-		        tooltip:"Paint different network segments with different colors"
-		    }),
-
-		    big_editor: this.optionMenuItem({
-		    	name:"big_editor",
-		    	label:"Big workspace",
-		    	tooltip:"Have a bigger editor workspace. Requires page reload."
-		    }),
-		    
-		    show_ids: this.optionMenuItem({
-		        name:"show_ids",
-		        label:"Show IDs",
-		        tooltip:"Show IDs in right-click menus"
-		    }),
-		    
-		    show_sites_on_elements: this.optionMenuItem({
-		        name:"show_sites_on_elements",
-		        label:"Show Element Sites",
-		        tooltip:"Show the site an element is located at in its right-click menu"
-		    }),
-		    
-		    debug_mode: this.optionMenuItem({
-		        name:"debug_mode",
-		        label:"Debug mode",
-		        tooltip:"Displays debug messages"
-		    }),
-		    
-		    element_name_on_top: this.optionMenuItem({
-		        name:"element_name_on_top",
-		        label:"Names on Top",
-		        tooltip:"Show element name on top of element the element."
-		    }),
-
-		    show_connection_controls: this.optionMenuItem({
-		    	name:"show_connection_controls",
-		    	label:"Show Connection Controls",
-		    	tooltip:"Show network interfaces on elements, and a connection control handle on connections. These might be useful to hide when taking screenshots."
-		    })
-		};
-
-		top_group.addStackedElements([
-									this.optionCheckboxes.safe_mode,
-									this.optionCheckboxes.snap_to_grid,
-									this.optionCheckboxes.fixed_pos,
-									this.optionCheckboxes.big_editor,
-									this.optionCheckboxes.debug_mode
-								]);
-		view_group.addStackedElements([
-									this.optionCheckboxes.show_connection_controls,
-									this.optionCheckboxes.colorify_segments,
-									this.optionCheckboxes.show_ids,
-									this.optionCheckboxes.show_sites_on_elements,
-									this.optionCheckboxes.element_name_on_top
-								]);
-
-		
-
+		this.optionCheckboxes = {};
+		this.optionsManager.buildOptionsTab(tab);
 
 		this.menu.paint();
 	}
