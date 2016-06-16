@@ -111,8 +111,8 @@ class HostConnection(HostObject):
 HostConnection.register_delete_rule(HostElement, "connection", NULLIFY)
 
 def list():
-	return [e.num for e in HostConnection.objects.all()]
+	return [e.id for e in HostConnection.objects.all()]
 @util.wrap_task
-def synchronize(num):
-	HostConnection.objects.get(num=num).synchronize()
+def synchronize(id_):
+	HostConnection.objects.get(id=id_).synchronize()
 scheduler.scheduleMaintenance(3600, list, synchronize)

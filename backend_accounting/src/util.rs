@@ -9,6 +9,17 @@ pub fn now() -> Time {
     time::get_time().sec
 }
 
+#[inline]
+pub fn now_exact() -> time::Timespec {
+    time::get_time()
+}
+
+#[inline]
+pub fn get_duration(t: time::Duration) -> f64 {
+    let rest = t-time::Duration::seconds(t.num_seconds());
+    t.num_seconds() as f64 + rest.num_nanoseconds().expect("Too many nanoseconds") as f64 / 1_000_000_000.0
+}
+
 pub fn last_periods(now: Time) -> (Time, Time, Time, Time, Time) {
     let mut tm = time::at_utc(time::Timespec::new(now, 0));
     tm.tm_nsec = 0;

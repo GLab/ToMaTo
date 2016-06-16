@@ -422,13 +422,14 @@ class Host(Entity, BaseDocument):
 			# transform
 			for type_ in ("elements", "connections"):
 				for obj_id, obj_recs in orig_data[type_].iteritems():
+					id_ = "%s@%s" % (obj_id, self.name)
 					for obj_rec in obj_recs:
 						new_rec = (int(obj_rec["begin"]), obj_rec["usage"]["memory"], obj_rec["usage"]["diskspace"], obj_rec["usage"]["traffic"], obj_rec["usage"]["cputime"])
 						max_timestamp = max(obj_rec["begin"], max_timestamp)
 						if obj_id in data[type_]:
-							data[type_][obj_id].append(new_rec)
+							data[type_][id_].append(new_rec)
 						else:
-							data[type_][obj_id] = [new_rec]
+							data[type_][id_] = [new_rec]
 
 			get_backend_accounting_proxy().push_usage(data["elements"], data["connections"])
 			self.accountingTimestamp = max_timestamp + 1  # one second greater than last record.

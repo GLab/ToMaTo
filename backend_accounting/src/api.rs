@@ -6,7 +6,7 @@ use std::io;
 
 use sslrpc2::{Server, Params, Value, ToValue, ParseValue, ParseError, ServerCloseGuard, rmp, openssl};
 
-use super::data::{Data, RecordType, Record, Usage};
+use super::data::{Data, RecordType, Record, Usage, InternalUsage};
 use super::util::{Time, last_five_min, last_hour, last_day, last_month, last_year};
 
 pub struct Error {
@@ -67,7 +67,7 @@ impl ParseValue for RecordType {
 
 macro_rules! convert_series {
     ($series:expr, $durfn:ident, $now:expr) => { {
-        let mut series: Vec<(Time, Time, Usage)> = $series.into_iter().map(|u| (0, 0, u)).collect();
+        let mut series: Vec<(Time, Time, InternalUsage)> = $series.into_iter().map(|u| (0, 0, u)).collect();
         let mut end = $now;
         for ref mut rec in series.iter_mut().rev() {
             let start = $durfn(end);
@@ -75,16 +75,19 @@ macro_rules! convert_series {
             rec.1 = end;
             end = start-1;
         }
-        series.into_iter().map(|(start, end, usage)| to_value!{
-            "start" => start,
-            "end" => end,
-            "usage" => to_value!{
-                "memory" => usage.memory,
-                "disk" => usage.disk,
-                "cputime" => usage.cputime,
-                "traffic" => usage.traffic
-            },
-            "measurements" => usage.measurements
+        series.into_iter().map(|(start, end, usage)| {
+            let usage = Usage::from_internal(&usage, end-start);
+            to_value!{
+                "start" => start,
+                "end" => end,
+                "usage" => to_value!{
+                    "memory" => usage.memory,
+                    "disk" => usage.disk,
+                    "cputime" => usage.cputime,
+                    "traffic" => usage.traffic
+                },
+                "measurements" => usage.measurements
+            }
         }).collect::<Vec<_>>()
     } }
 }
@@ -153,21 +156,21 @@ impl Api {
         //!
         //! Return value: None
         debug!("API call push_usage {:?}", params);
-        type Records = HashMap<String, Vec<(Time, f32, f32, f32, f32)>>;
+        type Records = HashMap<String, Vec<(Time, f64, f64, f64, f64)>>;
         let elements = param!(params, "elements", Records);
         let connections = param!(params, "connections", Records);
         for (id, records) in elements {
             for rec in records {
                 let time = rec.0;
                 let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4, 1);
-                self.0.add_host_element_usage(&id, &mut usage, time);
+                self.0.api_add_host_element_usage(&id, &mut usage, time);
             }
         }
         for (id, records) in connections {
             for rec in records {
                 let time = rec.0;
                 let mut usage = Usage::new(rec.1, rec.2, rec.3, rec.4, 1);
-                self.0.add_host_connection_usage(&id, &mut usage, time);
+                self.0.api_add_host_connection_usage(&id, &mut usage, time);
             }
         }
         Ok(())
