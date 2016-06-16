@@ -71,9 +71,6 @@ var OptionsManager = Class.extend({
 		    }
 		];
 
-		//disable topology options for non-owners
-		//todo: set {enabled: false} in topl_opts entries if user is not owner
-
 		//optimization: save lists of names
 		this.topl_opts_keys = [];
 		for (var i = 0; i < this.topl_opts.length; i++) {
