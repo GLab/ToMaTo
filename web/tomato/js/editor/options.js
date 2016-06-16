@@ -89,14 +89,26 @@ var OptionsManager = Class.extend({
 		//define how to store keys (user or topology)
 		this.store_map = {};
 		var t = this;
-		for (var i = 0; i < this.topl_opts_keys.length; i++) {
-			this.store_map[this.topl_opts_keys[i]] = function(opt, value) {
-				//todo: save to account_info instead
-				t.editor.topology.modify_value("_"+opt, value);
-			}
-		}
 		for (var i = 0; i < this.user_opts_keys.length; i++) {
 			this.store_map[this.user_opts_keys[i]] = function(opt, value) {
+				attrs = {}
+				attrs["_editor_"+opt] = value
+				t.editor.triggerEvent({component: "account", object: this, operation: "modify", phase: "begin", attrs: attrs});
+				ajax({
+					url: 'account/'+t.editor.options.user.name+'/modify',
+					data: attrs,
+					successFn: function(result) {
+						t.editor.triggerEvent({component: "account", object: this, operation: "modify", phase: "end", attrs: attrs});
+					},
+					errorFn: function(error) {
+						new errorWindow({error:error});
+						t.editor.triggerEvent({component: "account", object: this, operation: "modify", phase: "error", attrs: attrs});
+					}
+				});
+			}
+		}
+		for (var i = 0; i < this.topl_opts_keys.length; i++) {
+			this.store_map[this.topl_opts_keys[i]] = function(opt, value) {
 				t.editor.topology.modify_value("_"+opt, value);
 			}
 		}
@@ -113,10 +125,10 @@ var OptionsManager = Class.extend({
 			}
 		}
 		for (var i = 0; i < this.user_opts.length; i++) {
-			//todo: load from account_info instead
 			var opt = this.user_opts[i].name;
-			if (this.editor.topology.data["_"+opt] != null) {
-				this.editor.setOption(opt, this.editor.topology.data["_"+opt]);
+			console.log(this.editor.options.user["_editor_"+opt]);
+			if (this.editor.options.user["_editor_"+opt] != null) {
+				this.editor.setOption(opt, this.editor.options.user["_editor_"+opt]);
 			} else {
 				this.editor.setOption(opt, this.user_opts[i].default_value);
 			}
