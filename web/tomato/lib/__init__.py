@@ -276,8 +276,11 @@ class UserObj:
 		if time.time() - self.data_time > settings.get_account_info_update_interval():
 			self.updateData(api)
 
-	def updateData(self, api):
-		self.data = api.account_info()
+	def updateData(self, api, data=None):
+		if data is None:
+			self.data = api.account_info()
+		else:
+			self.data = data
 		self.name = self.data["name"]
 		self.flags = self.data["flags"]
 		self.organization = self.data["organization"]
