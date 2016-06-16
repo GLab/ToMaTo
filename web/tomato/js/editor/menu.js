@@ -63,7 +63,10 @@ Menu.checkbox = function(options) {
 		this.attr("checked", value);
 	}
 	if (options.checked) html.setChecked(true);
-	html.attr("enabled", options.enabled)
+	if ((options.enabled != undefined) && !options.enabled) {
+		html.attr("disabled", true);
+		html.attr("readonly", true);
+	}
 	return html
 };
 
