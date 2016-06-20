@@ -7,10 +7,10 @@ class TopologyTestCase(ProxyHoldingTestCase):
 
 	@classmethod
 	def setUpClass(cls):
-		cls.remove_all_hosts()
-		cls.remove_all_other_accounts()
-		cls.remove_all_templates()
 		cls.remove_all_topologies()
+		cls.remove_all_templates()
+		cls.remove_all_other_accounts()
+		cls.remove_all_hosts()
 
 		for host in cls.test_host_addresses:
 			cls.add_host_if_missing(host)
@@ -41,10 +41,10 @@ class TopologyTestCase(ProxyHoldingTestCase):
 
 	@classmethod
 	def tearDownClass(cls):
-		cls.remove_all_hosts()
-		cls.remove_all_other_accounts()
-		cls.remove_all_templates()
 		cls.remove_all_topologies()
+		cls.remove_all_templates()
+		cls.remove_all_other_accounts()
+		cls.remove_all_hosts()
 
 	def test_topology_list(self):
 		print "hello world"

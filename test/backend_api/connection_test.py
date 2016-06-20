@@ -8,10 +8,11 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.remove_all_other_accounts()
-		cls.remove_all_templates()
 		cls.remove_all_connections()
 		cls.remove_all_elements()
 		cls.remove_all_topologies()
+		cls.remove_all_templates()
+		cls.remove_all_profiles()
 		cls.remove_all_hosts()
 
 
@@ -22,6 +23,16 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 			cls.proxy_holder.backend_core.host_action(host_name, "forced_update")
 
 		cls.add_templates_if_missing()
+
+
+		# Create test profile for openvz
+		cls.testprofile_tech = cls.test_temps[0]['tech']
+		cls.testprofile_name = "normal"
+		cls.testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal',
+								 'preference': 10, 'description': 'Test profile'}
+
+		cls.proxy_holder.backend_core.profile_create(cls.testprofile_tech, cls.testprofile_name,
+													 cls.testprofile_args)
 
 		# Create user without permission to create profiles
 		testuser_username = "testuser"
@@ -35,27 +46,27 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 													testuser_attrs)
 		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
+
+		#Create empty  testtopology
 		cls.testtopology = cls.proxy_holder.backend_core.topology_create(cls.default_user_name)
 		cls.testtopology_id = cls.testtopology['id']
-		
+
+		#Add two elements to test topology
 		cls.testelement1_attrs = {
-			"profile": "normal",
+			"profile": cls.testprofile_name,
 			"name": "Ubuntu 12.04 (x86) #1",
-			"template":  "ubuntu-12.04_x86"
+			"template":  cls.test_temps[0]['name']
 			}
 
-		cls.testelement1 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id, type=cls.test_temps[0]['tech'], attrs=cls.testelement1_attrs)
+		cls.testelement1 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
+																		type=cls.test_temps[0]['tech'],
+																		attrs=cls.testelement1_attrs)
 		cls.testelement1_id = cls.testelement1['id']
 
-		cls.testelement1_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['tech']+"_interface",
-																		parent=cls.testelement1_id)
-		cls.testelement1_interface_id = cls.testelement1_interface["id"]
-
 		cls.testelement2_attrs = {
-			"profile": "normal",
+			"profile": cls.testprofile_name,
 			"name": "Ubuntu 12.04 (x86) #2",
-			"template": "ubuntu-12.04_x86"
+			"template":  cls.test_temps[0]['name']
 			}
 
 		cls.testelement2 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
@@ -63,17 +74,28 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 																		attrs=cls.testelement2_attrs)
 		cls.testelement2_id = cls.testelement2['id']
 
-		cls.testelement2_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['tech']+"_interface",
-																		parent=cls.testelement2_id)
-		cls.testelement2_interface_id = cls.testelement2_interface["id"]
-		cls.proxy_holder.backend_core.topology_action(cls.testtopology_id,"start")
+		
+		#Start topology (to save some time later)
+		#cls.proxy_holder.backend_core.topology_action(cls.testtopology_id, "start")
 
 
 	def setUp(self):
+		self.testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
+																				  type=self.test_temps[0][
+																						   'tech'] + "_interface",
+																				  parent=self.testelement1_id)
+		self.testelement1_interface_id = self.testelement1_interface["id"]
+
+		self.testelement2_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
+																				  type=self.test_temps[0][
+																						   'tech'] + "_interface",
+																				  parent=self.testelement2_id)
+		self.testelement2_interface_id = self.testelement2_interface["id"]
 
 		self.testconnection = self.proxy_holder.backend_core.connection_create(self.testelement1_interface_id, self.testelement2_interface_id)
 		self.testconnection_id = self.testconnection["id"]
+
+		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "start")
 
 	def tearDown(self):
 		self.remove_all_connections()
@@ -82,13 +104,13 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 
 	@classmethod
 	def tearDownClass(cls):
-
 		cls.proxy_holder.backend_core.topology_action(cls.testtopology_id,"stop")
 		cls.remove_all_other_accounts()
-		cls.remove_all_templates()
 		cls.remove_all_connections()
 		cls.remove_all_elements()
 		cls.remove_all_topologies()
+		cls.remove_all_templates()
+		cls.remove_all_profiles()
 		cls.remove_all_hosts()
 
 	def test_element_list(self):

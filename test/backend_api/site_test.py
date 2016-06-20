@@ -16,6 +16,7 @@ class SiteTestCases(ProxyHoldingTestCase):
 
 	def setUp(self):
 		self.remove_all_other_accounts()
+		self.remove_all_hosts()
 		self.remove_all_other_sites()
 
 		username = "testuser"
@@ -36,6 +37,7 @@ class SiteTestCases(ProxyHoldingTestCase):
 
 	def tearDown(self):
 		self.remove_all_other_accounts()
+		self.remove_all_hosts()
 		self.remove_all_other_sites()
 
 
