@@ -101,7 +101,7 @@ impl Config {
     }
 }
 
-struct SimpleLogger;
+pub struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
     #[inline]

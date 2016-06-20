@@ -127,6 +127,7 @@ impl RemoteHierarchy {
     }
 
     fn reconnect(&self) -> Result<(), SslError> {
+        info!("Reconnecting...");
         let mut core_service = try!(Client::new(&self.core_service_address as &str, self.ssl_context.clone()));
         mem::swap(&mut core_service, &mut self.core_service.write().expect("Lock poisoned"));
         let mut user_service = try!(Client::new(&self.user_service_address as &str, self.ssl_context.clone()));
