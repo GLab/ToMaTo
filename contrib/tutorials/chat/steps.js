@@ -495,9 +495,11 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 		help_page: 'PacketCapturing'
 	},
 	{
-		text: '<p class="tutorialExplanation">Make sure that some chat messages go over that link and then we can have a look at them. To view them, we will use an online service called <i>Cloudshark</i>. Right click on the link and choose <i>View capture in Cloudshark</i>.</p>\
-<p class="tutorialExplanation">You may need to sign in to Cloudshark in order for this to work. You can just use their OAuth authentication buttons.</p>\
-<p class="tutorialCommand">Open the captured packets in Cloudshark</p>',
+		text: '<p class="tutorialExplanation">If you are interested, you can install Wireshark and view the traffic on the links. Otherwise just continue with the rest of the tutorial.</p>\
+		 <p class="tutorialExplanation">Make sure that some chat messages go over that link and then we can have a look at them. To view them, we will use a tool called <i>Wireshark</i>.</p>\
+		 <p class="tutorialExplanation">The download link can be found here: <a href="https://www.wireshark.org/" target="_blank" style="color: blue;">Wireshark</a>.</p>\
+		 <p class ="tutorialExplanation">You can right click on the connection and download the captured traffic. The file can be opened with Wireshark</p>\
+<p class="tutorialCommand">Open the captured packets in Wireshark</p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "action",
@@ -506,13 +508,6 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 				phase: "end"
 			});
 		},
-		help_page: 'PacketCapturing'
-	},
-	{
- 		text: '<p class="tutorialExplanation">Have a look at the packets and try to figure out how they are encoded and what the fields could mean.</p>\
-<p class="tutorialExplanation">It might happen that your pop-up blocker prevents the Cloudshark window from opening. You should disable the blocker for ToMaTo.</p>\
-<p class="tutorialCommand">Click on continue when you are done</p>',
-		skip_button: 'Continue',
 		help_page: 'PacketCapturing'
 	},
 	{
