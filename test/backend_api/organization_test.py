@@ -11,6 +11,9 @@ class OrganizationTestCases(ProxyHoldingTestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.remove_all_other_accounts()
+		cls.remove_all_hosts()
+		cls.remove_all_other_sites()
+		cls.remove_all_other_organizations()
 
 
 	def setUp(self):
@@ -39,6 +42,7 @@ class OrganizationTestCases(ProxyHoldingTestCase):
 
 	def tearDown(self):
 		self.remove_all_other_accounts()
+		self.remove_all_hosts()
 		self.remove_all_other_sites()
 		self.remove_all_other_organizations()
 
