@@ -375,8 +375,12 @@ class TopologyInfo(ActionObj):
 		:return: whether the user has this role (or a higher one)
 		:rtype: bool
 		"""
-		user_role = self.info()['permissions'][username]
-		return topology_role.Role.leq(role,user_role)
+		try:
+			user_role = self.info()['permissions'][username]
+			return topology_role.Role.leq(role,user_role)
+		except:
+			return False
+
 
 	def organization_has_role(self, organization, role):
 		"""

@@ -34,7 +34,7 @@
 			text:	'<p class="tutorialExplanation">\
 						Let\'s take a closer look at a connection.</p>\
 					<p class="tutorialExplanation">\
-						Every connection consits of two network interfaces and the connection itself.<br />\
+						Every connection consists of two network interfaces and the connection itself.<br />\
 						An interface is represented by a grey circle at a device. Here you can configure the device\'s network preferences (e.g., ip address).<br />\
 						The connection is represented by a blue square at its center. Here, you can configure the link (e.g., bandwidth, loss rate, etc).</p>\
 					<p class="tutorialExplanation">\
@@ -141,25 +141,9 @@
 				return compareToMask(obj,mask);
 			},
 			text:	'<p class="tutorialExplanation">\
-						Using the connection\'s right-click menu, you can now download the capture, or directly view it in cloudshark.<br />\
+						Using the connection\'s right-click menu, you can now download the capture.<br />\
 						The downloaded file can be viewed by any application which supports pcap viewing, like Wireshark.</p>\
-						<p class="tutorialExplanation">If you decide to use CloudShark, you may need to sign in on their webpage.</p>\
-<p class="tutorialCommand">Please download the captur using the connection\'s right-click menu.</p>',
-			skip_button:	"Continue",
-			help_page: 'packetcapturing'
-			},
-			{
-			trigger: function(obj) {
-				mask = { 	operation: "action",
-						phase: "end",
-						component: "connection",
-						action: "download_grant"
-					};
-				return compareToMask(obj,mask);
-			},
-			text:	'<p class="tutorialCommand">\
-					Now use the right-click menu to View the Capture in CloudShark.\
-					</p>',
+						<p class="tutorialCommand">Please download the capture using the connection\'s right-click menu.</p>',
 			skip_button:	"Continue",
 			help_page: 'packetcapturing'
 			},
