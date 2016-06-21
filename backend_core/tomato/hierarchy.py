@@ -11,17 +11,21 @@ import topology
 # HostElement
 
 def hostelement_get(id_):
-	hostelement.HostElement.objects.get(num=id_)
+	num, hostname = id_.split("@")
+	from host import Host
+	host = Host.objects.get(name=hostname)
+	return hostelement.HostElement.objects.get(num=num, host=host)
+
 
 def hostelement_exists(id_):
 	try:
-		hostelement.HostElement.objects.get(num=id_)
+		hostelement_get(id_)
 		return True
 	except:
 		return None
 
 def hostelement_parents(id_):
-	hel = hostelement.HostElement.objects.get(num=id_)
+	hel = hostelement_get(id_)
 	UserError.check(hel is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
 	res = []
@@ -49,17 +53,20 @@ def element_parents(id_):
 # HostConnection
 
 def hostconnection_get(id_):
-	hostconnection.HostConnection.objects.get(num=id_)
+	num, hostname = id_.split("@")
+	from host import Host
+	host = Host.objects.get(name=hostname)
+	return hostconnection.HostConnection.objects.get(num=num, host=host)
 
 def hostconnection_exists(id_):
 	try:
-		hostconnection.HostConnection.objects.get(num=id_)
+		hostconnection_get(id_)
 		return True
 	except:
 		return None
 
 def hostconnection_parents(id_):
-	hconn = hostconnection.HostConnection.objects.get(num=id_)
+	hconn = hostconnection_get(id_)
 	UserError.check(hconn is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
 	res = []

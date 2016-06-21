@@ -7,46 +7,42 @@ use std::sync::{RwLock, Mutex};
 
 use fnv::FnvHasher;
 
-use util::{Time, now, Binary, last_periods};
+use util::{Time, now, get_duration, now_exact, Binary, last_periods};
 use hierarchy::Hierarchy;
 
 
 static MAGIC: u16 = 28732;
-static VERSION: u8 = 0;
-
-
+static VERSION: u8 = 1;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Usage {
-    pub memory: f32, // Bytes on average
-    pub disk: f32, // Bytes on average
-    pub traffic: f32, // Bytes
-    pub cputime: f32, // Core-Seconds
-    pub measurements: u32
+pub struct InternalUsage {
+    pub memory: f64, // Byte-seconds
+    pub disk: f64, // Byte-seconds
+    pub traffic: f64, // Bytes
+    pub cputime: f64, // Core-Seconds
+    pub measurements: u32,
 }
 
-const USAGE_SIZE: usize = 20;
+const USAGE_SIZE: usize = 36;
 
-impl Usage {
-    pub fn new(memory: f32, disk: f32, traffic: f32, cputime: f32, measurements: u32) -> Usage {
-        Usage { memory: memory, disk: disk, traffic: traffic, cputime: cputime, measurements: measurements }
+impl InternalUsage {
+    pub fn new(memory: f64, disk: f64, traffic: f64, cputime: f64, measurements: u32) -> InternalUsage {
+        InternalUsage { memory: memory, disk: disk, traffic: traffic, cputime: cputime, measurements: measurements }
     }
 
-    pub fn zero() -> Usage {
-        Usage::new(0.0, 0.0, 0.0, 0.0, 0)
+    pub fn zero() -> InternalUsage {
+        InternalUsage::new(0.0, 0.0, 0.0, 0.0, 0)
     }
 
-    pub fn add(&mut self, other: &Usage) {
-        self.memory = self.memory * self.measurements as f32 + other.memory * other.measurements as f32;
-        self.disk = self.disk * self.measurements as f32 + other.disk * other.measurements as f32;
+    pub fn add(&mut self, other: &InternalUsage) {
+        self.memory += other.memory;
+        self.disk += other.disk;
         self.measurements += other.measurements;
-        self.memory /= self.measurements as f32;
-        self.disk /= self.measurements as f32;
         self.cputime += other.cputime;
         self.traffic += other.traffic;
     }
 
-    pub fn divide_by(&mut self, f: f32) {
+    pub fn divide_by(&mut self, f: f64) {
         self.memory /= f;
         self.disk /= f;
         self.cputime /= f;
@@ -54,31 +50,78 @@ impl Usage {
     }
 
     pub fn encode(&self, buf: &mut [u8]) {
-        Binary::write_f32(self.memory, &mut buf[0..]);
-        Binary::write_f32(self.disk, &mut buf[4..]);
-        Binary::write_f32(self.traffic, &mut buf[8..]);
-        Binary::write_f32(self.cputime, &mut buf[12..]);
-        Binary::write_u32(self.measurements, &mut buf[16..]);
+        Binary::write_f64(self.memory, &mut buf[0..]);
+        Binary::write_f64(self.disk, &mut buf[8..]);
+        Binary::write_f64(self.traffic, &mut buf[16..]);
+        Binary::write_f64(self.cputime, &mut buf[24..]);
+        Binary::write_u32(self.measurements, &mut buf[32..]);
     }
 
-    pub fn decode(buf: &[u8]) -> Usage {
-        let memory = Binary::read_f32(&buf[0..]);
-        let disk = Binary::read_f32(&buf[4..]);
-        let traffic = Binary::read_f32(&buf[8..]);
-        let cputime = Binary::read_f32(&buf[12..]);
-        let measurements = Binary::read_u32(&buf[16..]);
-        Usage::new(memory, disk, traffic, cputime, measurements)
+    pub fn decode(buf: &[u8]) -> InternalUsage {
+        let memory = Binary::read_f64(&buf[0..]);
+        let disk = Binary::read_f64(&buf[8..]);
+        let traffic = Binary::read_f64(&buf[16..]);
+        let cputime = Binary::read_f64(&buf[24..]);
+        let measurements = Binary::read_u32(&buf[32..]);
+        InternalUsage::new(memory, disk, traffic, cputime, measurements)
     }
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Usage {
+    pub memory: f64, // Bytes on average
+    pub disk: f64, // Bytes on average
+    pub traffic: f64, // Bytes
+    pub cputime: f64, // Core-Seconds
+    pub measurements: u32,
+}
+
+impl Usage {
+    pub fn new(memory: f64, disk: f64, traffic: f64, cputime: f64, measurements: u32) -> Usage {
+        Usage { memory: memory, disk: disk, traffic: traffic, cputime: cputime, measurements: measurements }
+    }
+
+    pub fn zero() -> Usage {
+        Usage::new(0.0, 0.0, 0.0, 0.0, 0)
+    }
+
+    pub fn divide_by(&mut self, f: f64) {
+        self.memory /= f;
+        self.disk /= f;
+        self.cputime /= f;
+        self.traffic /= f;
+    }
+
+    pub fn from_internal(usage: &InternalUsage, duration: Time) -> Usage {
+        Usage::new(
+            usage.memory/duration as f64,
+            usage.disk/duration as f64,
+            usage.traffic,
+            usage.cputime,
+            usage.measurements
+        )
+    }
+
+    pub fn to_internal(&self, duration: Time) -> InternalUsage {
+        InternalUsage::new(
+            self.memory*duration as f64,
+            self.disk*duration as f64,
+            self.traffic,
+            self.cputime,
+            self.measurements
+        )
+    }
+}
+
 
 #[derive(Clone)]
 pub struct Record {
     pub timestamp: Time,
-    pub five_min: VecDeque<Usage>,
-    pub hour: VecDeque<Usage>,
-    pub day: VecDeque<Usage>,
-    pub month: VecDeque<Usage>,
-    pub year: VecDeque<Usage>
+    pub five_min: VecDeque<InternalUsage>,
+    pub hour: VecDeque<InternalUsage>,
+    pub day: VecDeque<InternalUsage>,
+    pub month: VecDeque<InternalUsage>,
+    pub year: VecDeque<InternalUsage>
 }
 
 impl Record {
@@ -96,54 +139,54 @@ impl Record {
     pub fn new(timestamp: Time, max_five_min: usize, max_hour: usize, max_day: usize, max_month: usize, max_year: usize) -> Record {
         let mut rec = Record::empty(timestamp, max_five_min, max_hour, max_day, max_month, max_year);
         for _ in 0..max_five_min {
-            rec.five_min.push_back(Usage::zero());
+            rec.five_min.push_back(InternalUsage::zero());
         }
         for _ in 0..max_hour {
-            rec.hour.push_back(Usage::zero());
+            rec.hour.push_back(InternalUsage::zero());
         }
         for _ in 0..max_day {
-            rec.day.push_back(Usage::zero());
+            rec.day.push_back(InternalUsage::zero());
         }
         for _ in 0..max_month {
-            rec.month.push_back(Usage::zero());
+            rec.month.push_back(InternalUsage::zero());
         }
         for _ in 0..max_year {
-            rec.year.push_back(Usage::zero());
+            rec.year.push_back(InternalUsage::zero());
         }
         rec
     }
 
-    pub fn cur(&self) -> &Usage {
+    pub fn cur(&self) -> &InternalUsage {
         self.five_min.back().expect("No current entry")
     }
 
-    pub fn add(&mut self, usage: &Usage, now: Time) {
+    pub fn add(&mut self, usage: &InternalUsage, now: Time) {
         if now / 300 != self.timestamp / 300 {
             let (last_five_min, last_hour, last_day, last_month, last_year) = last_periods(now);
             if self.timestamp < last_five_min {
                 debug!("New 5 minute period, shifting usage");
                 self.five_min.pop_front();
-                self.five_min.push_back(Usage::zero());
+                self.five_min.push_back(InternalUsage::zero());
             }
             if self.timestamp < last_hour {
                 debug!("New hour period, shifting usage");
                 self.hour.pop_front();
-                self.hour.push_back(Usage::zero());
+                self.hour.push_back(InternalUsage::zero());
             }
             if self.timestamp < last_day {
                 debug!("New day period, shifting usage");
                 self.day.pop_front();
-                self.day.push_back(Usage::zero());
+                self.day.push_back(InternalUsage::zero());
             }
             if self.timestamp < last_month {
                 debug!("New month period, shifting usage");
                 self.month.pop_front();
-                self.month.push_back(Usage::zero());
+                self.month.push_back(InternalUsage::zero());
             }
             if self.timestamp < last_year {
                 debug!("New year period, shifting usage");
                 self.year.pop_front();
-                self.year.push_back(Usage::zero());
+                self.year.push_back(InternalUsage::zero());
             }
         }
         if let Some(entr) = self.five_min.back_mut() {
@@ -216,19 +259,19 @@ impl Record {
         }
         let mut rec = Record::empty(timestamp, max_five_min, max_hour, max_day, max_month, max_year);
         for _ in 0..max_five_min {
-            rec.five_min.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
+            rec.five_min.push_back(InternalUsage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         for _ in 0..max_hour {
-            rec.hour.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
+            rec.hour.push_back(InternalUsage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         for _ in 0..max_day {
-            rec.day.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
+            rec.day.push_back(InternalUsage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         for _ in 0..max_month {
-            rec.month.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
+            rec.month.push_back(InternalUsage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         for _ in 0..max_year {
-            rec.year.push_back(Usage::decode(&buf[pos..])); pos += USAGE_SIZE;
+            rec.year.push_back(InternalUsage::decode(&buf[pos..])); pos += USAGE_SIZE;
         }
         Ok(rec)
     }
@@ -303,7 +346,10 @@ macro_rules! hierarchy {
     ($hierarchy:expr, $ctype:expr, $ptype:expr, $cid:expr) => {
         match $hierarchy.get($ctype, $ptype, $cid) {
             Ok(data) => data,
-            Err(_) => return
+            Err(_) => {
+                error!("Failed to obtain {} of {}/{}", $ptype.name(), $ctype.name(), $cid);
+                return
+            }
         };
     }
 }
@@ -352,20 +398,25 @@ impl Data {
 
     pub fn store_all(&self) -> Result<usize, StoreError> {
         let mut stored = 0;
-        let last_store = self.last_store.lock().expect("Lock poisoned");
+        let start = now_exact();
+        let last_store = *self.last_store.lock().expect("Lock poisoned");
         for (&(type_, ref id), record) in self.records.read().expect("Lock poisoned").iter() {
             let record = record.lock().expect("Lock poisoned");
-            if record.timestamp >= *last_store {
+            if record.timestamp >= last_store {
                 try!(self.store_record(type_, id, &record));
                 stored += 1;
             }
         }
-        *self.last_store.lock().expect("Lock poisoned") = now();
+        let end = now_exact();
+        if stored > 0 {
+            info!("Storing {} entries took {} seconds", stored, get_duration(end-start));
+        }
+        *self.last_store.lock().expect("Lock poisoned") = end.sec;
         Ok(stored)
     }
 
     pub fn cleanup_all(&self, max_age: Time) -> Result<usize, StoreError> {
-        debug!("Cleanup begin");
+        info!("Cleanup begin");
         // Phase 1: determine which records are pretty old
         let mut to_check = Vec::new();
         let limit = now() - max_age;
@@ -423,7 +474,7 @@ impl Data {
         Ok(())
     }
 
-    pub fn add_usage(&self, type_: RecordType, id: String, usage: &Usage, timestamp: Time) {
+    pub fn add_usage(&self, type_: RecordType, id: String, usage: &InternalUsage, timestamp: Time) {
         debug!("Adding usage to {}/{}: {:?}@{}", type_.name(), id, usage, timestamp);
         let key = (type_, id);
         {
@@ -441,11 +492,21 @@ impl Data {
         records.insert(key, Mutex::new(record));
     }
 
-    pub fn add_organization_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+    pub fn get_time_diff(&self, type_: RecordType, id: String, timestamp: Time) -> Time {
+        let key = (type_, id);
+        let records = self.records.read().expect("Lock poisoned");
+        if let Some(record) = records.get(&key) {
+            timestamp - record.lock().expect("Lock poisoned").timestamp
+        } else {
+            0
+        }
+    }
+
+    pub fn add_organization_usage(&self, id: &str, usage: &mut InternalUsage, timestamp: Time) {
         self.add_usage(RecordType::Organization, id.to_owned(), usage, timestamp);
     }
 
-    pub fn add_user_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+    pub fn add_user_usage(&self, id: &str, usage: &mut InternalUsage, timestamp: Time) {
         let mut organizations = hierarchy!(self.hierarchy, RecordType::User, RecordType::Organization, &id);
         self.add_usage(RecordType::User, id.to_owned(), usage, timestamp);
         if organizations.is_empty() {
@@ -455,12 +516,12 @@ impl Data {
         self.add_organization_usage(&organizations.pop().unwrap(), usage, timestamp);
     }
 
-    pub fn add_topology_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+    pub fn add_topology_usage(&self, id: &str, usage: &mut InternalUsage, timestamp: Time) {
         let users = hierarchy!(self.hierarchy, RecordType::Topology, RecordType::User, &id);
         self.add_usage(RecordType::Topology, id.to_owned(), usage, timestamp);
         if users.len() > 1 {
             debug!("Topology {} has multiple owners, dividing usage by {}", id, users.len());
-            usage.divide_by(users.len() as f32);
+            usage.divide_by(users.len() as f64);
         }
         if users.is_empty() {
             warn!("No user for topology/{}", id);
@@ -470,7 +531,7 @@ impl Data {
         }
     }
 
-    pub fn add_element_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+    pub fn add_element_usage(&self, id: &str, usage: &mut InternalUsage, timestamp: Time) {
         let mut topologies = hierarchy!(self.hierarchy, RecordType::Element, RecordType::Topology, &id);
         self.add_usage(RecordType::Element, id.to_owned(), usage, timestamp);
         if topologies.is_empty() {
@@ -480,7 +541,7 @@ impl Data {
         self.add_topology_usage(&topologies.pop().unwrap(), usage, timestamp);
     }
 
-    pub fn add_connection_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+    pub fn add_connection_usage(&self, id: &str, usage: &mut InternalUsage, timestamp: Time) {
         let mut topologies = hierarchy!(self.hierarchy, RecordType::Connection, RecordType::Topology, &id);
         self.add_usage(RecordType::Connection, id.to_owned(), usage, timestamp);
         if topologies.is_empty() {
@@ -490,7 +551,7 @@ impl Data {
         self.add_topology_usage(&topologies.pop().unwrap(), usage, timestamp);
     }
 
-    pub fn add_host_element_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+    pub fn add_host_element_usage(&self, id: &str, usage: &mut InternalUsage, timestamp: Time) {
         let elements = hierarchy!(self.hierarchy, RecordType::HostElement, RecordType::Element, &id);
         let connections = hierarchy!(self.hierarchy, RecordType::HostElement, RecordType::Connection, &id);
         self.add_usage(RecordType::HostElement, id.to_owned(), usage, timestamp);
@@ -510,7 +571,7 @@ impl Data {
         }
     }
 
-    pub fn add_host_connection_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+    pub fn add_host_connection_usage(&self, id: &str, usage: &mut InternalUsage, timestamp: Time) {
         let mut connections = hierarchy!(self.hierarchy, RecordType::HostConnection, RecordType::Connection, &id);
         self.add_usage(RecordType::HostConnection, id.to_owned(), usage, timestamp);
         if connections.is_empty() {
@@ -527,5 +588,15 @@ impl Data {
         if *self.last_cleanup.lock().expect("Lock poisoned") + cleanup_interval <= now() {
             self.cleanup_all(max_record_age).expect("Store failed");
         }
+    }
+
+    pub fn api_add_host_element_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        let mut usage = usage.to_internal(self.get_time_diff(RecordType::HostElement, id.to_owned(), timestamp));
+        self.add_host_element_usage(id, &mut usage, timestamp)
+    }
+
+    pub fn api_add_host_connection_usage(&self, id: &str, usage: &mut Usage, timestamp: Time) {
+        let mut usage = usage.to_internal(self.get_time_diff(RecordType::HostConnection, id.to_owned(), timestamp));
+        self.add_host_connection_usage(id, &mut usage, timestamp)
     }
 }
