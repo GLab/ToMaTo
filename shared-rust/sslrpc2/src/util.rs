@@ -2,6 +2,8 @@ use rmp::Value;
 use rmp::value::{Integer, Float};
 
 use std::i64;
+use std::f64;
+use std::f32;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::mem;
@@ -13,14 +15,14 @@ pub trait ParseValue: Sized {
 }
 
 impl ParseValue for Value {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(val)
     }
 }
 
 impl ParseValue for () {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         match val {
             Value::Nil => Ok(()),
@@ -30,7 +32,7 @@ impl ParseValue for () {
 }
 
 impl ParseValue for bool {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         match val {
             Value::Boolean(v) => Ok(v),
@@ -40,89 +42,89 @@ impl ParseValue for bool {
 }
 
 impl ParseValue for u64 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         match val {
             Value::Integer(Integer::U64(val)) => Ok(val),
             Value::Integer(Integer::I64(val)) if val >= 0 => Ok(val as u64),
-            Value::Float(Float::F64(val)) if val.trunc() == val => Ok(val.trunc() as u64),
-            Value::Float(Float::F32(val)) if val.trunc() == val => Ok(val.trunc() as u64),
+            Value::Float(Float::F64(val)) if val.fract().abs() < f64::EPSILON => Ok(val.trunc() as u64),
+            Value::Float(Float::F32(val)) if val.fract().abs() < f32::EPSILON => Ok(val.trunc() as u64),
             _ => Err(ParseError)
         }
     }
 }
 
 impl ParseValue for u8 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(u64::parse(val)) as u8)
     }
 }
 
 impl ParseValue for u16 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(u64::parse(val)) as u16)
     }
 }
 
 impl ParseValue for u32 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(u64::parse(val)) as u32)
     }
 }
 
 impl ParseValue for usize {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(u64::parse(val)) as usize)
     }
 }
 
 impl ParseValue for i64 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         match val {
             Value::Integer(Integer::U64(val)) if val < i64::MAX as u64 => Ok(val as i64),
             Value::Integer(Integer::I64(val)) => Ok(val),
-            Value::Float(Float::F64(val)) if val.trunc() == val => Ok(val.trunc() as i64),
-            Value::Float(Float::F32(val)) if val.trunc() == val => Ok(val.trunc() as i64),
+            Value::Float(Float::F64(val)) if val.fract().abs() < f64::EPSILON => Ok(val.trunc() as i64),
+            Value::Float(Float::F32(val)) if val.fract().abs() < f32::EPSILON => Ok(val.trunc() as i64),
             _ => Err(ParseError)
         }
     }
 }
 
 impl ParseValue for i8 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(i64::parse(val)) as i8)
     }
 }
 
 impl ParseValue for i16 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(i64::parse(val)) as i16)
     }
 }
 
 impl ParseValue for i32 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(i64::parse(val)) as i32)
     }
 }
 
 impl ParseValue for isize {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(i64::parse(val)) as isize)
     }
 }
 
 impl ParseValue for f64 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         match val {
             Value::Integer(Integer::U64(val)) => Ok(val as f64),
@@ -135,14 +137,14 @@ impl ParseValue for f64 {
 }
 
 impl ParseValue for f32 {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         Ok(try!(f64::parse(val)) as f32)
     }
 }
 
 impl ParseValue for String {
-    #[inline(always)]
+    #[inline]
     fn parse(val: Value) -> Result<Self, ParseError> {
         match val {
             Value::String(val) => Ok(val),
@@ -230,119 +232,119 @@ pub trait ToValue {
 }
 
 impl ToValue for Value {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         self
     }
 }
 
 impl ToValue for () {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         Value::Nil
     }
 }
 
 impl ToValue for bool {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         Value::Boolean(self)
     }
 }
 
 impl ToValue for u64 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         Value::Integer(Integer::U64(self))
     }
 }
 
 impl ToValue for u8 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         u64::to_value(self as u64)
     }
 }
 
 impl ToValue for u16 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         u64::to_value(self as u64)
     }
 }
 
 impl ToValue for u32 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         u64::to_value(self as u64)
     }
 }
 
 impl ToValue for usize {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         u64::to_value(self as u64)
     }
 }
 
 impl ToValue for i64 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         Value::Integer(Integer::I64(self))
     }
 }
 
 impl ToValue for i8 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         i64::to_value(self as i64)
     }
 }
 
 impl ToValue for i16 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         i64::to_value(self as i64)
     }
 }
 
 impl ToValue for i32 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         i64::to_value(self as i64)
     }
 }
 
 impl ToValue for isize {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         i64::to_value(self as i64)
     }
 }
 
 impl ToValue for f32 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         Value::Float(Float::F32(self))
     }
 }
 
 impl ToValue for f64 {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         Value::Float(Float::F64(self))
     }
 }
 
 impl ToValue for String {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         Value::String(self)
     }
 }
 
 impl ToValue for &'static str {
-    #[inline(always)]
+    #[inline]
     fn to_value(self) -> Value {
         Value::String(self.to_owned())
     }

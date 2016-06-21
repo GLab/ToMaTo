@@ -1,3 +1,5 @@
 #!/bin/bash
 
-/code/backend_accounting/target/release/backend_accounting /etc/tomato/config.yaml
+export PATH="$PATH:/root/.cargo/bin"
+rustup default nightly
+cargo run --release --manifest-path /code/service/Cargo.toml /etc/tomato/config.yaml

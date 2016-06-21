@@ -41,6 +41,10 @@
 		<td>{{template.subtype}}</td>
 	</tr>
 	<tr>
+		<th>Popularity:</th>
+		<td>{{template.popularity}}</td>
+	</tr>
+	<tr>
 		<th>Preference:</th>
 		<td>{{template.preference}}</td>
 	</tr>
@@ -101,6 +105,20 @@
 		<th>Image Size</th>
 		<td>{{template.size|filesizeformat}}</td>
 	</tr>
+	{% if not template.restricted or "restricted_templates" in request.session.user.flags %}
+	<tr>
+		<th>External URLs</th>
+		<td>
+			{% for url in template.urls %}
+			<a href="{{url}}">{{url}}</a><br/>
+			{% endfor %}
+		</td>
+	</tr>
+	{% endif %}
+	<tr>
+		<th>Checksum</th>
+		<td>{{template.checksum}}</td>
+	</tr>
 	<tr>
 		<th>Availability:</th>
 		<td>
@@ -127,14 +145,6 @@
 		<th>Description:</th>
 		<td>{{template.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 	</tr>
-	{% if not template.restricted or "restricted_templates" in request.session.user.flags %}
-	<tr>
-		<th>Torrent File</th>
-		<td>
-			<form><button type="submit" formaction="{%url "template.download_torrent" template.id%}" class="btn btn-info"><span class="glyphicon glyphicon-floppy-save"></span></button></form>
-		</td>
-	</tr>
-	{% endif %}
 </table>
 
 <div class="skip-sm"></div>
@@ -143,7 +153,6 @@
 
 {% if request.session.user.isGlobalHostManager %}
 <form>
-  <button type="submit" formaction="{%url "template.edit_torrent" template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-open"></span> upload torrent</button>
   <button type="submit" formaction="{%url "template.edit" template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit template</button>
   <button type="submit" formaction="{%url "template.remove" template.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove template</button>
 </form>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NFV Demo - ToMaTo</title>
+
+    <style>
+        #container {
+            padding:0;
+            position: absolute;
+            background-url:"topology.png";
+        }
+
+        iframe.vnc {
+            height: 440px;
+            width: 745px;
+            display: block;
+            position: absolute;
+            border:0;
+        }
+        #sender {
+            top: 0;
+            left: 0;
+        }
+        #receiver {
+            bottom: 0;
+            right: 0;
+        }
+        #compressor {
+            top: 0;
+            right: 0;
+        }
+        #controller {
+            bottom: 0;
+            left: 0;
+        }
+        #background {
+            margin: auto;
+            margin-top: auto;
+            margin-bottom: auto;
+            display: block;
+            position: relative;
+        }
+    </style>
+
+</head>
+<body>
+<div id="container">
+    <img src="topology.png" id="background" />
+    <iframe class="vnc" id="sender" src="request.html"></iframe>
+    <iframe class="vnc" id="receiver" src="request.html"></iframe>
+    <iframe class="vnc" id="compressor" src="request.html"></iframe>
+    <iframe class="vnc" id="controller" src="request.html"></iframe>
+</div>
+
+</body>
+</html>

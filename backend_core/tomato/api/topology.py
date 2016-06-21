@@ -76,7 +76,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	top.modify(attrs)
 	return top.info()
 
-def topology_action(id, action, params): #@ReservedAssignment
+def topology_action(id, action, params=None): #@ReservedAssignment
 	"""
 	Performs an action on the whole topology (i.e. on all elements) in a smart
 	way.

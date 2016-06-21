@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enter Element ID</title>
+    <style>
+        body {
+            color:white;
+            font-size:17pt;
+            font-family:monospace;
+        }
+        input {
+            width: 50%;
+            background-color:black;
+            color:white;
+            border:1px solid white;
+            font-size:17pt;
+            font-family:monospace;
+        }
+        button {
+            font-size:17pt;
+            font-family:monospace;
+        }
+    </style>
+    <script language="javascript">
+        function clickForm() {
+            var url = "http://master.tomato-lab.org/element/"+document.getElementById("element_id").value+"/console_novnc";
+            window.location.assign(url);
+        }
+    </script>
+</head>
+<body>
+
+Enter Element ID:<br />
+<input type="text" id="element_id" name="element_id">
+<button id="connectbutton" onclick="javascript:clickForm()">Connect</button>
+
+<script language="JavaScript">
+    document.getElementById("element_id")
+    .addEventListener("keyup", function(event) {
+    event.preventDefault();
+    if (event.keyCode == 13) {
+        document.getElementById("connectbutton").click();
+    }
+});
+</script>
+
+
+
+</body>
+</html>

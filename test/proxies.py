@@ -16,6 +16,8 @@ sys.path.insert(1, "../cli/")
 import lib as tomato
 from lib.error import UserError
 from lib.userflags import flags as userflags
+import json
+import os, base64, hashlib, copy
 
 
 class InternalMethodProxy(object):
@@ -74,6 +76,7 @@ with open("testhosts.json") as f:
 	test_hosts = json.load(f)
 with open("testtemplates.json") as f:
 	test_templates = json.load(f)
+
 class ProxyHoldingTestCase(unittest.TestCase):
 	"""
 	:type proxy_holder: ProxyHolder
@@ -81,24 +84,28 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	"""
 
 
-
+	"""
+	Proxyholder for admin user
+	"""
+	proxy_holder = proxy_holder
 	"""
 	ProxyHolder for unqualified user (used in most TestCases for unauthorized access)
 	"""
-	proxy_holder = proxy_holder
 	proxy_holder_tester = None
+
+
 	host_site_name = "testhosts"
 	default_organization_name = "others"
 	default_user_name = "admin"
 	test_host_addresses = test_hosts
-	test_temps = test_templates
+	test_temps = copy.deepcopy(test_templates)
 
 
 	def __init__(self, methodName='runTest'):
 		super(ProxyHoldingTestCase, self).__init__(methodName)
 		self.proxy_holder = proxy_holder
 		self.test_host_addresses = test_hosts
-		self.test_temps = test_templates
+		self.test_temps = copy.deepcopy(test_templates)
 		self.host_site_name = "testhosts"
 		self.default_organization_name = "others"
 		self.default_user_name = "admin"
@@ -169,10 +176,12 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	#Requires available test hosts
 	@classmethod
-	def add_templates_if_missing(cls, wait_for_synchronization=False):
+	def add_templates_if_missing(cls):
 		template_list = proxy_holder.backend_core.template_list()
+		#if the template list is empty, use the api to add all test templates
 		if(template_list == []):
-			for template in test_templates:
+			templates = copy.deepcopy(cls.test_temps)
+			for template in templates:
 				tech = template['tech']
 				name = template['name']
 				del template['tech']
@@ -180,18 +189,25 @@ class ProxyHoldingTestCase(unittest.TestCase):
 				attrs = template
 				proxy_holder.backend_core.template_create(tech, name, attrs)
 
-		template_list = proxy_holder.backen_core.template_list()
+		template_ready_on_backend = 0
+		template_list = proxy_holder.backend_core.template_list()
 
-		if wait_for_synchronization:
-			synchronized_templates = 0
-			while(synchronized_templates != len(template_list)):
-				synchronized_templates = 0
-				for template in template_list:
-					if(template["ready"]["hosts"]["ready"] == len(test_hosts)):
-						synchronized_templates+=1
-				if(synchronized_templates != len(template_list)):
-					time.sleep(5)
-					print "Waiting 5 seconds for template synchronization"
+		print "\nWaiting for backend to load all templates..."
+		while template_ready_on_backend < len(template_list):
+			template_list = proxy_holder.backend_core.template_list()
+			template_ready_on_backend = 0
+			for template in template_list:
+				if template['ready']['backend']:
+					template_ready_on_backend += 1
+			time.sleep(1)
+
+		for host in proxy_holder.backend_core.host_list():
+			proxy_holder.backend_core.host_action(host['name'], "forced_update")
+			proxy_holder.backend_core.host_action(host['name'], "forced_update")
+
+
+
+
 
 
 	@classmethod
@@ -217,8 +233,8 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	@classmethod
 	def remove_all_network_instances(cls):
-		for network_instance in proxy_holder.backend_api.network_instance_list():
-			proxy_holder.backend_api.network_instance_remove(network_instance['id'])
+		for network_instance in proxy_holder.backend_core.network_instance_list():
+			proxy_holder.backend_core.network_instance_remove(network_instance['id'])
 
 	@classmethod
 	def remove_all_other_sites(cls):
@@ -227,16 +243,37 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	@classmethod
 	def remove_all_other_organizations(cls):
-		for orga in proxy_holder.backend_users.organization_list():
+		for orga in proxy_holder.backend_api.organization_list():
 			if orga["name"] != cls.default_organization_name:
 				proxy_holder.backend_api.organization_remove(orga["name"])
 
 	@classmethod
 	def remove_all_hosts(cls):
-		hosts = cls.proxy_holder.backend_core.host_list()
-		for host in hosts:
-				cls.proxy_holder.backend_core.host_remove(host['name'])
+		for host in proxy_holder.backend_core.host_list():
+			proxy_holder.backend_core.host_remove(host["name"])
 
+	@classmethod
+	def remove_all_topologies(cls):
+		for topology in proxy_holder.backend_core.topology_list():
+			proxy_holder.backend_core.topology_remove(topology["id"])
+
+	@classmethod
+	def remove_all_elements(cls):
+		topologies = proxy_holder.backend_core.topology_list()
+		for topology in topologies:
+			proxy_holder.backend_core.topology_action(topology['id'], "destroy")
+			while not topology['elements'] == []:
+				for element in topology['elements']:
+					element_info = proxy_holder.backend_core.element_info(element)
+					if element_info['children'] == []:
+						proxy_holder.backend_core.element_remove(element)
+				topology = proxy_holder.backend_core.topology_info(topology['id'])
+
+	@classmethod
+	def remove_all_connections(cls):
+		for topology in proxy_holder.backend_core.topology_list():
+			for connection in topology['connections']:
+				proxy_holder.backend_core.connection_remove(connection)
 
 	@classmethod
 	def set_user(cls, username, organization, email, password, realname, flags):

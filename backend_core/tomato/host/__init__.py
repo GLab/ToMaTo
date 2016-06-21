@@ -15,14 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import base64
 import time
-import traceback
+import traceback, threading
 
 from .. import starttime, scheduler
 from ..db import *
 from ..generic import *
-from ..lib.dump import dumpException
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
@@ -131,7 +129,12 @@ class Host(Entity, BaseDocument):
 		from ..resources.network import NetworkInstance
 		return NetworkInstance.objects(host=self)
 
-	ACTIONS = {}
+
+	def action_forced_update(self):
+		self.update()
+		self.synchronizeResources(True)
+
+	ACTIONS = {"forced_update": Action(fn=action_forced_update)}
 	ATTRIBUTES = {
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"address": Attribute(field=address, schema=schema.String(regex="\d+\.\d+.\d+.\d+")),
@@ -163,6 +166,7 @@ class Host(Entity, BaseDocument):
 		if attrs:
 			self.modify(attrs)
 		self.update()
+		self.synchronizeResources()
 
 	def save_if_exists(self):
 		try:
@@ -349,8 +353,8 @@ class Host(Entity, BaseDocument):
 	def grantUrl(self, grant, action):
 		return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
 
-	def synchronizeResources(self):
-		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL]:
+	def synchronizeResources(self, forced=False):
+		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL] and not forced:
 			return
 		if not self.enabled:
 			return
@@ -380,18 +384,19 @@ class Host(Entity, BaseDocument):
 			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
-			attrs = {"tech": tpl.tech, "name": tpl.name, "preference": tpl.preference, "torrent_data": base64.b64encode(tpl.torrentData), "kblang": tpl.kblang}
+			attrs = tpl.info()
 			if not (attrs["tech"], attrs["name"]) in tpls:
 				# create resource
+				attrs["urls"] = tpl.all_urls
 				self.getProxy().resource_create("template", attrs)
 				logging.logMessage("template create", category="host", name=self.name, template=attrs)
 			else:
 				hTpl = tpls[(attrs["tech"], attrs["name"])]
-				isAttrs = dict(hTpl["attrs"])
-				if hTpl["attrs"]["torrent_data_hash"] != tpl.torrentDataHash:
+				if hTpl["attrs"]["checksum"] != tpl.checksum:
+					attrs["urls"] = tpl.all_urls
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
-				elif isAttrs["ready"]:
+				elif hTpl["attrs"]["ready"]:
 					avail.append(tpl)
 		self.templates = avail
 		logging.logMessage("resource_sync end", category="host", name=self.name)
@@ -417,13 +422,14 @@ class Host(Entity, BaseDocument):
 			# transform
 			for type_ in ("elements", "connections"):
 				for obj_id, obj_recs in orig_data[type_].iteritems():
+					id_ = "%s@%s" % (obj_id, self.name)
 					for obj_rec in obj_recs:
 						new_rec = (int(obj_rec["begin"]), obj_rec["usage"]["memory"], obj_rec["usage"]["diskspace"], obj_rec["usage"]["traffic"], obj_rec["usage"]["cputime"])
 						max_timestamp = max(obj_rec["begin"], max_timestamp)
 						if obj_id in data[type_]:
-							data[type_][obj_id].append(new_rec)
+							data[type_][id_].append(new_rec)
 						else:
-							data[type_][obj_id] = [new_rec]
+							data[type_][id_] = [new_rec]
 
 			get_backend_accounting_proxy().push_usage(data["elements"], data["connections"])
 			self.accountingTimestamp = max_timestamp + 1  # one second greater than last record.
@@ -553,7 +559,7 @@ class Host(Entity, BaseDocument):
 				self.problemMailTime = time.time()
 				self.sendMessageToHostManagers(
 					title="Host %s: Problems" % self,
-					message="Host %s has the following problems:\n\n%s" % self,
+					message="Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)),
 					ref=['host', self.name],
 					subject_group="host failure"
 				)
@@ -778,6 +784,7 @@ def synchronizeHost(host_name):
 			host.synchronizeResources()
 		except:
 			print >>sys.stderr, "Error updating host information from %s" % host
+			traceback.print_exc()
 			wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
 		host.checkProblems()
 	finally:

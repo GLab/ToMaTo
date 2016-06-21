@@ -22,7 +22,7 @@ pub mod api;
 //TODO: f64?
 
 use std::thread;
-use std::time::Duration;
+use std::time::{Instant, Duration};
 use std::fs::File;
 use std::path::Path;
 use std::env;
@@ -39,7 +39,6 @@ use util::Time;
 use yaml_rust::YamlLoader;
 use nix::sys::signal::{SIGTERM, SIGQUIT, SIGINT};
 use signal::trap::Trap;
-use time::SteadyTime;
 
 const DEFAULT_CIPHERS: &'static str = "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH:ECDHE-RSA-AES128-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA128:DHE-RSA-AES128-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES128-GCM-SHA128:ECDHE-RSA-AES128-SHA384:ECDHE-RSA-AES128-SHA128:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA384:AES128-GCM-SHA128:AES128-SHA128:AES128-SHA128:AES128-SHA:AES128-SHA:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4";
 
@@ -102,15 +101,15 @@ impl Config {
     }
 }
 
-struct SimpleLogger;
+pub struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
-    #[inline(always)]
+    #[inline]
     fn enabled(&self, metadata: &log::LogMetadata) -> bool {
         metadata.target().starts_with(module_path!())
     }
 
-    #[inline(always)]
+    #[inline]
     fn log(&self, record: &log::LogRecord) {
         if self.enabled(record.metadata()) {
             println!("{} - {}", record.level(), record.args());
@@ -140,7 +139,7 @@ fn main() {
     let _server = ApiServer::new(data.clone(), &config.listen_address as &str, ssl_context).unwrap();
     info!("done. Server listening on {}", config.listen_address);
     let trap = Trap::trap(&[SIGINT, SIGTERM, SIGQUIT]);
-    let dummy_time = SteadyTime::now();
+    let dummy_time = Instant::now();
     loop {
         thread::sleep(Duration::from_millis(1000));
         if trap.wait(dummy_time).is_some() {

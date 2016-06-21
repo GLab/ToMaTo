@@ -94,7 +94,6 @@ class VMElement(Element):
 		self.save()
 		self.rextfvLastStarted = 0
 		self.nextSync = 0
-		#template: None, default template
 
 	@property
 	def mainElement(self):
@@ -120,7 +119,9 @@ class VMElement(Element):
 	def modify_template(self, tmplName):
 		template = Template.get(self.TYPE, tmplName)
 		UserError.check(template, code=UserError.INVALID_VALUE, message="No such template", data={"value": tmplName})
+		UserError.check(template.isReady(), code=UserError.INVALID_CONFIGURATION, message="Template is not ready", data={"value": template.name})
 		self.template = template
+		template.on_selected()
 		if self.element:
 			self.element.modify({"template": self.template.name})
 

@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::io;
-use std::io::Write;
 use std::ops::Deref;
 use std::thread;
 use std::time::Duration;
@@ -14,7 +13,6 @@ use super::msgs::{Reply, Request, Message, Args, KwArgs};
 use super::socket::Connection;
 
 use rmp;
-use net2::TcpStreamExt;
 use openssl::ssl::{SslContext, SslStream};
 use openssl::ssl::error::SslError;
 
@@ -41,7 +39,7 @@ impl Deref for Client {
 
 impl Client {
     pub fn new<A: ToSocketAddrs>(addr: A, ssl: SslContext) -> Result<ClientCloseGuard, SslError> {
-        let tcp_con = try!(TcpStream::connect(addr).map_err(|err| SslError::StreamError(err)));
+        let tcp_con = try!(TcpStream::connect(addr).map_err(SslError::StreamError));
         let ssl_con = try!(SslStream::connect(&ssl, tcp_con));
         let con = Arc::new(Connection::new(ssl_con));
         let client = Client(Arc::new(ClientInner{
@@ -108,7 +106,7 @@ impl Client {
             kwargs: kwargs
         };
         info!("Sending request: {:?}", req);
-        try!(self.socket.write(&req.to_bytes()).map_err(|_| Error::NetworkError(NetworkError::WriteError)));
+        try!(self.socket.write(&req.to_bytes()).map_err(|_| Error::NetworkError(NetworkError::Write)));
         Ok(id)
     }
 

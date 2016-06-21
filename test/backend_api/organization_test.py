@@ -11,20 +11,26 @@ class OrganizationTestCases(ProxyHoldingTestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.remove_all_other_accounts()
+		cls.remove_all_hosts()
+		cls.remove_all_other_sites()
+		cls.remove_all_other_organizations()
+
+
+	def setUp(self):
+		self.remove_all_other_accounts()
 
 		username = "testuser"
 		password = "123"
-		organization = cls.default_organization_name
+		organization = self.default_organization_name
 		attrs = {
 			"realname": "Test User",
 			"email": "test@example.com",
 			"flags": {"over_quota": True}
 		}
-		cls.proxy_holder.backend_api.account_create(username, password, organization, attrs)
-		cls.proxy_holder_tester = ProxyHolder("testuser","123")
+		self.proxy_holder.backend_api.account_create(username, password, organization, attrs)
+		self.proxy_holder_tester = ProxyHolder("testuser","123")
 
 
-	def setUp(self):
 		self.remove_all_other_sites()
 		self.remove_all_other_organizations()
 		self.proxy_holder.backend_api.organization_create("DummyCorp1")
@@ -35,6 +41,8 @@ class OrganizationTestCases(ProxyHoldingTestCase):
 		cls.remove_all_other_accounts()
 
 	def tearDown(self):
+		self.remove_all_other_accounts()
+		self.remove_all_hosts()
 		self.remove_all_other_sites()
 		self.remove_all_other_organizations()
 
@@ -53,7 +61,7 @@ class OrganizationTestCases(ProxyHoldingTestCase):
 		tests whether organization create correctly creates an organization when given correct parameters but without permissions
 		"""
 
-		self.assertRaisesError(UserError,UserError.DENIED,self.proxy_holder_tester.backend_api.organization_create,"DummyCorp")
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.organization_create, "DummyCorp")
 
 	def test_organization_create_duplicate(self):
 		"""

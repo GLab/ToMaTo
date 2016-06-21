@@ -2,6 +2,9 @@
 
 var settings = {
 	childElementDistance: 25,
+	childElementRadius: 7,
+	connectionHandleWidth: 10,
+
 	commonPreferenceThreshold: 100,
 	otherCommonElements: [
 	                      {

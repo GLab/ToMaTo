@@ -67,19 +67,21 @@ from models import *
 
 from . import resources, rpcserver, firewall, dump #@UnresolvedImport
 from .resources import network
-from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
+from lib.cmd import fileserver, process #@UnresolvedImport
+from lib.newcmd import busybox
 from lib import util #@UnresolvedImport
 
-scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
-
 stopped = threading.Event()
+
+httpd_pid = None
 
 def start():
 	logging.openDefault(config.LOG_FILE)
 	dump.init()
 	db_migrate()
 	firewall.add_all_networks(network.getAll())
-	bittorrent.startClient(config.TEMPLATE_DIR, config.BITTORRENT_PORT_RANGE[0], config.BITTORRENT_PORT_RANGE[1])
+	global httpd_pid
+	httpd_pid = busybox.httpd_start(config.TEMPLATE_DIR, config.HTTPD_PORT)
 	fileserver.start()
 	rpcserver.start()
 	scheduler.start()
@@ -121,7 +123,10 @@ def stop(*args):
 		print >>sys.stderr, "Shutting down..."
 		thread.start_new_thread(_stopHelper, ())
 		firewall.remove_all_networks(resources.network.getAll())
-		bittorrent.stopClient()
+		global httpd_pid
+		if httpd_pid:
+			busybox.httpd_stop(httpd_pid)
+			httpd_pid = None
 		rpcserver.stop()
 		scheduler.stop()
 		fileserver.stop()

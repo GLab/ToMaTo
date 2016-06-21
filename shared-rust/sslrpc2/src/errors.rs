@@ -2,8 +2,8 @@ use rmp;
 
 #[derive(Debug, PartialEq)]
 pub enum NetworkError {
-    ReadError,
-    WriteError
+    Read,
+    Write
 }
 
 #[derive(Debug, PartialEq)]
@@ -32,7 +32,6 @@ pub enum MessageErrorCode {
 impl MessageErrorCode {
     pub fn from_code(code: u64) -> Self {
         match code {
-            0 => MessageErrorCode::UnknownError,
             1 => MessageErrorCode::InvalidBaseType,
             2 => MessageErrorCode::InvalidBaseSize,
             3 => MessageErrorCode::InvalidIdType,
@@ -43,23 +42,23 @@ impl MessageErrorCode {
             8 => MessageErrorCode::InvalidReplyTypeType,
             9 => MessageErrorCode::InvalidErrorType,
             10 => MessageErrorCode::UnknownReplyType,
-            _ => MessageErrorCode::UnknownError
+            0 | _ => MessageErrorCode::UnknownError
         }
     }
 
     pub fn to_code(&self) -> u64 {
-        match self {
-            &MessageErrorCode::UnknownError => 0,
-            &MessageErrorCode::InvalidBaseType => 1,
-            &MessageErrorCode::InvalidBaseSize => 2,
-            &MessageErrorCode::InvalidIdType => 3,
-            &MessageErrorCode::InvalidMethodType => 4,
-            &MessageErrorCode::InvalidArgsType => 5,
-            &MessageErrorCode::InvalidKwArgsType => 6,
-            &MessageErrorCode::InvalidKwArgsKeyType => 7,
-            &MessageErrorCode::InvalidReplyTypeType => 8,
-            &MessageErrorCode::InvalidErrorType => 9,
-            &MessageErrorCode::UnknownReplyType => 10
+        match *self {
+            MessageErrorCode::UnknownError => 0,
+            MessageErrorCode::InvalidBaseType => 1,
+            MessageErrorCode::InvalidBaseSize => 2,
+            MessageErrorCode::InvalidIdType => 3,
+            MessageErrorCode::InvalidMethodType => 4,
+            MessageErrorCode::InvalidArgsType => 5,
+            MessageErrorCode::InvalidKwArgsType => 6,
+            MessageErrorCode::InvalidKwArgsKeyType => 7,
+            MessageErrorCode::InvalidReplyTypeType => 8,
+            MessageErrorCode::InvalidErrorType => 9,
+            MessageErrorCode::UnknownReplyType => 10
         }
     }
 }

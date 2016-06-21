@@ -40,7 +40,7 @@ impl ToValue for Error {
 pub struct Params(KwArgs);
 
 impl Params {
-    pub fn new(mut args: Args, mut kwargs: KwArgs, arg_names: &Vec<&'static str>) -> Result<Params, Error> {
+    pub fn new(mut args: Args, mut kwargs: KwArgs, arg_names: &[&'static str]) -> Result<Params, Error> {
         if args.len() > arg_names.len() {
             return Err(Error::TooManyArgs(args.len(), arg_names.len()));
         }
@@ -55,12 +55,12 @@ impl Params {
         Ok(Params(kwargs))
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn get(&self, name: &str) -> Option<&rmp::Value> {
         self.0.get(name)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn take(&mut self, name: &str) -> Option<rmp::Value> {
         self.0.remove(name)
     }

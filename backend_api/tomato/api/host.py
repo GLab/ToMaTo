@@ -66,6 +66,18 @@ def host_modify(name, attrs):
 	getCurrentUserInfo().check_may_modify_host(host)
 	return host.modify(attrs)
 
+def host_action(name, action, params=None): #@ReservedAssignment
+	"""
+	Performs an action on the host.
+	:param name: Name of the host on which the action should be performed
+	:param action: Action which should be executed
+	:param params: Dict which contains parameters for the action
+	:return: This method returns the result of the action.
+	"""
+	if not params: params = {}
+	host = get_host_info(name)
+	return host.action(action, params)
+
 def host_remove(name):
 	"""
 	Removes the host with the given name, if the host has no elements

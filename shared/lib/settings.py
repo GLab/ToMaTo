@@ -68,7 +68,7 @@ backend_api:
     max-workers: 25
 
 backend_accounting:
-  data-path: /var/lib/tomato_backend_accounting
+  data-path: /data
   ssl:
     cert:  /etc/tomato/backend_accounting_cert.pem
     key:  /etc/tomato/backend_accounting_key.pem
@@ -400,7 +400,7 @@ class SettingsProvider:
 		"""
 		get the tasks settings of the current module
 		:return: dict containing Config.TASKS_MAX_WORKERS
-		:rtype: int
+		:rtype: dict
 		"""
 		InternalError.check('tasks' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="tasks configuration missing")
 		return self.original_settings[self.tomato_module]['tasks']

@@ -100,6 +100,14 @@ def host_remove(name):
 	h = _getHost(name)
 	h.remove()
 
+def host_action(name, action, params=None): #@ReservedAssignment
+	"""
+	undocumented
+	"""
+	if not params: params = {}
+	host = _getHost(name)
+	return host.action(action, params)
+
 def host_users(name):
 	"""
 	undocumented
