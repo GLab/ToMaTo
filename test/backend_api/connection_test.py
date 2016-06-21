@@ -94,22 +94,28 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 																		type=cls.test_temps[0]['tech']+"_interface",
 																		parent=cls.testelement3_id)
 		cls.testelement3_interface_id = cls.testelement3_interface["id"]
+		
+		cls.testelement1_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
+																				  type=cls.test_temps[0][
+																						   'tech'] + "_interface",
+																				  parent=cls.testelement1_id)
+		cls.testelement1_interface_id = cls.testelement1_interface["id"]
 
-		cls.proxy_holder.backend_core.topology_action(cls.testtopology_id,"start")
+		cls.testelement1_interface_2 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
+																				  type=cls.test_temps[0][
+																						   'tech'] + "_interface",
+																				  parent=cls.testelement1_id)
+		cls.testelement1_interface_2_id = cls.testelement1_interface_2["id"]
+
+		cls.testelement2_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
+																				  type=cls.test_temps[0][
+																						   'tech'] + "_interface",
+																				  parent=cls.testelement2_id)
+		cls.testelement2_interface_id = cls.testelement2_interface["id"]
 
 
 	def setUp(self):
-		self.testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																				  type=self.test_temps[0][
-																						   'tech'] + "_interface",
-																				  parent=self.testelement1_id)
-		self.testelement1_interface_id = self.testelement1_interface["id"]
-
-		self.testelement2_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																				  type=self.test_temps[0][
-																						   'tech'] + "_interface",
-																				  parent=self.testelement2_id)
-		self.testelement2_interface_id = self.testelement2_interface["id"]
+		
 
 		self.testconnection = self.proxy_holder.backend_core.connection_create(self.testelement1_interface_id, self.testelement2_interface_id)
 		self.testconnection_id = self.testconnection["id"]
@@ -118,7 +124,6 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 
 	def tearDown(self):
 		self.remove_all_connections()
-		self.remove_all_elements()
 
 
 	@classmethod
@@ -132,15 +137,12 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		cls.remove_all_profiles()
 		cls.remove_all_hosts()
 
-	def test_element_list(self):
-		print "hello world"
-
 	def test_connection_create_correct(self):
 		"""
 		tests whether backend_api.connection_create correctly creates a connection
 		"""
 
-		self.testconnection2 = self.proxy_holder.backend_api.connection_create(self.testelement1_interface_id,self.testelement2_interface_id)
+		self.testconnection2 = self.proxy_holder.backend_api.connection_create(self.testelement1_interface_2_id,self.testelement3_interface_id)
 		self.assertIsNotNone(self.testconnection2)
 
 	def test_connection_create_correct_wo_permissions(self):
@@ -155,7 +157,8 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		tests whether backend_api.connection_create responds correctly when called without 2 existing elements
 		"""
 
-		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder_tester.backend_api.connection_create,None,self.testelement2_interface_id)
+		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12];
+		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_api.connection_create,false_id,self.testelement2_interface_id)
 
 	def test_connection_modify_correct(self):
 		"""
@@ -168,8 +171,8 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 
 		}
 
-		self.proxy_holder.backend_api.connection_modify(self.testelement1_id,attrs)
-		bandwidth = self.proxy_holder.backend_core.connection_info(self.testelement1_id)["bandwidth_to"]
+		self.proxy_holder.backend_api.connection_modify(self.testconnection_id,attrs)
+		bandwidth = self.proxy_holder.backend_core.connection_info(self.testconnection_id)["bandwidth_to"]
 		self.assertEqual(bandwidth,100)
 
 	def test_connection_modify_non_existing_attribute(self):
@@ -183,7 +186,7 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 
 		}
 
-		self.assertRaisesError(UserError,UserError.UNSUPPORTED_ATTRIBUTE,self.proxy_holder.backend_api.connection_modify,self.testelement1_id,attrs)
+		self.assertRaisesError(UserError,UserError.UNSUPPORTED_ATTRIBUTE,self.proxy_holder.backend_api.connection_modify,self.testconnection_id,attrs)
 
 	def test_connection_modify_correct_wo_permissions(self):
 		"""
@@ -196,7 +199,7 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 
 		}
 
-		self.assertRaisesError(UserError,UserError.DENIED,self.proxy_holder_tester.backend_api.connection_modify,self.testelement1_id,attrs)
+		self.assertRaisesError(UserError,UserError.DENIED,self.proxy_holder_tester.backend_api.connection_modify,self.testconnection_id,attrs)
 
 	def test_connection_modify_non_existing_element(self):
 		"""
@@ -208,8 +211,8 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 			"bandwidth_from": 10
 
 		}
-
-		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_api.connection_modify,"NoID",attrs)
+		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12];
+		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_api.connection_modify,false_id,attrs)
 
 	def test_connection_remove_correct(self):
 		"""
