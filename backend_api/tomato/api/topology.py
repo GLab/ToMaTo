@@ -16,8 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import getCurrentUserInfo, getCurrentUserName
-from ..lib.remote_info import get_topology_info, get_topology_list, TopologyInfo
-from ..lib.service import get_backend_core_proxy
+from ..lib.remote_info import get_topology_info, get_topology_list, TopologyInfo,get_organization_info
+from ..lib.service import get_backend_core_proxy,get_backend_users_proxy
+from ..lib.error import UserError
 
 def topology_create():
 	"""
@@ -43,6 +44,7 @@ def topology_remove(id): #@ReservedAssignment
 	  will fail.
 	"""
 	topl = get_topology_info(id)
+	UserError.check(topl.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
 	getCurrentUserInfo().check_may_remove_topology(topl)
 	topl.remove()
 
@@ -69,6 +71,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  attribute changes.	
 	"""
 	topl = get_topology_info(id)
+	UserError.check(topl.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
 	getCurrentUserInfo().check_may_modify_topology(topl)
 	return topl.modify(attrs)
 
@@ -119,6 +122,7 @@ def topology_action(id, action, params=None): #@ReservedAssignment
 	"""
 	if not params: params = {}
 	topl = get_topology_info(id)
+	UserError.check(topl.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
 	getCurrentUserInfo().check_may_run_topology_action(topl, action, params)
 	return topl.action(action, params)
 
@@ -168,7 +172,10 @@ def topology_info(id, full=False): #@ReservedAssignment
 	``permissions``
 	  A dict with usernames as the keys and permission levels as values.
 	"""
+
+
 	topl = get_topology_info(id)
+	UserError.check(topl.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
 	getCurrentUserInfo().check_may_view_topology(topl)
 	if full:
 		return get_backend_core_proxy().topology_info(id, full)
@@ -187,7 +194,9 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	  contains exactly the same information as returned by 
 	  :py:func:`topology_info`. If no topologies exist, the list is empty. 
 	"""
+
 	if organization:
+		UserError.check(get_organization_info(organization).exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist")
 		getCurrentUserInfo().check_may_list_organization_topologies(organization)
 	if showAll:
 		getCurrentUserInfo().check_may_list_all_topologies()
@@ -211,6 +220,7 @@ def topology_set_permission(id, user, role): #@ReservedAssignment
 	  if will be changed.
 	"""
 	topl = get_topology_info(id)
+	UserError.check(topl.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
 	getCurrentUserInfo().check_may_grant_permission_for_topologies(topl, role, user)
 	return topl.set_permission(user, role)
 	
