@@ -448,6 +448,8 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		imgPath = self._imagePath()
 		if path.exists(imgPath):
 			path.remove(imgPath, recursive=True)
+		if path.exists("/etc/vz/conf/%d.conf" % self.vmid):
+			path.remove("/etc/vz/conf/%d.conf" % self.vmid)
 		self._vzctl("create", ["--ostemplate", tplPath, "--config", "default"])
 		self._vzctl("set", ["--devices", "c:10:200:rw", "--capability", "net_admin:on", "--save"])
 		self.setState(ST_PREPARED, True) #must be here or the set commands fail
@@ -464,7 +466,6 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._vzctl("set", ["--hostname", "workaround", "--save"]) #Workaround for fault in vzctl 4.0-1pve6
 		try:
 			self._vzctl("destroy")
-			self._vzctl("set", ["--hostname", self.hostname, "--save"]) #Workaround for fault in vzctl 4.0-1pve6
 		except cmd.CommandError, exc:
 			if exc.errorCode == 41: # [41] Container is currently mounted (umount first)
 				self._vzctl("umount")

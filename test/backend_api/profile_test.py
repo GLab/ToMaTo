@@ -246,7 +246,7 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	def test_profile_remove_non_existing_profile(self):
 
 		#Creating non existing profile_id
-		profile_id = self.testprofile_id + self.testprofile_id
+		profile_id = self.testprofile_id[12:24] + self.testprofile_id[0:12]
 
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.profile_remove, profile_id)
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.profile_info, profile_id)
@@ -265,7 +265,7 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	def test_profile_info_non_existing(self):
 
 		#create non existing id
-		profile_id = self.testprofile_id + self.testprofile_id
+		profile_id = self.testprofile_id[12:24] + self.testprofile_id[0:12]
 
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.profile_info, profile_id)
 
