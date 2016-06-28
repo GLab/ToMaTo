@@ -381,6 +381,10 @@ class TopologyInfo(ActionObj):
 		except:
 			return False
 
+	def _check_exists(self):
+		if self._info is not None:
+			return True
+		return get_backend_core_proxy().topology_exists(self.topology_id)
 
 	def organization_has_role(self, organization, role):
 		"""
