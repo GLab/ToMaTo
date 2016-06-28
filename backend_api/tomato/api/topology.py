@@ -221,6 +221,9 @@ def topology_set_permission(id, user, role): #@ReservedAssignment
 	"""
 	topl = get_topology_info(id)
 	UserError.check(topl.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
+	UserError.check(get_backend_users_proxy().user_exists(user), code=UserError.ENTITY_DOES_NOT_EXIST, message="User with that name does not exist")
+	UserError.check(topl.existsRole(role), code=UserError.INVALID_VALUE, message="Role with that name does not exist")
+
 	getCurrentUserInfo().check_may_grant_permission_for_topologies(topl, role, user)
 	return topl.set_permission(user, role)
 	

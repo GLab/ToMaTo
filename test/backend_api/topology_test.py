@@ -24,7 +24,8 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		testuser_attrs = {"realname": "Test User",
 						  "email": "test@example.com",
 						  "flags": {
-							  "over_quota": True
+							  "over_quota": True,
+							  "no_topology_create":True
 						  }
 						  }
 		cls.testuser_info = cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization,
@@ -32,7 +33,8 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 		# Create user with all permissions
-		cls.proxy_holder.backend_api.organization_create("DummyCorp")
+		cls.proxy_holder.backend_users.organization_create("DummyCorp",label="DummyCorp")
+
 		testuser_username = "testuser_admin"
 		testuser_password = "123"
 		testuser_organization = "DummyCorp"
@@ -40,7 +42,10 @@ class TopologyTestCase(ProxyHoldingTestCase):
 						  "email": "admin@example.com",
 						  "flags": {
 							  "global_admin": True,
-							  "orga_admin": True
+							  "orga_admin": True,
+							  "global_topl_owner": True,
+							  "global_host_manager": True,
+							  "debug": True
 						  }
 						  }
 		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization,
@@ -62,6 +67,7 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		cls.remove_all_topologies()
 		cls.remove_all_templates()
 		cls.remove_all_other_accounts()
+		cls.remove_all_other_organizations()
 		cls.remove_all_hosts()
 
 	def test_topology_create_correct(self):
@@ -77,7 +83,7 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		Tests whether topology_create correctly reponds when called without permissions
 		"""
 
-		testtopology2 = self.proxy_holder_tester.backend_api.topology_create()
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.topology_create)
 
 	def test_topology_remove_correct(self):
 		"""
@@ -146,7 +152,7 @@ class TopologyTestCase(ProxyHoldingTestCase):
 			"name": "NewName"
 		}
 		false_id = self.testtopology["id"][12:24] + self.testtopology["id"][0:12]
-		self.assertRaisesError(UserError,UserError.DENIED, self.proxy_holder.backend_api.topology_modify ,false_id,attrs)
+		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.topology_modify ,false_id,attrs)
 
 	def test_topology_modify_non_existing_attribute(self):
 		"""
@@ -237,7 +243,7 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		Tests whether topology_list returns the correct list of topologies as the backend_core
 		"""
 
-		self.assertEqual(self.proxy_holder_admin.backend_api.topology_list(full=True,showAll=True) , self.proxy_holder_admin.backend_core.topology_list(full=True,showAll=True))
+		self.assertEqual(self.proxy_holder_admin.backend_api.topology_list(full=True,showAll=True) , self.proxy_holder_admin.backend_core.topology_list(full=True))
 
 	def test_topology_list_correct_existing_orga(self):
 		"""
@@ -245,7 +251,7 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		"""
 		testtopology2 = self.proxy_holder_admin.backend_api.topology_create()
 		self.assertEqual(self.proxy_holder_admin.backend_api.topology_list(full=True,organization="DummyCorp") ,
-						 self.proxy_holder_admin.backend_core.topology_list(full=True,organization="DummyCorp"))
+						 self.proxy_holder_admin.backend_core.topology_list(full=True,organization_filter="DummyCorp"))
 
 	def test_topology_list_correct_non_existing_orga(self):
 		"""
@@ -260,7 +266,7 @@ class TopologyTestCase(ProxyHoldingTestCase):
 
 		testtopology2 = self.proxy_holder_admin.backend_api.topology_create()
 
-		self.proxy_holder_admin.backend_api.topology_set_permission(testtopology2["id"],self.testuser_info,"user")
+		self.proxy_holder_admin.backend_api.topology_set_permission(testtopology2["id"],self.testuser_info["name"],"user")
 
 	def test_topology_set_permission_without_permission(self):
 		"""
@@ -268,5 +274,28 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		"""
 
 		testtopology2 = self.proxy_holder_admin.backend_api.topology_create()
+		testusername = self.testuser_info['name']
+		self.assertRaisesError(UserError,UserError.DENIED, self.proxy_holder.backend_api.topology_set_permission ,testtopology2["id"],testusername,"user")
 
-		self.assertRaisesError(UserError,UserError.DENIED, self.proxy_holder.backend_api.topology_set_permission ,testtopology2["id"],self.testuser_info,"user")
+	def test_topology_set_permission_non_existing_topology(self):
+		"""
+		Tests whether topology_set_permissions correctly responds when called with an invalid topology id
+		"""
+		false_id = self.testtopology["id"][12:24] + self.testtopology["id"][0:12]
+		testusername = self.testuser_info['name']
+		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.topology_set_permission ,false_id,testusername,"user")
+
+	def test_topology_set_permission_non_existing_user(self):
+		"""
+		Tests whether topology_set_permissions correctly responds when called with an invalid username
+		"""
+
+		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder_admin.backend_api.topology_set_permission,self.testtopology_id,"NoUserName","user")
+
+	def test_topology_set_permission_non_existent_permission(self):
+		"""
+		Tests whether topology_set_permissions correctly responds when called with an invalid permission as argument
+		"""
+
+		testtopology2 = self.proxy_holder_admin.backend_api.topology_create()
+		self.assertRaisesError(UserError,UserError.INVALID_VALUE, self.proxy_holder_admin.backend_api.topology_set_permission, testtopology2["id"],self.testuser_info["name"],"DaBoss")
