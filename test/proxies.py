@@ -97,18 +97,13 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	host_site_name = "testhosts"
 	default_organization_name = "others"
 	default_user_name = "admin"
+	default_profile_name = "normal"
 	test_host_addresses = test_hosts
 	test_temps = copy.deepcopy(test_templates)
 
 
 	def __init__(self, methodName='runTest'):
 		super(ProxyHoldingTestCase, self).__init__(methodName)
-		self.proxy_holder = proxy_holder
-		self.test_host_addresses = test_hosts
-		self.test_temps = copy.deepcopy(test_templates)
-		self.host_site_name = "testhosts"
-		self.default_organization_name = "others"
-		self.default_user_name = "admin"
 
 	@classmethod
 	def assertRaisesError(cls,excClass, errorCode, callableObj=None, *args, **kwargs):
@@ -205,8 +200,17 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			proxy_holder.backend_core.host_action(host['name'], "forced_update")
 			proxy_holder.backend_core.host_action(host['name'], "forced_update")
 
+	@classmethod
+	def add_profiles(cls):
+		for temp in cls.test_temps:
+			# Create test profile for openvz
+			testprofile_tech = temp['tech']
+			testprofile_name = cls.default_profile_name
+			testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal',
+									'preference': 10, 'description': 'Test profile'}
 
-
+			cls.proxy_holder.backend_core.profile_create(testprofile_tech, testprofile_name,
+														 testprofile_args)
 
 
 
