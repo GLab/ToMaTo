@@ -446,6 +446,12 @@ class TopologyInfo(ActionObj):
 			get_connection_info(c).invalidate_exists()
 		return res
 
+	def existsRole(self,role):
+		for r in topology_role.Role.RANKING:
+			if r == role:
+				return True
+		return False
+
 
 
 

@@ -148,7 +148,7 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		tests whether backend_api.connection_create responds correctly when called without 2 existing elements
 		"""
 
-		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12];
+		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12]
 		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_api.connection_create,false_id,self.testelement2_interface_id)
 
 	def test_connection_modify_correct(self):
@@ -202,7 +202,7 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 			"bandwidth_from": 10
 
 		}
-		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12];
+		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12]
 		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_api.connection_modify,false_id,attrs)
 
 	def test_connection_remove_correct(self):
@@ -212,3 +212,55 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 
 		self.proxy_holder.backend_api.connection_remove(self.testconnection_id)
 		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_core.connection_info,self.testconnection_id)
+
+	def test_connection_remove_correct_wo_permissions(self):
+		"""
+		tests whether backend_api.connection_remove() correctly responds when called without permissions
+		"""
+
+		self.assertRaisesError(UserError,UserError.DENIED,self.proxy_holder_tester.backend_api.connection_remove,self.testconnection_id)
+
+	def test_connection_remove_non_existing_connection(self):
+		"""
+		tests whether backend_api.connection_remove() correctly responds when called without an existing connection as parameter
+		"""
+
+		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12]
+		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_api.connection_remove,false_id)
+
+	def test_connection_info_correct(self):
+		"""
+		tests whether backend_api.connection_info() correctly returns the info object of the given connection
+		"""
+
+		self.assertEqual(self.proxy_holder.backend_api.connection_info(self.testconnection_id),self.proxy_holder.backend_core.connection_info(self.testconnection_id) )
+
+	def test_connection_info_correct_with_fetch(self):
+		"""
+		tests whether backend_api.connection_info() correctly returns the info object of the given connection with additional parameter fetch=true
+		"""
+
+		self.assertEqual(self.proxy_holder.backend_api.connection_info(self.testconnection_id, fetch=True),self.proxy_holder.backend_core.connection_info(self.testconnection_id) )
+
+	def test_connection_info_non_existing_connection(self):
+		"""
+		tests whether backend_api.connection_info() correctly responds when called with a wrong id
+		"""
+
+		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12]
+		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_api.connection_info,false_id)
+
+	def test_connection_action_non_existing_conection(self):
+		"""
+		tests whether backend_api.connection_action() correctly responds when called with a wrong connection id
+		"""
+		false_id = self.testelement1_interface_2_id[12:24] + self.testelement1_interface_2_id[0:12]
+
+		self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.connection_action , false_id,"start")
+
+	def test_connection_action_wrong_action(self):
+		"""
+		tests whether backend_api.connection_action() correctly responds when called with an invalid action string
+		"""
+
+		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ACTION, self.proxy_holder.backend_api.connection_action ,self.testconnection_id,"NoAction")
