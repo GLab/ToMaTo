@@ -1,1 +1,1 @@
-/home/stephan/ToMaTo/shared/lib/constants.py
+../../../shared/lib/constants.py
