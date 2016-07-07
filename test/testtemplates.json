@@ -12,6 +12,19 @@
     "creation_date": 1462881777.857998,
     "name": "ubuntu-12.04_x86"
   },
+  {"tech": "openvz",
+    "nlXTP_installed": true,
+    "description": "",
+    "icon": "",
+    "show_as_common": false,
+    "restricted": true,
+    "label": "Ubuntu 14.04 (x86 64)",
+    "subtype": "linux",
+    "preference": 0,
+    "urls":["http://packages.tomato-lab.org/templates_eseewe7KaiSh9aiD/ubuntu/ubuntu-14.04.2_x86_64.tar.gz"],
+    "creation_date": 1462881777.857998,
+    "name": "ubuntu-14.04_x86_64"
+  },
   {
     "tech": "kvmqm",
     "name": "tinycore-7.0",

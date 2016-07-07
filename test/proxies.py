@@ -205,13 +205,17 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		for temp in cls.test_temps:
 			# Create test profile for openvz
 			testprofile_tech = temp['tech']
-			testprofile_name = cls.default_profile_name
-			testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal',
+			restricted = False
+			if(temp['restricted'] == True):
+				testprofile_name = "%s_restricted"%cls.default_profile_name
+				restricted = True
+			else:
+				testprofile_name = cls.default_profile_name
+			testprofile_args = {'diskspace': 10240, 'restricted': restricted, 'ram': 512, 'cpus': 1.0, 'label': 'Normal',
 									'preference': 10, 'description': 'Test profile'}
 
 			cls.proxy_holder.backend_core.profile_create(testprofile_tech, testprofile_name,
 														 testprofile_args)
-
 
 
 	@classmethod

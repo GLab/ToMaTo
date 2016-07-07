@@ -179,6 +179,10 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	Parameter *id*:
 	  The parameter *id* identifies the element by giving its unique id.
 
+	Parameter *fetch*:
+	  The parameter *fetch* forces the backend to update the state and type informations of an element by
+	  informations from the host of the element.
+
 	Return value:
 	  The return value of this method is a dict containing information
 	  about this element. The information that is returned depends on the
