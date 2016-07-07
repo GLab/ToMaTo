@@ -2,17 +2,19 @@ __author__ = 't-gerhard'
 
 from django.core.urlresolvers import reverse
 
+from constants import TypeName
+
 def tech_to_label(tech):
-	if tech == "kvmqm":
+	if tech == TypeName.KVMQM:
 		return "KVM"
-	if tech == "openvz":
+	if tech == TypeName.OPENVZ:
 		return "OpenVZ"
-	if tech == "repy":
+	if tech == TypeName.REPY:
 		return "Repy"
 	return tech
 
 def techs():
-	return ['kvmqm', 'openvz', 'repy']
+	return [TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]
 
 def entity_to_label(entity):
 	if entity == 'topology':

@@ -26,6 +26,7 @@ from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.newcmd import qm, vfat, qemu_img, ipspy
 from ..lib.newcmd.util import net, proc, io
+from ..lib.constants import ActionName, StateName, TypeName
 
 DOC="""
 Element type: ``kvmqm``
@@ -140,10 +141,6 @@ Actions:
 		same as download_grant, but only for the nlXTP folder
 """
 
-ST_CREATED = "created"
-ST_PREPARED = "prepared"
-ST_STARTED = "started"
-
 kblang_options = {"en-us": "English (US)", 
 					"en-gb": "English (GB)", 
 					"de": "German", 
@@ -164,39 +161,39 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	vncpid = vncpid_attr.attribute()
 	vncpassword_attr = Attr("vncpassword", type="str")
 	vncpassword = vncpassword_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[ST_CREATED, ST_PREPARED], type="int", minValue=1, maxValue=4, default=1)
+	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[StateName.CREATED, StateName.PREPARED], type="int", minValue=1, maxValue=4, default=1)
 	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_CREATED, ST_PREPARED], type="int", minValue=64, maxValue=8192, default=256)
+	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[StateName.CREATED, StateName.PREPARED], type="int", minValue=64, maxValue=8192, default=256)
 	ram = ram_attr.attribute()
-	kblang_attr = Attr("kblang", desc="Keyboard language", states=[ST_CREATED, ST_PREPARED], type="str", options=kblang_options, default=None, null=True)
+	kblang_attr = Attr("kblang", desc="Keyboard language", states=[StateName.CREATED, StateName.PREPARED], type="str", options=kblang_options, default=None, null=True)
 	#["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br", "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"]
 	kblang = kblang_attr.attribute()
-	usbtablet_attr = Attr("usbtablet", desc="USB tablet mouse mode", states=[ST_CREATED, ST_PREPARED], type="bool", default=True)
+	usbtablet_attr = Attr("usbtablet", desc="USB tablet mouse mode", states=[StateName.CREATED, StateName.PREPARED], type="bool", default=True)
 	usbtablet = usbtablet_attr.attribute()
-	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
+	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 	
 	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
 
-	TYPE = "kvmqm"
+	TYPE = TypeName.KVMQM
 	CAP_ACTIONS = {
-		"prepare": [ST_CREATED],
-		"destroy": [ST_PREPARED],
-		"start": [ST_PREPARED],
-		"stop": [ST_STARTED],
-		"upload_grant": [ST_PREPARED],
-		"rextfv_upload_grant": [ST_PREPARED],
-		"upload_use": [ST_PREPARED],
-		"rextfv_upload_use": [ST_PREPARED],
-		"download_grant": [ST_PREPARED],
-		"rextfv_download_grant": [ST_PREPARED,ST_STARTED],
-		elements.REMOVE_ACTION: [ST_CREATED],
+		ActionName.PREPARE: [StateName.CREATED],
+		ActionName.DESTROY: [StateName.PREPARED],
+		ActionName.START: [StateName.PREPARED],
+		ActionName.STOP: [StateName.STARTED],
+		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
+		ActionName.REXTFV_UPLOAD_GRANT: [StateName.PREPARED],
+		ActionName.UPLOAD_USE: [StateName.PREPARED],
+		ActionName.REXTFV_UPLOAD_USE: [StateName.PREPARED],
+		"download_grant": [StateName.PREPARED],
+		"rextfv_download_grant": [StateName.PREPARED,StateName.STARTED],
+		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
 	CAP_NEXT_STATE = {
-		"prepare": ST_PREPARED,
-		"destroy": ST_CREATED,
-		"start": ST_STARTED,
-		"stop": ST_PREPARED,
+		ActionName.PREPARE: StateName.PREPARED,
+		ActionName.DESTROY: StateName.CREATED,
+		ActionName.START: StateName.STARTED,
+		ActionName.STOP: StateName.PREPARED,
 	}
 	CAP_ATTRS = {
 		"cpus": cpus_attr,
@@ -207,7 +204,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {
-		"kvmqm_interface": [ST_CREATED, ST_PREPARED],
+		TypeName.KVMQM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": None, "usbtablet": True}
@@ -220,7 +217,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_CREATED
+		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
@@ -236,14 +233,14 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	def _getState(self):
 		if not self.vmid:
-			return ST_CREATED
+			return StateName.CREATED
 		res = qm.getStatus(self.vmid)
 		if res == qm.Status.Running:
-			return ST_STARTED
+			return StateName.STARTED
 		if res == qm.Status.Stopped:
-			return ST_PREPARED
+			return StateName.PREPARED
 		if res == qm.Status.NoSuchVm:
-			return ST_CREATED
+			return StateName.CREATED
 
 	def _checkState(self):
 		savedState = self.state
@@ -268,11 +265,11 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		return num
 
 	def _addInterface(self, interface):
-		assert self.state == ST_PREPARED
+		assert self.state == StateName.PREPARED
 		qm.addNic(self.vmid, interface.num)
 
 	def _removeInterface(self, interface):
-		assert self.state == ST_PREPARED
+		assert self.state == StateName.PREPARED
 		try:
 			qm.delNic(self.vmid, interface.num)
 		except qm.QMError as err:
@@ -283,7 +280,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 				raise
 
 	def _configure(self):
-		assert self.state == ST_PREPARED
+		assert self.state == StateName.PREPARED
 		kblang = self.kblang
 		if kblang is None:
 			kblang = self._template().kblang
@@ -298,38 +295,38 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	def onChildAdded(self, interface):
 		self._checkState()
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._addInterface(interface)
 		interface.setState(self.state)
 
 	def onChildRemoved(self, interface):
 		self._checkState()
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._removeInterface(interface)
 		interface.setState(self.state)
 
 	def modify_cpus(self, cpus):
 		self._checkState()
 		self.cpus = cpus
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._configure()
 
 	def modify_ram(self, ram):
 		self._checkState()
 		self.ram = ram
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._configure()
 		
 	def modify_kblang(self, kblang):
 		self._checkState()
 		self.kblang = kblang
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._configure()
 		
 	def modify_usbtablet(self, usbtablet):
 		self._checkState()
 		self.usbtablet = usbtablet
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._configure()
 		
 	def modify_template(self, tmplName):
@@ -338,13 +335,13 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		if tmplName:
 			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
 			UserError.check(self.template.isReady(), code=UserError.INVALID_VALUE, message="The selected template's image is not yet synced to this host.")
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			templ = self._template()
 			templ.fetch()
 			self._useImage(templ.getPath(), backing=True)
 
 	def _useImage(self, path_, backing=False):
-		assert self.state == ST_PREPARED
+		assert self.state == StateName.PREPARED
 		if backing:
 			if os.path.exists(self._imagePath()):
 				os.unlink(self._imagePath())
@@ -355,7 +352,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	def action_prepare(self):
 		self._checkState()
 		qm.create(self.vmid)
-		self.setState(ST_PREPARED, True)
+		self.setState(StateName.PREPARED, True)
 		templ = self._template()
 		templ.fetch()
 		self._useImage(templ.getPath(), backing=True)
@@ -368,12 +365,12 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	def action_destroy(self):
 		self._checkState()
 		qm.destroy(self.vmid)
-		self.setState(ST_CREATED, True)
+		self.setState(StateName.CREATED, True)
 
 	def action_start(self):
 		self._checkState()
 		qm.start(self.vmid)
-		self.setState(ST_STARTED, True)
+		self.setState(StateName.STARTED, True)
 		for interface in self.getChildren():
 			con = interface.getConnection()
 			if con:
@@ -395,7 +392,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 			del self.vncpid
 			del self.websocket_pid
 		qm.stop(self.vmid)
-		self.setState(ST_PREPARED, True)
+		self.setState(StateName.PREPARED, True)
 		
 	def action_upload_grant(self):
 		return fileserver.addGrant(self._imagePath("uploaded.qcow2"), fileserver.ACTION_UPLOAD)
@@ -469,9 +466,9 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	def updateUsage(self, usage, data):
 		self._checkState()
-		if self.state == ST_CREATED:
+		if self.state == StateName.CREATED:
 			return
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			memory = 0
 			cputime = 0
 			stats = qm.getStatistics(self.vmid)
@@ -524,7 +521,7 @@ Actions: None
 class KVMQM_Interface(elements.Element):
 	num_attr = Attr("num", type="int")
 	num = num_attr.attribute()
-	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[ST_CREATED])
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[StateName.CREATED])
 	mac_attr = Attr("mac", desc="MAC Address", type="str")
 	mac = mac_attr.attribute()
 	ipspy_pid_attr = Attr("ipspy_pid", type="int")
@@ -532,9 +529,9 @@ class KVMQM_Interface(elements.Element):
 	used_addresses_attr = Attr("used_addresses", type=list, default=[])
 	used_addresses = used_addresses_attr.attribute()
 	
-	TYPE = "kvmqm_interface"
+	TYPE = TypeName.KVMQM_INTERFACE
 	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [ST_CREATED, ST_PREPARED]
+		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
@@ -553,7 +550,7 @@ class KVMQM_Interface(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_CREATED
+		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), KVMQM)
 		self.num = self.getParent()._nextIfaceNum()
@@ -563,7 +560,7 @@ class KVMQM_Interface(elements.Element):
 		self.num = int(re.match("^eth([0-9]+)$", val).groups()[0])
 			
 	def interfaceName(self):
-		if self.state != ST_CREATED:
+		if self.state != StateName.CREATED:
 			try:
 				return qm.getNicName(self.getParent().vmid, self.num)
 			except qm.QMError as err:
@@ -588,7 +585,7 @@ class KVMQM_Interface(elements.Element):
 
 	def info(self):
 		path = self.dataPath("ipspy.json")
-		if self.state == ST_STARTED and os.path.exists(path):
+		if self.state == StateName.STARTED and os.path.exists(path):
 			self.used_addresses = ipspy.read(path)
 		else:
 			self.used_addresses = []
@@ -597,7 +594,7 @@ class KVMQM_Interface(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			ifname = self.interfaceName()
 			if net.ifaceExists(ifname):
 				traffic = sum(net.trafficInfo(ifname))
