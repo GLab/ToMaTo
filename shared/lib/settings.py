@@ -35,6 +35,8 @@ services:
     port: 8080
     protocol: http
 
+web-url: http://127.0.0.1:8080
+
 external-urls:
   aup:        http://tomato-lab.org/aup
   help:       http://github.com/GLab/ToMaTo/wiki
@@ -378,6 +380,9 @@ class SettingsProvider:
 		print "debugging is %s" % ("ENABLED" if self.debugging_enabled() else "disabled")
 
 
+	def get_web_url(self):
+		return self.original_settings['web-url']
+
 	def debugging_enabled(self):
 		"""
 		get whether debugging is enabled (globally)
@@ -705,6 +710,11 @@ class SettingsProvider:
 									error_found = True
 									bad_paths.append('/services/%s/%s' % (service, s))
 
+		# web-url
+		if 'web-url' not in self.original_settings:
+			print "Configuration WARNING at /web-url: section is missing."
+			print " using defeault url."
+			self.original_settings['web-url'] = default_settings['web-url']
 
 		# external urls
 		if 'external-urls' not in self.original_settings:
