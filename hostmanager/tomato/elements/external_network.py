@@ -19,6 +19,7 @@ from django.db import models
 from .. import connections, elements, resources
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..resources import network
+from ..lib.constants import TypeName
 
 DOC="""
 Element type: ``external_network``
@@ -57,7 +58,7 @@ class External_Network(elements.Element):
 	network = models.ForeignKey(network.Network, null=True, related_name="instances")
 
 	ST_DEFAULT = "default"
-	TYPE = "external_network"
+	TYPE = TypeName.EXTERNAL_NETWORK
 	CAP_ACTIONS = {
 		"__remove__": [ST_DEFAULT],
 	}

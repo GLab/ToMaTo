@@ -27,10 +27,7 @@ from ..lib.attributes import Attr  # @UnresolvedImport
 from ..lib.decorators import *
 from .. import config, dump, scheduler
 from ..lib.cmd import path  # @UnresolvedImport
-
-ST_CREATED = "created"
-ST_PREPARED = "prepared"
-ST_STARTED = "started"
+from ..lib.constants import StateName
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
@@ -309,9 +306,9 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 		if self.connection:
 			self.getConnection().tearDown()
 			self.connection = None
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self.action_stop()
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self.action_destroy()
 		for ch in self.getChildren():
 			ch.tearDown()
@@ -472,7 +469,7 @@ class RexTFVElement:
 				self._nlxtp_close()
 
 	def info(self):  #call to get rextfv information. merge with root of Element.info().
-		if self.state == ST_CREATED:
+		if self.state == StateName.CREATED:
 			return {}
 		res = {'attrs': {}}
 		res['attrs']['rextfv_run_status'] = self._rextfv_run_status()
