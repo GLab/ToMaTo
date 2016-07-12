@@ -1,5 +1,6 @@
 from proxies import ProxyHolder, ProxyHoldingTestCase
 from lib.error import UserError
+import time
 import unittest
 
 
@@ -7,15 +8,20 @@ class TopologyTestCase(ProxyHoldingTestCase):
 
 	@classmethod
 	def setUpClass(cls):
+		cls.remove_all_connections()
+		cls.remove_all_elements()
 		cls.remove_all_topologies()
 		cls.remove_all_templates()
+		cls.remove_all_profiles()
 		cls.remove_all_other_accounts()
+		cls.remove_all_other_organizations()
 		cls.remove_all_hosts()
 
 		for host in cls.test_host_addresses:
 			cls.add_host_if_missing(host)
 
 		cls.add_templates_if_missing()
+		cls.add_profiles()
 
 		# Create user without permission to create profiles
 		testuser_username = "testuser"
@@ -59,13 +65,18 @@ class TopologyTestCase(ProxyHoldingTestCase):
 
 
 	def tearDown(self):
+		self.remove_all_connections()
+		self.remove_all_elements()
 		self.remove_all_topologies()
 
 
 	@classmethod
 	def tearDownClass(cls):
+		cls.remove_all_connections()
+		cls.remove_all_elements()
 		cls.remove_all_topologies()
 		cls.remove_all_templates()
+		cls.remove_all_profiles()
 		cls.remove_all_other_accounts()
 		cls.remove_all_other_organizations()
 		cls.remove_all_hosts()
@@ -299,3 +310,79 @@ class TopologyTestCase(ProxyHoldingTestCase):
 
 		testtopology2 = self.proxy_holder_admin.backend_api.topology_create()
 		self.assertRaisesError(UserError,UserError.INVALID_VALUE, self.proxy_holder_admin.backend_api.topology_set_permission, testtopology2["id"],self.testuser_info["name"],"DaBoss")
+
+
+	def test_topology_usage(self):
+		"""
+		tests whether the api returns correctly usage informations for a topology
+		"""
+		# Add two elements to test topology
+		self.testelement1_attrs = {
+			"profile": self.default_profile_name,
+			"name": "Ubuntu 12.04 (x86) #1",
+			"template": self.test_temps[0]['name']
+		}
+
+		self.testelement1 = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
+																		type=self.test_temps[0]['tech'],
+																		attrs=self.testelement1_attrs)
+		self.testelement1_id = self.testelement1['id']
+
+		self.testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
+																				  type=self.test_temps[0][
+																						   'tech'] + "_interface",
+																				  parent=self.testelement1_id)
+		self.testelement1_interface_id = self.testelement1_interface["id"]
+
+		self.testelement2_attrs = {
+			"profile": self.default_profile_name,
+			"name": "Ubuntu 12.04 (x86) #2",
+			"template": self.test_temps[0]['name']
+		}
+
+		self.testelement2 = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
+																		type=self.test_temps[0]['tech'],
+																		attrs=self.testelement2_attrs)
+		self.testelement2_id = self.testelement2['id']
+
+		self.testelement2_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
+																				  type=self.test_temps[0][
+																						   'tech'] + "_interface",
+																				  parent=self.testelement2_id)
+		self.testelement2_interface_id = self.testelement2_interface["id"]
+
+
+
+		self.testconnection = self.proxy_holder.backend_core.connection_create(self.testelement1_interface_id, self.testelement2_interface_id)
+		self.testconnection_id = self.testconnection["id"]
+
+		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "start")
+
+		self.testconnection = self.proxy_holder.backend_core.connection_info(self.testconnection_id)
+		self.testelement1 = self.proxy_holder.backend_core.element_info(self.testelement1_id)
+		self.testelement2 = self.proxy_holder.backend_core.element_info(self.testelement2_id)
+
+
+		hostconnection_id = "%d@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
+		hostelement1_id = "%d@%s"%(self.testconnection['debug']['host_elements'][0][1],self.testconnection['debug']['host_elements'][0][0])
+		hostelement2_id = "%d@%s"%(self.testconnection['debug']['host_elements'][0][1],self.testconnection['debug']['host_elements'][0][0])
+
+
+		self.proxy_holder.backend_accounting.push_usage(elements={hostelement1_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)],hostelement2_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)]}, connections={
+			hostconnection_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)]})
+		connection_info_api = self.proxy_holder.backend_api.topology_usage(self.testtopology_id)
+		connection_info_core = self.proxy_holder.backend_accounting.get_record("topology", self.testtopology_id)
+
+		self.assertDictEqual(connection_info_api, connection_info_core)
+
+
+	def test_topology_usage_non_existing_connection(self):
+		"""
+		tests wether connection usage for a non existing topology is responded correctly
+		"""
+
+		testtopology_id = self.testtopology_id[12:24] + self.testtopology_id[0:12]
+
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.topology_usage,
+							   testtopology_id)
+
