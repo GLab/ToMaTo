@@ -72,7 +72,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	"""
 	topl = get_topology_info(id)
 	UserError.check(topl.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
-	getCurrentUserInfo().check_may_modify_topology(topl)
+	getCurrentUserInfo().check_may_modify_topology(topl, attrs)
 	return topl.modify(attrs)
 
 def topology_action(id, action, params=None): #@ReservedAssignment

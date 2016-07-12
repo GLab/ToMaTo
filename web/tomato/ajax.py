@@ -98,3 +98,9 @@ def connection_remove(api, request, id): #@ReservedAssignment
 def account_info(api, request, name):
 	res = api.account_info(name)
 	return res
+
+@wrap_json
+def account_modify(api, request, name, **attrs): #@ReservedAssignment
+	info = api.account_modify(name, attrs)
+	request.session["user"].updateData(api, data=info)
+	return info
