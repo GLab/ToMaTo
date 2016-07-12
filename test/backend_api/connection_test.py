@@ -1,5 +1,6 @@
 from proxies import ProxyHolder, ProxyHoldingTestCase
 from lib.error import UserError
+import time
 import unittest
 
 
@@ -112,6 +113,9 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		self.testconnection_id = self.testconnection["id"]
 
 		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "start")
+
+
+		self.testconnection = self.proxy_holder.backend_core.connection_info(self.testconnection_id)
 
 	def tearDown(self):
 		self.remove_all_connections()
@@ -264,3 +268,26 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		"""
 
 		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ACTION, self.proxy_holder.backend_api.connection_action ,self.testconnection_id,"NoAction")
+
+	def test_connection_usage(self):
+		"""
+		tests whether the api returns correctly usage informations about a connection or not
+		"""
+
+		hostconnection_id = "%d@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
+
+		self.proxy_holder.backend_accounting.push_usage(elements={},connections={hostconnection_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)]})
+		connection_info_api = self.proxy_holder.backend_api.connection_usage(self.testconnection_id)
+		connection_info_core = self.proxy_holder.backend_accounting.get_record("connection", self.testconnection_id)
+
+
+		self.assertDictEqual(connection_info_api, connection_info_core)
+
+	def test_connection_usage_non_existing_connection(self):
+		"""
+		tests wether connection usage for a non existing connection is responded correctly
+		"""
+
+		testconnection_id = self.testconnection_id[12:24] + self.testconnection_id[0:12]
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.connection_usage, testconnection_id)
+
