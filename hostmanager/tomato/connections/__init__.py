@@ -22,9 +22,7 @@ from .. import dump
 from ..user import User
 from ..accounting import UsageStatistics
 from ..lib import db, attributes, logging #@UnresolvedImport
-
-ST_CREATED = "created"
-ST_STARTED = "started"
+from ..lib.constants import StateName
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
@@ -316,7 +314,7 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 		pass
 
 	def tearDown(self):
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self.action_stop()
 		self.remove()
 

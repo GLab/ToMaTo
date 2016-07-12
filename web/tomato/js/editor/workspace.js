@@ -196,13 +196,8 @@ var Topology = Class.extend({
 		for (var i=0; i<data.elements.length; i++) this.loadElement(data.elements[i]);
 		this.connections = {};
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
-		
-		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "big_editor", "debug_mode", "show_ids", "show_sites_on_elements","element_name_on_top","show_connection_controls"];
-		for (var i = 0; i < opts.length; i++) {
-			if (this.data["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data["_"+opts[i]]);
-		}
-		this.settingOptions = false;		
+
+		this.editor.optionsManager.loadOpts();
 
 		this.onUpdate();
 	},
@@ -428,8 +423,6 @@ var Topology = Class.extend({
 		return obj;
 	},
 	onOptionChanged: function(name) {
-		if (this.settingOptions) return;
-		this.modify_value("_" + name, this.editor.options[name]);
 		this.onUpdate();
 	},
 	action_delegate: function(action, options) {

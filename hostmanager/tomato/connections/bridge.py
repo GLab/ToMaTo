@@ -20,15 +20,13 @@ from ..lib import cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import tc, net, process, path, fileserver #@UnresolvedImport
 from ..lib.error import UserError
+from ..lib.constants import ActionName,StateName
 
 import os
 
 DOC="""
 	Description
 	"""
-
-ST_CREATED = "created"
-ST_STARTED = "started"
 
 class Bridge(connections.Connection):
 	bridge_attr = Attr("bridge", type="str")
@@ -86,18 +84,18 @@ class Bridge(connections.Connection):
 
 	TYPE = "bridge"
 	CAP_ACTIONS = {
-		"start": [ST_CREATED],
-		"stop": [ST_STARTED],
-		connections.REMOVE_ACTION: [ST_CREATED, ST_STARTED],
+		ActionName.START: [StateName.CREATED],
+		ActionName.STOP: [StateName.STARTED],
+		connections.REMOVE_ACTION: [StateName.CREATED, StateName.STARTED],
 	}
 	CAP_NEXT_STATE = {
-		"start": ST_STARTED,
-		"stop": ST_CREATED,
+		ActionName.START: StateName.STARTED,
+		ActionName.STOP: StateName.CREATED,
 	}
 	CAP_ACTIONS_EMUL = {
 	}
 	CAP_ACTIONS_CAPTURE = {
-		"download_grant": [ST_CREATED, ST_STARTED],
+		"download_grant": [StateName.CREATED, StateName.STARTED],
 	}
 	CAP_ATTRS = {}
 	CAP_ATTRS_EMUL = {
@@ -133,13 +131,13 @@ class Bridge(connections.Connection):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_CREATED
+		self.state = StateName.CREATED
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.bridge = "br%d" % self.id
 		self.capture_port = self.getResource("port")
 				
 	def _startCapturing(self):
-		if not self.capturing or self.state == ST_CREATED:
+		if not self.capturing or self.state == StateName.CREATED:
 			return
 		if self.capture_mode == "file":
 			if not os.path.exists(self.dataPath("capture")):
@@ -151,7 +149,7 @@ class Bridge(connections.Connection):
 			raise UserError(code=UserError.INVALID_CONFIGURATION, message="Capture mode must be either file or net")
 				
 	def _stopCapturing(self):
-		if not self.capturing or self.state == ST_CREATED:
+		if not self.capturing or self.state == StateName.CREATED:
 			return
 		if self.capture_pid:
 			process.kill(self.capture_pid)
@@ -291,7 +289,7 @@ class Bridge(connections.Connection):
 	def action_start(self):
 		net.bridgeCreate(self.bridge)
 		net.ifUp(self.bridge)
-		self.setState(ST_STARTED)
+		self.setState(StateName.STARTED)
 		self._startCapturing()
 		for el in self.getElements():
 			ifname = el.interfaceName()
@@ -307,14 +305,14 @@ class Bridge(connections.Connection):
 		if net.bridgeExists(self.bridge):
 			net.ifDown(self.bridge)
 			net.bridgeRemove(self.bridge)
-		self.setState(ST_CREATED)
+		self.setState(StateName.CREATED)
 
 	def remove(self):
 		self.action_stop()
 		connections.Connection.remove(self)
 
 	def connectInterface(self, ifname):
-		if self.state == ST_CREATED:
+		if self.state == StateName.CREATED:
 			return
 		oldBridge = net.interfaceBridge(ifname)
 		if oldBridge == self.bridge:
@@ -329,7 +327,7 @@ class Bridge(connections.Connection):
 				el.onConnected()
 	
 	def disconnectInterface(self, ifname):
-		if self.state == ST_CREATED:
+		if self.state == StateName.CREATED:
 			return
 		if not net.bridgeExists(self.bridge):
 			return

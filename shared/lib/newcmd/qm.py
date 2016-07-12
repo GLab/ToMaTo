@@ -1,6 +1,7 @@
 from . import Error, dpkg, brctl, websockify, qemu_img, SUPPORT_CHECK_PERIOD
 from util import spawnDaemon, run, CommandError, LockMatrix, params, wait, net, cmd, proc, cache
 import collections, os, socket, json, re
+from ..constants import ActionName
 
 locks = LockMatrix()
 qmVersion = None
@@ -265,7 +266,7 @@ def destroy(vmid):
 	vmid = params.convert(vmid, convert=int, gte=1)
 	with locks[vmid]:
 		_checkStatus(vmid, Status.Stopped)
-		_qm(vmid, "destroy")
+		_qm(vmid, ActionName.DESTROY)
 		_checkStatus(vmid, Status.NoSuchVm) 
 	
 @_public	
@@ -293,7 +294,7 @@ def start(vmid, detachInterfaces=True):
 		brctl.create("dummy")
 	with locks[vmid]:
 		_checkStatus(vmid, Status.Stopped)
-		_qm(vmid, "start")
+		_qm(vmid, ActionName.START)
 		_checkStatus(vmid, Status.Running)
 		try:
 			for ifname in _getNicNames(vmid).values():
