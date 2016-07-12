@@ -327,7 +327,8 @@ def generate_default_config():
 			},
 			'code_directories': ['backend_api', 'shared'],
 			'shell_cmd': "/bin/bash",
-			'reload_cmd': None
+			'reload_cmd': None,
+			'api_url': "http+xmlrpc://localhost:8000"
 			# 'version'  (will be generated if not found in config)
 		},
 		'backend_accounting': {
@@ -809,7 +810,7 @@ class Module:
 		"""
 		import lib as tomato
 
-		backend_url = tomato.createUrl("http+xmlrpc", "localhost", 8000)
+		backend_url = config[BACKEND_API_MODULE]["api_url"]
 		try:
 			api = tomato.getConnection(backend_url)
 			if api.ping():
