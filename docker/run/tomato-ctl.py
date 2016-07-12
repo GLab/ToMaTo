@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 import sys
 import subprocess
 import os
@@ -11,8 +12,8 @@ import socket, fcntl, struct
 from datetime import date
 from threading import Thread
 
-
-TOMATO_MODULES = ['web', 'backend_core', 'backend_users', 'backend_api', 'backend_debug', 'backend_accounting']
+BACKEND_API_MODULE = "backend_api"
+TOMATO_MODULES = ['web', 'backend_core', 'backend_users', BACKEND_API_MODULE, 'backend_debug', 'backend_accounting']
 DB_MODULE = "db"
 CONFIG_PATHS = ["/etc/tomato/tomato-ctl.conf", os.path.expanduser("~/.tomato/tomato-ctl.conf"), "tomato-ctl.conf", os.path.join(os.path.dirname(__file__), "tomato-ctl.conf")]
 
@@ -513,6 +514,8 @@ def read_config():
 	config[DB_MODULE]['enabled'] = True
 	config[DB_MODULE]['is_database'] = True
 
+	sys.path.insert(1, os.path.join(config["tomato_dir"], "cli"))
+
 	return config
 
 
@@ -617,6 +620,57 @@ class Module:
 		else:
 			self.restart()
 
+	def status(self):
+		"""
+		return a printable on-line status message. possible values:
+		  - disabled
+		  - stopped
+		  - unknown software state; container started
+		  - problems; container started
+		  - running
+		:return: message
+		:rtype: string
+		"""
+		if self.is_started():
+
+			try:
+				tomato_status = self.tomato_started()
+			except Module.BackendNotStartedException:
+				return "unknown software state; container started"
+
+			if tomato_status is None:  # uncheckable
+				return "unknown software state; container started"
+			if tomato_status:  # tomato everything ok
+				return "started"
+			else:
+				return "problems; container started"
+
+		else:
+
+			if self.is_db or self.enabled:
+				return "stopped"
+			else:
+				return "disabled"
+
+	def check(self):
+		"""
+		check if started successfully.
+		:return: True if working, False if problems
+		:rtype: bool
+		"""
+		if self.is_started():
+			try:
+				tomato_status = self.tomato_started()
+				if tomato_status is not None and not tomato_status:
+					print self.module_name + ":", "software has not started"
+					return False
+			except Module.BackendNotStartedException:
+				print self.module_name + ":", "software status cannot be checked because backend_api is not reachable"
+				return False
+		else:
+			print self.module_name + ":", "container has not started"
+			return False
+		return True
 
 	def is_started(self):
 		return docker_container_started(self.container_name)
@@ -671,7 +725,7 @@ class Module:
 
 		backup_dir = config['db']['directories']['backup']
 		if not os.path.isabs(backup_dir):
-			backup_dir = os.path.join(config['docker_dir'],backup_dir)
+			backup_dir = os.path.join(config['docker_dir'], backup_dir)
 		assure_path(backup_dir)
 		if not backup_name.endswith(".tar.gz"):
 			backup_name += ".tar.gz"
@@ -688,6 +742,80 @@ class Module:
 		]
 		run_observing(*cmd)
 		shutil.rmtree(backup_dir)
+
+	def tomato_started(self, retry_count=5):
+		"""
+		check if tomato is started
+		when checking for a backend module other than backend_api, backend_api must be started before.
+			this means that if also starting backend_api in this tomato-ctl instance, check this BEFORE the others.
+		:param int retry_count: if 0, don't recursively retry. If >0, retry every second, decrementing retry_count
+		:return: True if started, False if not (yet) started, None if not checkable
+		:rtype: bool
+		"""
+		if self.module_name == "web":
+			# code for web checking
+			# fixme: implement
+			return None
+
+		if self.is_db:
+			# code for db checking
+			# fixme: implement
+			return None
+
+		if self.module_name == BACKEND_API_MODULE:
+			if Module.backend_api_proxy is None:
+
+				if not Module.create_backend_api_proxy():
+					if retry_count == 0:
+						return False
+					else:
+						return self.tomato_started(retry_count=retry_count - 1)
+				else:
+					return True
+
+			else:
+
+				try:
+					return Module.backend_api_proxy.ping()
+				except:
+					if retry_count == 0:
+						return False
+					else:
+						return self.tomato_started(retry_count=retry_count - 1)
+
+		if Module.backend_api_proxy is None:
+			if not Module.create_backend_api_proxy():
+				raise Module.BackendNotStartedException()
+		try:
+			return Module.backend_api_proxy.debug_services_reachable().get(self.module_name, None)
+		except:
+			raise Module.BackendHasProblemsException()
+
+
+	class BackendNotStartedException(Exception):
+		pass
+	class BackendHasProblemsException(Exception):
+		pass  # todo: include error information
+
+	backend_api_proxy = None
+	@staticmethod
+	def create_backend_api_proxy():
+		"""
+
+		:return: True if connected, False if not
+		"""
+		import lib as tomato
+
+		backend_url = tomato.createUrl("http+xmlrpc", "localhost", 8000)
+		try:
+			api = tomato.getConnection(backend_url)
+			if api.ping():
+				Module.backend_api_proxy = api
+				return True
+			return False
+		except:
+			return False
+
 
 
 
@@ -723,6 +851,14 @@ def start_all(modules):
 	for t in threads:
 		t.join()
 
+	problems = False
+	for module_name in [DB_MODULE] + ([BACKEND_API_MODULE] if tomato_modules[BACKEND_API_MODULE].enabled else []) + [mod.module_name for mod in modules if mod != BACKEND_API_MODULE and mod != DB_MODULE]:
+		module = db_module if module_name == DB_MODULE else tomato_modules[module_name]
+		problems = problems or not module.check()
+	if problems:
+		exit(1)
+
+
 def stop_all(modules):
 	threads = set()
 	for module in modules:
@@ -745,6 +881,14 @@ def reload_all(modules):
 		t.start()
 	for t in threads:
 		t.join()
+
+	problems = False
+	for module_name in [DB_MODULE] + ([BACKEND_API_MODULE] if tomato_modules[BACKEND_API_MODULE].enabled else []) + [
+		mod.module_name for mod in modules if mod != BACKEND_API_MODULE and mod != DB_MODULE]:
+		module = db_module if module_name == DB_MODULE else tomato_modules[module_name]
+		problems = problems or not module.check()
+	if problems:
+		exit(1)
 
 
 
@@ -810,15 +954,19 @@ if len(args) == 2:
 		exit(0)
 
 	if args[1] == "status":
-		stats = {}
-		max_len = len(DB_MODULE)
-		stats[DB_MODULE] = 'started' if db_module.is_started() else 'stopped'
+
+		stats = {
+			DB_MODULE: db_module.status(),
+			BACKEND_API_MODULE: tomato_modules[BACKEND_API_MODULE].status()  # must be checked before other backend modules
+		}
 		for module_name, module in tomato_modules.iteritems():
-			max_len = max(max_len, len(module_name))
-			stats[module_name] = 'started' if module.is_started() else ('stopped' if module.enabled else 'disabled')
+			if module_name != BACKEND_API_MODULE:
+				stats[module_name] = module.status()
+
 		for module_name in sorted(stats.iterkeys()):
 			mod_name_print = append_to_str(module_name, ": ", stats.iterkeys())
 			print mod_name_print, stats[module_name]
+
 		exit(0)
 
 	if args[1] == "gencerts":
@@ -840,13 +988,17 @@ if len(args) in [3, 4]:
 		module = db_module
 		is_db_module = True
 	else:
-		print "available modules", ", ".join(TOMATO_MODULES+[DB_MODULE])
+		print "unknown module '%s'" % module_name
+		print "available modules:"
+		print " ", ", ".join(sorted(TOMATO_MODULES+[DB_MODULE]))
 		exit(1)
 
 	if args[2] == "start" and len(args) == 3:
 		if not is_db_module:
 			db_module.start()
 		module.start()
+		if not module.check():
+			exit(1)
 		exit(0)
 
 	if args[2] == "stop" and len(args) == 3:
@@ -862,19 +1014,16 @@ if len(args) in [3, 4]:
 
 	if args[2] == "restart" and len(args) == 3:
 		if is_db_module:
-			modules_started = [mod for mod in tomato_modules.itervalues() if mod.is_started()]
-			for mod in modules_started:
-				mod.stop()
-			module.restart()
-			for mod in modules_started:
-				mod.start()
-			exit(0)
+			restart_all(tomato_modules.values()+[db_module])
 		else:
 			module.restart()
+			if not module.check():
+				exit(1)
 			exit(0)
 
+
 	if args[2] == "status" and len(args) == 3:
-		print "%s: %s" % (module_name, 'started' if module.is_started() else ('stopped' if module.enabled else 'disabled'))
+		print "%s: %s" % (module_name, module.status())
 		exit(0)
 
 	if args[2] == "shell" and len(args) == 3:
