@@ -174,7 +174,7 @@ class NetworkTestCase(ProxyHoldingTestCase):
 		network_attrs = self.testnetwork_attrs.copy()
 		network_attrs['preference'] == 50
 
-		network_id = self.testnetwork_id + self.testnetwork_id
+		network_id = self.testnetwork_id[12:24] + self.testnetwork_id[0:12]
 
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_modify, network_id, network_attrs)
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.network_info, network_id)
@@ -198,7 +198,7 @@ class NetworkTestCase(ProxyHoldingTestCase):
 	#Try to remove non existing network
 	def test_network_remove_non_existing(self):
 
-		network_id = self.testnetwork_id + self.testnetwork_id
+		network_id = self.testnetwork_id[12:24] + self.testnetwork_id[0:12]
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_remove, network_id)
 
 
@@ -484,7 +484,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 	#Get a list of all network instances of non existing networks
 	def test_network_instance_list_with_non_existing_network(self):
 
-		network_id = self.testnetwork_id + self.testnetwork_id
+		network_id = self.testnetwork_id[12:24] + self.testnetwork_id[0:12]
 		self.assertRaisesError(UserError,  UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_instance_list, network=network_id)
 		self.assertRaisesError(UserError,  UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.network_instance_list, network=network_id)
 
@@ -509,7 +509,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 	def test_network_instance_create_non_existing_network(self):
 		self.remove_all_network_instances()
 
-		network = self.testnetwork_network+self.testnetwork_network
+		network = self.testnetwork_id[12:24] + self.testnetwork_id[0:12]
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_instance_create, network, self.testnetwork_instance_host, self.testnetwork_instance_attrs)
 		self.assertEqual(self.proxy_holder.backend_core.network_instance_list(), [])
 
@@ -549,7 +549,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 		network_attrs = self.testnetwork_instance_attrs.copy()
 		network_attrs['bridger'] = "eth0"
 
-		network_instance_id = self.testnetwork_instance_host1_id+self.testnetwork_instance_host1_id
+		network_instance_id = self.testnetwork_instance_host1_id[12:24]+self.testnetwork_instance_host1_id[0:12]
 
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_instance_modify, network_instance_id, network_attrs)
 
@@ -619,7 +619,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 	#Check information of non existing network
 	def test_network_instance_info_non_existing_network(self):
 
-		network_instance_id = self.testnetwork_instance_host1_id+self.testnetwork_instance_host1_id
+		network_instance_id = self.testnetwork_instance_host1_id[12:24]+self.testnetwork_instance_host1_id[0:12]
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.network_instance_info, network_instance_id)
 
 

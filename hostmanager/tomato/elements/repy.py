@@ -23,6 +23,7 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
+from ..lib.constants import ActionName, StateName, TypeName
 
 DOC="""
 Element type: ``repy``
@@ -114,9 +115,6 @@ Actions:
 	    Works like download_grant.
 """
 
-ST_PREPARED = "prepared"
-ST_STARTED = "started"
-
 class Repy(elements.Element):
 	pid_attr = Attr("pid", type="int")
 	pid = pid_attr.attribute()
@@ -130,31 +128,31 @@ class Repy(elements.Element):
 	vncpid = vncpid_attr.attribute()
 	vncpassword_attr = Attr("vncpassword", type="str")
 	vncpassword = vncpassword_attr.attribute()
-	args_attr = Attr("args", desc="Arguments", states=[ST_PREPARED], default=[])
+	args_attr = Attr("args", desc="Arguments", states=[StateName.PREPARED], default=[])
 	args = args_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[ST_PREPARED], type="float", minValue=0.01, maxValue=4.0, default=0.25)
+	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[StateName.PREPARED], type="float", minValue=0.01, maxValue=4.0, default=0.25)
 	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_PREPARED], type="int", minValue=10, maxValue=4096, default=25)
+	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[StateName.PREPARED], type="int", minValue=10, maxValue=4096, default=25)
 	ram = ram_attr.attribute()
-	bandwidth_attr = Attr("bandwidth", desc="Bandwidth", unit="bytes/s", states=[ST_PREPARED], type="int", minValue=1024, maxValue=10000000000, default=1000000)
+	bandwidth_attr = Attr("bandwidth", desc="Bandwidth", unit="bytes/s", states=[StateName.PREPARED], type="int", minValue=1024, maxValue=10000000000, default=1000000)
 	bandwidth = bandwidth_attr.attribute()
 	#TODO: use template ref instead of attr
-	template_attr = Attr("template", desc="Template", states=[ST_PREPARED], type="str", null=True)
+	template_attr = Attr("template", desc="Template", states=[StateName.PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 
-	TYPE = "repy"
+	TYPE = TypeName.REPY
 	CAP_ACTIONS = {
-		"start": [ST_PREPARED],
-		"stop": [ST_STARTED],
-		"upload_grant": [ST_PREPARED],
-		"upload_use": [ST_PREPARED],
-		"download_grant": [ST_PREPARED],
-        "download_log_grant": [ST_PREPARED, ST_STARTED],
-		elements.REMOVE_ACTION: [ST_PREPARED],
+		ActionName.START: [StateName.PREPARED],
+		ActionName.STOP: [StateName.STARTED],
+		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
+		ActionName.UPLOAD_USE: [StateName.PREPARED],
+		"download_grant": [StateName.PREPARED],
+        "download_log_grant": [StateName.PREPARED, StateName.STARTED],
+		elements.REMOVE_ACTION: [StateName.PREPARED],
 	}
 	CAP_NEXT_STATE = {
-		"start": ST_STARTED,
-		"stop": ST_PREPARED,
+		ActionName.START: StateName.STARTED,
+		ActionName.STOP: StateName.PREPARED,
 	}	
 	CAP_ATTRS = {
 		"template": template_attr,
@@ -165,7 +163,7 @@ class Repy(elements.Element):
 		"timeout": elements.Element.timeout_attr		
 	}
 	CAP_CHILDREN = {
-		"repy_interface": [ST_PREPARED],
+		TypeName.REPY_INTERFACE: [StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"args": [], "cpus": 0.25, "ram": 25, "bandwidth": 1000000}
@@ -178,7 +176,7 @@ class Repy(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_PREPARED
+		self.state = StateName.PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
@@ -190,8 +188,8 @@ class Repy(elements.Element):
 
 	def _getState(self):
 		if self.pid and process.exists(self.pid):
-			return ST_STARTED
-		return ST_PREPARED
+			return StateName.STARTED
+		return StateName.PREPARED
 		
 	def _checkState(self):
 		savedState = self.state
@@ -202,7 +200,7 @@ class Repy(elements.Element):
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_State": realState})
 
 	def _interfaceName(self, name):
-		return "repy%d%s" % (self.id, name)
+		return TypeName.REPY + "%d%s" % (self.id, name)
 
 	def _template(self):
 		if self.template:
@@ -266,7 +264,7 @@ class Repy(elements.Element):
 		iargs = sum((["-i", "%s,alias=%s" % (self._interfaceName(iface.name), iface.name)] for iface in self.getChildren()), [])
 		stdout = open(self.dataPath("program.log"), "w")
 		self.pid = cmd.spawn(["tomato-repy", "-p", self.dataPath("program.repy"), "-r", self.dataPath("resources"), "-v"] + iargs + self.args, stdout=stdout)
-		self.setState(ST_STARTED, True)
+		self.setState(StateName.STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
 			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.ASSERTION,
@@ -303,7 +301,7 @@ class Repy(elements.Element):
 		if self.websocket_pid:
 			process.killTree(self.websocket_pid)
 			del self.websocket_pid
-		self.setState(ST_PREPARED, True)
+		self.setState(StateName.PREPARED, True)
 		
 	def action_upload_grant(self):
 		return fileserver.addGrant(self.dataPath("uploaded.repy"), fileserver.ACTION_UPLOAD)
@@ -343,7 +341,7 @@ class Repy(elements.Element):
 	def updateUsage(self, usage, data):
 		self._checkState()
 		usage.diskspace = path.diskspace(self.dataPath())
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			usage.memory = process.memory(self.pid)
 			cputime = process.cputime(self.pid)
 			if self.vncpid:
@@ -387,9 +385,9 @@ class Repy_Interface(elements.Element):
 	used_addresses_attr = Attr("used_addresses", type=list, default=[])
 	used_addresses = used_addresses_attr.attribute()
 
-	TYPE = "repy_interface"
+	TYPE = TypeName.REPY_INTERFACE
 	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [ST_PREPARED]
+		elements.REMOVE_ACTION: [StateName.PREPARED]
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
@@ -406,7 +404,7 @@ class Repy_Interface(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_PREPARED
+		self.state = StateName.PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), Repy)
 		self.name = self.getParent()._nextIfaceName()
@@ -428,7 +426,7 @@ class Repy_Interface(elements.Element):
 		self.save()
 
 	def info(self):
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self.used_addresses = net.ipspy_read(self.dataPath("ipspy.json"))
 		else:
 			self.used_addresses = []

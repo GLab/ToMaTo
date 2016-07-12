@@ -1,3 +1,9 @@
+tomato-hostmanager (3.8-rc1) stable; urgency=medium
+
+  * Test version
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 15 Jun 2016 09:00:38 +0200
+
 tomato-hostmanager (3.7) stable; urgency=medium
 
   * Lots of changes and improvements

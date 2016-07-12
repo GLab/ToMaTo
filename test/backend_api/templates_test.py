@@ -40,6 +40,7 @@ class TemplateTestCase(ProxyHoldingTestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.remove_all_profiles()
+		cls.remove_all_templates()
 		cls.remove_all_other_accounts()
 
 		#Create user without permission to create profiles
@@ -71,6 +72,7 @@ class TemplateTestCase(ProxyHoldingTestCase):
 
 
 	def tearDown(self):
+		self.remove_all_elements()
 		self.remove_all_templates()
 
 	@classmethod
@@ -215,8 +217,8 @@ class TemplateTestCase(ProxyHoldingTestCase):
 	def test_template_remove_non_existing(self):
 
 		#Non existing ID
-		test_id = self.testtemplate_id + self.testtemplate_id
-		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.template_remove, test_id)
+		template_id = self.testtemplate_id[12:24] + self.testtemplate_id[0:12]
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.template_remove, template_id)
 
 	#get template informations and check for correctness
 	def test_template_info(self):
@@ -231,7 +233,7 @@ class TemplateTestCase(ProxyHoldingTestCase):
 
 	#Get template informations of a non existing template
 	def test_template_info_non_existing(self):
-		template_id = self.testtemplate_id + self.testtemplate_id
+		template_id = self.testtemplate_id[12:24] + self.testtemplate_id[0:12]
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.template_info, template_id)
 
 

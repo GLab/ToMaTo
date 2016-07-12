@@ -88,7 +88,7 @@ impl Config {
             ssl_cert_file: doc["ssl"]["cert"].as_str().expect("SSL cert file unset").to_owned(),
             ssl_ca_file: doc["ssl"]["ca"].as_str().expect("SSL ca file unset").to_owned(),
             data_path: doc["data-path"].as_str().expect("Data path unset").to_owned(),
-            hierarchy_cache_timeout: doc["hierarchy-cache-timeout"].as_i64().unwrap_or(3600),
+            hierarchy_cache_timeout: doc["hierarchy-cache-timeout"].as_i64().unwrap_or(1800),
             store_interval: doc["store-interval"].as_i64().unwrap_or(60),
             cleanup_interval: doc["cleanup-interval"].as_i64().unwrap_or(3600),
             max_record_age: doc["max-record-age"].as_i64().unwrap_or(24*3600*14),
@@ -101,7 +101,7 @@ impl Config {
     }
 }
 
-struct SimpleLogger;
+pub struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
     #[inline]

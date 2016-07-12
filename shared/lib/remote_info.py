@@ -375,8 +375,16 @@ class TopologyInfo(ActionObj):
 		:return: whether the user has this role (or a higher one)
 		:rtype: bool
 		"""
-		user_role = self.info()['permissions'][username]
-		return topology_role.Role.leq(role,user_role)
+		try:
+			user_role = self.info()['permissions'][username]
+			return topology_role.Role.leq(role,user_role)
+		except:
+			return False
+
+	def _check_exists(self):
+		if self._info is not None:
+			return True
+		return get_backend_core_proxy().topology_exists(self.topology_id)
 
 	def organization_has_role(self, organization, role):
 		"""
@@ -437,6 +445,12 @@ class TopologyInfo(ActionObj):
 			get_connection_info(c).invalidate_info()
 			get_connection_info(c).invalidate_exists()
 		return res
+
+	def existsRole(self,role):
+		for r in topology_role.Role.RANKING:
+			if r == role:
+				return True
+		return False
 
 
 

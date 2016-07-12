@@ -189,10 +189,25 @@ class ProxyHoldingTestCase(unittest.TestCase):
 				attrs = template
 				proxy_holder.backend_core.template_create(tech, name, attrs)
 
-		#Force update
-		for host in cls.test_host_addresses:
-			host_name = cls.get_host_name(host)
-			proxy_holder.backend_core.host_action(host_name, "forced_update")
+		template_ready_on_backend = 0
+		template_list = proxy_holder.backend_core.template_list()
+
+		print "\nWaiting for backend to load all templates..."
+		while template_ready_on_backend < len(template_list):
+			template_list = proxy_holder.backend_core.template_list()
+			template_ready_on_backend = 0
+			for template in template_list:
+				if template['ready']['backend']:
+					template_ready_on_backend += 1
+			time.sleep(1)
+
+		for host in proxy_holder.backend_core.host_list():
+			proxy_holder.backend_core.host_action(host['name'], "forced_update")
+			proxy_holder.backend_core.host_action(host['name'], "forced_update")
+
+
+
+
 
 
 	@classmethod
@@ -244,9 +259,15 @@ class ProxyHoldingTestCase(unittest.TestCase):
 
 	@classmethod
 	def remove_all_elements(cls):
-		for topology in proxy_holder.backend_core.topology_list():
-			for element in topology['elements']:
-				proxy_holder.backend_core.element_remove(element)
+		topologies = proxy_holder.backend_core.topology_list()
+		for topology in topologies:
+			proxy_holder.backend_core.topology_action(topology['id'], "destroy")
+			while not topology['elements'] == []:
+				for element in topology['elements']:
+					element_info = proxy_holder.backend_core.element_info(element)
+					if element_info['children'] == []:
+						proxy_holder.backend_core.element_remove(element)
+				topology = proxy_holder.backend_core.topology_info(topology['id'])
 
 	@classmethod
 	def remove_all_connections(cls):
