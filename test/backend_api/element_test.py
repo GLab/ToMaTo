@@ -138,22 +138,31 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 	#Just check if element info will be returned without modification
 	def test_element_info(self):
+		"""
+		Check if informations are correct and not modified
+		"""
 		element_info_api = self.proxy_holder.backend_api.element_info(self.testelement_id)
 		element_info_core = self.proxy_holder.backend_core.element_info(self.testelement_id)
 		self.assertDictEqual(element_info_api, element_info_core)
 
-	#Check if permissions are checked for element info
 	def test_element_info_without_permission(self):
+		"""
+		Check if permissions are checked for element info
+		"""
 		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.element_info, self.testelement_id)
 
 	def test_element_info_non_existing(self):
-
+		"""
+		Check if API respondes correctly to non existing elements
+		"""
 		testelement_id = self.testelement_id[12:24] + self.testelement_id[0:12]
 
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.element_info, testelement_id)
 
 	def test_element_info_with_fetch_true(self):
-
+		"""
+		Test if all informations of subelements are fetched into the info call
+		"""
 		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "stop")
 
 		self.testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
@@ -167,6 +176,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 	def test_element_remove(self):
 
+		"""
+		Remove an element
+		"""
 		self.proxy_holder.backend_core.element_action(self.testelement_id, "stop")
 		self.proxy_holder.backend_core.element_action(self.testelement_id, "destroy")
 
@@ -174,17 +186,24 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.element_info, self.testelement_id)
 
 	def test_element_remove_without_permission(self):
+		"""
+		Try to remove an element without permission
+		"""
 		self.proxy_holder.backend_core.element_action(self.testelement_id, "stop")
 		self.proxy_holder.backend_core.element_action(self.testelement_id, "destroy")
 		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.element_remove,self.testelement_id)
 
 	def test_element_remove_non_existing(self):
-
+		"""
+		Try to remove a non existing element and check for correct response
+		"""
 		element_id = self.testelement_id[12:24] + self.testelement_id[0:12]
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.element_remove, element_id)
 
 	def test_element_remove_with_children(self):
-
+		"""
+		Create an child element for an element and try to remove the parent
+		"""
 		self.proxy_holder.backend_core.element_action(self.testelement_id, "stop")
 		self.proxy_holder.backend_core.element_action(self.testelement_id, "destroy")
 
@@ -199,6 +218,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.element_info, testelement1_interface['id'])
 
 	def test_element_create(self):
+		"""
+		Create an element with correct attributes
+		"""
 		testelement_attrs = {
 			"profile": self.default_profile_name,
 			"name": self.test_temps[0]['label'],
@@ -211,7 +233,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.assertIsNotNone(self.testelement)
 
 	def test_element_create_with_non_existing_profile(self):
-
+		"""
+		Create an element with non existing profile and check for correct response
+		"""
 		profile = "%s%s"%(self.default_profile_name, self.default_profile_name)
 
 		testelement_attrs = {
@@ -226,6 +250,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 																			attrs=testelement_attrs)
 
 	def test_element_create_with_non_existing_template(self):
+		"""
+		Create an element with non existing template and check for correct response
+		"""
 		template = "%s%s" % (self.test_temps[0]['name'], self.test_temps[0]['name'])
 
 		testelement_attrs = {
@@ -243,13 +270,18 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 	def test_element_create_without_parents_and_attrs(self):
 
+		"""
+		Create an element without parent and attrs attribute
+		"""
 		self.testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
 																		 type=self.test_temps[0]['tech'])
 
 		self.assertIsNotNone(self.testelement)
 
 	def test_element_create_non_existing_type(self):
-
+		"""
+		Create an element with a non existing technology type and check for correct response
+		"""
 		type = "closedvz"
 
 		testelement_attrs = {
@@ -263,7 +295,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 																		 attrs=testelement_attrs)
 
 	def test_element_create_non_existing_topology(self):
-
+		"""
+		Create an element in a non existing topology and check for correct response
+		"""
 		topology_id = self.testtopology_id[12:24]+self.testtopology_id[0:12]
 
 		testelement_attrs = {
@@ -277,8 +311,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 																		 attrs=testelement_attrs)
 
 	def test_element_create_non_existing_parent(self):
-
-
+		"""
+		Create an child element for a non existing parant and check for correct response
+		"""
 		parent_id = self.testelement_id[12:24] + self.testelement_id[0:12]
 
 		testelement_attrs = {
@@ -293,7 +328,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 																		 attrs=testelement_attrs)
 
 	def test_element_create_existing_parent_from_different_topology(self):
-
+		"""
+		Create an child element for an existing element but with the parent in a different topology
+		"""
 		topology = self.proxy_holder.backend_core.topology_create(self.default_user_name)
 		topology_id = topology['id']
 
@@ -309,7 +346,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 																		 attrs=testelement_attrs)
 
 	def test_element_create_existing_parent_is_an_interface(self):
-
+		"""
+		Create an child element for an interface and check for correct response
+		"""
 		testelement_attrs = {
 			"profile": self.default_profile_name,
 			"name": self.test_temps[0]['label'],
@@ -331,7 +370,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 							   attrs=testelement_attrs)
 
 	def test_element_create_with_parent_but_element_is_not_an_interface(self):
-
+		"""
+		Create an not valid child element
+		"""
 		testelement_attrs = {
 			"profile": self.default_profile_name,
 			"name": self.test_temps[0]['label'],
@@ -348,7 +389,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 
 	def test_element_create_for_all_technologies(self):
-
+		"""
+		Create an element for each template to test all technologies
+		"""
 		for temp in self.test_temps:
 			self.testelement_attrs = {
 				"profile": self.default_profile_name,
@@ -362,6 +405,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 			self.assertIsNotNone(self.testelement)
 
 	def test_element_create_without_permission(self):
+		"""
+		Try to create an element without the permission and check for correct response
+		"""
 		self.testelement_attrs = {
 				"profile": self.default_profile_name,
 				"name": self.test_temps[0]['label'],
@@ -374,7 +420,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 
 	def test_element_modify(self):
-
+		"""
+		Try to modify an element correctly
+		"""
 		testelement_attrs = {
 			"name": "%s %s"%(self.testelement["name"], self.testelement["name"]),
 		}
@@ -385,6 +433,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.assertEqual(testelement_attrs["name"],testelement["name"])
 
 	def test_element_modify_without_permission(self):
+		"""
+		Try to modify an element without the permission and check for correct response
+		"""
 		testelement_attrs = {
 			"name": "%s %s"%(self.testelement["name"], self.testelement["name"]),
 		}
@@ -392,7 +443,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError,UserError.DENIED, self.proxy_holder_tester.backend_api.element_modify,self.testelement_id, testelement_attrs)
 
 	def test_element_modify_non_existing(self):
-
+		"""
+		Try to modify an non existing element and check for correct response
+		"""
 		testelement_attrs = {
 			"name": "%s %s"%(self.testelement["name"], self.testelement["name"]),
 		}
@@ -403,6 +456,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 							element_id, testelement_attrs)
 
 	def test_element_modify_non_existing_attribute(self):
+		"""
+		try to modify an non existing attribute
+		"""
 		testelement_attrs = {
 			"namee": "%s %s" % (self.testelement["name"],self.testelement["name"]),
 		}
@@ -412,6 +468,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 
 	def test_element_modify_non_existing_template(self):
+		"""
+		Try to modify the element and use a non existing template
+		"""
 		testelement_attrs = {
 			"name": "%s %s" % (self.testelement["name"],self.testelement["name"]),
 			"template": "%s %s" % (self.testelement["template"],self.testelement["template"])
@@ -421,6 +480,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 							self.testelement_id, testelement_attrs)
 
 	def test_element_modify_non_existing_profile(self):
+		"""
+		Try to modify the element and use a non existing profile
+		"""
 		testelement_attrs = {
 			"name": "%s %s" % (self.testelement["name"],self.testelement["name"]),
 			"profile": "%s %s" % (self.testelement["profile"],self.testelement["profile"])
@@ -430,6 +492,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 							self.testelement_id, testelement_attrs)
 
 	def test_element_modify_no_permission_for_template(self):
+		"""
+		Try to modify the element and use a template for which the user has no permission
+		"""
 		self.proxy_holder.backend_core.topology_set_permission(self.testtopology_id,self.testuser["name"], "manager")
 		temp_restricted = {}
 		for temp in self.test_temps:
@@ -445,6 +510,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 							self.testelement_id, testelement_attrs)
 
 	def test_element_modify_no_permission_for_profile(self):
+		"""
+		Try to modify the element and use a profile for which the user has no permission
+		"""
 		self.proxy_holder.backend_core.topology_set_permission(self.testtopology_id,self.testuser["name"], "manager")
 
 		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "destroy")
@@ -459,7 +527,9 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 
 	def test_element_usage(self):
-
+		"""
+		Get usage data for an element
+		"""
 
 		hostelement_id = "%d@%s"%(self.testelement['debug']['host_elements'][0][1],self.testelement['debug']['host_elements'][0][0])
 
@@ -471,10 +541,15 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.assertDictEqual(element_info_api, element_info_core)
 
 	def test_element_usage_non_existing_element(self):
+		"""
+		Get usage data for an non existing element and check for correct response
+		"""
 		testelement_id = self.testelement_id[12:24] + self.testelement_id[0:12]
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.element_usage, testelement_id)
 
 	def test_host_remove_with_existing_element(self):
-
+		"""
+		Try to remove a host which has running elements and check for correct response
+		"""
 		self.assertRaisesError(UserError, UserError.NOT_EMPTY, self.proxy_holder.backend_api.host_remove,self.testelement['debug']['host_elements'][0][0])
 
