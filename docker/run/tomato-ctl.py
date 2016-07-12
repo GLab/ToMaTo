@@ -769,6 +769,7 @@ class Module:
 					if retry_count == 0:
 						return False
 					else:
+						time.sleep(1)
 						return self.tomato_started(retry_count=retry_count - 1)
 				else:
 					return True
@@ -781,8 +782,10 @@ class Module:
 					if retry_count == 0:
 						return False
 					else:
+						time.sleep(1)
 						return self.tomato_started(retry_count=retry_count - 1)
 
+		# any other module (i.e., not web, not db, not backend_api
 		if Module.backend_api_proxy is None:
 			if not Module.create_backend_api_proxy():
 				raise Module.BackendNotStartedException()
