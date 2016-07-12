@@ -616,7 +616,7 @@ class Module:
 		if self.can_reload():
 			if self.is_started():
 				docker_exec(self.container_name, *self.reload_cmd)
-				time.sleep(1)
+				time.sleep(0.1)
 			else:
 				print "container stopped."
 		else:
