@@ -1,5 +1,7 @@
 # ToMaTo - Topology Management Tool
 
+[![Join the chat at https://gitter.im/GLab/ToMaTo](https://badges.gitter.im/GLab/ToMaTo.svg)](https://gitter.im/GLab/ToMaTo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
  The Topology Management Tool (ToMaTo) is a topology-centric network
 testbed, giving researchers the possibility to run their software in
 specifically designed virtual networking topologies. ToMaTo utilizes
