@@ -17,7 +17,14 @@
 
 from ..lib.cache import cached #@UnresolvedImport
 
+
 def capabilities_element(type, host=None): #@ReservedAssignment
+	"""
+	This function returns the capability list of either the given host or all hosts which include the provided element type in their capabilities
+	:param type: the type of the element ("openvz","kvm","repy") which the host should support
+	:param host: the name of a certain host. If left 'None', all hosts will be looked at
+	:return: list of capabilities information
+	"""
 	typeClass = elements.TYPES.get(type)
 	UserError.check(typeClass, code=UserError.UNSUPPORTED_TYPE, message="No such element type", data={"type": type})
 	if host:
@@ -26,6 +33,12 @@ def capabilities_element(type, host=None): #@ReservedAssignment
 	return typeClass.getCapabilities(host)
 
 def capabilities_connection(type, host=None): #@ReservedAssignment
+	"""
+	This function returns the capability list of either the given host or all hosts which include the provided connection type in their capabilities
+	:param type: the type of the connection ("bridge","fixed_bridge") which the host should support
+	:param host: the name of a certain host. If left 'None', all hosts will be looked at
+	:return: list of capabilities information
+	"""
 	if host:
 		host = Host.get(name=host)
 		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
@@ -33,6 +46,9 @@ def capabilities_connection(type, host=None): #@ReservedAssignment
 
 @cached(timeout=24*3600, autoupdate=True)
 def capabilities():
+	"""
+	:return: an array with ["element"] and ["connection"] as elements which in turn contain all respective capabilities of all hosts
+	"""
 	res = {"element": {}, "connection": {}}
 	host = None
 	for t in elements.TYPES:
