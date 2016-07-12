@@ -18,6 +18,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 if __name__ == "__main__":
+
+	import os
+	with open(os.path.join("/tmp", "stop_tomato.sh"), "w+") as f:
+		f.write("kill %d" % os.getpid())
+
 	import sys
 	if len(sys.argv) == 1:
 		from tomato import run

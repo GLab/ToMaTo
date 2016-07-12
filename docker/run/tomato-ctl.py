@@ -327,7 +327,7 @@ def generate_default_config():
 			},
 			'code_directories': ['backend_api', 'shared'],
 			'shell_cmd': "/bin/bash",
-			'reload_cmd': None,
+			'reload_cmd': ['bash', '/tmp/stop_tomato.sh'],
 			'api_url': "http+xmlrpc://localhost:8000"
 			# 'version'  (will be generated if not found in config)
 		},
@@ -374,7 +374,7 @@ def generate_default_config():
 			},
 			'code_directories': ['backend_core', 'shared'],
 			'shell_cmd': "/bin/bash",
-			'reload_cmd': None
+			'reload_cmd': ['bash', '/tmp/stop_tomato.sh']
 			# 'version'  (will be generated if not found in config)
 		},
 		'backend_users': {
@@ -393,7 +393,7 @@ def generate_default_config():
 			},
 			'code_directories': ['backend_users', 'shared'],
 			'shell_cmd': "/bin/bash",
-			'reload_cmd': None
+			'reload_cmd': ['bash', '/tmp/stop_tomato.sh']
 			# 'version'  (will be generated if not found in config)
 		},
 		'backend_debug': {
@@ -412,7 +412,7 @@ def generate_default_config():
 			},
 			'code_directories': ['backend_debug', 'shared'],
 			'shell_cmd': "/bin/bash",
-			'reload_cmd': None
+			'reload_cmd': ['bash', '/tmp/stop_tomato.sh']
 			# 'version'  (will be generated if not found in config)
 		},
 
@@ -616,6 +616,7 @@ class Module:
 		if self.can_reload():
 			if self.is_started():
 				docker_exec(self.container_name, *self.reload_cmd)
+				time.sleep(1)
 			else:
 				print "container stopped."
 		else:
@@ -1014,6 +1015,8 @@ if len(args) in [3, 4]:
 			print "cannot reload database"
 			exit(1)
 		module.reload()
+		if not module.check():
+			exit(1)
 		exit(0)
 
 	if args[2] == "restart" and len(args) == 3:
