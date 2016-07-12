@@ -458,8 +458,6 @@ class ElementTestCase(ProxyHoldingTestCase):
 							self.testelement_id, testelement_attrs)
 
 
-
-	#@unittest.skip("Doesn't work correctly right now")
 	def test_element_usage(self):
 
 
