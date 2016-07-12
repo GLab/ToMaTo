@@ -239,5 +239,6 @@ def topology_usage(id): #@ReservedAssignment
 	  :doc:`/docs/accountingdata`.
 	"""
 	target_topology = get_topology_info(id)
+	UserError.check(target_topology.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
 	getCurrentUserInfo().check_may_view_topology_usage(target_topology)
 	return target_topology.get_usage(hide_no_such_record_error=True)
