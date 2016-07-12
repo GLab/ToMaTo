@@ -28,7 +28,7 @@ from connections import connection_create, connection_info, connection_modify, c
 	connection_action, connection_usage
 
 from debug import debug_stats, debug_services_reachable, debug_run_internal_api_call, debug_run_host_api_call,\
-	debug_execute_task, debug_debug_internal_api_call
+	debug_execute_task, debug_debug_internal_api_call, ping
 
 from dumpmanager import errordump_info, errordump_list, errordumps_force_refresh, errorgroup_favorite,\
 	errorgroup_hide, errorgroup_info, errorgroup_list, errorgroup_modify, errorgroup_remove

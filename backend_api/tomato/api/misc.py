@@ -62,7 +62,8 @@ def server_info():
 			'options': topology_config[Config.TOPOLOGY_TIMEOUT_OPTIONS],
 			'default': topology_config[Config.TOPOLOGY_TIMEOUT_DEFAULT],
 			'warning': topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]
-		}
+		},
+		'web_url': settings.get_web_url()
 	}
 
 def link_statistics(siteA, siteB):

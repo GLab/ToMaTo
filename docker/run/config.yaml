@@ -29,6 +29,8 @@ services:
     port: 8080
     protocol: http
 
+web-url: http://127.0.0.1:8080
+
 external-urls:
   aup:        http://tomato-lab.org/aup
   help:       http://github.com/GLab/ToMaTo/wiki
