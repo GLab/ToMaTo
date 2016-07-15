@@ -35,7 +35,6 @@ class HostTestCases(ProxyHoldingTestCase):
 
     def tearDown(self):
         self.remove_all_hosts()
-        #self.proxy_holder.backend_api.host_remove("DummyHost")
         self.remove_all_other_accounts()
         self.remove_all_other_sites()
         self.remove_all_other_organizations()
@@ -133,11 +132,16 @@ class HostTestCasesExistingHosts(ProxyHoldingTestCase):
         self.remove_all_other_accounts()
         self.remove_all_other_sites()
         self.remove_all_other_organizations()
-        self.proxy_holder.backend_api.organization_create("DummyCorp")
-        self.proxy_holder.backend_api.site_create("DummySite", "DummyCorp")
+
+        self.testorga_name = "DummyCorp"
+        self.testsite_name = "DummySite"
+        self.testhost_name = "DummyHost"
+
+        self.proxy_holder.backend_api.organization_create(self.testorga_name)
+        self.proxy_holder.backend_api.site_create(self.testsite_name,  self.testorga_name)
         self.address = self.test_host_addresses[0]
 
-        self.proxy_holder.backend_api.host_create("DummyHost","DummySite",{
+        self.proxy_holder.backend_core.host_create(self.testhost_name,self.testsite_name,{
             'rpcurl': "ssl+jsonrpc://%s:8003"%self.address,
             'address': self.address
             })
@@ -205,7 +209,7 @@ class HostTestCasesExistingHosts(ProxyHoldingTestCase):
         """
         tests whether host_info correctly return the host_info object when called with an existing host
         """
-        self.assertEqual(self.proxy_holder.backend_api.host_info("DummyHost"), self.proxy_holder.backend_core.host_info("DummyHost"))
+        self.assertEqual(self.proxy_holder.backend_api.host_info(self.testhost_name), self.proxy_holder.backend_core.host_info(self.testhost_name))
 
     def test_host_info_non_existing_host(self):
         """
@@ -217,7 +221,7 @@ class HostTestCasesExistingHosts(ProxyHoldingTestCase):
         """
         tests whether host_modify correctly modifys the host with the given name and with correct attributes
         """
-        name="DummyHost"
+        name=self.testhost_name
         attrs={
             "name": "MyDummyHost"
         }
@@ -228,7 +232,7 @@ class HostTestCasesExistingHosts(ProxyHoldingTestCase):
         """
         tests whether host_modify correctly reacts when called without sufficient permissions
         """
-        name="DummyHost"
+        name=self.testhost_name
         attrs={
             "name": "MyDummyHost"
         }
@@ -238,7 +242,7 @@ class HostTestCasesExistingHosts(ProxyHoldingTestCase):
         """
         tests whether host_modify correctly reacts when called with wrong attributes
         """
-        name="DummyHost"
+        name=self.testhost_name
         attrs={
             "name": "MyDummyHost",
             "nokey": "ThrowError"
@@ -259,14 +263,14 @@ class HostTestCasesExistingHosts(ProxyHoldingTestCase):
         """
         tests whether host_remove correctly removes the host with the provided name
         """
-        self.proxy_holder.backend_api.host_remove("DummyHost")
-        self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_core.host_info,"DummyHost")
+        self.proxy_holder.backend_api.host_remove(self.testhost_name)
+        self.assertRaisesError(UserError,UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_core.host_info,self.testhost_name)
 
     def test_host_remove_wo_permissions(self):
         """
         tests whether host_remove correctly responds when called without sufficient permissions
         """
-        self.assertRaisesError(UserError,UserError.DENIED,self.proxy_holder_tester.backend_api.host_remove,"DummyHost")
+        self.assertRaisesError(UserError,UserError.DENIED,self.proxy_holder_tester.backend_api.host_remove,self.testhost_name)
 
     def test_host_remove_non_existing_host(self):
         """
@@ -278,14 +282,14 @@ class HostTestCasesExistingHosts(ProxyHoldingTestCase):
         """
         tests whether host_users correctly returns an empty list if no users are using the host
         """
-        self.assertEqual(self.proxy_holder.backend_api.host_users("DummyHost"),self.proxy_holder.backend_core.host_users("DummyHost"))
-        self.assertEqual([],self.proxy_holder.backend_api.host_users("DummyHost"))
+        self.assertEqual(self.proxy_holder.backend_api.host_users(self.testhost_name),self.proxy_holder.backend_core.host_users(self.testhost_name))
+        self.assertEqual([],self.proxy_holder.backend_api.host_users(self.testhost_name))
 
     def test_host_users_correct_wo_permissions(self):
         """
         tests whether host_users correctly responds when called without sufficient permissions
         """
-        self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.host_users,"DummyHost")
+        self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.host_users,self.testhost_name)
 
     def test_host_users_non_existing_host(self):
         """
