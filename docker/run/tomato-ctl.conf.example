@@ -47,6 +47,9 @@
 		},
         "version": "3.6"
   },
+  "backend_api": {
+  		'api_url': "http+xmlrpc://localhost:8000"
+  }
   "web": {
 		"docker_container": "tomato_web",
 		"image": "tomato_web",
