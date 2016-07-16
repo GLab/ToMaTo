@@ -4,12 +4,13 @@ from _shared import _getOrganization
 from ..lib.error import UserError
 
 def organization_exists(name):
-	if _getOrganization(name):
+	if Organization.get(name):
 		return True
 	return False
 
 def organization_create(name, **args):
 	args['name'] = name
+	UserError.check(not organization_exists(name), code=UserError.ALREADY_EXISTS, message="Organization with that name already exists", data={"name": name})
 	org = Organization.create(**args)
 	return org.name
 

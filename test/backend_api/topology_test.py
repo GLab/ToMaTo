@@ -39,12 +39,13 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 		# Create user with all permissions
-		cls.proxy_holder.backend_users.organization_create("DummyCorp",label="DummyCorp")
 
-		testuser_username = "testuser_admin"
-		testuser_password = "123"
-		testuser_organization = "DummyCorp"
-		testuser_attrs = {"realname": "Test User Admin",
+
+
+		cls.testadmin_username = "testadmin"
+		cls.testadmin_password = "123"
+		cls.testadmin_organization = "DummyCorp"
+		cls.testadmin_attrs = {"realname": "Test User Admin",
 						  "email": "admin@example.com",
 						  "flags": {
 							  "global_admin": True,
@@ -54,9 +55,12 @@ class TopologyTestCase(ProxyHoldingTestCase):
 							  "debug": True
 						  }
 						  }
-		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization,
-													testuser_attrs)
-		cls.proxy_holder_admin = ProxyHolder(testuser_username, testuser_password)
+
+		cls.proxy_holder.backend_api.organization_create(cls.testadmin_organization)
+
+		cls.proxy_holder.backend_api.account_create(cls.testadmin_username, cls.testadmin_password, cls.testadmin_organization,
+													cls.testadmin_attrs)
+		cls.proxy_holder_admin = ProxyHolder(cls.testadmin_username, cls.testadmin_password)
 
 
 	def setUp(self):
@@ -260,9 +264,12 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		"""
 		Tests whether topology_list returns the correct list of topologies as the backend_core
 		"""
+
 		testtopology2 = self.proxy_holder_admin.backend_api.topology_create()
-		self.assertEqual(self.proxy_holder_admin.backend_api.topology_list(full=True,organization="DummyCorp") ,
-						 self.proxy_holder_admin.backend_core.topology_list(full=True,organization_filter="DummyCorp"))
+		topology_list_api = self.proxy_holder_admin.backend_api.topology_list(full=True, organization=self.testadmin_organization)
+		topology_list_core = self.proxy_holder_admin.backend_core.topology_list(full=True, organization_filter=self.testadmin_organization)
+
+		self.assertEqual(topology_list_api,topology_list_core)
 
 	def test_topology_list_correct_non_existing_orga(self):
 		"""

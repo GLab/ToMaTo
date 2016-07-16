@@ -196,7 +196,9 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	"""
 
 	if organization:
-		UserError.check(get_organization_info(organization).exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist")
+		UserError.check(get_organization_info(organization).exists(),
+						code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist")
+
 		getCurrentUserInfo().check_may_list_organization_topologies(organization)
 	if showAll:
 		getCurrentUserInfo().check_may_list_all_topologies()

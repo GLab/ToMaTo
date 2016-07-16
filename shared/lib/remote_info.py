@@ -84,6 +84,7 @@ class InfoObj(ExistenceCheck):
 		:return:
 		"""
 		self._info = None
+		self.invalidate_exists()
 		self.invalidate_list()
 
 	def _fetch_info(self, fetch=False):
@@ -162,9 +163,10 @@ class InfoObj(ExistenceCheck):
 		remove the object. delete cache.
 		:return: None
 		"""
-		self._remove()
+		self.invalidate_info()
 		self.invalidate_list()
-		self.set_exists(False)
+		self.invalidate_exists()
+		self._remove()
 
 
 class ActionObj(InfoObj):
@@ -267,6 +269,7 @@ class UserInfo(InfoObj):
 	@staticmethod
 	def create(username, organization, email, password, attrs):
 		res = get_backend_users_proxy().user_create(username, organization, email, password, attrs)
+		get_user_info(username).invalidate_info()
 		get_user_list.invalidate()
 		return res
 
@@ -304,7 +307,7 @@ class UserInfo(InfoObj):
 
 
 class OrganizationInfo(InfoObj):
-	__slots__ = ("name", "_usage_obj")
+	__slots__ = ("name", "_usage_obj", "used")
 
 	def invalidate_list(self):
 		get_organization_list.invalidate()
@@ -322,6 +325,7 @@ class OrganizationInfo(InfoObj):
 		if attrs is None: attrs = {}
 		attrs['label'] = label
 		res = get_backend_users_proxy().organization_create(name, **attrs)
+		get_organization_info(name).invalidate_info()
 		get_organization_list.invalidate()
 		return res
 
@@ -341,6 +345,7 @@ class OrganizationInfo(InfoObj):
 
 	def _remove(self):
 		get_backend_users_proxy().organization_remove(self.name)
+		get_organization_info(self.name).invalidate_info()
 
 
 class TopologyInfo(ActionObj):
@@ -352,6 +357,7 @@ class TopologyInfo(ActionObj):
 	@staticmethod
 	def create(initial_owner):
 		res = get_backend_core_proxy().topology_create(initial_owner)
+		get_topology_info(res['id']).invalidate_info()
 		get_topology_list.invalidate()
 		return res
 
@@ -430,9 +436,9 @@ class TopologyInfo(ActionObj):
 		conns = self.info()['connections']
 		get_backend_core_proxy().topology_remove(self.topology_id)
 		for e in elems:
-			get_element_info(e).set_exists(False)
+			get_element_info(e).set_exists(None)
 		for c in conns:
-			get_connection_info(c).set_exists(False)
+			get_connection_info(c).set_exists(None)
 
 	def _action(self, action, params):
 		elems = self.info()['elements']
@@ -465,6 +471,7 @@ class SiteInfo(InfoObj):
 	@staticmethod
 	def create(name, organization_name, label, attrs):
 		res = get_backend_core_proxy().site_create(name, organization_name, label, attrs)
+		get_site_info(name).invalidate_info()
 		get_site_list.invalidate()
 		return res
 
@@ -501,10 +508,7 @@ class SiteInfo(InfoObj):
 		return res
 
 	def _remove(self):
-		orga = self.get_organization_name()
 		get_backend_core_proxy().site_remove(self.name)
-		self.invalidate_list()
-		get_organization_info(orga).invalidate_info()
 
 	def get_organization_name(self):
 		return self.info()['organization']
@@ -524,7 +528,8 @@ class HostInfo(InfoObj):
 	@staticmethod
 	def create(name, site_info, attrs):
 		res = get_backend_core_proxy().host_create(name, site_info.get_name(), attrs)
-		get_network_instance_list.invalidate()
+		get_host_info(name).invalidate_info()
+		get_host_list.invalidate()
 		return res
 
 	def __init__(self, host_name):
@@ -557,9 +562,7 @@ class HostInfo(InfoObj):
 		return res
 
 	def _remove(self):
-		site = self.get_site_name()
 		get_backend_core_proxy().host_remove(self.name)
-		get_site_info(site).invalidate_info()
 
 	def get_site_name(self):
 		return self.info()['site']
@@ -587,7 +590,9 @@ class ElementInfo(ActionObj):
 		:param attrs: element attrs
 		:return:
 		"""
-		return get_backend_core_proxy().element_create(top.get_id(), type, parent_id, attrs)
+		element = get_backend_core_proxy().element_create(top.get_id(), type, parent_id, attrs)
+		get_element_info(element['id']).invalidate_info()
+		return element
 
 	def _after_action(self, action, params):
 		super(ElementInfo, self)._after_action(action, params)
@@ -606,10 +611,12 @@ class ElementInfo(ActionObj):
 
 	def _remove(self):
 		get_backend_core_proxy().element_remove(self.eid)
+
+	def invalidate_info(self):
 		self.get_topology_info().invalidate_info()
+		super(ElementInfo, self).invalidate_info()
 
 	def _action(self, action, params):
-		self.get_topology_info().invalidate_info()
 		return get_backend_core_proxy().element_action(self.eid, action, params)
 
 	def get_topology_info(self):
@@ -640,7 +647,9 @@ class ConnectionInfo(ActionObj):
 		:param dict attrs: connection attributes
 		:return:
 		"""
-		return get_backend_core_proxy().connection_create(el1.get_id(), el2.get_id(), attrs)
+		conn = get_backend_core_proxy().connection_create(el1.get_id(), el2.get_id(), attrs)
+		get_connection_info(conn['id']).invalidate_info()
+		return conn
 
 	def __init__(self, connection_id):
 		super(ConnectionInfo, self).__init__()
@@ -653,9 +662,12 @@ class ConnectionInfo(ActionObj):
 	def _modify(self, attrs):
 		return get_backend_core_proxy().connection_modify(self.cid, attrs)
 
+	def invalidate_info(self):
+		self.get_topology_info().invalidate_info()
+		super(ConnectionInfo, self).invalidate_info()
+
 	def _remove(self):
 		get_backend_core_proxy().connection_remove(self.cid)
-		self.get_topology_info().invalidate_info()
 
 	def _action(self, action, params):
 		self.get_topology_info().invalidate_info()
@@ -676,6 +688,7 @@ class TemplateInfo(InfoObj):
 	@staticmethod
 	def create(tech, name, attrs):
 		res = get_backend_core_proxy().template_create(tech, name, attrs)
+		get_template_info(res['id']).invalidate_info()
 		get_template_list.invalidate()
 		return res
 
