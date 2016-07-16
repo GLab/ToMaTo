@@ -792,7 +792,14 @@ class Module:
 			if not Module.create_backend_api_proxy():
 				raise Module.BackendNotStartedException()
 		try:
-			return Module.backend_api_proxy.debug_services_reachable().get(self.module_name, None)
+			if Module.backend_api_proxy.debug_services_reachable().get(self.module_name, None):
+				return True
+			else:
+				if retry_count == 0:
+					return False
+				else:
+					time.sleep(1)
+					return self.tomato_started(retry_count=retry_count - 1)
 		except:
 			raise Module.BackendHasProblemsException()
 
