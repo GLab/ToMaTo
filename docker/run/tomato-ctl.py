@@ -103,7 +103,7 @@ def show_help():
 
 Usage: %(cmd)s [COMMAND]
   or:  %(cmd)s [MODULE] [COMMAND]
-  or:  %(cmd)s db [BACKUP|RESTORE] [BACKUP_NAME]
+  or:  %(cmd)s %(DB_MODULE)s [BACKUP|RESTORE] [BACKUP_NAME]
   or:  %(cmd)s gencerts
   or:  %(cmd)s help
   or:  %(cmd)s help-config
@@ -128,7 +128,7 @@ available commands:
  reload:
    Restart the program without restarting the container.
    If reloading is not possible, restart the container instead.
-   The database will never be reloaded.
+   The database will never be reloaded or restarted.
 
  restart:
    Restart the container
