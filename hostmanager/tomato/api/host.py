@@ -145,7 +145,8 @@ def host_info():
 		},
 		"uptime": hostinfo.uptime(),
 		"system": hostinfo.system(),
-		"dumps": dump.getCount()
+		"dumps": dump.getCount(),
+		"current_user": currentUser().name
 	}
 
 def host_capabilities():
@@ -283,6 +284,6 @@ def host_server_logs():
 		return fp.read().splitlines()[1:]
 
 
-from .. import dump, elements, connections, resources, config
+from .. import dump, elements, connections, resources, config, currentUser
 from ..lib.cmd import hostinfo, net, dhcp #@UnresolvedImport
 import time
