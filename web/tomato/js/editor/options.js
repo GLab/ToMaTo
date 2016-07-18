@@ -123,7 +123,6 @@ var OptionsManager = Class.extend({
 		}
 		for (var i = 0; i < this.user_opts.length; i++) {
 			var opt = this.user_opts[i].name;
-			console.log(this.editor.options.user["_editor_"+opt]);
 			if (this.editor.options.user["_editor_"+opt] != null) {
 				this.editor.setOption(opt, this.editor.options.user["_editor_"+opt]);
 			} else {

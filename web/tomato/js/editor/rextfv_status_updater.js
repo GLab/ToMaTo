@@ -13,7 +13,6 @@ var RexTFV_status_updater = Class.extend({
         if (entry.element in editor.topology.elements) { //element exists
         	if ((new Date(editor.topology.elements[entry.element].data.info_next_sync * 1000) - new Date()) < -2000) {
             	editor.topology.elements[entry.element].updateSynchronous(undefined, undefined, true);
-            	console.log('update '+entry.element);
             } else {
             	was_actual_run = false;
             }
