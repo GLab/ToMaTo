@@ -481,12 +481,21 @@ class PermissionChecker(UserInfo):
 		"""
 		self._check_has_topology_role(topology_info, Role.owner)
 
-	def check_may_modify_topology(self, topology_info):
+	def check_may_modify_topology(self, topology_info, attrs):
 		"""
 		check whether this user may modify this topology.
 		:param TopologyInfo topology_info: target topology
+		:param dict attrs: attributes to be modified
 		"""
-		self._check_has_topology_role(topology_info, Role.owner)
+
+		# non-client-data requires owner role
+		for attr in attrs.iterkeys():
+			if not attr.startswith("_"):
+				self._check_has_topology_role(topology_info, Role.owner)
+				return
+
+		# client data requires user role
+		self._check_has_topology_role(topology_info, Role.user)
 
 	def check_may_run_topology_action(self, topology_info, action, params):
 		"""

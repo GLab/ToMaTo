@@ -385,6 +385,12 @@ var Element = Component.extend({
 	action_destroy: function() {
 		this.action("destroy");
 	},
+	action_prepareAndStart: function() {
+	    t = this;
+	    this.action("prepare" , { callback: function() { t.action("start"); }
+	                            });
+
+	},
 	updateDependent: function() {
 		for (var i = 0; i < this.children.length; i++) {
 			this.children[i].update();

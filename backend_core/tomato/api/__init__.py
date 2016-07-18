@@ -43,6 +43,6 @@ from template import template_id, template_info, template_create, template_list,
 from site import site_create, site_info, site_list, site_modify, site_remove
 
 from topology import topology_action, topology_create, topology_info,\
-	topology_list, topology_modify, topology_set_permission, topology_remove, topology_usage
+	topology_list, topology_modify, topology_set_permission, topology_remove, topology_usage, topology_exists
 
 from hierarchy import object_exists, object_parents, objects_available

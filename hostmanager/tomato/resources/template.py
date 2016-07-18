@@ -24,11 +24,12 @@ from ..lib.newcmd import aria2
 from ..lib.newcmd.util import fs
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, threading
+from ..lib.constants import TypeName
 
 PATTERNS = {
-	"kvmqm": "%s.qcow2",
-	"openvz": "%s.tar.gz",
-	"repy": "%s.repy",
+	TypeName.KVMQM: "%s.qcow2",
+	TypeName.OPENVZ: "%s.tar.gz",
+	TypeName.REPY: "%s.repy",
 }
 
 class Template(resources.Resource):

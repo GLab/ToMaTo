@@ -24,6 +24,7 @@ from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
+from ..lib.constants import ActionName, StateName, TypeName
 
 DHCP_CMDS = ["[ -e /sbin/dhclient ] && /sbin/dhclient -nw %s",
 			 "[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s"]
@@ -142,10 +143,6 @@ Actions:
 		same as download_grant, but only for the nlXTP folder
 """
 
-ST_CREATED = "created"
-ST_PREPARED = "prepared"
-ST_STARTED = "started"
-
 class OpenVZ(elements.RexTFVElement,elements.Element):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
@@ -173,29 +170,29 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	gateway4 = gateway4_attr.attribute()	
 	gateway6_attr = Attr("gateway6", desc="IPv6 gateway", type="str")
 	gateway6 = gateway6_attr.attribute()		
-	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
+	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 
-	TYPE = "openvz"
+	TYPE = TypeName.OPENVZ
 	CAP_ACTIONS = {
-		"prepare": [ST_CREATED],
-		"destroy": [ST_PREPARED],
-		"start": [ST_PREPARED],
-		"stop": [ST_STARTED],
-		"upload_grant": [ST_PREPARED],
-		"rextfv_upload_grant": [ST_PREPARED,ST_STARTED],
-		"upload_use": [ST_PREPARED],
-		"rextfv_upload_use": [ST_PREPARED,ST_STARTED],
-		"download_grant": [ST_PREPARED],
-		"rextfv_download_grant": [ST_PREPARED,ST_STARTED],
-		"execute": [ST_STARTED],
-		elements.REMOVE_ACTION: [ST_CREATED],
+		ActionName.PREPARE: [StateName.CREATED],
+		ActionName.DESTROY: [StateName.PREPARED],
+		ActionName.START: [StateName.PREPARED],
+		ActionName.STOP: [StateName.STARTED],
+		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
+		ActionName.REXTFV_UPLOAD_GRANT: [StateName.PREPARED,StateName.STARTED],
+		ActionName.UPLOAD_USE: [StateName.PREPARED],
+		ActionName.REXTFV_UPLOAD_USE: [StateName.PREPARED,StateName.STARTED],
+		"download_grant": [StateName.PREPARED],
+		"rextfv_download_grant": [StateName.PREPARED,StateName.STARTED],
+		"execute": [StateName.STARTED],
+		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
 	CAP_NEXT_STATE = {
-		"prepare": ST_PREPARED,
-		"destroy": ST_CREATED,
-		"start": ST_STARTED,
-		"stop": ST_PREPARED,
+		ActionName.PREPARE: StateName.PREPARED,
+		ActionName.DESTROY: StateName.CREATED,
+		ActionName.START: StateName.STARTED,
+		ActionName.STOP: StateName.PREPARED,
 	}	
 	CAP_ATTRS = {
 		"cpus": cpus_attr,
@@ -209,7 +206,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {
-		"openvz_interface": [ST_CREATED, ST_PREPARED],
+		TypeName.OPENVZ_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
@@ -222,7 +219,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_CREATED
+		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
@@ -245,20 +242,20 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return out
 			
 	def _execute(self, cmd_, timeout=60):
-		assert self.state == ST_STARTED
+		assert self.state == StateName.STARTED
 		out = self._vzctl("exec", [cmd_], timeout=timeout)
 		return out
 			
 	def _getState(self):
 		if not self.vmid:
-			return ST_CREATED
+			return StateName.CREATED
 		res = self._vzctl("status")
 		if "exist" in res and "running" in res:
-			return ST_STARTED
+			return StateName.STARTED
 		if "exist" in res and "down" in res:
-			return ST_PREPARED
+			return StateName.PREPARED
 		if "deleted" in res:
-			return ST_CREATED
+			return StateName.CREATED
 		raise InternalError(message="Unable to determine openvz state", code=InternalError.INVALID_STATE,
 			data={"state": res})
 
@@ -288,45 +285,45 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return "veth%s.%s" % (self.vmid, ifname)
 	
 	def _addInterface(self, interface):
-		assert self.state != ST_CREATED
+		assert self.state != StateName.CREATED
 		self._vzctl("set", ["--netif_add", interface.name, "--save"])
 		self._vzctl("set", ["--ifname", interface.name, "--bridge", "dummy", "--mac", interface.mac, "--host_ifname", self._interfaceName(interface.name), "--mac_filter",  "off", "--save"])
 		
 	def _removeInterface(self, interface):
-		assert self.state != ST_CREATED
+		assert self.state != StateName.CREATED
 		self._vzctl("set", ["--netif_del", interface.name, "--save"])
 		
 	def _setCpus(self):
-		assert self.state != ST_CREATED
+		assert self.state != StateName.CREATED
 		self._vzctl("set", ["--cpulimit", str(int(self.cpus * 100)), "--cpus", str(int(self.cpus)), "--save"])
 
 	def _setRam(self):
-		assert self.state != ST_CREATED
+		assert self.state != StateName.CREATED
 		val = "%dM" % int(self.ram)
 		self._vzctl("set", ["--ram", val, "--swap", val, "--save"])
 	
 	def _setDiskspace(self):
-		assert self.state != ST_CREATED
+		assert self.state != StateName.CREATED
 		val = "%dM" % int(self.diskspace)
 		self._vzctl("set", ["--diskspace", val, "--save"])
 
 	def _setRootpassword(self):
-		assert self.state != ST_CREATED
+		assert self.state != StateName.CREATED
 		if self.rootpassword:
 			self._vzctl("set", ["--userpasswd", "root:%s" % self.rootpassword, "--save"])
 
 	def _setHostname(self):
-		assert self.state != ST_CREATED
+		assert self.state != StateName.CREATED
 		if self.hostname:
 			self._vzctl("set", ["--hostname", self.hostname, "--save"])
-			if self.state == ST_STARTED:
+			if self.state == StateName.STARTED:
 				try:
 					self._execute("hostname '%s'" % self.hostname)
 				except cmd.CommandError:
 					pass
 
 	def _setGateways(self):
-		assert self.state == ST_STARTED
+		assert self.state == StateName.STARTED
 		if self.gateway4:
 			try:
 				while True:
@@ -353,7 +350,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 				raise
 
 	def _useImage(self, path_):
-		assert self.state != ST_CREATED
+		assert self.state != StateName.CREATED
 		imgPath = self._imagePath()
 		path.remove(imgPath, recursive=True)
 		path.createDir(imgPath)
@@ -365,7 +362,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
-		if self.state != ST_CREATED:
+		if self.state != StateName.CREATED:
 			return os.path.join(self._imagePath(),"mnt","nlXTP",filename)
 		else:
 			return None
@@ -383,49 +380,49 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 
 	def onChildAdded(self, interface):
 		self._checkState()
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._addInterface(interface)
 		interface.setState(self.state)
 
 	def onChildRemoved(self, interface):
 		self._checkState()
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._removeInterface(interface)
 		interface.setState(self.state)
 
 	def modify_cpus(self, val):
 		self.cpus = val
-		if self.state != ST_CREATED:
+		if self.state != StateName.CREATED:
 			self._setCpus()
 		
 	def modify_ram(self, val):
 		self.ram = val
-		if self.state != ST_CREATED:
+		if self.state != StateName.CREATED:
 			self._setRam()
 		
 	def modify_diskspace(self, val):
 		self.diskspace = val
-		if self.state != ST_CREATED:
+		if self.state != StateName.CREATED:
 			self._setDiskspace()
 
 	def modify_rootpassword(self, val):
 		self.rootpassword = val
-		if self.state != ST_CREATED:
+		if self.state != StateName.CREATED:
 			self._setRootpassword()
 	
 	def modify_hostname(self, val):
 		self.hostname = val
-		if self.state != ST_CREATED:
+		if self.state != StateName.CREATED:
 			self._setHostname()
 
 	def modify_gateway4(self, val):
 		self.gateway4 = val
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self._setGateways()
 
 	def modify_gateway6(self, val):
 		self.gateway6 = val
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self._setGateways()
 	
 	def modify_template(self, tmplName):
@@ -434,7 +431,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
 		templ = self._template()
 		templ.fetch()
-		if self.state == ST_PREPARED:
+		if self.state == StateName.PREPARED:
 			self._useImage(templ.getPath())
 
 	def action_prepare(self):
@@ -452,7 +449,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			path.remove("/etc/vz/conf/%d.conf" % self.vmid)
 		self._vzctl("create", ["--ostemplate", tplPath, "--config", "default"])
 		self._vzctl("set", ["--devices", "c:10:200:rw", "--capability", "net_admin:on", "--save"])
-		self.setState(ST_PREPARED, True) #must be here or the set commands fail
+		self.setState(StateName.PREPARED, True) #must be here or the set commands fail
 		self._setRam()
 		self._setDiskspace()
 		self._setRootpassword()
@@ -465,22 +462,22 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._checkState()
 		self._vzctl("set", ["--hostname", "workaround", "--save"]) #Workaround for fault in vzctl 4.0-1pve6
 		try:
-			self._vzctl("destroy")
+			self._vzctl(ActionName.DESTROY)
 		except cmd.CommandError, exc:
 			if exc.errorCode == 41: # [41] Container is currently mounted (umount first)
 				self._vzctl("umount")
-				self._vzctl("destroy")
+				self._vzctl(ActionName.DESTROY)
 			else:
 				raise
-		self.setState(ST_CREATED, True)
+		self.setState(StateName.CREATED, True)
 
 	def action_start(self):
 		self._checkState()
 		if not net.bridgeExists("dummy"):
 			net.bridgeCreate("dummy")
 		net.ifUp("dummy")
-		self._vzctl("start") #not using --wait since this might hang
-		self.setState(ST_STARTED, True)
+		self._vzctl(ActionName.START) #not using --wait since this might hang
+		self.setState(StateName.STARTED, True)
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
@@ -517,9 +514,9 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			process.killTree(self.websocket_pid)
 			del self.websocket_pid
 		self._vzctl("set", ["--hostname", "workaround", "--save"]) #Workaround for fault in vzctl 4.0-1pve6
-		self._vzctl("stop")
+		self._vzctl(ActionName.STOP)
 		self._vzctl("set", ["--hostname", self.hostname, "--save"]) #Workaround for fault in vzctl 4.0-1pve6
-		self.setState(ST_PREPARED, True)
+		self.setState(StateName.PREPARED, True)
 
 	def action_upload_grant(self):
 		return fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
@@ -535,7 +532,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	def action_rextfv_upload_use(self):
 		UserError.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), UserError.NO_DATA_AVAILABLE, "No file has been uploaded")
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			try:
 				self._execute("nlXTP_mon --background")
 			except cmd.CommandError:
@@ -567,7 +564,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return info
 
 	def _cputime(self):
-		if self.state != ST_STARTED:
+		if self.state != StateName.STARTED:
 			return None
 		with open("/proc/vz/vestat") as fp:
 			for line in fp:
@@ -586,7 +583,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return cputime
 		
 	def _memory(self):
-		if self.state != ST_STARTED:
+		if self.state != StateName.STARTED:
 			return None
 		with open("/proc/user_beancounters") as fp:
 			for line in fp:
@@ -606,7 +603,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return memory
 		
 	def _diskspace(self):
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			with open("/proc/vz/vzquota") as fp:
 				while True:
 					line = fp.readline()
@@ -620,7 +617,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		
 	def updateUsage(self, usage, data):
 		self._checkState()
-		if self.state == ST_CREATED:
+		if self.state == StateName.CREATED:
 			return
 		cputime = self._cputime()
 		if cputime:
@@ -686,7 +683,7 @@ Actions: None
 """
 
 class OpenVZ_Interface(elements.Element):
-	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[ST_CREATED])
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[StateName.CREATED])
 	name = name_attr.attribute()
 	ip4address_attr = Attr("ip4address", desc="IPv4 address", type="str")
 	ip4address = ip4address_attr.attribute()	
@@ -701,9 +698,9 @@ class OpenVZ_Interface(elements.Element):
 	used_addresses_attr = Attr("used_addresses", type=list, default=[])
 	used_addresses = used_addresses_attr.attribute()
 
-	TYPE = "openvz_interface"
+	TYPE = TypeName.OPENVZ_INTERFACE
 	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [ST_CREATED, ST_PREPARED]
+		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
 	}
 	CAP_NEXT_STATE = {}	
 	CAP_ATTRS = {
@@ -725,7 +722,7 @@ class OpenVZ_Interface(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_CREATED
+		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), OpenVZ)
 		if not self.name:
@@ -736,7 +733,7 @@ class OpenVZ_Interface(elements.Element):
 		return self.getParent()._execute(cmd)
 		
 	def _setAddresses(self):
-		assert self.state == ST_STARTED
+		assert self.state == StateName.STARTED
 		if not self.use_dhcp:
 			self._execute("ip addr flush dev %s" % self.name)
 		if self.ip4address:
@@ -745,7 +742,7 @@ class OpenVZ_Interface(elements.Element):
 			self._execute("ip addr add %s dev %s" % (self.ip6address, self.name))
 
 	def _setUseDhcp(self):
-		assert self.state == ST_STARTED
+		assert self.state == StateName.STARTED
 		if not self.use_dhcp:
 			return
 		for cmd_ in DHCP_CMDS:
@@ -757,17 +754,17 @@ class OpenVZ_Interface(elements.Element):
 
 	def modify_ip4address(self, val):
 		self.ip4address = val
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self._setAddresses()
 
 	def modify_ip6address(self, val):
 		self.ip6address = val
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self._setAddresses()
 
 	def modify_use_dhcp(self, val):
 		self.use_dhcp = val
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self._setUseDhcp()
 	
 	def modify_name(self, val):
@@ -787,7 +784,7 @@ class OpenVZ_Interface(elements.Element):
 		self.save()
 	
 	def interfaceName(self):
-		if self.state != ST_CREATED:
+		if self.state != StateName.CREATED:
 			return self.getParent()._interfaceName(self.name)
 		else:
 			return None		
@@ -796,7 +793,7 @@ class OpenVZ_Interface(elements.Element):
 		return self
 
 	def info(self):
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			self.used_addresses = net.ipspy_read(self.dataPath("ipspy.json"))
 		else:
 			self.used_addresses = []

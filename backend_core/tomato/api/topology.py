@@ -16,11 +16,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.service import get_backend_users_proxy
+from ..lib.error import UserError
+from ..lib.exceptionhandling import wrap_errors
 
+
+@wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def _getTopology(id_):
 	top = topology.get(id_)
 	UserError.check(top, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"id": id_})
 	return top
+
+def topology_exists(topology_id):
+	if _getTopology(topology_id):
+		return True
+	return False
 
 def topology_create(owner_username):
 	"""

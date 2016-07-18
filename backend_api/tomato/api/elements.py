@@ -17,7 +17,7 @@
 
 from api_helpers import getCurrentUserInfo
 from ..lib.remote_info import get_topology_info, get_element_info, get_profile_info_by_techname, get_template_info_by_techname, ElementInfo
-
+from ..lib.error import UserError
 
 def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	"""
@@ -59,6 +59,7 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the given type.
 	"""
 	top_inf = get_topology_info(top)
+	UserError.check(top_inf.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
 	getCurrentUserInfo().check_may_create_element(top_inf)
 	if not attrs: attrs = {}
 	if "template" in attrs:
@@ -185,6 +186,10 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	
 	Parameter *id*:
 	  The parameter *id* identifies the element by giving its unique id.
+
+	Parameter *fetch*:
+	  The parameter *fetch* forces the backend to update the state and type informations of an element by
+	  informations from the host of the element.
 
 	Return value:
 	  The return value of this method is a dict containing information

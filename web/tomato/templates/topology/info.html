@@ -72,7 +72,9 @@
 <script language="JavaScript" type="text/javascript" src="js/editor/stores/template_store.js"></script>
 	
 <script language="JavaScript" type="text/javascript" src="js/editor/rextfv_status_updater.js"></script>
-	
+
+<script language="JavaScript" type="text/javascript" src="js/editor/options.js"></script>
+
 <script language="JavaScript" type="text/javascript" src="js/editor/workspace.js"></script>
 	
 <script language="JavaScript" type="text/javascript" src="js/editor/editor.js"></script>
@@ -135,10 +137,6 @@
 		{% else %}
 			tutorial_show:false,
 		{% endif %}
-
-		//set default option values
-		safe_mode: true,
-		show_connection_controls: true,
 
 		timeout_settings: {{timeout_settings|jsonify}},
 		sites: {{sites_json|safe}},

@@ -26,13 +26,14 @@ from lib import wrap_rpc, serverInfo
 from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons, append_empty_choice
 import datetime
 from lib.reference_library import tech_to_label
+from lib.constants import TypeName
 
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
 from lib.error import UserError #@UnresolvedImport
 
-techs = [{"name": t, "label": tech_to_label(t)} for t in ["kvmqm", "openvz", "repy"]]
+techs = [{"name": t, "label": tech_to_label(t)} for t in [TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]]
 
 techs_dict = dict([(t["name"], t["label"]) for t in techs])
 
@@ -175,7 +176,7 @@ def add(api, request, tech=None):
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common'],
 						'urls': formData['urls'].splitlines()}
-			if formData['tech'] == "kvmqm":
+			if formData['tech'] == TypeName.KVMQM:
 				attrs['kblang'] = formData['kblang']
 			res = api.template_create(formData['tech'], formData['name'], attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
@@ -202,7 +203,7 @@ def remove(api, request, res_id=None):
 def edit(api, request, res_id=None):
 	res_inf = api.template_info(res_id)
 	if request.method=='POST':
-		form = EditTemplateForm(res_id, res_inf['tech']=="kvmqm", request.POST)
+		form = EditTemplateForm(res_id, res_inf['tech']== TypeName.KVMQM, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
 			creation_date = formData['creation_date']
@@ -216,7 +217,7 @@ def edit(api, request, res_id=None):
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common'],
 						'urls': formData['urls'].splitlines()}
-			if res_inf['tech'] == "kvmqm":
+			if res_inf['tech'] == TypeName.KVMQM:
 				attrs['kblang'] = formData['kblang']
 			api.template_modify(res_id,attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
@@ -228,5 +229,5 @@ def edit(api, request, res_id=None):
 		res_inf['res_id'] = res_id
 		res_inf['creation_date'] = datetime.date.fromtimestamp(float(res_inf['creation_date'] or "0.0"))
 		res_inf['urls'] = "\n".join(res_inf['urls'])
-		form = EditTemplateForm(res_id, (res_inf['tech']=="kvmqm"), res_inf)
+		form = EditTemplateForm(res_id, (res_inf['tech']==TypeName.KVMQM), res_inf)
 		return render(request, "form.html", {'label': res_inf['label'], 'form': form, "heading":"Edit Template Data for '"+str(res_inf['label'])+"' ("+res_inf['tech']+")"})

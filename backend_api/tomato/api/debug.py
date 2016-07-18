@@ -6,6 +6,9 @@ from ..lib.settings import Config
 from ..lib.service import is_reachable, is_self, get_tomato_inner_proxy, get_backend_core_proxy
 from ..lib.remote_info import get_host_info
 
+def ping():
+	return True
+
 def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
 	getCurrentUserInfo().check_may_view_debugging_info()
 	if is_self(tomato_module):

@@ -21,6 +21,7 @@ from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
+from ..lib.constants import ActionName, StateName, TypeName
 
 DOC="""
 Element type: ``tinc``
@@ -81,33 +82,29 @@ Actions:
 	 	Stops the endpoint.
 """
 
-
-ST_CREATED = "created"
-ST_STARTED = "started"
-
 class Tinc(elements.Element):
 	port_attr = Attr("port", type="int")
 	port = port_attr.attribute()
 	path_attr = Attr("path")
 	path = path_attr.attribute()
-	mode_attr = Attr("mode", desc="Mode", states=[ST_CREATED], options={"hub": "Hub (broadcast)", "switch": "Switch (learning)"}, default="switch")
+	mode_attr = Attr("mode", desc="Mode", states=[StateName.CREATED], options={"hub": "Hub (broadcast)", "switch": "Switch (learning)"}, default="switch")
 	mode = mode_attr.attribute()
 	privkey_attr = Attr("privkey", desc="Private key")
 	privkey = privkey_attr.attribute()
 	pubkey_attr = Attr("pubkey", desc="Public key")
 	pubkey = pubkey_attr.attribute()
-	peers_attr = Attr("peers", desc="Peers", states=[ST_CREATED], default=[])
+	peers_attr = Attr("peers", desc="Peers", states=[StateName.CREATED], default=[])
 	peers = peers_attr.attribute()
 
-	TYPE = "tinc"
+	TYPE = TypeName.TINC
 	CAP_ACTIONS = {
-		"start": [ST_CREATED],
-		"stop": [ST_STARTED],
-		elements.REMOVE_ACTION: [ST_CREATED],
+		ActionName.START: [StateName.CREATED],
+		ActionName.STOP: [StateName.STARTED],
+		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
 	CAP_NEXT_STATE = {
-		"start": ST_STARTED,
-		"stop": ST_CREATED,
+		ActionName.START: StateName.STARTED,
+		ActionName.STOP: StateName.CREATED,
 	}	
 	CAP_ATTRS = {
 		"mode": mode_attr,
@@ -127,7 +124,7 @@ class Tinc(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_CREATED
+		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 		self.path = self.dataPath()
@@ -135,10 +132,10 @@ class Tinc(elements.Element):
 		self.pubkey = cmd.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
 
 	def _interfaceName(self):
-		return "tinc%d" % self.id
+		return TypeName.TINC + "%d" % self.id
 
 	def interfaceName(self):
-		return self._interfaceName() if self.state == ST_STARTED else None
+		return self._interfaceName() if self.state == StateName.STARTED else None
 
 	def _name(self, pubkey):
 		# decode pubkey so two same keys are binary equivalent
@@ -191,7 +188,7 @@ class Tinc(elements.Element):
 				# peer public key -> hosts/[name]
 				fp.write(peer["pubkey"])
 		cmd.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
-		self.setState(ST_STARTED)
+		self.setState(StateName.STARTED)
 		ifName = self._interfaceName()
 		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.ASSERTION,
 			"Interface did not start properly", data={"interface": ifName})
@@ -205,7 +202,7 @@ class Tinc(elements.Element):
 		if con:
 			con.disconnectInterface(self._interfaceName())
 		cmd.runUnchecked(["tincd", "-k", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
-		self.setState(ST_CREATED)
+		self.setState(StateName.CREATED)
 		if path.exists(self.path):
 			path.remove(self.path, recursive=True)
 
@@ -230,7 +227,7 @@ class Tinc(elements.Element):
 			return
 		if path.exists(self.path):
 			usage.diskspace = path.diskspace(self.path)
-		if self.state == ST_STARTED:
+		if self.state == StateName.STARTED:
 			return
 		pid = self._getPid()
 		if pid:

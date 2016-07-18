@@ -21,7 +21,7 @@ from .db import *
 from .lib import logging, util, mail #@UnresolvedImport
 from . import scheduler
 from .lib.settings import settings, Config
-from .lib.error import UserError
+from .lib.error import UserError, InternalError
 
 from .lib.userflags import Flags
 
@@ -171,6 +171,31 @@ class User(Entity, BaseDocument):
 			if (is_set) and (flag not in self.flags):
 				self.flags.append(flag)
 
+
+
+
+
+	#clientData
+	def setUnknownAttributes(self, attrs):
+		for key, value in attrs.iteritems():
+			InternalError.check(key.startswith("_"), code=InternalError.INVALID_PARAMETER, message="internally modifying invalid argument", data={key: value})
+			self.clientData[key[1:]] = value
+
+	def checkUnknownAttribute(self, key, value):
+		if key.startswith("_"):
+			return True
+		return super(User, self).checkUnknownAttribute(key, value)
+
+	def info(self):
+		res = super(User, self).info()
+		for key, value in self.clientData.iteritems():
+			res["_"+key] = value
+		return res
+
+
+
+
+
 	def send_message(self, fromUser, subject, message, ref=None, subject_group=None):
 		# add notification
 		now = time.time()
@@ -226,10 +251,10 @@ class User(Entity, BaseDocument):
 		"organization": Attribute(get=lambda self: self.organization.name, set=modify_organization),
 		"quota": Attribute(get=lambda self: self.quota.info(), set=modify_quota),
 		"notification_count": Attribute(get=lambda self: len(filter(lambda n: not n.read, self.notifications))),
-		"client_data": Attribute(field=clientData),
 		"last_login": Attribute(get=lambda self: self.lastLogin),
 		"password_hash": Attribute(field=password)
 	}
+
 
 def clean_up_user_notifications(username):
 	user = User.get(username)

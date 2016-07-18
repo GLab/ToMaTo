@@ -26,9 +26,6 @@ def organization_create(name, label=None, attrs=None):
 	if label is None:
 		label = name
 	getCurrentUserInfo().check_may_create_organizations()
-	for orga in organization_list():
-		if orga["name"]==name:
-			raise UserError(UserError.ALREADY_EXISTS, message="Organization already exists")
 	return OrganizationInfo.create(name, label, attrs)
 
 def organization_info(name):

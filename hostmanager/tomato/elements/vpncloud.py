@@ -22,13 +22,10 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.newcmd import vpncloud
+from ..lib.constants import ActionName, StateName, TypeName
 
 DOC="""
 """
-
-
-ST_CREATED = "created"
-ST_STARTED = "started"
 
 class VpnCloud(elements.Element):
 	port_attr = Attr("port", type="int")
@@ -37,18 +34,18 @@ class VpnCloud(elements.Element):
 	pid = pid_attr.attribute()
 	network_id_attr = Attr("network_id", type="int")
 	network_id = network_id_attr.attribute()
-	peers_attr = Attr("peers", desc="Peers", states=[ST_CREATED], default=[])
+	peers_attr = Attr("peers", desc="Peers", states=[StateName.CREATED], default=[])
 	peers = peers_attr.attribute()
 
-	TYPE = "vpncloud"
+	TYPE = TypeName.VPNCLOUD
 	CAP_ACTIONS = {
-		"start": [ST_CREATED],
-		"stop": [ST_STARTED],
-		elements.REMOVE_ACTION: [ST_CREATED],
+		ActionName.START: [StateName.CREATED],
+		ActionName.STOP: [StateName.STARTED],
+		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
 	CAP_NEXT_STATE = {
-		"start": ST_STARTED,
-		"stop": ST_CREATED,
+		ActionName.START: StateName.STARTED,
+		ActionName.STOP: StateName.CREATED,
 	}	
 	CAP_ATTRS = {
 		"network_id": network_id_attr,
@@ -67,15 +64,15 @@ class VpnCloud(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_CREATED
+		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 
 	def _interfaceName(self):
-		return "vpncloud%d" % self.id
+		return TypeName.VPNCLOUD + "%d" % self.id
 
 	def interfaceName(self):
-		return self._interfaceName() if self.state == ST_STARTED else None
+		return self._interfaceName() if self.state == StateName.STARTED else None
 
 	def modify_network_id(self, val):
 		self.network_id = val
@@ -86,7 +83,7 @@ class VpnCloud(elements.Element):
 	def action_start(self):
 		UserError.check(self.network_id, UserError.INVALID_CONFIGURATION, "Network id must be set")
 		self.pid = vpncloud.start(self._interfaceName(), config.PUBLIC_ADDRESS, self.port, self.network_id, self.peers)
-		self.setState(ST_STARTED)
+		self.setState(StateName.STARTED)
 		net.ifUp(self._interfaceName())
 		con = self.getConnection()
 		if con:
@@ -99,7 +96,7 @@ class VpnCloud(elements.Element):
 		if self.pid:
 			vpncloud.stop(self.pid)
 		self.pid = None
-		self.setState(ST_CREATED)
+		self.setState(StateName.CREATED)
 
 	def upcast(self):
 		return self

@@ -20,6 +20,7 @@ from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import net, process #@UnresolvedImport
 from ..lib.error import InternalError
+from ..lib.constants import ActionName, StateName, TypeName
 
 DOC="""
 Element type: ``udp_tunnel``
@@ -65,26 +66,23 @@ Actions:
 	 	Stops the endpoint.
 """
 
-ST_CREATED = "created"
-ST_STARTED = "started"
-
 class UDP_Tunnel(elements.Element):
 	pid_attr = Attr("pid", type="int")
 	pid = pid_attr.attribute()
 	port_attr = Attr("port", type="int")
 	port = port_attr.attribute()
-	connect_attr = Attr("connect", desc="Connect to", states=[ST_CREATED], type="str", null=True, default=None)
+	connect_attr = Attr("connect", desc="Connect to", states=[StateName.CREATED], type="str", null=True, default=None)
 	connect = connect_attr.attribute()
 
-	TYPE = "udp_tunnel"
+	TYPE = TypeName.UDP_TUNNEL
 	CAP_ACTIONS = {
-		"start": [ST_CREATED],
-		"stop": [ST_STARTED],
-		elements.REMOVE_ACTION: [ST_CREATED],
+		ActionName.START: [StateName.CREATED],
+		ActionName.STOP: [StateName.STARTED],
+		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
 	CAP_NEXT_STATE = {
-		"start": ST_STARTED,
-		"stop": ST_CREATED,
+		ActionName.START: StateName.STARTED,
+		ActionName.STOP: StateName.CREATED,
 	}		
 	CAP_ATTRS = {
 		"connect": connect_attr,
@@ -103,12 +101,12 @@ class UDP_Tunnel(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = ST_CREATED
+		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 
 	def _getState(self):
-		return ST_STARTED if self.pid and process.exists(self.pid) else ST_CREATED
+		return StateName.STARTED if self.pid and process.exists(self.pid) else StateName.CREATED
 
 	def _checkState(self):
 		savedState = self.state
@@ -122,7 +120,7 @@ class UDP_Tunnel(elements.Element):
 		return "stap%d" % self.id
 
 	def interfaceName(self):
-		return self._interfaceName() if self.state == ST_STARTED else None
+		return self._interfaceName() if self.state == StateName.STARTED else None
 				
 	def modify_connect(self, val):
 		self.connect = val
@@ -134,7 +132,7 @@ class UDP_Tunnel(elements.Element):
 		else:
 			cmd_.append("udp-listen:%d" % self.port)
 		self.pid = cmd.spawn(cmd_)
-		self.setState(ST_STARTED)
+		self.setState(StateName.STARTED)
 		ifName = self._interfaceName()
 		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.ASSERTION,
 			"Interface did not start properly", data={"interface": ifName})
@@ -149,7 +147,7 @@ class UDP_Tunnel(elements.Element):
 		if self.pid:
 			process.kill(self.pid)
 			del self.pid
-		self.setState(ST_CREATED)
+		self.setState(StateName.CREATED)
 
 	def upcast(self):
 		return self
@@ -160,7 +158,7 @@ class UDP_Tunnel(elements.Element):
 
 	def updateUsage(self, usage, data):
 		self._checkState()
-		if self.state == ST_CREATED:
+		if self.state == StateName.CREATED:
 			return
 		usage.memory = process.memory(self.pid)
 		cputime = process.cputime(self.pid)

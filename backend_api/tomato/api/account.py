@@ -63,7 +63,8 @@ def account_info(name=None):
 	keys_to_show = getCurrentUserInfo().account_info_visible_keys(target_account)
 	info = target_account.info(update=True)
 	for k in info.keys():
-		if k not in keys_to_show:
+		if k not in keys_to_show and not k.startswith("_"):
+			#fixme: move key restriction to permission checker
 			del info[k]
 	return info
 
@@ -79,6 +80,7 @@ def account_list(organization=None, with_flag=None):
 		getCurrentUserInfo().check_may_list_all_users()
 	else:
 		getCurrentUserInfo().check_may_list_organization_users(organization)
+	#fixme: restrict keys to allowed ones (like in info)
 	return get_user_list(organization, with_flag)
 
 def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, ignore_flag_on_unauthorized=False):
@@ -124,7 +126,7 @@ def account_modify(name=None, attrs=None, ignore_key_on_unauthorized=False, igno
 	attrs = PermissionChecker.reduce_keys_to_allowed(attrs, modify_keys_allowed_list, modify_flags_allowed,
 																									 ignore_key_on_unauthorized, ignore_flag_on_unauthorized)
 
-	return target_account.modify(attrs)
+	return target_account.modify(attrs)  #fixme: return keys to allowed ones
 		
 def account_create(username, password, organization, attrs=None):
 	"""
@@ -164,7 +166,7 @@ def account_create(username, password, organization, attrs=None):
 																										 getCurrentUserInfo().modify_user_allowed_flags(target_user))
 	email = attrs.get('email', None)
 	del attrs['email']  # fixme: email should be an api parameter here
-	return UserInfo.create(username, organization, email, password, attrs)
+	return UserInfo.create(username, organization, email, password, attrs)  #fixme: reduce key to allowed ones
 
 def account_remove(name=None):
 	"""
