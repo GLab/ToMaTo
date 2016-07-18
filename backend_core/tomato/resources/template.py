@@ -41,11 +41,15 @@ PATTERNS = {
 }
 
 class Template(Entity, BaseDocument):
+	"""
+	:type host_urls: list of str
+	"""
 	tech = StringField(required=True)
 	name = StringField(required=True, unique_with='tech')
 	popularity = FloatField(default=0)
 	preference = IntField(default=0)
 	urls = ListField()
+	host_urls = ListField()
 	checksum = StringField()
 	size = IntField()
 	label = StringField()
@@ -73,17 +77,21 @@ class Template(Entity, BaseDocument):
 		from ..elements.generic import VMElement
 		return VMElement.objects(template=self)
 
+	def update_host_state(self, host):
+		if not "templateserver_port" in host.hostInfo:
+			return  # old hostmanager
+		if not self.checksum:
+			return
+		_, checksum = self.checksum.split(":")
+		url = ("http://%s:%d/" + PATTERNS[self.tech]) % (host.address, host.hostInfo["templateserver_port"], checksum)
+		self.host_urls.remove(url)
+		if self in host.templates:
+			self.host_urls.append(url)
+		self.save()
+
 	@property
 	def all_urls(self):
-		urls = list(self.urls)
-		if not self.checksum:
-			return urls
-		_, checksum = self.checksum.split(":")
-		for h in self.hosts:
-			if not "templateserver_port" in h.hostInfo:
-				continue #old hostmanager
-			urls.append(("http://%s:%d/" + PATTERNS[self.tech])%(h.address, h.hostInfo["templateserver_port"], checksum))
-		return urls
+		return list(self.urls)+list(self.host_urls)
 
 	def getReadyInfo(self):
 		from ..host import Host
@@ -159,7 +167,10 @@ class Template(Entity, BaseDocument):
 		path = self.getPath()
 		aria2.download(self.urls, path)
 		self.size = fs.file_size(path)
+		old_checksum = self.checksum
 		self.checksum = "sha1:%s" % fs.checksum(path, "sha1")
+		if old_checksum != self.checksum:
+			self.host_urls = []
 		self.save()
 
 	def getPath(self):

@@ -398,7 +398,10 @@ class Host(Entity, BaseDocument):
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
 				elif hTpl["attrs"]["ready"]:
 					avail.append(tpl)
+		old_tmpls = set(self.templates)
 		self.templates = avail
+		for tpl in (old_tmpls-set(avail)) + (set(avail)-old_tmpls):
+			tpl.update_host_state(self)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()
 		self.save_if_exists()
