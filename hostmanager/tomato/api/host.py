@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import os
 from ..lib.util import xml_rpc_sanitize #@UnresolvedImport
 from ..lib.newcmd.util.cache import cached #@UnresolvedImport
 
@@ -274,6 +275,13 @@ def host_networks():
 		data["dhcp_server"] = dhcp.searchServer(br)
 		res.append(data)
 	return res
+
+
+def host_server_logs():
+	with open(config.SERVER_LOG_FILE, "rb") as fp:
+		if os.path.getsize(config.SERVER_LOG_FILE) > 1000000: fp.seek(-1000000, 2)
+		return fp.read().splitlines()[1:]
+
 
 from .. import dump, elements, connections, resources, config
 from ..lib.cmd import hostinfo, net, dhcp #@UnresolvedImport

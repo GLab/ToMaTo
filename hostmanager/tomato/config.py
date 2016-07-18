@@ -39,6 +39,8 @@ import os
 
 DUMMY_FLOPPY = "/usr/share/tomato-hostmanager/contrib/dummy_floppy.raw"
 
+SERVER_LOG_FILE = "/var/log/tomato/server.log"
+
 LOG_FILE = "/var/log/tomato/main.json.log"
 """
 The location of the logfile. All relevant logging information will be written 
