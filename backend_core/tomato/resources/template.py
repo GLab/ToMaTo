@@ -152,6 +152,8 @@ class Template(Entity, BaseDocument):
 		self.fetch(detached=True)
 
 	def fetch(self, detached=False):
+		if not self.urls:
+			return
 		if detached:
 			return threading.Thread(target=self.fetch).start()
 		path = self.getPath()

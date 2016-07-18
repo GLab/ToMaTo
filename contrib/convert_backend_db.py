@@ -11,7 +11,7 @@ users = client.tomato_backend_users
 for table in ["host", "host_element", "host_connection", "element", "connection", "link_statistics", "template", "network", "network_instance", "profile"]:
 	core[table].drop()
 	for obj in old[table].find():
-		for field in ["total_usage", "usage_statistics", "dump_last_fetch", "permissions"]:
+		for field in ["total_usage", "usage_statistics", "dump_last_fetch", "permissions", "torrent_data"]:
 			if field in obj:
 				del obj[field]
 		core[table].insert_one(obj)
@@ -28,6 +28,8 @@ for obj in old.topology.find():
 	if "total_usage" in obj:
 		del obj["total_usage"]
 	perms = []
+	if not "permissions" in obj:
+		continue
 	for perm in obj["permissions"]:
 		user = old.user.find_one({"_id": perm["user"]})
 		if not user:
