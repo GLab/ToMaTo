@@ -29,7 +29,7 @@ Entries should be sorted by component and status with important entries and entr
 - [web, fixed] Fixed small menu display issue for vpncloud switches
 - [web, fixed] Fixed problem with default executable archives
 - [web, changed] Regrouped editor options and soving some options in user object
-- [backend_*, changed] Using __slots__ for generic classes, attributes and schemas and tasks to save space and increase performance
+- [backend_*, changed] Using \_\_slots\_\_ for generic classes, attributes and schemas and tasks to save space and increase performance
 - [backend_*, changed] Dumping more errors
 - [backend_*, removed] Removed useless dump environment infos
 - [backend_*, fixed] Fixed profiling when server does not terminate
