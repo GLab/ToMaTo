@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from host import host_info, host_capabilities, host_networks, host_ping
+from host import host_info, host_capabilities, host_networks, host_ping, host_server_logs
 
 from elements import element_remove, element_modify, element_create, element_action, element_info,\
 	element_list
