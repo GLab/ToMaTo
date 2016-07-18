@@ -137,15 +137,15 @@ impl Server {
                     info!("Server connection ended");
                     return
                 },
-                Err(Error::NetworkError(msg)) => {
+                Err(Error::Network(msg)) => {
                     error!("Failed to read request: {:?}", msg);
                     return
                 },
-                Err(Error::FramingError(msg)) => {
+                Err(Error::Framing(msg)) => {
                     error!("Failed to read request: {:?}", msg);
                     return
                 },
-                Err(Error::MessageError(kind, id)) => {
+                Err(Error::Message(kind, id)) => {
                     warn!("Invalid request from {}: {:?}", con.peer_addr().expect("Failed to retrieve client address"), kind);
                     match con.write(&Reply::RequestError(id, kind).to_bytes()) {
                         Ok(_) => continue,

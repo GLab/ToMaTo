@@ -73,7 +73,7 @@ pub trait Message: Sized {
             SslStreamError::ZeroReturn => Error::ConnectionEnded,
             SslStreamError::Stream(ref err) if err.kind() == io::ErrorKind::UnexpectedEof => Error::ConnectionEnded,
             SslStreamError::WantRead(_) | SslStreamError::WantWrite(_) => unreachable!(),
-            _ => Error::NetworkError(NetworkError::Read)
+            _ => Error::Network(NetworkError::Read)
         }));
         let mut size = ((header[1] as usize) << 16) + ((header[2] as usize) << 8) + (header[3] as usize);
         let mut body = Vec::with_capacity(size);
@@ -82,28 +82,28 @@ pub trait Message: Sized {
             SslStreamError::ZeroReturn => Error::ConnectionEnded,
             SslStreamError::Stream(ref err) if err.kind() == io::ErrorKind::UnexpectedEof => Error::ConnectionEnded,
             SslStreamError::WantRead(_) | SslStreamError::WantWrite(_) => unreachable!(),
-            _ => Error::NetworkError(NetworkError::Read)
+            _ => Error::Network(NetworkError::Read)
         }));
         match header[0] {
             0 => (),
             1 => {
                 if unsafe { snappy_uncompressed_length(body.as_ptr(), body.len(), &mut size) } != 0 {
-                    return Err(Error::FramingError(FramingError::InvalidCompressedData));
+                    return Err(Error::Framing(FramingError::InvalidCompressedData));
                 }
                 if size > 1<<24 {
-                    return Err(Error::FramingError(FramingError::MessageTooLarge));
+                    return Err(Error::Framing(FramingError::MessageTooLarge));
                 }
                 let mut raw = Vec::with_capacity(size);
                 if unsafe { snappy_uncompress(body.as_ptr(), body.len(), raw.as_mut_ptr(), &mut size) } != 0 {
-                    return Err(Error::FramingError(FramingError::InvalidCompressedData));
+                    return Err(Error::Framing(FramingError::InvalidCompressedData));
                 }
                 unsafe { raw.set_len(size) };
                 body = raw;
             },
-            _ => return Err(Error::FramingError(FramingError::UnknownEncoding))
+            _ => return Err(Error::Framing(FramingError::UnknownEncoding))
         }
         let mut buf = Cursor::new(&mut body);
-        let val = try!(rmp::decode::value::read_value(&mut buf).map_err(|_| Error::FramingError(FramingError::InvalidFormatedData)));
+        let val = try!(rmp::decode::value::read_value(&mut buf).map_err(|_| Error::Framing(FramingError::InvalidFormatedData)));
         Self::decode(val)
     }
 }
@@ -130,10 +130,10 @@ impl Message for Request {
     fn decode(val: rmp::Value) -> Result<Self, Error> {
         let mut vec = match val {
             rmp::Value::Array(vec) => vec,
-            _ => return Err(Error::MessageError(MessageErrorCode::InvalidBaseType, None))
+            _ => return Err(Error::Message(MessageErrorCode::InvalidBaseType, None))
         };
         if vec.len() != 4 {
-            return Err(Error::MessageError(MessageErrorCode::InvalidBaseSize, None))
+            return Err(Error::Message(MessageErrorCode::InvalidBaseSize, None))
         }
         let kwargs = vec.remove(3);
         let args = vec.remove(2);
@@ -141,15 +141,15 @@ impl Message for Request {
         let id = vec.remove(0);
         let id = match id {
             rmp::Value::Integer(rmp::value::Integer::U64(id)) => id,
-            _ => return Err(Error::MessageError(MessageErrorCode::InvalidIdType, None))
+            _ => return Err(Error::Message(MessageErrorCode::InvalidIdType, None))
         };
         let method = match method {
             rmp::Value::String(method) => method,
-            _ => return Err(Error::MessageError(MessageErrorCode::InvalidMethodType, Some(id)))
+            _ => return Err(Error::Message(MessageErrorCode::InvalidMethodType, Some(id)))
         };
         let args = match args {
             rmp::Value::Array(args) => args,
-            _ => return Err(Error::MessageError(MessageErrorCode::InvalidArgsType, Some(id)))
+            _ => return Err(Error::Message(MessageErrorCode::InvalidArgsType, Some(id)))
         };
         let kwargs = match kwargs {
             rmp::Value::Map(pairs) => {
@@ -157,13 +157,13 @@ impl Message for Request {
                 for (k, v) in pairs {
                     let k = match k {
                         rmp::Value::String(k) => k,
-                        _ => return Err(Error::MessageError(MessageErrorCode::InvalidKwArgsKeyType, Some(id)))
+                        _ => return Err(Error::Message(MessageErrorCode::InvalidKwArgsKeyType, Some(id)))
                     };
                     kwargs.insert(Cow::Owned(k), v);
                 }
                 kwargs
             },
-            _ => return Err(Error::MessageError(MessageErrorCode::InvalidKwArgsType, Some(id)))
+            _ => return Err(Error::Message(MessageErrorCode::InvalidKwArgsType, Some(id)))
         };
         Ok(Request{id: id, method: method, args: args, kwargs: kwargs})
     }
@@ -209,10 +209,10 @@ impl Message for Reply {
     fn decode(val: rmp::Value) -> Result<Reply, Error> {
         let mut vec = match val {
             rmp::Value::Array(vec) => vec,
-            _ => return Err(Error::MessageError(MessageErrorCode::InvalidBaseType, None))
+            _ => return Err(Error::Message(MessageErrorCode::InvalidBaseType, None))
         };
         if vec.len() != 3 {
-            return Err(Error::MessageError(MessageErrorCode::InvalidBaseSize, None))
+            return Err(Error::Message(MessageErrorCode::InvalidBaseSize, None))
         }
         let val = vec.remove(2);
         let type_ = vec.remove(1);
@@ -220,33 +220,33 @@ impl Message for Reply {
         let id = match id {
             rmp::Value::Integer(rmp::value::Integer::U64(id)) => Some(id),
             rmp::Value::Nil => None,
-            _ => return Err(Error::MessageError(MessageErrorCode::InvalidIdType, None))
+            _ => return Err(Error::Message(MessageErrorCode::InvalidIdType, None))
         };
         let type_ = match type_ {
             rmp::Value::Integer(rmp::value::Integer::U64(type_)) => type_,
-            _ => return Err(Error::MessageError(MessageErrorCode::InvalidReplyTypeType, id))
+            _ => return Err(Error::Message(MessageErrorCode::InvalidReplyTypeType, id))
         };
         Ok(match type_ {
             0 => match id {
                 Some(id) => Reply::Success(id, val),
-                None => return Err(Error::MessageError(MessageErrorCode::InvalidIdType, id))
+                None => return Err(Error::Message(MessageErrorCode::InvalidIdType, id))
             },
             1 => match id {
                 Some(id) => Reply::Failure(id, val),
-                None => return Err(Error::MessageError(MessageErrorCode::InvalidIdType, id))
+                None => return Err(Error::Message(MessageErrorCode::InvalidIdType, id))
             },
             2 => match val {
                 rmp::Value::String(name) => match id {
                     Some(id) => Reply::NoSuchMethod(id, name),
-                    None => return Err(Error::MessageError(MessageErrorCode::InvalidIdType, id))
+                    None => return Err(Error::Message(MessageErrorCode::InvalidIdType, id))
                 },
-                _ => return Err(Error::MessageError(MessageErrorCode::InvalidMethodType, id))
+                _ => return Err(Error::Message(MessageErrorCode::InvalidMethodType, id))
             },
             3 => match val {
                 rmp::Value::Integer(rmp::value::Integer::U64(code)) => Reply::RequestError(id, MessageErrorCode::from_code(code)),
-                _ => return Err(Error::MessageError(MessageErrorCode::InvalidErrorType, id))
+                _ => return Err(Error::Message(MessageErrorCode::InvalidErrorType, id))
             },
-            _ => return Err(Error::MessageError(MessageErrorCode::UnknownReplyType, id))
+            _ => return Err(Error::Message(MessageErrorCode::UnknownReplyType, id))
         })
     }
 }

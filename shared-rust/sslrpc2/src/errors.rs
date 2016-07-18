@@ -68,8 +68,8 @@ pub enum Error {
     Failure(rmp::Value),
     NoSuchMethod(String),
     TimedOut,
-    NetworkError(NetworkError), // errors in the connection (tcp or ssl)
-    FramingError(FramingError), // errors in the message framing and encoding
-    MessageError(MessageErrorCode, Option<u64>), // errors in the message contents
+    Network(NetworkError), // errors in the connection (tcp or ssl)
+    Framing(FramingError), // errors in the message framing and encoding
+    Message(MessageErrorCode, Option<u64>), // errors in the message contents
     ConnectionEnded
 }

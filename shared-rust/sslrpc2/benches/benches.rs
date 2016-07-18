@@ -7,9 +7,8 @@ extern crate openssl;
 
 use test::Bencher;
 
-use sslrpc2::*;
+use sslrpc2::{init, Server, Client, KwArgs};
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use openssl::ssl::{SslContext, SslMethod, SSL_VERIFY_PEER, SSL_VERIFY_FAIL_IF_NO_PEER_CERT};
@@ -22,9 +21,9 @@ fn context_alice() -> SslContext {
     let mut context = SslContext::new(SslMethod::Sslv23).unwrap();
     //context.set_ecdh_auto(true).unwrap();
     context.set_cipher_list(CIPHERS).unwrap();
-    context.set_private_key_file("../certs/alice_key.pem", X509FileType::PEM).unwrap();
-    context.set_certificate_chain_file("../certs/alice_cert.pem", X509FileType::PEM).unwrap();
-    context.set_CA_file("../certs/good_ca_root.pem").unwrap();
+    context.set_private_key_file("certs/alice_key.pem", X509FileType::PEM).unwrap();
+    context.set_certificate_chain_file("certs/alice_cert.pem", X509FileType::PEM).unwrap();
+    context.set_CA_file("certs/good_ca_root.pem").unwrap();
     context.set_verify(SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, None);
     context
 }
@@ -32,14 +31,14 @@ fn context_alice() -> SslContext {
 fn context_bob() -> SslContext {
     let mut context = SslContext::new(SslMethod::Sslv23).unwrap();
     context.set_cipher_list(CIPHERS).unwrap();
-    context.set_private_key_file("../certs/bob_key.pem", X509FileType::PEM).unwrap();
-    context.set_certificate_chain_file("../certs/bob_cert.pem", X509FileType::PEM).unwrap();
-    context.set_CA_file("../certs/good_ca_root.pem").unwrap();
+    context.set_private_key_file("certs/bob_key.pem", X509FileType::PEM).unwrap();
+    context.set_certificate_chain_file("certs/bob_cert.pem", X509FileType::PEM).unwrap();
+    context.set_CA_file("certs/good_ca_root.pem").unwrap();
     context.set_verify(SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, None);
     context
 }
 
-fn echo(mut args: Vec<rmp::Value>, kwargs: HashMap<String, rmp::Value>) -> Result<rmp::Value, rmp::Value> {
+fn echo(mut args: Vec<rmp::Value>, kwargs: KwArgs) -> Result<rmp::Value, rmp::Value> {
     if args.len() != 1 && kwargs.len() != 0 {
         return Err(rmp::Value::String("Syntax error".to_owned()));
     }
@@ -50,11 +49,11 @@ fn echo(mut args: Vec<rmp::Value>, kwargs: HashMap<String, rmp::Value>) -> Resul
 fn full_call(b: &mut Bencher) {
     init();
     let server = Server::new("127.0.0.1:0", context_alice()).unwrap();
-    server.register("echo".to_owned(), Arc::new(echo));
+    server.register("echo".to_owned(), Arc::new(echo), rmp::Value::Nil);
     let context = context_bob();
     b.iter(|| {
         let client = Client::new(server.get_address().unwrap(), context.clone()).unwrap();
-        assert_eq!(client.call("echo".to_owned(), vec![rmp::Value::Nil], HashMap::new(), None), Ok(rmp::Value::Nil))
+        assert_eq!(client.call("echo".to_owned(), vec![rmp::Value::Nil], KwArgs::default(), None), Ok(rmp::Value::Nil))
     });
 }
 
@@ -62,10 +61,10 @@ fn full_call(b: &mut Bencher) {
 fn simple_call(b: &mut Bencher) {
     init();
     let server = Server::new("127.0.0.1:0", context_alice()).unwrap();
-    server.register("echo".to_owned(), Arc::new(echo));
+    server.register("echo".to_owned(), Arc::new(echo), rmp::Value::Nil);
     let client = Client::new(server.get_address().unwrap(), context_bob()).unwrap();
     b.iter(|| {
-        assert_eq!(client.call("echo".to_owned(), vec![rmp::Value::Nil], HashMap::new(), None), Ok(rmp::Value::Nil))
+        assert_eq!(client.call("echo".to_owned(), vec![rmp::Value::Nil], KwArgs::default(), None), Ok(rmp::Value::Nil))
     });
 }
 
@@ -73,10 +72,10 @@ fn simple_call(b: &mut Bencher) {
 fn compressed_call(b: &mut Bencher) {
     init();
     let server = Server::new("127.0.0.1:0", context_alice()).unwrap();
-    server.register("echo".to_owned(), Arc::new(echo));
+    server.register("echo".to_owned(), Arc::new(echo), rmp::Value::Nil);
     let client = Client::new(server.get_address().unwrap(), context_bob()).unwrap();
     let msg = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789".to_owned();
     b.iter(|| {
-        assert_eq!(client.call("echo".to_owned(), vec![rmp::Value::String(msg.clone())], HashMap::new(), None), Ok(rmp::Value::String(msg.clone())))
+        assert_eq!(client.call("echo".to_owned(), vec![rmp::Value::String(msg.clone())], KwArgs::default(), None), Ok(rmp::Value::String(msg.clone())))
     });
 }

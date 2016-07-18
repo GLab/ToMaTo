@@ -2,11 +2,10 @@ extern crate sslrpc2;
 extern crate rmp;
 extern crate openssl;
 
-use sslrpc2::*;
+use sslrpc2::{init, Server, Client, Connection, KwArgs};
 
 use std::thread;
 use std::time::Duration;
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::net::{TcpListener, TcpStream};
 use std::os::unix::io::AsRawFd;
@@ -22,9 +21,9 @@ fn context_alice() -> SslContext {
     let mut context = SslContext::new(SslMethod::Sslv23).unwrap();
     //context.set_ecdh_auto(true).unwrap();
     context.set_cipher_list(CIPHERS).unwrap();
-    context.set_private_key_file("../certs/alice_key.pem", X509FileType::PEM).unwrap();
-    context.set_certificate_chain_file("../certs/alice_cert.pem", X509FileType::PEM).unwrap();
-    context.set_CA_file("../certs/good_ca_root.pem").unwrap();
+    context.set_private_key_file("certs/alice_key.pem", X509FileType::PEM).unwrap();
+    context.set_certificate_chain_file("certs/alice_cert.pem", X509FileType::PEM).unwrap();
+    context.set_CA_file("certs/good_ca_root.pem").unwrap();
     context.set_verify(SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, None);
     context
 }
@@ -32,9 +31,9 @@ fn context_alice() -> SslContext {
 fn context_bob() -> SslContext {
     let mut context = SslContext::new(SslMethod::Sslv23).unwrap();
     context.set_cipher_list(CIPHERS).unwrap();
-    context.set_private_key_file("../certs/bob_key.pem", X509FileType::PEM).unwrap();
-    context.set_certificate_chain_file("../certs/bob_cert.pem", X509FileType::PEM).unwrap();
-    context.set_CA_file("../certs/good_ca_root.pem").unwrap();
+    context.set_private_key_file("certs/bob_key.pem", X509FileType::PEM).unwrap();
+    context.set_certificate_chain_file("certs/bob_cert.pem", X509FileType::PEM).unwrap();
+    context.set_CA_file("certs/good_ca_root.pem").unwrap();
     context.set_verify(SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, None);
     context
 }
@@ -43,15 +42,15 @@ fn context_bob() -> SslContext {
 fn context_charly() -> SslContext {
     let mut context = SslContext::new(SslMethod::Sslv23).unwrap();
     context.set_cipher_list(CIPHERS).unwrap();
-    context.set_private_key_file("../certs/charly_key.pem", X509FileType::PEM).unwrap();
-    context.set_certificate_chain_file("../certs/charly_cert.pem", X509FileType::PEM).unwrap();
-    context.set_CA_file("../certs/bad_ca_root.pem").unwrap();
+    context.set_private_key_file("certs/charly_key.pem", X509FileType::PEM).unwrap();
+    context.set_certificate_chain_file("certs/charly_cert.pem", X509FileType::PEM).unwrap();
+    context.set_CA_file("certs/bad_ca_root.pem").unwrap();
     context.set_verify(SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, None);
     context
 }
 
 
-fn wait(args: Vec<rmp::Value>, kwargs: HashMap<String, rmp::Value>) -> Result<rmp::Value, rmp::Value> {
+fn wait(args: Vec<rmp::Value>, kwargs: KwArgs) -> Result<rmp::Value, rmp::Value> {
     if args.len() != 1 && kwargs.len() != 0 {
         return Err(rmp::Value::String("Syntax error".to_owned()));
     }
@@ -63,7 +62,7 @@ fn wait(args: Vec<rmp::Value>, kwargs: HashMap<String, rmp::Value>) -> Result<rm
     }
 }
 
-fn echo(mut args: Vec<rmp::Value>, kwargs: HashMap<String, rmp::Value>) -> Result<rmp::Value, rmp::Value> {
+fn echo(mut args: Vec<rmp::Value>, kwargs: KwArgs) -> Result<rmp::Value, rmp::Value> {
     if args.len() != 1 && kwargs.len() != 0 {
         return Err(rmp::Value::String("Syntax error".to_owned()));
     }
@@ -79,19 +78,19 @@ fn current_fd() -> usize {
 fn simple_call() {
     init();
     let server = Server::new("127.0.0.1:0", context_alice()).unwrap();
-    server.register("test".to_owned(), Arc::new(|_args, _kwargs| Ok(rmp::Value::Nil)));
+    server.register("test".to_owned(), Arc::new(|_args, _kwargs| Ok(rmp::Value::Nil)), rmp::Value::Nil);
     let client = Client::new(server.get_address().unwrap(), context_bob()).unwrap();
-    assert_eq!(client.call("test".to_owned(), vec![], HashMap::new(), None), Ok(rmp::Value::Nil));
+    assert_eq!(client.call("test".to_owned(), vec![], KwArgs::default(), None), Ok(rmp::Value::Nil));
 }
 
 #[test]
 fn list_cmd() {
     init();
     let server = Server::new("127.0.0.1:0", context_alice()).unwrap();
-    server.register("test".to_owned(), Arc::new(|_args, _kwargs| Ok(rmp::Value::Nil)));
+    server.register("test".to_owned(), Arc::new(|_args, _kwargs| Ok(rmp::Value::Nil)), rmp::Value::Nil);
     server.register_list_cmd();
     let client = Client::new(server.get_address().unwrap(), context_bob()).unwrap();
-    let res = client.call("$list$".to_owned(), vec![], HashMap::new(), None);
+    let res = client.call("$list$".to_owned(), vec![], KwArgs::default(), None);
     if let Ok(rmp::Value::Array(list)) = res {
         assert!(list.contains(&rmp::Value::String("test".to_owned())));
         assert!(list.contains(&rmp::Value::String("$list$".to_owned())));
@@ -106,19 +105,19 @@ fn compressed_call() {
     let msg = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789".to_owned();
     assert_eq!(msg.len(), 100);
     let server = Server::new("127.0.0.1:0", context_alice()).unwrap();
-    server.register("echo".to_owned(), Arc::new(echo));
+    server.register("echo".to_owned(), Arc::new(echo), rmp::Value::Nil);
     let client = Client::new(server.get_address().unwrap(), context_bob()).unwrap();
-    assert_eq!(client.call("echo".to_owned(), vec![rmp::Value::String(msg.clone())], HashMap::new(), None), Ok(rmp::Value::String(msg)));
+    assert_eq!(client.call("echo".to_owned(), vec![rmp::Value::String(msg.clone())], KwArgs::default(), None), Ok(rmp::Value::String(msg)));
 }
 
 #[test]
 fn parallel_call() {
     init();
     let server = Server::new("0.0.0.0:0", context_alice()).unwrap();
-    server.register("wait".to_owned(), Arc::new(wait));
+    server.register("wait".to_owned(), Arc::new(wait), rmp::Value::Nil);
     let client = Client::new(server.get_address().unwrap(), context_bob()).unwrap();
-    let id1 = client.send_request("wait".to_owned(), vec![rmp::Value::Integer(rmp::value::Integer::U64(200))], HashMap::new()).unwrap();
-    let id2 = client.send_request("wait".to_owned(), vec![rmp::Value::Integer(rmp::value::Integer::U64(100))], HashMap::new()).unwrap();
+    let id1 = client.send_request("wait".to_owned(), vec![rmp::Value::Integer(rmp::value::Integer::U64(200))], KwArgs::default()).unwrap();
+    let id2 = client.send_request("wait".to_owned(), vec![rmp::Value::Integer(rmp::value::Integer::U64(100))], KwArgs::default()).unwrap();
     assert!(!client.wait_for_reply(id1, Some(Duration::from_millis(0))).is_ok());
     assert!(!client.wait_for_reply(id2, Some(Duration::from_millis(0))).is_ok());
     thread::sleep(Duration::from_millis(150));

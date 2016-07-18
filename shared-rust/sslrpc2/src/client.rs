@@ -40,6 +40,8 @@ impl Deref for Client {
 impl Client {
     pub fn new<A: ToSocketAddrs>(addr: A, ssl: SslContext) -> Result<ClientCloseGuard, SslError> {
         let tcp_con = try!(TcpStream::connect(addr).map_err(SslError::StreamError));
+        try!(tcp_con.set_read_timeout(Some(Duration::from_secs(60))).map_err(SslError::StreamError));
+        try!(tcp_con.set_write_timeout(Some(Duration::from_secs(60))).map_err(SslError::StreamError));
         let ssl_con = try!(SslStream::connect(&ssl, tcp_con));
         let con = Arc::new(Connection::new(ssl_con));
         let client = Client(Arc::new(ClientInner{
@@ -77,7 +79,7 @@ impl Client {
                         Reply::NoSuchMethod(id, name) => (id, Err(Error::NoSuchMethod(name))),
                         Reply::RequestError(Some(id), code) => {
                             warn!("Invalid request, id: {}, code: {:?}", id, code);
-                            (id, Err(Error::MessageError(code, Some(id))))
+                            (id, Err(Error::Message(code, Some(id))))
                         },
                         Reply::RequestError(None, code) => {
                             error!("Invalid request, id unknown, code: {:?}", code);
@@ -91,7 +93,10 @@ impl Client {
                     info!("Client connection ended");
                     return
                 },
-                Err(err) => error!("Failed to decode reply: {:?}", err)
+                Err(err) => {
+                    error!("Failed to decode reply: {:?}", err);
+                    return
+                }
             }
         }
     }
@@ -106,7 +111,7 @@ impl Client {
             kwargs: kwargs
         };
         info!("Sending request: {:?}", req);
-        try!(self.socket.write(&req.to_bytes()).map_err(|_| Error::NetworkError(NetworkError::Write)));
+        try!(self.socket.write(&req.to_bytes()).map_err(|_| Error::Network(NetworkError::Write)));
         Ok(id)
     }
 
