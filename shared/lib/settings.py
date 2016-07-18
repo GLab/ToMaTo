@@ -91,9 +91,6 @@ backend_core:
     cert:  /etc/tomato/backend_core.pem
     key:  /etc/tomato/backend_core.pem
     ca:  /etc/tomato/ca.pem
-  bittorrent:
-    tracker-port: 8002
-    bittorrent-restart: 1800  # 30 minutes
   database:
     db-name: tomato_backend_core
     server:
@@ -474,15 +471,6 @@ class SettingsProvider:
 			'host': self.original_settings[self.tomato_module]['database']['server']['host'],
 			'port': int(self.original_settings[self.tomato_module]['database']['server']['port'])
 		}
-
-	def get_bittorrent_settings(self):
-		"""
-		bittorrent settings
-		:return: dict containing 'tracker-port' and 'bittorrent-restart'
-		:rtype: dict
-		"""
-		InternalError.check('bittorrent' in self.original_settings[self.tomato_module], code=InternalError.CONFIGURATION_ERROR, message="bittorrent configuration missing")
-		return {k: v for k, v in self.original_settings[self.tomato_module]['bittorrent'].iteritems()}
 
 	def get_ssl_ca_filename(self):
 		"""

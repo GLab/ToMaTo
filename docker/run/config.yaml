@@ -85,9 +85,6 @@ backend_core:
     cert:  /etc/tomato/backend_core_cert.pem
     key:  /etc/tomato/backend_core_key.pem
     ca:  /etc/tomato/ca.pem
-  bittorrent:
-    tracker-port: 8002
-    bittorrent-restart: 1800  # 30 minutes
   database:
     db-name: tomato_backend_core
     server:
