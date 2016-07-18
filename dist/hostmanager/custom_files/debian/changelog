@@ -1,8 +1,10 @@
-tomato-hostmanager (3.8-rc1) stable; urgency=medium
+tomato-hostmanager (3.8) stable; urgency=medium
 
-  * Test version
+  * Fetching templates using aria2
+  * Added current_user info to host_info()
+  * Some improvements
 
- -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 15 Jun 2016 09:00:38 +0200
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 18 Jul 2016 15:50:13 +0200
 
 tomato-hostmanager (3.7) stable; urgency=medium
 

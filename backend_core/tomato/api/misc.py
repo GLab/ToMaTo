@@ -23,10 +23,7 @@ from ..lib.userflags import Flags
 
 
 def server_info():
-	return {
-		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (
-		get_public_ip_address(), settings.get_bittorrent_settings()['tracker-port'])
-	}
+	return {}
 
 def link_statistics(siteA, siteB):
 	return link.getStatistics(siteA, siteB)
