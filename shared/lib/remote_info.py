@@ -307,7 +307,7 @@ class UserInfo(InfoObj):
 
 
 class OrganizationInfo(InfoObj):
-	__slots__ = ("name", "_usage_obj", "used")
+	__slots__ = ("name", "_usage_obj")
 
 	def invalidate_list(self):
 		get_organization_list.invalidate()
@@ -520,7 +520,7 @@ class SiteInfo(InfoObj):
 
 
 class HostInfo(InfoObj):
-	__slots__ = ("name",)
+	__slots__ = ("name","_usage_obj")
 
 	def invalidate_list(self):
 		get_host_list.invalidate()
@@ -535,6 +535,7 @@ class HostInfo(InfoObj):
 	def __init__(self, host_name):
 		super(HostInfo, self).__init__()
 		self.name = host_name
+		self._usage_obj = UsageObj(ClassName.HOST, self.name)
 
 	def invalidate_exists(self):
 		get_site_info(self.get_site_name()).invalidate_info()
@@ -576,6 +577,8 @@ class HostInfo(InfoObj):
 	def get_dumps(self, after):
 		return get_backend_core_proxy().host_dump_list(self.name, after)
 
+	def get_usage(self, hide_no_such_record_error=False):
+		return self._usage_obj.get_usage(hide_no_such_record_error)
 
 class ElementInfo(ActionObj):
 	__slots__ = ("eid", "_usage_obj")

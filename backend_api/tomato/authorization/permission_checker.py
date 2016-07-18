@@ -418,7 +418,16 @@ class PermissionChecker(UserInfo):
 		"""
 		self._check_is_hostmanager_for_organization(host_info.get_organization_name())
 
-
+	def check_may_view_host_usage(self, host_info):
+		"""
+		check whether this user may view the organization's usage
+		:param str organization: organization to be viewd
+		"""
+		if self.get_organization_name() == host_info.get_organization_name():
+			return
+		if Flags.GlobalAdmin in self.get_flags():
+			return
+		auth_fail("you are not allowed to view this host's usage.")
 
 
 
