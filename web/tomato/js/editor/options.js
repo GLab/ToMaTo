@@ -57,12 +57,13 @@ var OptionsManager = Class.extend({
 		        tooltip:"Displays debug messages",
    				default_value: false
 		    },
+		    /*
 		    {
 		        name:"element_name_on_top",
 		        label:"Names on Top",
 		        tooltip:"Show element name on top of element the element.",
    				default_value: false
-		    },
+		    },*/
 		    {
 		    	name:"show_connection_controls",
 		    	label:"Show Connection Controls",
@@ -123,7 +124,6 @@ var OptionsManager = Class.extend({
 		}
 		for (var i = 0; i < this.user_opts.length; i++) {
 			var opt = this.user_opts[i].name;
-			console.log(this.editor.options.user["_editor_"+opt]);
 			if (this.editor.options.user["_editor_"+opt] != null) {
 				this.editor.setOption(opt, this.editor.options.user["_editor_"+opt]);
 			} else {

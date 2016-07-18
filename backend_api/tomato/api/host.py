@@ -95,3 +95,14 @@ def host_users(name):
 	"""
 	getCurrentUserInfo().check_may_list_host_users(get_host_info(name))
 	return get_backend_core_proxy().host_users(name)
+
+
+def host_usage(name): #@ReservedAssignment
+	"""
+	Returns a list of usage measurements for a specific host
+	:param name: Name of the host
+	:return: List of usage measurements for the given host
+	"""
+	host = get_host_info(name)
+	getCurrentUserInfo().check_may_view_host_usage(host)
+	return host.get_usage(hide_no_such_record_error=True)

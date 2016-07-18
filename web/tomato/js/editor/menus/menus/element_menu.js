@@ -43,7 +43,7 @@ var createElementMenu = function(obj) {
 						obj.editor.onElementConnectTo(obj);
 					}
 				} : null,
-				"prepareAndStart": obj.actionEnabled("prepare") ? {
+				"prepareAndStart": (obj.actionEnabled("prepare") && !obj.actionEnabled("start")) ? {
 					name:'Start',
 					icon:'start',
 					callback: function(){
@@ -78,7 +78,8 @@ var createElementMenu = function(obj) {
 						obj.action_destroy();
 					}
 				} : null,
-				"sep2": "---",
+				"sep2": (obj.actionEnabled("destroy") || obj.actionEnabled("prepared") || obj.actionEnabled("start")) ? "---"
+				: null,
 				"console": obj.consoleAvailable() || obj.actionEnabled("download_log_grant") ? {
 					name:"Console",
 					icon:"console",

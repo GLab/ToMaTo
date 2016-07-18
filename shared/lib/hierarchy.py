@@ -1,6 +1,7 @@
 from error import InternalError, UserError
 
 class ClassName:
+	HOST = "host"
 	HOST_ELEMENT = "host_element"
 	HOST_CONNECTION = "host_connection"
 	ELEMENT = "element"

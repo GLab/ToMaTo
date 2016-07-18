@@ -56,5 +56,10 @@ def organization_remove(name):
 	get_organization_info(name).remove()
 
 def organization_usage(name): #@ReservedAssignment
+	"""
+	Returns a list of usage measurements for an organization
+	:param name: Name of the organization
+	:return: List of usage measurements for the given organization
+	"""
 	getCurrentUserInfo().check_may_view_organization_usage(name)
 	return get_organization_info(name).get_usage(hide_no_such_record_error=True)

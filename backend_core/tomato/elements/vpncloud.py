@@ -46,7 +46,7 @@ class VpnCloud(ConnectingElement, Element):
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + self.idStr
-		self.network_id = random.randint(0, 2**63)
+		self.network_id = random.randint(0, 2**31)
 		self.save()
 	
 	def onChildAdded(self, iface):

@@ -94,8 +94,7 @@ var Component = Class.extend({
 		if ($.inArray(this.data.type,settings.supported_configwindow_help_pages)) {
 			helpTarget = help_baseUrl+"/editor:configwindow_"+this.data.type;
 		}
-		
-		console.log('opening config window for type '+this.data.type);
+
 		
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
