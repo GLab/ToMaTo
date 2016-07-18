@@ -64,7 +64,7 @@ class TemplateForm(BootstrapForm):
 	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
 	icon = forms.URLField(label="Icon", help_text="URL of a 32x32 icon to use for elements of this template, leave empty to use the default icon", required=False)
 	kblang = forms.CharField(max_length=50,label="Keyboard Layout",widget = forms.widgets.Select(choices=kblang_options), help_text="Only for KVM templates", required=False)
-	urls = forms.CharField(widget = forms.Textarea, required=True)
+	urls = forms.CharField(widget = forms.Textarea, required=True, help_text="URLs that point to the template's image file. Enter one or more URLs; one URL per line.")
 	def __init__(self, *args, **kwargs):
 		super(TemplateForm, self).__init__(*args, **kwargs)
 		self.fields['creation_date'].initial=datetime.date.today()
@@ -175,7 +175,7 @@ def add(api, request, tech=None):
 						'creation_date':dateToTimestamp(creation_date) if creation_date else None,
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common'],
-						'urls': formData['urls'].splitlines()}
+						'urls': filter(lambda x: x, formData['urls'].splitlines())}
 			if formData['tech'] == TypeName.KVMQM:
 				attrs['kblang'] = formData['kblang']
 			res = api.template_create(formData['tech'], formData['name'], attrs)
@@ -216,7 +216,7 @@ def edit(api, request, res_id=None):
 						'nlXTP_installed':formData['nlXTP_installed'],
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common'],
-						'urls': formData['urls'].splitlines()}
+						'urls': filter(lambda x: x, formData['urls'].splitlines())}
 			if res_inf['tech'] == TypeName.KVMQM:
 				attrs['kblang'] = formData['kblang']
 			api.template_modify(res_id,attrs)
