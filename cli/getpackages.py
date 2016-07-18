@@ -119,7 +119,7 @@ class TestTopology:
 
 	# Topology to be used to query
 	def _topology_json(self):
-		attrs = {'name': "tmp_" + progname_short()}
+		attrs = {'name': progname_short()+":"+self.template}
 		file_info = {'version': 3}
 		connections = [{
 			"elements": [11, 12],
@@ -212,17 +212,22 @@ class TestTopology:
 				self.api.topology_action(self.top_id, "destroy")
 
 	def delete(self):
-		self.api.topology_remove(self.top_id)
+		try:
+			self.api.topology_remove(self.top_id)
+		except:
+			pass
+
 
 	def uploadAndUseArchive(self, filename):
 		upload_and_use_rextfv(self.api, self.el_id, filename)
 
 	def getArchiveResult(self):
+		sleep(3)
 		elinfo = self.api.element_info(self.el_id)
-		while not elinfo["rextfv_run_status"]["done"]:
+		while not elinfo["rextfv_run_status"].get("done", False):
+			sleep(3)
 			if not elinfo["rextfv_run_status"]["isAlive"]:
 				return None
-			sleep(1)
 			elinfo = self.api.element_info(self.el_id)
 		return elinfo["rextfv_run_status"]["custom"]
 
@@ -413,7 +418,7 @@ class GetPacketArchive(object):
 			debugger.log(subStep="destroying topology.", indent=1)
 			test_topology.destroy()
 			debugger.log(subStep="removing topology.", indent=1)
-			#test_topology.delete()
+			test_topology.delete()
 		debugger.log(subStep="done.")
 		return result_raw
 
