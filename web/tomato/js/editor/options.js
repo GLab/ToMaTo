@@ -57,12 +57,13 @@ var OptionsManager = Class.extend({
 		        tooltip:"Displays debug messages",
    				default_value: false
 		    },
+		    /*
 		    {
 		        name:"element_name_on_top",
 		        label:"Names on Top",
 		        tooltip:"Show element name on top of element the element.",
    				default_value: false
-		    },
+		    },*/
 		    {
 		    	name:"show_connection_controls",
 		    	label:"Show Connection Controls",
