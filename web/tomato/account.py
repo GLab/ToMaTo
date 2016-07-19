@@ -40,6 +40,10 @@ from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedLis
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
+from lib.settings import get_settings
+from . import settings as config_module
+settings = get_settings(config_module)
+
 
 
 # value: flags of account to display
@@ -202,7 +206,7 @@ class AccountRegisterForm(AccountForm):
 		del self.fields["flags"]
 		del self.fields["origin"]
 		del self.fields["send_mail"]
-		self.fields['aup'].label = 'I accept the <a href="'+ serverInfo()['external_urls']['aup'] +'" target="_blank">acceptable use policy</a>'
+		self.fields['aup'].label = 'I accept the <a href="'+ settings.get_external_url('aup') +'" target="_blank">acceptable use policy</a>'
 		self.helper.form_action = reverse(register)
 		self.helper.layout = Layout(
 			'name',

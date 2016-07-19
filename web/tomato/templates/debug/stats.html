@@ -76,9 +76,10 @@
 
 <table class="sortable,filterable, table table-striped">
 	<tr>
+		<th />
+		<th />
 		<th>Id</th>
 		<th>Method</th>
-		<th>State</th>
 		<th>Repeated</th>
 		<th>Last</th>
 		<th>Next</th>
@@ -87,13 +88,20 @@
 		<th>Kwargs</th>
 	</tr>
 	{% for t in stats.scheduler.tasks %}
+
 	<tr>
+		<td>{% if t.busy %}<img src="/img/task_busy.png" title="task is running" />{%else%}<img src="/img/invisible16.png" />{%endif%}</td>
+		<td>
+			{% if t.success != None %}
+				{% if t.success %}
+					<img src="/img/tick.png" title="no error"/>
+				{%else%}
+					<img src="/img/error.png" title="errors"/>
+				{%endif%}
+			{% endif %}
+		</td>
 		<td>{{t.id}}</td>
 		<td>{{t.method}}</td>
-		<td>
-				{{t.success}}
-				{% if t.busy %}, busy{% endif %}
-		</td>
 		<td>{{t.repeated}} ({{t.timeout|toduration}})</td>
 		<td enhancetable_customkey="{{t.last}}">{{t.last|todate}}</td>
 		<td enhancetable_customkey="{{t.next}}">{{t.next|todate}}</td>
