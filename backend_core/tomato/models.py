@@ -26,12 +26,12 @@ from .elements.vpncloud import VpnCloud, VpnCloudEndpoint
 from .elements.external_network import ExternalNetworkEndpoint, ExternalNetwork
 from .elements.udp import UDPEndpoint
 from .connections import Connection
-from .resources.template import Template
-from .resources.network import Network, NetworkInstance
-from .resources.profile import Profile
 from .link import LinkMeasurement, LinkStatistics
 from .host import Host
 from .host.element import HostElement
 from .host.connection import HostConnection
 from .host.site import Site
+from .resources.template import Template
+from .resources.network import Network, NetworkInstance
+from .resources.profile import Profile
 from .db import DataEntry

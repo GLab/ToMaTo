@@ -85,9 +85,7 @@ def stopCaching():
 class Host(Entity, BaseDocument):
 	"""
 	:type site: tomato.host.site.Site
-	:type templates: list of Template
 	"""
-	from ..resources.template import Template
 	name = StringField(required=True, unique=True)
 	address = StringField(required=True)
 	rpcurl = StringField(required=True, unique=True)
@@ -105,7 +103,6 @@ class Host(Entity, BaseDocument):
 	problemMailTime = FloatField(db_field='problem_mail_time')
 	availability = FloatField(default=1.0)
 	description = StringField()
-	templates = ListField(ReferenceField(Template, reverse_delete_rule=PULL))
 	hostNetworks = ListField(db_field='host_networks')
 	meta = {
 		'ordering': ['site', 'name'],
@@ -399,10 +396,8 @@ class Host(Entity, BaseDocument):
 					avail.append(tpl)
 				else:
 					self.getProxy().resource_modify(hTpl["id"], attrs)
-		old_tmpls = set(self.templates)
-		self.templates = avail
-		for tpl in old_tmpls ^ set(avail):
-			tpl.update_host_state(self)
+		for tpl in template.Template.objects():
+			tpl.update_host_state(self, tpl in avail)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()
 		self.save_if_exists()
@@ -690,7 +685,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 			continue
 		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
 			continue
-		if template and template not in host.templates:
+		if template and host not in template.hosts:
 			continue
 		if not best:
 			return host

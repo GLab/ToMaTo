@@ -62,11 +62,15 @@
 		<th>Workers</th>
 		<th>Max late time</th>
 		<th>Waiting fraction</th>
+		<th>Last task</th>
+		<th>Tasks per minute</th>
 	</tr>
 	<tr>
 		<td>{{stats.scheduler.workers}} (min: {{stats.scheduler.min_workers}}, max: {{stats.scheduler.max_workers}})</td>
 		<td>{{stats.scheduler.max_late_time}}</td>
 		<td>{{stats.scheduler.wait_frac|percentage}}</td>
+		<td>{{stats.scheduler.last_task|todate}}</td>
+		<td>{{stats.scheduler.task_rate|floatformat:2}}</td>
 	</tr>
 </table>
 
@@ -74,7 +78,7 @@
 	<tr>
 		<th>Id</th>
 		<th>Method</th>
-		<th>Busy</th>
+		<th>State</th>
 		<th>Repeated</th>
 		<th>Last</th>
 		<th>Next</th>
@@ -86,7 +90,10 @@
 	<tr>
 		<td>{{t.id}}</td>
 		<td>{{t.method}}</td>
-		<td>{{t.busy}}</td>
+		<td>
+				{{t.success}}
+				{% if t.busy %}, busy{% endif %}
+		</td>
 		<td>{{t.repeated}} ({{t.timeout|toduration}})</td>
 		<td enhancetable_customkey="{{t.last}}">{{t.last|todate}}</td>
 		<td enhancetable_customkey="{{t.next}}">{{t.next|todate}}</td>
