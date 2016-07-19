@@ -519,7 +519,7 @@ class SiteInfo(InfoObj):
 
 
 
-class HostInfo(InfoObj):
+class HostInfo(ActionObj):
 	__slots__ = ("name","_usage_obj")
 
 	def invalidate_list(self):
@@ -531,6 +531,9 @@ class HostInfo(InfoObj):
 		get_host_info(name).invalidate_info()
 		get_host_list.invalidate()
 		return res
+
+	def _action(self, action, params):
+		return get_backend_core_proxy().host_action(self.name, action, params)
 
 	def __init__(self, host_name):
 		super(HostInfo, self).__init__()

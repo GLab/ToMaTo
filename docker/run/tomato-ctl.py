@@ -576,7 +576,8 @@ class Module:
 			["-e", "SECRET_KEY=%s" % "".join(random.choice(string.digits+string.ascii_letters) for _ in range(32))],
 			["--name", self.container_name],
 			additional_args,
-			[self.image]
+			[self.image],
+			["--storageEngine", "wiredTiger"] if self.is_db else []
 		])
 
 		self.directories_to_assure = []
