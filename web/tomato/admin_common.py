@@ -26,6 +26,10 @@ from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 
 from tomato.crispy_forms.helper import FormHelper
 
+from lib.settings import get_settings
+from . import settings as config_module
+settings = get_settings(config_module)
+
 class FixedText(forms.HiddenInput):
 	is_hidden = False
 	def render(self, name, value, attrs=None):
@@ -91,7 +95,7 @@ def organization_name_list(api):
 	return res
 
 def help_url():
-	return serverInfo()["external_urls"]['help']
+	return settings.get_external_url("help")
 
 def append_empty_choice(choicelist):
 	res = list(choicelist)
