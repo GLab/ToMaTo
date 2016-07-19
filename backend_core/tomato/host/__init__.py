@@ -49,9 +49,9 @@ class RemoteWrapper:
 			retries = 3
 			while True:
 				retries -= 1
-				if not self._proxy or not rpc.isReusable(self._proxy):
-					self._proxy = rpc.createProxy(self._url, *self._args, **self._kwargs)
 				try:
+					if not self._proxy or not rpc.isReusable(self._proxy):
+						self._proxy = rpc.createProxy(self._url, *self._args, **self._kwargs)
 					return getattr(self._proxy, name)(*args, **kwargs)
 				except Error as err:
 					if isinstance(err, TransportError):
@@ -173,7 +173,9 @@ class Host(Entity, BaseDocument):
 			return
 		self.save()
 
-	def getProxy(self):
+	def getProxy(self, always_try=False):
+		if not self.is_reachable() and not always_try:
+			return TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={host: self.name})
 		if not _caching:
 			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		# locking doesn't matter here, since in case of a race condition, there would only be a second proxy for a small amount of time.
@@ -194,7 +196,7 @@ class Host(Entity, BaseDocument):
 		if not self.enabled:
 			return
 		before = time.time()
-		self.hostInfo = self._info()
+		self.hostInfo = self.getProxy(True).host_info()
 		after = time.time()
 		self.hostInfoTimestamp = (before + after) / 2.0
 		self.hostInfo["query_time"] = after - before
@@ -481,6 +483,9 @@ class Host(Entity, BaseDocument):
 				pass
 		if self.id:
 			self.delete()
+
+	def is_reachable(self):
+		return time.time() - self.hostInfoTimestamp <= 2 * settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL]
 
 	def problems(self):
 		problems = []
@@ -781,10 +786,11 @@ def synchronizeHost(host_name):
 		try:
 			host.update()
 			host.synchronizeResources()
-		except:
+		except Exception as e:
 			print >>sys.stderr, "Error updating host information from %s" % host
-			traceback.print_exc()
-			wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
+			if not isinstance(e, TransportError):
+				traceback.print_exc()
+				wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
 		host.checkProblems()
 	finally:
 		with checkingHostsLock:
@@ -802,9 +808,11 @@ def updateAccounting(host_name):
 		updatingAccountingHosts.add(host)
 	try:
 		host.updateAccountingData()
-	except:
+	except Exception as e:
 		print >>sys.stderr, "Error updating accounting information from %s" % host
-		wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
+		if not isinstance(e, TransportError):
+			traceback.print_exc()
+			wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
 	finally:
 		with updatingAccountingHostsLock:
 			updatingAccountingHosts.remove(host)
