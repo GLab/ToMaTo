@@ -481,6 +481,10 @@ class Host(Entity, BaseDocument):
 					self.getProxy().resource_remove(res["id"])
 			except:
 				pass
+		from ..resources.template import Template
+		for t in Template.objects():
+			t.hosts.remove(self.name)
+			t.save()
 		if self.id:
 			self.delete()
 
@@ -820,7 +824,7 @@ def updateAccounting(host_name):
 from .site import Site
 
 def list_host_names():
-	return [h.name for h in Host.getAll()]
+	return [h.name for h in Host.getAll().only("name")]
 
 scheduler.scheduleMaintenance(settings.get_host_connections_settings()[Config.HOST_UPDATE_INTERVAL],
                               list_host_names, synchronizeHost)

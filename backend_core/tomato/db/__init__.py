@@ -54,7 +54,6 @@ class ExtDocument(object):
 			return str(dat._DBRef__id) if asString else dat._DBRef__id
 		return str(dat.id) if asString else dat.id
 
-
 class BaseDocument(ExtDocument, Document):
 	meta = {'abstract': True}
 

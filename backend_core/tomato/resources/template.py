@@ -60,8 +60,7 @@ class Template(Entity, BaseDocument):
 	nlXTPInstalled = BooleanField(db_field='nlxtp_installed')
 	showAsCommon = BooleanField(db_field='show_as_common')
 	creationDate = FloatField(db_field='creation_date', required=False)
-	from ..host import Host
-	hosts = ListField(ReferenceField(Host, reverse_delete_rule=PULL))
+	hosts = ListField(StringField())
 	icon = StringField()
 	meta = {
 		'ordering': ['tech', '+preference', 'name'],
@@ -84,10 +83,10 @@ class Template(Entity, BaseDocument):
 		url = ("http://%s:%d/" + PATTERNS[self.tech]) % (host.address, host.hostInfo["templateserver_port"], checksum)
 		if url in self.host_urls:
 			self.host_urls.remove(url)
-		if host in self.hosts:
-			self.hosts.remove(host)
+		if host.name in self.hosts:
+			self.hosts.remove(host.name)
 		if ready:
-			self.hosts.append(host)
+			self.hosts.append(host.name)
 			self.host_urls.append(url)
 		self.save()
 
