@@ -1,3 +1,9 @@
+tomato-hostmanager (3.8-1) stable; urgency=medium
+
+  * Not sending torrent_data
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 19 Jul 2016 08:10:42 +0200
+
 tomato-hostmanager (3.8) stable; urgency=medium
 
   * Fetching templates using aria2

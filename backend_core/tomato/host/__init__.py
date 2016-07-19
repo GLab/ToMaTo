@@ -385,23 +385,23 @@ class Host(Entity, BaseDocument):
 			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
-			attrs = tpl.info()
+			attrs = tpl.info_for_hosts()
 			if not (attrs["tech"], attrs["name"]) in tpls:
 				# create resource
-				attrs["urls"] = tpl.all_urls
 				self.getProxy().resource_create("template", attrs)
 				logging.logMessage("template create", category="host", name=self.name, template=attrs)
 			else:
 				hTpl = tpls[(attrs["tech"], attrs["name"])]
-				if hTpl["attrs"]["checksum"] != tpl.checksum:
-					attrs["urls"] = tpl.all_urls
+				if hTpl["attrs"].get("checksum") != tpl.checksum:
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
-				elif hTpl["attrs"]["ready"]:
+				elif hTpl["attrs"]["ready"] is True:
 					avail.append(tpl)
+				else:
+					self.getProxy().resource_modify(hTpl["id"], attrs)
 		old_tmpls = set(self.templates)
 		self.templates = avail
-		for tpl in (old_tmpls-set(avail)) + (set(avail)-old_tmpls):
+		for tpl in old_tmpls ^ set(avail):
 			tpl.update_host_state(self)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()

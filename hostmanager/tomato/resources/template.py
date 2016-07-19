@@ -62,7 +62,7 @@ class Template(resources.Resource):
 		resources.Resource.init(self, *args, **kwargs)
 
 	def fetch(self, detached=False):
-		if self.ready:
+		if self.ready is True:
 			return
 		if detached:
 			return threading.Thread(target=self.fetch).start()

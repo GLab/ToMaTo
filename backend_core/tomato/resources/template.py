@@ -84,7 +84,8 @@ class Template(Entity, BaseDocument):
 			return
 		_, checksum = self.checksum.split(":")
 		url = ("http://%s:%d/" + PATTERNS[self.tech]) % (host.address, host.hostInfo["templateserver_port"], checksum)
-		self.host_urls.remove(url)
+		if url in self.host_urls:
+			self.host_urls.remove(url)
 		if self in host.templates:
 			self.host_urls.append(url)
 		self.save()
@@ -144,6 +145,17 @@ class Template(Entity, BaseDocument):
 			})
 		)
 	}
+
+	def info_for_hosts(self):
+		return {
+			"tech": self.tech,
+			"name": self.name,
+			"urls": self.urls,
+			"popularity": self.popularity,
+			"checksum": self.checksum,
+			"size": self.size,
+			"preference": self.preference
+		}
 
 	def init(self, attrs):
 		for attr in ["name", "tech", "urls"]:
