@@ -111,7 +111,7 @@ class Template(resources.Resource):
 
 	def modify(self, attrs):
 		res = resources.Resource.modify(self, attrs)
-		self.fetch(detached=True)
+		#self.fetch(detached=True)
 		return res
 
 	def remove(self):

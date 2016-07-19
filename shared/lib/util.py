@@ -25,6 +25,7 @@ def wrap_task(fn):
 		except Exception, exc:
 			from .. import handleError
 			handleError()
+			raise
 	call.__module__ = fn.__module__
 	call.__name__ = fn.__name__
 	call.__doc__ = fn.__doc__

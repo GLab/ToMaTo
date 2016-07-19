@@ -55,6 +55,7 @@ class SSLServer(SocketServer.TCPServer):
 class SSLConnection:
 	def __init__(self, server_address, **sslargs):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.socket.settimeout(60)
 		self.socket = ssl.wrap_socket(self.socket, **sslargs)
 		self.socket.connect(server_address)
 		self.rfile = self.socket.makefile('rb', -1)
@@ -464,6 +465,7 @@ class Proxy:
 		self._resCond = threading.Condition(self._resLock)
 		self._results = {}
 		self._errors = {}
+		self._waiting = set()
 
 	def _reconnect(self):
 		try:
@@ -483,16 +485,20 @@ class Proxy:
 			request_id = self._nextId()
 			request = Request(request_id, name, args, kwargs)
 			request.writeTo(self._con)
+		with self._resLock:
+			self._waiting.add(request_id)
 		while True:
 			with self._resLock:
 				# Check if our response is there
 				if request_id in self._results:
 					result = self._results[request_id]
 					del self._results[request_id]
+					self._waiting.remove(request_id)
 					return result
 				if request_id in self._errors:
 					error = self._errors[request_id]
 					del self._errors[request_id]
+					self._waiting.remove(request_id)
 					raise self._onError(error)
 			if self._rlock.acquire(blocking=False):
 				# We are waiting for a message
@@ -509,6 +515,11 @@ class Proxy:
 						elif response.result == Reply.Result.NoSuchMethod:
 							self._errors[response.id] = NoSuchMethodError(response.value)
 						# Notify everyone who is waiting for responses
+						self._resCond.notifyAll()
+				except:
+					with self._resLock:
+						for id in self._waiting:
+							self._errors[id] = NetworkError(NetworkError.ReadError)
 						self._resCond.notifyAll()
 				finally:
 					self._rlock.release()

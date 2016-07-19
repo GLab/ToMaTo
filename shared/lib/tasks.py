@@ -9,7 +9,7 @@ import threading, time, random
 MAX_WAIT = 3600.0
 
 class Task(object):
-	__slots__ = ("timeout", "repeated", "fn", "args", "kwargs", "next_timeout", "busy", "next", "last", "duration")
+	__slots__ = ("timeout", "repeated", "fn", "args", "kwargs", "next_timeout", "busy", "next", "last", "duration", "success")
 	def __init__(self, fn, args=None, kwargs=None, timeout=0, repeated=False, immediate=False, random_offset=True):
 		if not kwargs:
 			kwargs = {}
@@ -39,11 +39,14 @@ class Task(object):
 		self.busy = False
 		self.last = None
 		self.duration = None
+		self.success = None
 	def execute(self):
 		self.last = time.time()
 		try:
 			self.fn(*self.args, **self.kwargs)
+			self.success = True
 		except Exception:
+			self.success = False
 			import traceback
 			traceback.print_exc()
 		self.duration = time.time()-self.last
@@ -63,7 +66,8 @@ class Task(object):
 			"timeout": self.timeout,
 			"next": self.next,
 			"last": self.last,
-			"duration": self.duration
+			"duration": self.duration,
+			"success": self.success
 		}
 
 class TaskScheduler(threading.Thread):
@@ -83,6 +87,8 @@ class TaskScheduler(threading.Thread):
 		self.maxWorkers = maxWorkers
 		self.minWorkers = minWorkers
 		self.waitFrac = 0.5
+		self.lastTask = 0
+		self.taskRate = 0
 	def _nextTask(self):
 		try:
 			with self.tasksLock:
@@ -141,6 +147,11 @@ class TaskScheduler(threading.Thread):
 				return
 			task.busy = True
 		task.execute()
+		now = time.time()
+		if int(now) % 60 != int(self.lastTask) % 60:
+			self.taskRate *= 0.5
+		self.taskRate += 1.0
+		self.lastTask = now
 		with self.tasksLock:
 			task.busy = False
 			if not task.repeated:
@@ -210,6 +221,8 @@ class TaskScheduler(threading.Thread):
 			"max_workers": self.maxWorkers,
 			"min_workers": self.minWorkers,
 			"workers": self.workers,
-			"wait_frac": self.waitFrac
+			"wait_frac": self.waitFrac,
+			"last_task": self.lastTask,
+			"task_rate": self.taskRate / 2.0
 		}
 		return info

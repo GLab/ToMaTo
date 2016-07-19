@@ -60,6 +60,8 @@ class Template(Entity, BaseDocument):
 	nlXTPInstalled = BooleanField(db_field='nlxtp_installed')
 	showAsCommon = BooleanField(db_field='show_as_common')
 	creationDate = FloatField(db_field='creation_date', required=False)
+	from ..host import Host
+	hosts = ListField(ReferenceField(Host, reverse_delete_rule=PULL))
 	icon = StringField()
 	meta = {
 		'ordering': ['tech', '+preference', 'name'],
@@ -67,17 +69,13 @@ class Template(Entity, BaseDocument):
 			('tech', 'preference'), ('tech', 'name')
 		]
 	}
-	@property
-	def hosts(self):
-		from ..host import Host
-		return Host.objects(templates=self)
 
 	@property
 	def elements(self):
 		from ..elements.generic import VMElement
 		return VMElement.objects(template=self)
 
-	def update_host_state(self, host):
+	def update_host_state(self, host, ready):
 		if not "templateserver_port" in host.hostInfo:
 			return  # old hostmanager
 		if not self.checksum:
@@ -86,13 +84,15 @@ class Template(Entity, BaseDocument):
 		url = ("http://%s:%d/" + PATTERNS[self.tech]) % (host.address, host.hostInfo["templateserver_port"], checksum)
 		if url in self.host_urls:
 			self.host_urls.remove(url)
-		if self in host.templates:
-			self.host_urls.append(url)
+		if host in self.hosts:
+			self.hosts.remove(host)
+		if ready:
+			self.hosts.append(host)
 		self.save()
 
 	@property
 	def all_urls(self):
-		return list(self.urls)+list(self.host_urls)
+		return list(self.host_urls)+list(self.urls)
 
 	def getReadyInfo(self):
 		from ..host import Host
