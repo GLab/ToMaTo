@@ -88,6 +88,7 @@ class Template(Entity, BaseDocument):
 			self.hosts.remove(host)
 		if ready:
 			self.hosts.append(host)
+			self.host_urls.append(url)
 		self.save()
 
 	@property
