@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..host import Host, Site
-from ..lib.error import UserError
+from ..lib.error import UserError, TransportError
 from .site import _getSite
 from ..lib.remote_info import get_organization_info
 
@@ -65,9 +65,16 @@ def host_name_list(site=None, organization=None):
 
 def host_dump_list(name, after):
 	"""
-	return all dumps of this host since last_updatetime
+	return all dumps of this host since last_updatetime.
+	return None if the host is currently unreachable
 	"""
-	return _getHost(name).getProxy().dump_list(after)
+	host = _getHost(name)
+	if not host.is_reachable():
+		return None
+	try:
+		return host.getProxy().dump_list(after)
+	except TransportError:
+		return None
 
 def host_create(name, site, attrs=None):
 	"""
