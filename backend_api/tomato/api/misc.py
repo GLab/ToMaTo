@@ -49,10 +49,9 @@ def server_info():
 	try:
 		core_info = get_backend_core_proxy().server_info()
 	except:
-		core_info = {'public_key': None, "TEMPLATE_TRACKER_URL": None}
+		core_info = {'public_key': None}
 	topology_config = settings.get_topology_settings()
 	return {
-		"TEMPLATE_TRACKER_URL": core_info["TEMPLATE_TRACKER_URL"],
 		'public_key': getCAPublicKey(),
 		'version': getVersionStr(),
 		'api_version': [4, 0, 1],
