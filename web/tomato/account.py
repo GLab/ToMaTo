@@ -459,7 +459,9 @@ def _own_notifications(api, request, show_read, ref_filter=None, subject_group=N
 
 	notifications = sorted(notifications, key=lambda n: n['timestamp'], reverse=True)
 
-	return render(request, "account/notifications.html", {"notifications": notifications, "include_read": show_read, 'is_filtered': is_filtered})
+	show_mark_all_read_button = is_filtered or len(notifications) > 10
+
+	return render(request, "account/notifications.html", {"notifications": notifications, "include_read": show_read, 'is_filtered': is_filtered, "show_mark_all_read_button": show_mark_all_read_button})
 
 def unread_notifications(request):
 	return _own_notifications(request, False)
