@@ -234,10 +234,27 @@ class User(Entity, BaseDocument):
 	def clean_up_notifications(self):
 		border_read = time.time() - 60*60*24*30  # fixme: should be configurable
 		border_unread = time.time() - 60*60*24*180  # fixme: should be configurable
+		did_del = False
+		read_count = 0
+
+		# remove timed-out notifications and count read ones
 		for n in list(self.notifications):
 			if n.timestamp < (border_read if n.read else border_unread):
 				self.notifications.remove(n)
-		self.save()
+				did_del = True
+			else:
+				if n.read:
+					read_count += 1
+
+		# remove all unread notifications if more than 50
+		if read_count > 50:
+			for n in list(self.notifications):
+				if n.read:
+					self.notifications.remove(n)
+					did_del = True
+
+		if did_del:
+			self.save()
 
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(fn=_remove),
