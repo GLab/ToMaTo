@@ -535,6 +535,9 @@ class HostInfo(ActionObj):
 	def _action(self, action, params):
 		return get_backend_core_proxy().host_action(self.name, action, params)
 
+	def _after_action(self, action, params):
+		self.invalidate_info()
+
 	def __init__(self, host_name):
 		super(HostInfo, self).__init__()
 		self.name = host_name

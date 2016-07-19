@@ -133,6 +133,7 @@ class Host(Entity, BaseDocument):
 	def action_forced_update(self):
 		self.update()
 		self.synchronizeResources(True)
+		return self.info()
 
 	ACTIONS = {"forced_update": Action(fn=action_forced_update)}
 	ATTRIBUTES = {

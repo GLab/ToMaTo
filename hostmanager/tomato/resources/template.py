@@ -124,6 +124,8 @@ class Template(resources.Resource):
 
 	def info(self):
 		info = resources.Resource.info(self)
+		if "torrent_data" in info["attrs"]:
+			del info["attrs"]["torrent_data"]
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference

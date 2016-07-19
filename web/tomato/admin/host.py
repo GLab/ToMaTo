@@ -193,7 +193,7 @@ def remove(api, request, name):
 
 @wrap_rpc
 def forced_update(api, request, name):
-	host = api.host_action("forced_update", name)
+	host = api.host_action(name, "forced_update")
 	host['element_types'].sort()
 	host['connection_types'].sort()
 	site = api.site_info(host["site"])
