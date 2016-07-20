@@ -1,6 +1,7 @@
 from errordump import ErrorDump
 from errorgroup import get_group, ErrorGroup
 from ..lib.settings import settings, Config
+from ..lib.exceptionhandling import wrap_and_handle_current_exception
 from ..lib import util
 from .. import scheduler
 import fetching
@@ -41,7 +42,10 @@ def _get_sync_tasks():
 
 def update_all():
 	for source in fetching.get_all_dumpsources():
-		source.fetch_new_dumps(insert_dump)
+		try:
+			source.fetch_new_dumps(insert_dump)
+		except:
+			wrap_and_handle_current_exception(re_raise=False)
 
 def start():
 	scheduler.scheduleMaintenance(settings.get_dumpmanager_config()[Config.DUMPMANAGER_COLLECTION_INTERVAL],
