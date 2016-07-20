@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
-
+from ..lib.constants import StateName
 from ..lib import get_public_ip_address
 from ..lib.cache import cached
 from ..lib.service import get_backend_users_proxy
@@ -81,8 +81,7 @@ def statistics():
 	usage['topologies_active'] = 0
 	for top in list(topology.Topology.objects.all()):
 		usage['topologies'] += 1
-		topUsage = top.totalUsage.latest
-		if topUsage and (topUsage['memory']>0 or topUsage['cputime']>0 or topUsage['traffic']>0):
+		if top.maxState() != StateName.CREATED:
 			usage['topologies_active'] += 1
 	
 	usage['elements'] = elements.Element.objects.count()
