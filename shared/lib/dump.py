@@ -264,7 +264,7 @@ def getCount():
 def getAll(after=None, list_only=False, include_data=False):
 	global dumps
 	return_list = []
-	for dump_id, _dump in dumps.iteritems():
+	for dump_id, _dump in dumps.items():
 		if (after is None) or (_dump['timestamp'] >= after):
 			if list_only:
 				dump = dump_id
