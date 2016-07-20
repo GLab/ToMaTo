@@ -30,6 +30,9 @@ from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
 
 
+element_caps = {}
+connection_caps = {}
+
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
 		self._url = url
@@ -91,8 +94,8 @@ class Host(Entity, BaseDocument):
 	rpcurl = StringField(required=True, unique=True)
 	from .site import Site
 	site = ReferenceField(Site, required=True, reverse_delete_rule=DENY)
-	elementTypes = DictField(db_field='element_types')
-	connectionTypes = DictField(db_field='connection_types')
+	elementTypes = ListField(db_field='element_types')
+	connectionTypes = ListField(db_field='connection_types')
 	hostInfo = DictField(db_field='host_info')
 	hostInfoTimestamp = FloatField(db_field='host_info_timestamp', required=True)
 	accountingTimestamp = FloatField(db_field='accounting_timestamp', required=True)
@@ -175,7 +178,7 @@ class Host(Entity, BaseDocument):
 
 	def getProxy(self, always_try=False):
 		if not self.is_reachable() and not always_try:
-			return TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={host: self.name})
+			raise TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={host: self.name})
 		if not _caching:
 			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		# locking doesn't matter here, since in case of a race condition, there would only be a second proxy for a small amount of time.
@@ -206,8 +209,22 @@ class Host(Entity, BaseDocument):
 		except:
 			self.hostNetworks = []
 		caps = self._convertCapabilities(self.getProxy().host_capabilities())
-		self.elementTypes = caps["elements"]
-		self.connectionTypes = caps["connections"]
+		self.elementTypes = caps["elements"].keys()
+		global element_caps
+		for k, v in caps["elements"].iter_items():
+			if not k in element_caps:
+				element_caps[k] = v
+			else:
+				if len(repr(element_caps[k])) < len(repr(v)):
+					element_caps[k] = v
+		self.connectionTypes = caps["connections"].keys()
+		global connection_caps
+		for k, v in caps["connections"].iter_items():
+			if not k in connection_caps:
+				connection_caps[k] = v
+			else:
+				if len(repr(connection_caps[k])) < len(repr(v)):
+					connection_caps[k] = v
 		self.componentErrors = max(0, self.componentErrors / 2)
 		if not self.problems():
 			self.availability += 1.0 - settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
@@ -274,10 +291,12 @@ class Host(Entity, BaseDocument):
 		return self.getProxy().host_info()
 
 	def getElementCapabilities(self, type_):
-		return self.elementTypes.get(type_)
+		global element_caps
+		return element_caps.get(type_)
 
 	def getConnectionCapabilities(self, type_):
-		return self.connectionTypes.get(type_)
+		global connection_caps
+		return connection_caps.get(type_)
 
 	def createElement(self, type_, parent=None, attrs=None, ownerElement=None, ownerConnection=None):
 		if not attrs:
@@ -688,9 +707,9 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 	for host in all_:
 		if host.problems():
 			continue
-		if elementTypes and set(elementTypes) - set(host.elementTypes.keys()):
+		if elementTypes and set(elementTypes) - set(host.elementTypes):
 			continue
-		if connectionTypes and set(connectionTypes) - set(host.connectionTypes.keys()):
+		if connectionTypes and set(connectionTypes) - set(host.connectionTypes):
 			continue
 		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
 			continue
@@ -737,42 +756,27 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 	return hosts[0]
 
 
-@cached(timeout=3600, autoupdate=True)
 def getElementTypes():
-	types = set()
-	for h in Host.getAll():
-		types += set(h.elementTypes.keys())
-	return types
+	global element_caps
+	return element_caps.keys()
 
 
-@cached(timeout=3600, autoupdate=True)
 def getElementCapabilities(type_):
 	# FIXME: merge capabilities
-	caps = {}
-	for h in Host.getAll():
-		hcaps = h.getElementCapabilities(type_)
-		if len(repr(hcaps)) > len(repr(caps)):
-			caps = hcaps
-	return caps
+	global element_caps
+	return element_caps
 
 
-@cached(timeout=3600, autoupdate=True)
 def getConnectionTypes():
-	types = set()
-	for h in Host.getAll():
-		types += set(h.connectionTypes.keys())
-	return types
+	global connection_caps
+	return connection_caps.keys()
 
 
 @cached(timeout=3600, autoupdate=True)
 def getConnectionCapabilities(type_):
 	# FIXME: merge capabilities
-	caps = {}
-	for h in Host.getAll():
-		hcaps = h.getConnectionCapabilities(type_)
-		if len(repr(hcaps)) > len(repr(caps)):
-			caps = hcaps
-	return caps
+	global connection_caps
+	return connection_caps
 
 
 checkingHostsLock = threading.RLock()
@@ -788,14 +792,18 @@ def synchronizeHost(host_name):
 		checkingHosts.add(host)
 	try:
 		try:
-			host.update()
-			host.synchronizeResources()
-		except Exception as e:
-			print >>sys.stderr, "Error updating host information from %s" % host
-			if not isinstance(e, TransportError):
-				traceback.print_exc()
-				wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
-		host.checkProblems()
+			try:
+				host.update()
+				host.synchronizeResources()
+			except Exception as e:
+				print >>sys.stderr, "Error updating host information from %s" % host
+				if isinstance(e, TransportError):
+					e.todump = False
+				else:
+					traceback.print_exc()
+				wrap_and_handle_current_exception(re_raise=True)
+		finally:
+			host.checkProblems()
 	finally:
 		with checkingHostsLock:
 			checkingHosts.remove(host)
@@ -814,9 +822,11 @@ def updateAccounting(host_name):
 		host.updateAccountingData()
 	except Exception as e:
 		print >>sys.stderr, "Error updating accounting information from %s" % host
-		if not isinstance(e, TransportError):
+		if isinstance(e, TransportError):
+			e.todump = False
+		else:
 			traceback.print_exc()
-			wrap_and_handle_current_exception(re_raise=False, ignore_todump=True)
+		wrap_and_handle_current_exception(re_raise=True)
 	finally:
 		with updatingAccountingHostsLock:
 			updatingAccountingHosts.remove(host)
