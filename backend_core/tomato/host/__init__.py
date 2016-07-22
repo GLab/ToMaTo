@@ -58,6 +58,7 @@ class RemoteWrapper:
 					return getattr(self._proxy, name)(*args, **kwargs)
 				except Error as err:
 					if isinstance(err, TransportError):
+						err.todump = False
 						self._proxy = None
 						if retries >= 0:
 							print >>sys.stderr, "Retrying after error on %s: %s, retries left: %d" % (self._host, err, retries)
