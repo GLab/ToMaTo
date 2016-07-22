@@ -119,9 +119,6 @@ class Template(resources.Resource):
 			path.remove(self.getPath(), recursive=True)
 		resources.Resource.remove(self)
 
-	def isReady(self):
-		return os.path.exists(self.getPath())
-
 	def info(self):
 		info = resources.Resource.info(self)
 		if "torrent_data" in info["attrs"]:
