@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{RwLock, RwLockReadGuard};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use std::fmt::Debug;
 use std::mem;
@@ -21,6 +22,11 @@ pub enum HierarchyError {
     NoSuchEntity,
     NoSuchRelation,
     CommunicationError,
+}
+
+#[derive(Debug)]
+pub enum Service {
+    User, Core
 }
 
 pub trait Hierarchy: Send + Sync {
@@ -109,7 +115,9 @@ pub struct RemoteHierarchy {
     core_service_address: String,
     service_timeout: Duration,
     user_service: RwLock<ClientCloseGuard>,
-    core_service: RwLock<ClientCloseGuard>
+    user_service_broken: AtomicBool,
+    core_service: RwLock<ClientCloseGuard>,
+    core_service_broken: AtomicBool,
 }
 
 impl RemoteHierarchy {
@@ -122,33 +130,38 @@ impl RemoteHierarchy {
             user_service_address: user_service_address,
             service_timeout: Duration::from_secs(service_timeout as u64),
             user_service: RwLock::new(user_service),
-            core_service: RwLock::new(core_service)
+            user_service_broken: AtomicBool::new(false),
+            core_service: RwLock::new(core_service),
+            core_service_broken: AtomicBool::new(false)
         })
     }
 
-    fn reconnect(&self) -> Result<(), SslError> {
-        info!("Reconnecting...");
-        let mut core_service = try!(Client::new(&self.core_service_address as &str, self.ssl_context.clone()));
-        mem::swap(&mut core_service, &mut self.core_service.write().expect("Lock poisoned"));
-        let mut user_service = try!(Client::new(&self.user_service_address as &str, self.ssl_context.clone()));
-        mem::swap(&mut user_service, &mut self.user_service.write().expect("Lock poisoned"));
-        core_service.close().expect("Failed to close");
-        user_service.close().expect("Failed to close");
-        Ok(())
-    }
-
-    fn get_service(&self, type_: RecordType) -> RwLockReadGuard<ClientCloseGuard> {
-        match type_ {
+    fn get_service(&self, type_: RecordType) -> Result<(Service, RwLockReadGuard<ClientCloseGuard>), HierarchyError> {
+        Ok(match type_ {
             RecordType::HostElement | RecordType::HostConnection | RecordType::Element | RecordType::Connection | RecordType::Topology => {
-                self.core_service.read().expect("Lock poisoned")
+                if self.core_service_broken.load(Ordering::Relaxed) {
+                    info!("Reconnecting to core service...");
+                    let mut core_service = try!(Client::new(&self.core_service_address as &str, self.ssl_context.clone()).map_err(|_| HierarchyError::CommunicationError));
+                    mem::swap(&mut core_service, &mut self.core_service.write().expect("Lock poisoned"));
+                    core_service.close().expect("Failed to close");
+                    self.core_service_broken.store(false, Ordering::Relaxed);
+                }
+                (Service::Core, self.core_service.read().expect("Lock poisoned"))
             },
             RecordType::User | RecordType::Organization => {
-                self.user_service.read().expect("Lock poisoned")
+                if self.user_service_broken.load(Ordering::Relaxed) {
+                    info!("Reconnecting to user service...");
+                    let mut user_service = try!(Client::new(&self.user_service_address as &str, self.ssl_context.clone()).map_err(|_| HierarchyError::CommunicationError));
+                    mem::swap(&mut user_service, &mut self.user_service.write().expect("Lock poisoned"));
+                    user_service.close().expect("Failed to close");
+                    self.user_service_broken.store(false, Ordering::Relaxed);
+                }
+                (Service::User, self.user_service.read().expect("Lock poisoned"))
             }
-        }
+        })
     }
 
-    fn call<T: ParseValue + Debug>(&self, service: RwLockReadGuard<ClientCloseGuard>, method: &str, args: Args) -> Result<T, HierarchyError> {
+    fn call<T: ParseValue + Debug>(&self, service_type: Service, service: RwLockReadGuard<ClientCloseGuard>, method: &str, args: Args) -> Result<T, HierarchyError> {
         match service.call(
             method.to_owned(),
             args.clone(),
@@ -167,12 +180,18 @@ impl RemoteHierarchy {
                     return Err(HierarchyError::NoSuchEntity);
                 }
                 warn!("Remote call failed: {}{:?} => {:?}", method, args, err);
-                try!(self.reconnect().map_err(|_| HierarchyError::CommunicationError));
+                match service_type {
+                    Service::Core => self.core_service_broken.store(false, Ordering::Relaxed),
+                    Service::User => self.user_service_broken.store(false, Ordering::Relaxed)
+                }
                 Err(HierarchyError::CommunicationError)
             },
             Err(err) => {
                 warn!("Remote call failed: {}{:?} => {:?}", method, args, err);
-                try!(self.reconnect().map_err(|_| HierarchyError::CommunicationError));
+                match service_type {
+                    Service::Core => self.core_service_broken.store(false, Ordering::Relaxed),
+                    Service::User => self.user_service_broken.store(false, Ordering::Relaxed)
+                }
                 Err(HierarchyError::CommunicationError)
             }
         }
@@ -181,8 +200,8 @@ impl RemoteHierarchy {
 
 impl Hierarchy for RemoteHierarchy {
     fn get(&self, child_type: RecordType, parent_type: RecordType, child_id: &str) -> Result<Vec<String>, HierarchyError> {
-        let service = self.get_service(child_type);
-        let result: Vec<(String, String)> = try!(self.call(service, "object_parents", vec![to_value!(child_type.name().to_owned()), to_value!(child_id.to_owned())]));
+        let (service_type, service) = try!(self.get_service(child_type));
+        let result: Vec<(String, String)> = try!(self.call(service_type, service, "object_parents", vec![to_value!(child_type.name().to_owned()), to_value!(child_id.to_owned())]));
         let mut parents = Vec::with_capacity(result.len());
         for (type_, id) in result {
             if type_ == parent_type.name() {
@@ -193,7 +212,7 @@ impl Hierarchy for RemoteHierarchy {
     }
 
     fn exists(&self, type_: RecordType, id: &str) -> Result<bool, HierarchyError> {
-        let service = self.get_service(type_);
-        self.call(service, "object_exists", vec![to_value!(type_.name().to_owned()), to_value!(id.to_owned())])
+        let (service_type, service) = try!(self.get_service(type_));
+        self.call(service_type, service, "object_exists", vec![to_value!(type_.name().to_owned()), to_value!(id.to_owned())])
     }
 }
