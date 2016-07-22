@@ -90,8 +90,8 @@
 	{% for t in stats.scheduler.tasks %}
 
 	<tr>
-		<td>{% if t.busy %}<img src="/img/task_busy.png" title="task is running" />{%else%}<img src="/img/invisible16.png" />{%endif%}</td>
-		<td>
+		<td enhancetable_customkey="{{t.busy}}">{% if t.busy %}<img src="/img/task_busy.png" title="task is running" />{%else%}<img src="/img/invisible16.png" />{%endif%}</td>
+		<td enhancetable_customkey="{{t.success}}">
 			{% if t.success != None %}
 				{% if t.success %}
 					<img src="/img/tick.png" title="no error"/>
