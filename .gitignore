@@ -19,6 +19,7 @@ docs_build
 __pycache__
 
 *old*
+certs
 web/tomato/static/newui
 backend/htmlcov
 backend/templates

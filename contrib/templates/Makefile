@@ -1,10 +1,10 @@
 NLXTP_VERSION=0.3.1
 
 .PHONY: default
-default: files/prepare_vm.sh
+default: kvm/files/prepare_vm.sh
 
-files/prepare_vm.sh: prepare_vm.sh
-	cp -a prepare_vm.sh files/prepare_vm.sh
+kvm/files/prepare_vm.sh: prepare_vm.sh
+	cp -a prepare_vm.sh kvm/files/prepare_vm.sh
 
 prepare_vm/nlxtp-guest-modules_$(NLXTP_VERSION)_all.deb: ../../dist/nlxtp_guest_modules/nlxtp-guest-modules_$(NLXTP_VERSION)_all.deb
 	rm prepare_vm/nlxtp-guest-modules_*.deb

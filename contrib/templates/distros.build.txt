@@ -1,4 +1,0 @@
-wheezy
-jessie
-precise
-trusty

@@ -1,0 +1,6 @@
+jessie
+trusty
+xenial
+xenial/ubuntu
+xenial/lubuntu
+xenial/xubuntu

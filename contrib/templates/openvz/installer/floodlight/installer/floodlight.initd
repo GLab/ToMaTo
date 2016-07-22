@@ -1,0 +1,61 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:		floodlight
+# Required-Start:	$network
+# Required-Stop:	$network
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+# Short-Description:	Floodlight OpenFlow controller
+### END INIT INFO
+
+set -e
+
+JARFILE="/usr/local/lib/floodlight/floodlight.jar"
+CONFIG="/etc/floodlight.conf"
+BINARY="$(which java)"
+PARAMS="-jar $JARFILE -cf $CONFIG"
+
+test -f "$JARFILE" || exit 0
+test -x "$BINARY" || exit 0
+
+umask 022
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting Floodlight controller" "floodlight" || true
+	if start-stop-daemon --start --quiet --oknodo --background --make-pidfile --pidfile /var/run/floodlight.pid --exec "$BINARY" -- $PARAMS; then
+	    log_end_msg 0 || true
+	else
+	    log_end_msg 1 || true
+	fi
+	;;
+  stop)
+	log_daemon_msg "Stopping Floodlight controller" "floodlight" || true
+	if start-stop-daemon --stop --quiet --oknodo --pidfile /var/run/floodlight.pid; then
+	    log_end_msg 0 || true
+	else
+	    log_end_msg 1 || true
+	fi
+	;;
+  restart)
+	log_daemon_msg "Restarting Floodlight controller" "floodlight" || true
+	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile /var/run/floodlight.pid
+	if start-stop-daemon --start --quiet --oknodo --background --make-pidfile --pidfile /var/run/floodlight.pid --exec "$BINARY" -- $PARAMS; then
+	    log_end_msg 0 || true
+	else
+	    log_end_msg 1 || true
+	fi
+	;;
+  status)
+	status_of_proc -p /var/run/floodlight.pid "$BINARY" floodlight && exit 0 || exit $?
+	;;
+
+  *)
+	log_action_msg "Usage: $0 {start|stop|restart|status}" || true
+	exit 1
+esac
+
+exit 0

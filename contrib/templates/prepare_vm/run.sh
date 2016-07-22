@@ -78,13 +78,19 @@ case "$ISSUE" in
   Ubuntu*15.10*)
     DISTRO="ubuntu_1510"
     ;;
+  Ubuntu*16.04*)
+    DISTRO="ubuntu_1604"
+    ;;
+  Ubuntu*16.10*)
+    DISTRO="ubuntu_1610"
+    ;;
   *)
     fail "Unknown distribution: $ISSUE"
 esac
 echo "Distribution: $DISTRO"
 
-echo
 
+echo
 echo "Updating system..."
 case $DISTRO in
   debian*|ubuntu*)
@@ -97,24 +103,48 @@ esac
 
 
 # Packages: ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less
+echo
 echo "Installing packages..."
 case $DISTRO in
   debian*|ubuntu*)
-    apt-get install --no-install-recommends -y ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less
+    apt-get install --no-install-recommends -y ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less net-tools
     ;;
   *)
     fail "$DISTRO unsupported"
 esac
 
 
+echo
 echo "Disabling services..."
 case $DISTRO in
   ubuntu*)
-    service rsyslog stop || true
-    update-rc.d -f rsyslog remove
-    service ssh stop || true
-    update-rc.d -f ssh remove
+    for service in rsyslog ssh cups-browsed avahi-daemon; do
+      service $service stop || true
+      update-rc.d -f $service remove
+    done
     echo "manual" > /etc/init/ssh.override
+    ;;
+  debian*)
+    for service in rsyslog ssh inetd; do
+      if [ -f /etc/init.d/$service ]; then
+        /etc/init.d/$service stop
+        update-rc.d -f $service remove
+      fi
+    done
+    ;;
+  *)
+    fail "$DISTRO unsupported"
+esac
+# check that only allowed services are running
+if netstat -tulpen | grep -e '\(::\)\|\(0\.0\.0\.0\)' | fgrep -v ntpd | fgrep -v dhclient | fgrep -v dnsmasq | fgrep -v cupsd; then
+  fail "The following services are still running: $(netstat -tulpen | grep -e '\(::\)\|\(0\.0\.0\.0\)')"
+fi
+
+
+echo
+echo "Creating ssh-enable script..."
+case $DISTRO in
+  ubuntu*)
     cat <<EOF >/usr/local/bin/ssh-enable
 #!/bin/bash
 set -e
@@ -126,10 +156,6 @@ EOF
     chmod +x /usr/local/bin/ssh-enable
     ;;
   debian*)
-    /etc/init.d/rsyslog stop || true
-    update-rc.d -f rsyslog remove
-    /etc/init.d/ssh stop || true
-    update-rc.d -f ssh remove
     cat <<EOF >/usr/local/bin/ssh-enable
 #!/bin/bash
 set -e
@@ -139,24 +165,24 @@ update-rc.d ssh defaults
 /etc/init.d/ssh start
 EOF
     chmod +x /usr/local/bin/ssh-enable
-    update-rc.d -f inetd remove
     ;;
   *)
     fail "$DISTRO unsupported"
 esac
-# check that only allowed services are running
-if netstat -tulpen | grep -e '\(::\)\|\(0\.0\.0\.0\)' | fgrep -v ntpdate | fgrep -v dhclient; then
-  fail "The following services are still running: $(netstat -tulpen | grep -e '\(::\)\|\(0\.0\.0\.0\)')"
-fi
 
 
+echo
 echo "Applying some configuration changes..."
 # Disable sync() for syslog -> performance
-sed -i -e 's@\([[:space:]]\)\(/var/log/\)@\1-\2@' /etc/*syslog.conf
+
+if [ "$(shopt -s nullglob; echo /etc/*syslog.conf)" != "" ]; then
+  sed -i -e 's@\([[:space:]]\)\(/var/log/\)@\1-\2@' /etc/*syslog.conf
+fi
 # Timezone = Europe/Berlin
 ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
 
+echo
 echo "Auto-login on consoles..."
 case $DISTRO in
   ubuntu*|debian*)
@@ -171,7 +197,40 @@ case $DISTRO in
 esac
 
 
+echo
+echo "Graphical auto-login..."
+case $DISTRO in
+  ubuntu*)
+    if [ -d /etc/lightdm/lightdm.conf.d ]; then
+      cat <<EOF >/etc/lightdm/lightdm.conf.d/90-autologin.conf
+[SeatDefaults]
+autologin-user=root
+autologin-user-timeout=0
+
+[Seat:*]
+autologin-user=root
+autologin-user-timeout=0
+EOF
+    fi
+    if [ -f /root/.profile ]; then
+      sed -i -e 's/^mesg n || true$/tty -s \&\& mesg n || true/g' /root/.profile
+    fi
+  ;;
+esac
+
+
+echo
+echo "Setting up libpam-pwquality..."
+case $DISTRO in
+  ubuntu*|debian*)
+    apt-get install --no-install-recommends -y libpam-pwquality cracklib-runtime
+    sed -i -e 's/pam_pwquality.so retry=3$/\0 enforce_for_root/g' /etc/pam.d/common-password
+    ;;
+esac
+
+
 # locale: en_US.UTF-8
+echo
 echo "Setting locale..."
 case $DISTRO in
   ubuntu*|debian*)
@@ -201,7 +260,9 @@ EOF
     fail "$DISTRO unsupported"
 esac
 
+
 # keyboard: de-latin1-nodeadkeys
+echo
 echo "Setting keyboard..."
 case $DISTRO in
   ubuntu*|debian*)
@@ -251,7 +312,9 @@ EOF
     fail "$DISTRO unsupported"
 esac
 
+
 # SSH keys
+echo
 echo "Removing SSH keys and adding script for recreation..."
 rm -f /etc/ssh/ssh_host_{ecdsa,dsa,rsa}_key{,.pub}
 case $DISTRO in
@@ -290,13 +353,17 @@ EOF
     fail "$DISTRO unsupported"
 esac
 
+
+echo
 echo "Applying distro-specific changes..."
 case $DISTRO in
   ubuntu*)
-    echo "Ubuntu: Disabling network wait"
-    sed -i -e 's/sleep/#sleep/g' /etc/init/failsafe.conf
-    echo "Ubuntu: Disabling boot splash"
+    if [ -f /etc/init/failsafe.conf ]; then
+      echo "Ubuntu: Disabling network wait"
+      sed -i -e 's/sleep/#sleep/g' /etc/init/failsafe.conf
+    fi
     if [ -f /etc/default/grub ]; then
+      echo "Ubuntu: Disabling boot splash"
       sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="noplymouth"/g' /etc/default/grub
       update-grub
     fi
@@ -308,7 +375,9 @@ if [ "$VMTYPE" == "openvz" ]; then
 
   case $DISTRO in
     debian_*)
-      sed -i -e '/getty/d' /etc/inittab
+      if [ -f /etc/inittab ]; then
+        sed -i -e '/getty/d' /etc/inittab
+      fi
       ;;
     ubuntu*)
       #FIXME: disable getty without inittab
@@ -392,6 +461,8 @@ EOF
   ln -s /proc/mounts /etc/mtab
 fi
 
+
+echo
 echo "Installing nlXTP guest modules..."
 case $DISTRO in
   debian*|ubuntu*)
@@ -405,6 +476,8 @@ if [ "$VMTYPE" == "kvm" ]; then
   echo "/dev/fd0 /mnt/nlXTP auto defaults,sync,nofail 0 0" >> /etc/fstab
 fi
 
+
+echo
 echo "Cleanup..."
 case $DISTRO in
   debian*|ubuntu*)
@@ -413,6 +486,7 @@ case $DISTRO in
   *)
     fail "$DISTRO unsupported"
 esac
+
 
 echo
 echo "Done. Please reboot VM to use it"
