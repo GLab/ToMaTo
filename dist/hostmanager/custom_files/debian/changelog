@@ -1,3 +1,9 @@
+tomato-hostmanager (3.8.2) stable; urgency=medium
+
+  * Not requiring that templates are fetched
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 22 Jul 2016 09:54:16 +0200
+
 tomato-hostmanager (3.8.1) stable; urgency=medium
 
   * Fetching templates only on demand
