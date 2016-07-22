@@ -152,8 +152,8 @@ class Host(Entity, BaseDocument):
 		"problems": Attribute(readOnly=True, get=lambda obj: obj.problems(), schema=schema.List(items=schema.String())),
 		"component_errors": Attribute(field=componentErrors, readOnly=True, schema=schema.Int()),
 		"load": Attribute(readOnly=True, get=lambda obj: obj.getLoad(), schema=schema.List(items=schema.Number())),
-		"element_types": Attribute(readOnly=True, get=lambda obj: obj.elementTypes.keys(), schema=schema.List(items=schema.Identifier())),
-		"connection_types": Attribute(readOnly=True, get=lambda obj: obj.connectionTypes.keys(), schema=schema.List(items=schema.Identifier())),
+		"element_types": Attribute(field=elementTypes, readOnly=True, schema=schema.List(items=schema.Identifier())),
+		"connection_types": Attribute(field=connectionTypes, readOnly=True, schema=schema.List(items=schema.Identifier())),
 		"host_info": Attribute(field=hostInfo, readOnly=True, schema=schema.StringMap(additional=True)),
 		"host_info_timestamp": Attribute(field=hostInfoTimestamp, readOnly=True, schema=schema.Number()),
 		"availability": Attribute(field=availability, readOnly=True, schema=schema.Number()),
@@ -178,7 +178,7 @@ class Host(Entity, BaseDocument):
 
 	def getProxy(self, always_try=False):
 		if not self.is_reachable() and not always_try:
-			raise TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={host: self.name})
+			raise TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={"host": self.name})
 		if not _caching:
 			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		# locking doesn't matter here, since in case of a race condition, there would only be a second proxy for a small amount of time.
@@ -211,7 +211,7 @@ class Host(Entity, BaseDocument):
 		caps = self._convertCapabilities(self.getProxy().host_capabilities())
 		self.elementTypes = caps["elements"].keys()
 		global element_caps
-		for k, v in caps["elements"].iter_items():
+		for k, v in caps["elements"].iteritems():
 			if not k in element_caps:
 				element_caps[k] = v
 			else:
@@ -219,7 +219,7 @@ class Host(Entity, BaseDocument):
 					element_caps[k] = v
 		self.connectionTypes = caps["connections"].keys()
 		global connection_caps
-		for k, v in caps["connections"].iter_items():
+		for k, v in caps["connections"].iteritems():
 			if not k in connection_caps:
 				connection_caps[k] = v
 			else:
@@ -413,7 +413,7 @@ class Host(Entity, BaseDocument):
 				if hTpl["attrs"].get("checksum") != tpl.checksum:
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
-				elif hTpl["attrs"]["ready"] is True:
+				elif hTpl["attrs"].get("ready") is True:
 					avail.append(tpl)
 				else:
 					self.getProxy().resource_modify(hTpl["id"], attrs)
@@ -713,7 +713,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 			continue
 		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
 			continue
-		if template and host not in template.hosts:
+		if template and host.name not in template.hosts:
 			continue
 		if not best:
 			return host
@@ -764,7 +764,7 @@ def getElementTypes():
 def getElementCapabilities(type_):
 	# FIXME: merge capabilities
 	global element_caps
-	return element_caps
+	return element_caps.get(type_)
 
 
 def getConnectionTypes():
@@ -772,11 +772,10 @@ def getConnectionTypes():
 	return connection_caps.keys()
 
 
-@cached(timeout=3600, autoupdate=True)
 def getConnectionCapabilities(type_):
 	# FIXME: merge capabilities
 	global connection_caps
-	return connection_caps
+	return connection_caps.get(type_)
 
 
 checkingHostsLock = threading.RLock()

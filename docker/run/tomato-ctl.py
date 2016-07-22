@@ -80,7 +80,7 @@ def docker_stop(container):
 
 def docker_container_started(container):
 	p = subprocess.Popen(
-		['docker', 'logs', container],
+		['docker', 'logs', '--tail', '1', container],
 		stdout=subprocess.PIPE, stderr=subprocess.PIPE
 	)
 	p.communicate()
@@ -91,11 +91,11 @@ def docker_container_started(container):
 def docker_logs(container, interactive):
 	if interactive:
 		try:
-			run_observing('docker', 'logs', '-f', container)
+			run_observing('docker', 'logs', '--tail', '1000', '-t', '-f', container)
 		except KeyboardInterrupt:
 			print ""
 	else:
-		run_observing('docker', 'logs', container)
+		run_observing('docker', 'logs', '--tail', '1000', '-t', container)
 
 
 def show_help():
