@@ -161,12 +161,12 @@ impl RemoteHierarchy {
                 Ok(result)
             },
             Err(Error::Failure(err)) => {
-                warn!("Remote call failed: {}{:?} => {:?}", method, args, err);
                 type Failure = HashMap<String, Value>;
                 let err = try!(Failure::parse(err).map_err(|_| HierarchyError::CommunicationError));
                 if Some(&Value::String("entity_does_not_exist".to_owned())) == err.get("code") {
                     return Err(HierarchyError::NoSuchEntity);
                 }
+                warn!("Remote call failed: {}{:?} => {:?}", method, args, err);
                 try!(self.reconnect().map_err(|_| HierarchyError::CommunicationError));
                 Err(HierarchyError::CommunicationError)
             },
