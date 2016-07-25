@@ -699,18 +699,24 @@ class PermissionChecker(UserInfo):
 		"""
 		# step 1: make sure the user doesn't run any action that is not recognized by this.
 		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
-															 ActionName.UPLOAD_GRANT, ActionName.UPLOAD_USE,
-															 ActionName.REXTFV_UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_USE,
+															 ActionName.UPLOAD_GRANT, ActionName.UPLOAD_USE, ActionName.DOWNLOAD_GRANT,
+															 ActionName.REXTFV_UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_USE, ActionName.REXTFV_DOWNLOAD_GRANT,
 															 ActionName.CHANGE_TEMPLATE),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
 		# step 2: for each action, check topology role.
 		required_role = Role.user
+
 		if action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
-									ActionName.UPLOAD_USE, ActionName.UPLOAD_GRANT, ActionName.CHANGE_TEMPLATE):
+									ActionName.UPLOAD_USE, ActionName.UPLOAD_GRANT, ActionName.DOWNLOAD_GRANT, ActionName.CHANGE_TEMPLATE):
 			required_role = Role.manager
+
+						# if action in ():
+						# 	required_role = Role.owner
+
 		self._check_has_topology_role(element_info.get_topology_info(), required_role)
 
+		# step 3: check other things
 		if action in (ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT):
 			auth_check(Flags.OverQuota not in self.get_flags(), "You may not run this action when over quota.")
 
