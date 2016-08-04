@@ -137,7 +137,6 @@ def api_duration_log():
 def log_api_duration(name, duration, args, kwargs):
 	api_duration_log().log_call(name, duration, args, kwargs)
 
-@cached(3600)
 def get_server_proxy(url, **kwargs):
 	return ServerProxy(url, **kwargs)
 
