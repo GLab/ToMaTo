@@ -77,7 +77,7 @@ def statistics():
 	usage['topologies_active'] = 0
 	for top in list(topology.Topology.objects.all()):
 		usage['topologies'] += 1
-		if top.maxState() != StateName.CREATED:
+		if top.maxState != StateName.CREATED:
 			usage['topologies_active'] += 1
 	
 	usage['elements'] = elements.Element.objects.count()
