@@ -29,7 +29,7 @@ from elements import element_info, element_action, element_create, element_modif
 from host import host_dump_list, host_name_list,\
 	host_modify, host_create, host_info, host_list, host_action, host_remove, host_users, host_execute_function
 
-from misc import link_statistics, notifyAdmins, server_info, statistics
+from misc import link_statistics, notifyAdmins, statistics
 
 from network import network_create, network_info, network_list, network_modify, network_remove
 

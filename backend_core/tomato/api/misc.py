@@ -21,10 +21,6 @@ from ..lib.service import get_backend_users_proxy
 from ..lib.settings import settings
 from ..lib.userflags import Flags
 
-
-def server_info():
-	return {}
-
 def link_statistics(siteA, siteB):
 	return link.getStatistics(siteA, siteB)
 

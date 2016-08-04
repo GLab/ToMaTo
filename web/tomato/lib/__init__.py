@@ -18,6 +18,8 @@
 
 from django.http import HttpResponse
 import xmlrpclib, urllib, hashlib, time
+from django.utils.functional import cached_property
+
 import anyjson as json
 import os
 from .error import Error  # @UnresolvedImport
@@ -135,6 +137,10 @@ def api_duration_log():
 def log_api_duration(name, duration, args, kwargs):
 	api_duration_log().log_call(name, duration, args, kwargs)
 
+@cached(3600)
+def get_server_proxy(url, **kwargs):
+	return ServerProxy(url, **kwargs)
+
 class ServerProxy(object):
 	def __init__(self, url, **kwargs):
 		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
@@ -177,7 +183,7 @@ def getapi(request=None):
 		server_settings = settings.get_interface(Config.TOMATO_MODULE_BACKEND_API, False, 'http')
 	try:
 		if auth:
-			api = ServerProxy('%s://%s:%s@%s:%s' % (
+			api = get_server_proxy('%s://%s:%s@%s:%s' % (
 			server_settings['protocol'], username, password, server_settings['host'], server_settings['port']), allow_none=True)
 			api.user = UserObj(api)
 		else:

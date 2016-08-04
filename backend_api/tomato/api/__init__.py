@@ -22,8 +22,6 @@ from account_notification import account_notifications, account_notification_set
 
 from capabilities import capabilities, capabilities_connection, capabilities_element
 
-from config_infos import account_flag_categories, account_flag_configuration, account_flags, topology_permissions
-
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
 	connection_action, connection_usage
 

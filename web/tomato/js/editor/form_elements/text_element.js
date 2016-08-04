@@ -27,5 +27,8 @@ var TextElement = FormElement.extend({
 	isValid: function(value) {
 		var val = value || this.getValue();
 		return this.pattern.test(val);
+	},
+	setHint: function(value) {
+		this.textfield.attr("placeholder", value);
 	}
 });
