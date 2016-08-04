@@ -432,13 +432,13 @@ class TopologyInfo(ActionObj):
 		return get_backend_core_proxy().topology_modify(self.topology_id, attrs)
 
 	def _remove(self):
-		elems = self.info()['elements']
-		conns = self.info()['connections']
-		get_backend_core_proxy().topology_remove(self.topology_id)
+		elems = [get_element_info(e) for e in self.info()['elements']]
+		conns = [get_connection_info(c) for c in self.info()['connections']]
 		for e in elems:
-			get_element_info(e).set_exists(None)
+			e.set_exists(None)
 		for c in conns:
-			get_connection_info(c).set_exists(None)
+			c.set_exists(None)
+		get_backend_core_proxy().topology_remove(self.topology_id)
 
 	def _action(self, action, params):
 		elems = self.info()['elements']

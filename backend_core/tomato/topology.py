@@ -232,10 +232,10 @@ class Topology(Entity, BaseDocument):
 		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		if self.id:
+			for con in self.connections:
+				con._remove()
 			for el in self.elements:
 				el._remove(recurse=recurse)
-			for con in self.connections:
-				con._remove(recurse=recurse)
 			self.delete()
 
 	def modify_site(self, val):
