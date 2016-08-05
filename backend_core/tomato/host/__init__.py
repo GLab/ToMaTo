@@ -785,7 +785,10 @@ checkingHosts = set()
 
 @util.wrap_task
 def synchronizeHost(host_name):
-	host = Host.objects.get(name=host_name)
+	try:
+		host = Host.objects.get(name=host_name)
+	except DoesNotExist:
+		return  # nothing to synchronize
 	with checkingHostsLock:
 		if host in checkingHosts:
 			return
@@ -813,7 +816,10 @@ updatingAccountingHosts = set()
 
 @util.wrap_task
 def updateAccounting(host_name):
-	host = Host.objects.get(name=host_name)
+	try:
+		host = Host.objects.get(name=host_name)
+	except DoesNotExist:
+		return  # I refuse to do this impossible task. Hopefully the scheduler will not call me again with this.
 	with updatingAccountingHostsLock:
 		if host in updatingAccountingHosts:
 			return

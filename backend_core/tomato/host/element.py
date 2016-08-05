@@ -137,7 +137,12 @@ class HostElement(HostObject):
 
 def list():
 	return [e.id for e in HostElement.objects.all()]
+
 @util.wrap_task
 def synchronize(id_):
-	HostElement.objects.get(id=id_).synchronize()
+	try:
+		HostElement.objects.get(id=id_).synchronize()
+	except DoesNotExist:
+		pass  # nothong to synchronize
+
 scheduler.scheduleMaintenance(min(3600, settings.get_host_connections_settings()['component-timeout']), list, synchronize)
