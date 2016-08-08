@@ -186,9 +186,16 @@ head.appendChild(style);
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Debug <span class="caret"></span></a>
 					<ul class="dropdown-menu">
 						<li><a href="{%url "dumpmanager.group_list"%}">Dump Manager</a></li>
-						<li><a href="{%url "tomato.debug.stats"%}">Backend Statistics</a></li>
+						<li class="divider"></li>
+						<li><a href="{%url "tomato.debug.stats"%}">Backend</a></li>
+						<li><a href="{%url "tomato.debug.stats" "backend_api"%}">&nbsp; backend_api</a></li>
+						<li><a href="{%url "tomato.debug.stats" "backend_users"%}">&nbsp; backend_users</a></li>
+						<li><a href="{%url "tomato.debug.stats" "backend_core"%}">&nbsp; backend_core</a></li>
+						<li><a href="{%url "tomato.debug.stats" "backend_accounting"%}">&nbsp; backend_accounting</a></li>
+						<li><a href="{%url "tomato.debug.stats" "backend_debug"%}">&nbsp; backend_debug</a></li>
 						{% duration_log_enabled as show_duration_log_link %}
 						{% if show_duration_log_link %}
+							<li class="divider"></li>
 							<li><a href="{%url "tomato.debug.api_call_stats"%}">API Call Durations</a></li>
 						{% endif %}
 					</ul>

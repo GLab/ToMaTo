@@ -3,7 +3,7 @@ import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip, ins
 from . import anyjson as json
 from .cmd import run, CommandError  # @UnresolvedImport
 from .. import scheduler
-from .error import InternalError, generate_inspect_trace, Error, TransportError
+from .error import InternalError, generate_inspect_trace
 
 from settings import settings, Config
 
@@ -264,15 +264,16 @@ def getCount():
 def getAll(after=None, list_only=False, include_data=False):
 	global dumps
 	return_list = []
-	for dump_id, _dump in dumps.items():
-		if (after is None) or (_dump['timestamp'] >= after):
-			if list_only:
-				dump = dump_id
-			elif include_data:
-				dump = load_dump(dump_id, True, False, dump_on_error=True)
-			else:
-				dump = _dump
-			return_list.append(dump)
+	with dumps_lock:  # the use of load_dump in the loop would throw an error if a dump is removed by the autopusher during this iteration.
+		for dump_id, _dump in dumps.iteritems():
+			if (after is None) or (_dump['timestamp'] >= after):
+				if list_only:
+					dump = dump_id
+				elif include_data:
+					dump = load_dump(dump_id, True, False, dump_on_error=True)
+				else:
+					dump = _dump
+				return_list.append(dump)
 	return return_list
 
 def get_recent_dumps():
