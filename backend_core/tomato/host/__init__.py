@@ -179,7 +179,7 @@ class Host(Entity, BaseDocument):
 
 	def getProxy(self, always_try=False):
 		if not self.is_reachable() and not always_try:
-			raise TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={"host": self.name})
+			raise TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={"host": self.name}, todump=False)
 		if not _caching:
 			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		# locking doesn't matter here, since in case of a race condition, there would only be a second proxy for a small amount of time.
