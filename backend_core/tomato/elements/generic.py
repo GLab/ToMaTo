@@ -81,7 +81,6 @@ class VMElement(Element):
 	def init(self, topology, *args, **kwargs):
 		self.state = ST_CREATED
 		self.topology = topology
-		self.site = self.topology.site
 		self.profile = Profile.getPreferred(self.TYPE)
 		InternalError.check(self.profile, code=InternalError.CONFIGURATION_ERROR, message="Failed to find profile",
 			data={"type": self.TYPE})
@@ -165,7 +164,7 @@ class VMElement(Element):
 
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
-		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref, template=self.template)
+		_host = host.select(site=self.site if self.site else self.topology.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref, template=self.template)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE})
 		attrs = self._remoteAttrs
