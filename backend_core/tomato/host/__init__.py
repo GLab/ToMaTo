@@ -414,10 +414,8 @@ class Host(Entity, BaseDocument):
 				if hTpl["attrs"].get("checksum") != tpl.checksum:
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
-				elif hTpl["attrs"].get("ready") is True:
-					avail.append(tpl)
 				else:
-					self.getProxy().resource_modify(hTpl["id"], attrs)
+					avail.append(tpl)
 		for tpl in template.Template.objects():
 			tpl.update_host_state(self, tpl in avail)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
