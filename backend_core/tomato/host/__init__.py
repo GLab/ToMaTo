@@ -720,7 +720,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 			return host
 		hosts.append(host)
 	UserError.check(hosts, code=UserError.INVALID_CONFIGURATION, message="No hosts found for requirements", data={
-		'site': site, 'element_types': elementTypes, 'connection_types': connectionTypes, 'network_kinds': networkKinds
+		'site': site.name if site else None, 'element_types': elementTypes, 'connection_types': connectionTypes, 'network_kinds': networkKinds
 	})
 	# any host in hosts can handle the request
 	prefs = dict([(h, 0.0) for h in hosts])
