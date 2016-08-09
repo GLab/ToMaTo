@@ -578,7 +578,7 @@ class HostInfo(ActionObj):
 		return self.info()['organization']
 
 	def get_clock_offset(self):
-		return self.info()['host_info']['time_diff']
+		return self.info()['host_info'].get('time_diff', None)
 
 	def get_dumps(self, after):
 		return get_backend_core_proxy().host_dump_list(self.name, after)

@@ -44,6 +44,11 @@ class PullingDumpSource(DumpSource):
 		:rtype: None
 		"""
 		offset = self._clock_offset()
+		if offset is None:
+			return  # if this is unavailable, something really strange is happening on backend_core. Let's not fetch for now.
+							# probably, this is simply because backend_core hasn't received any host info yet.
+
+
 		this_fetch_time = time.time() - offset
 
 		fetch_results = self._fetch_dumps(self.get_last_updatetime())
