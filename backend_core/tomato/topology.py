@@ -239,7 +239,12 @@ class Topology(Entity, BaseDocument):
 			self.delete()
 
 	def modify_site(self, val):
-		self.site = Site.get(val)
+		if val:
+			site = Site.get(val)
+			UserError.check(site, code=UserError.ENTITY_DOES_NOT_EXIST, message="site does not exist", data={"site": val})
+			self.site = site
+		else:
+			self.site = None
 
 	def modifyRole(self, user, role):
 		UserError.check(role in Role.RANKING or not role, code=UserError.INVALID_VALUE, message="Invalid role",
@@ -317,8 +322,7 @@ class Topology(Entity, BaseDocument):
 		"id": IdAttribute(),
 		"permissions": Attribute(readOnly=True, get=lambda self: {str(p.user): p.role for p in self.permissions},
 			schema=schema.StringMap(additional=True)),
-		"site": Attribute(get=lambda self: self.site.name if self.site else None,
-			set=modify_site, schema=schema.Identifier(null=True)),
+		"site": Attribute(get=lambda self: self.site.name if self.site else None, set=modify_site),
 		"elements": Attribute(readOnly=True, schema=schema.List()),
 		"connections": Attribute(readOnly=True, schema=schema.List()),
 		"timeout": Attribute(field=timeout, readOnly=True, schema=schema.Number()),

@@ -106,7 +106,12 @@ class VMElement(Element):
 		return "eth%d" % num	
 
 	def modify_site(self, val):
-		self.site = Site.get(val)
+		if val:
+			site = Site.get(val)
+			UserError.check(site, code=UserError.ENTITY_DOES_NOT_EXIST, message="site does not exist", data={"site": val})
+			self.site = site
+		else:
+			self.site = None
 
 	def modify_profile(self, val):
 		profile = Profile.get(self.TYPE, val)
