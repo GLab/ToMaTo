@@ -47,6 +47,7 @@ class ImportTopologyForm(BootstrapForm):
 def list(api, request, show_all=False, organization=None):
 	if not api.user:
 		raise AuthError()
+	None[2]
 	toplist = api.topology_list(showAll=show_all, organization=organization)
 	orgas = api.organization_list()
 	for top in toplist:

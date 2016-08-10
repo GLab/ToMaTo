@@ -31,19 +31,24 @@
 <b>Description:</b> {{text}}<br/>
 
 {% if request.session.user.hasDebugFlag %}
-<br/><b>Traceback:</b><table><tbody>
-{% for t in traceback %}
-<tr>
-	<td rowspan=2><small>{{t.0}}</small>, line {{t.1}}</td><td style="padding-left: 0.8cm;"><small>in</small> <tt>{{t.2}}</tt></td>
-</tr>
-<tr>
-	<td style="padding-left: 1cm; padding-bottom: 0.5cm;"><tt>{{t.3}}</tt></td>
-</tr>
-{% endfor %}
-</tbody></table>
-{% if frame_trace %}
-	<button type="button" class="btn btn-info" onclick="pretty_json_popup(frame_trace,'Error Trace',frame_trace.json);; return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span> Show Frame Trace</button>
-{% endif %}
+	<br/><b>Traceback:</b><table><tbody>
+	{% for t in traceback %}
+	<tr>
+		<td rowspan=2><small>{{t.0}}</small>, line {{t.1}}</td><td style="padding-left: 0.8cm;"><small>in</small> <tt>{{t.2}}</tt></td>
+	</tr>
+	<tr>
+		<td style="padding-left: 1cm; padding-bottom: 0.5cm;"><tt>{{t.3}}</tt></td>
+	</tr>
+	{% endfor %}
+	</tbody></table>
+	{% if frame_trace %}
+		<button type="button" class="btn btn-info" onclick="pretty_json_popup(frame_trace,'Error Trace',frame_trace.json);; return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span> Show Frame Trace</button>
+	{% endif %}
+
+	{% if errorgroup_id %}
+		<a href="{%url "dumpmanager.group_info" errorgroup_id%}">View in Dump Manager</a>
+	{% endif %}
+
 {% else %}
 	<p>If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" target="_help">file a bug report</a>.</p>
 {% endif %}

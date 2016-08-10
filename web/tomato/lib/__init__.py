@@ -212,8 +212,8 @@ class wrap_rpc:
 				request.session['user'].checkUpdate(api)
 			return self.fun(api, request, *args, **kwargs)
 		except Exception, e:
-			dumpException()
-			return renderFault(request, e)
+			errorgroup_id = dumpException()
+			return renderFault(request, e, errorgroup_id=errorgroup_id)
 
 
 class wrap_json:

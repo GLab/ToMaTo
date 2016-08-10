@@ -37,6 +37,12 @@
 		<tr><th>Frame Trace &nbsp; </th><td><button type="button" class="btn btn-info" onclick="pretty_json_popup(frame_trace,'Error Trace',frame_trace.json);; return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span> Show</button><br/><small>(as seen by webfrontend)</small></td></tr>
 	{% endif %}
 	</tbody></table>
+
+	{% if errorgroup_id %}
+		<a href="{%url "dumpmanager.group_info" errorgroup_id%}">View in Dump Manager</a>
+	{% endif %}
+
+
 {% else %}
 	<p>If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" target="_help">file a bug report</a>.</p>
 {% endif %}
