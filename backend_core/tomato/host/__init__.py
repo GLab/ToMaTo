@@ -179,7 +179,7 @@ class Host(Entity, BaseDocument):
 
 	def getProxy(self, always_try=False):
 		if not self.is_reachable() and not always_try:
-			raise TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={"host": self.name})
+			raise TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={"host": self.name}, todump=False)
 		if not _caching:
 			return RemoteWrapper(self.rpcurl, self.name, sslcert=settings.get_ssl_cert_filename(), sslkey=settings.get_ssl_key_filename(), sslca=settings.get_ssl_ca_filename(), timeout=settings.get_rpc_timeout())
 		# locking doesn't matter here, since in case of a race condition, there would only be a second proxy for a small amount of time.
@@ -414,10 +414,8 @@ class Host(Entity, BaseDocument):
 				if hTpl["attrs"].get("checksum") != tpl.checksum:
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", name=self.name, template=attrs)
-				elif hTpl["attrs"].get("ready") is True:
-					avail.append(tpl)
 				else:
-					self.getProxy().resource_modify(hTpl["id"], attrs)
+					avail.append(tpl)
 		for tpl in template.Template.objects():
 			tpl.update_host_state(self, tpl in avail)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
@@ -720,7 +718,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 			return host
 		hosts.append(host)
 	UserError.check(hosts, code=UserError.INVALID_CONFIGURATION, message="No hosts found for requirements", data={
-		'site': site, 'element_types': elementTypes, 'connection_types': connectionTypes, 'network_kinds': networkKinds
+		'site': site.name if site else None, 'element_types': elementTypes, 'connection_types': connectionTypes, 'network_kinds': networkKinds
 	})
 	# any host in hosts can handle the request
 	prefs = dict([(h, 0.0) for h in hosts])

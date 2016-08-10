@@ -130,13 +130,14 @@ var VMElement = IconElement.extend({
 			type: this.data.type,
 			call_element: this
 		});
+		topology_site = this.editor.topology.data.site
 		config.special.site = new ChoiceElement({
 			label: "Site",
 			name: "site",
 			info: siteInfo,
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.label || site.name) + (site.location ? (", " + site.location) : "");
-			}, {"": "Any site"}),
+			}, {"": topology_site ? "Topology Default ("+this.editor.sites_dict[topology_site].label+")" : "Any site"}),
 			value: (this.data.host_info && this.data.host_info.site) || this.data.site || this.caps.attributes.site["default"],
 			disabled: !this.attrEnabled("site")
 		});

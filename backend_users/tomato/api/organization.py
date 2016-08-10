@@ -16,12 +16,11 @@ def organization_create(name, **args):
 
 def organization_list(user_list_filter=None):
 	if user_list_filter is not None:
-		orga_list = []
-		for user in user_list_filter:
-			user_orga = user.get("organization")
-			if user_orga not in orga_list:
-				orga_list.append(user_orga)
-		return orga_list
+		orgas = {}
+		for username in user_list_filter:
+			user_orga = User.get(username).organization
+			orgas[user_orga.name] = user_orga  # this eliminates duplicate organizations
+		return [o.info for o in orgas.itervalues()]
 	return [o.info() for o in Organization.objects.all()]
 
 def organization_info(name):
