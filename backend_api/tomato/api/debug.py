@@ -71,8 +71,10 @@ def debug_throw_error(tomato_module=None):
 	:return:
 	"""
 	getCurrentUserInfo().check_allow_active_debugging()
+	if tomato_module is None:
+		tomato_module = Config.TOMATO_MODULE_BACKEND_API
 	UserError.check(tomato_module != Config.TOMATO_MODULE_BACKEND_ACCOUNTING, code=UserError.INVALID_VALUE, message="backend_accounting does not support dumps")
-	UserError.check(tomato_module in Config.TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES, code=UserError.INVALID_VALUE, message="bad tomato module", data={"tomato_module": tomato_module})
+	UserError.check(tomato_module in Config.TOMATO_BACKEND_MODULES, code=UserError.INVALID_VALUE, message="bad tomato module", data={"tomato_module": tomato_module})
 	if tomato_module == Config.TOMATO_MODULE_BACKEND_API:
 		try:
 			InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True)

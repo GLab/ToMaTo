@@ -23,7 +23,7 @@ def dumpException(dump_on_error=True):
       if settings.get_dump_config()[Config.DUMPS_ENABLED]:
 
         from . import AuthError
-        (type_, _, _) = sys.exc_info()
+        (type_, exc, _) = sys.exc_info()
         if type_ == AuthError:
           return
 
@@ -32,7 +32,17 @@ def dumpException(dump_on_error=True):
         dump_lib.settings = settings
 
         dump_id = dump_lib.dumpException()
-        errorgroup_id = dump_lib.load_dump(dump_id, False)["group_id"]
+        if dump_id is None:
+
+          # try to reconstruct exception group id
+          if isinstance(exc, Error):
+            errorgroup_id = "Error__"+exc.group_id()
+            #fixme: add a second boolean field that indicates whether an error has been dumped
+          else:
+            errorgroup_id = "Exception__"+dump_lib.get_exception_groupid(exc)
+
+        else:
+          errorgroup_id = dump_lib.load_dump(dump_id, False)["group_id"]
 
         push_all_dumps()
 
