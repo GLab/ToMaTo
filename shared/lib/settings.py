@@ -148,6 +148,9 @@ backend_debug:
 web:
   paths:
     log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
   ssl:
     cert:  /etc/tomato/web.pem
     key:  /etc/tomato/web.pem
@@ -550,7 +553,7 @@ class SettingsProvider:
 		return {k: v for k, v in self.original_settings['topologies'].iteritems()}
 
 	def get_dumpmanager_api_key(self):
-		return self.original_settings["api_store_secret_key"]
+		return self.original_settings["dumpmanager"]["api_store_secret_key"]
 
 	def get_dump_config(self):
 		"""

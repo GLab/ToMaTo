@@ -142,6 +142,9 @@ backend_debug:
 web:
   paths:
     log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
   ssl:
     cert:  /etc/tomato/web.pem
     key:  /etc/tomato/web.pem

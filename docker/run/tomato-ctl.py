@@ -301,10 +301,12 @@ def generate_default_config():
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],
 			'additional_directories': [
-				('%(config)s', '/config')
+				('%(config)s', '/config'),
+				('%(logs)s', '/logs')
 			],
 			'directories': {
-				'config': os.path.join("web", "config")
+				'config': os.path.join("web", "config"),
+				'logs': os.path.join("web", "logs")
 			},
 			'code_directories': ['web', 'shared'],
 			'shell_cmd': "/bin/bash",

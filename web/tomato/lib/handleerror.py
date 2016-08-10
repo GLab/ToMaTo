@@ -8,6 +8,41 @@ from django.shortcuts import render, redirect
 import xmlrpclib, socket, sys, inspect
 from . import anyjson as json
 from django.http import HttpResponse
+import dump as dump_lib
+
+from settings import get_settings, Config
+from .. import settings as config_module
+settings = get_settings(config_module)
+
+from versioninfo import getVersionStr
+
+def dumpException(dump_on_error=True):
+    try:
+      if settings.get_dump_config()[Config.DUMPS_ENABLED]:
+
+        from . import AuthError
+        (type_, _, _) = sys.exc_info()
+        if type_ == AuthError:
+          return
+
+        dump_lib.tomato_component = Config.TOMATO_MODULE_WEB
+        dump_lib.tomato_version = getVersionStr()
+        dump_lib.settings = settings
+        dump_lib.dumpException()
+        push_all_dumps()
+
+    except:
+      if dump_on_error:
+        dumpException(dump_on_error=False)
+
+def push_all_dumps():
+      from . import getapi
+      api = getapi()
+      with dump_lib.dumps_lock:
+        for dump_id in dump_lib.list_all_dumps_ids():
+          dump = dump_lib.load_dump(dump_id, True)
+          api.errordump_store(Config.TOMATO_MODULE_WEB, dump, store_key=settings.get_dumpmanager_api_key())
+          dump_lib.remove_dump(dump_id)
 
 def interpretError(error):
     debuginfos_dict = {} # list of key-value pairs, where the key and value must be strings to be shown to humans

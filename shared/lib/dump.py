@@ -1,8 +1,6 @@
 import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip, inspect
 
 from . import anyjson as json
-from .cmd import run, CommandError  # @UnresolvedImport
-from .. import scheduler
 from .error import InternalError, generate_inspect_trace
 
 from settings import settings, Config
@@ -50,6 +48,9 @@ boot_time = 0
 
 #use envCmds to get the environment data.
 def getEnv():
+	if not initialized:
+		return {}
+	from .cmd import run, CommandError  # @UnresolvedImport
 	data = {}
 	for name, cmd in envCmds.items():
 		try:
@@ -67,7 +68,7 @@ def list_all_dumps_ids():
 		if os.path.exists(dump_dir):
 			return [re.sub('\.meta\.json', '', d) for d in os.listdir(dump_dir) if d.endswith(".meta.json")]
 		else:
-			os.mkdir(dump_dir)
+			os.makedirs(dump_dir)
 			return []
 
 def getCaller():
@@ -85,6 +86,7 @@ def getCaller():
 #get the absolute path of a dump for the given filename
 #is_meta: if true, this is the filename for the meta file, if false, this is the filename for the data file
 def get_absolute_path(dump_id, is_meta, dump_file_version=1):
+
 	filename = None
 	if is_meta:
 		filename = dump_id + ".meta.json"
@@ -93,7 +95,11 @@ def get_absolute_path(dump_id, is_meta, dump_file_version=1):
 			filename = dump_id + ".data.json"
 		elif dump_file_version == 1:
 			filename = dump_id + ".data.gz"
-	return os.path.join(settings.get_dump_config()[Config.DUMPS_DIRECTORY], filename)
+
+	dump_dir = settings.get_dump_config()[Config.DUMPS_DIRECTORY]
+	if not os.path.exists(dump_dir):
+		os.makedirs(dump_dir)
+	return os.path.join(dump_dir, filename)
 
 
 #get a free dump ID
@@ -316,7 +322,7 @@ def init(env_cmds, tomatoVersion):
 
 		dump_dir = settings.get_dump_config()[Config.DUMPS_DIRECTORY]
 		if not os.path.exists(dump_dir):
-			os.mkdir(dump_dir)
+			os.makedirs(dump_dir)
 		else:
 
 			dump_id_list = list_all_dumps_ids()
@@ -328,7 +334,7 @@ def init(env_cmds, tomatoVersion):
 				except:
 					import traceback
 					traceback.print_exc()
-
+	from .. import scheduler
 	scheduler.scheduleRepeated(60 * 60 * 24, auto_cleanup, immediate=True)
 
 
