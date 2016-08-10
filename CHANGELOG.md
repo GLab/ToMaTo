@@ -13,6 +13,19 @@ Entries should be sorted by component and status with important entries and entr
 
 ### UNRELEASED (RUNNING ON SERVERS)
 
+- [backend_api, fixed] Fixed __statistics__ API call
+- [backend_api, fixed] Fixed authorization for download actions on elements
+- [backend_api, changed] Removed configuration info calls
+- [backend_core, fixed] Fixed topology removal
+- [backend_core, fixed] Fixed an unnecessary dumped error that spammed dump management
+- [backend_core, changed] Topology site setting is now applied on element prepare instead of element creation
+- [backend_core, fixed] Now allowing deployment of elements on hosts where template is known but not yet fetched
+- [web, changed] Added a hint for the packet filter syntax in connection settings
+- [web, changed] Better debug dropdown menu for debug users
+- [web, fixed] Average host load and availability on sites and organizations is now calculated correctly
+- [web, fixed] Inter-site and intra-site statistics pages now work properly
+- [cli, fixed] Updated template migration script to support URL-based templates
+
 ### Version 4.0 (Released 2016-07-18)
 - **[backend, changed] Split backend into multiple services: backend_core, backend_accounting, backend_users and backend_debug under one central backend_api**
 - **[backend_core, changed] Default switch type is now VpnCloud**
