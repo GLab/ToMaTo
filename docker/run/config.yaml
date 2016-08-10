@@ -225,6 +225,7 @@ user-quota:
 
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
+  api_store_secret_key: "CHANGEME"  # secret key to store dumps from anonymous API calls. Should be changed!
 
 # this disables active debugging, i.e., executing internal commands via the API.
 # this may be a security issue if enabled!

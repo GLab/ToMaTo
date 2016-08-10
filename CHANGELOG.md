@@ -3,13 +3,16 @@
 This file should be used to track all changes to ToMaTo in a similar way to [VpnCloud](https://github.com/dswd/vpncloud.rs/blob/master/CHANGELOG.md)
 Entries should be prefixed with some tags:
 - Status tags: `added`, `fixed`, `changed`, `removed`
-- Component tags: `backend_api`, `backend_accounting`, `backend_core`, `backend_debug`, `backend_users`, `web`, `cli`, `hostmanager`, `misc`
+- Component tags: `backend_api`, `backend_accounting`, `backend_core`, `backend_debug`, `backend_users`, `web`, `cli`, `hostmanager`, `misc`, `config`
 Entries should be sorted by component and status with important entries and entries with multiple components being on top and **bold**.
 
 
 ### PLANNED UNTIL NEXT RELEASE
 
 ### UNRELEASED (NOT RUNNING ON SERVERS)
+
+- [config, changed] In dumpmanager config section, api_store_secret_key must now be set.
+- [backend_api, backend_debug, changed] Now allowing dump storing via API
 
 ### UNRELEASED (RUNNING ON SERVERS)
 
