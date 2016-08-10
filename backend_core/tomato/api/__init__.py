@@ -20,7 +20,7 @@ from capabilities import capabilities, capabilities_connection, capabilities_ele
 from connections import connection_create, connection_info, connection_modify, connection_remove,\
 	connection_action
 
-from debug import debug_stats, ping, debug_execute_task, debug_debug_internal_api_call
+from debug import debug_stats, ping, debug_execute_task, debug_debug_internal_api_call, debug_throw_error
 
 from dump import dump_list
 

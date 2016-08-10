@@ -1,5 +1,7 @@
 from .. import scheduler
 from ..lib.debug import run
+from ..lib.error import InternalError
+from ..lib.exceptionhandling import wrap_and_handle_current_exception
 import traceback, sys
 
 def ping():
@@ -25,3 +27,14 @@ def debug_debug_internal_api_call(_command, args=None, kwargs=None, profile=True
 
 def debug_execute_task(task_id):
 	return scheduler.executeTask(task_id, force=True)
+
+def debug_throw_error():
+	"""
+	throw an error that is then dumped.
+	:return:
+	"""
+	try:
+		InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True)
+	except:
+		wrap_and_handle_current_exception(re_raise=True)
+

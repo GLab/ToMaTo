@@ -1,3 +1,4 @@
+from ..lib.error import UserError
 from .. import scheduler
 import traceback, sys
 from api_helpers import getCurrentUserInfo
@@ -5,6 +6,8 @@ from ..lib.debug import run
 from ..lib.settings import Config
 from ..lib.service import is_reachable, is_self, get_tomato_inner_proxy, get_backend_core_proxy
 from ..lib.remote_info import get_host_info
+from ..lib.exceptionhandling import wrap_and_handle_current_exception
+from ..lib.error import InternalError
 
 def ping():
 	return True
@@ -61,3 +64,19 @@ def debug_execute_task(tomato_module, task_id):
 		return scheduler.executeTask(task_id, force=True)
 	else:
 		get_tomato_inner_proxy(tomato_module).debug_execute_task(task_id)
+
+def debug_throw_error(tomato_module=None):
+	"""
+	throw an error that is then dumped.
+	:return:
+	"""
+	getCurrentUserInfo().check_allow_active_debugging()
+	UserError.check(tomato_module != Config.TOMATO_MODULE_BACKEND_ACCOUNTING, code=UserError.INVALID_VALUE, message="backend_accounting does not support dumps")
+	UserError.check(tomato_module in Config.TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES, code=UserError.INVALID_VALUE, message="bad tomato module", data={"tomato_module": tomato_module})
+	if tomato_module == Config.TOMATO_MODULE_BACKEND_API:
+		try:
+			InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True)
+		except:
+			wrap_and_handle_current_exception(re_raise=True)
+	else:
+		get_tomato_inner_proxy(tomato_module).debug_throw_error()
