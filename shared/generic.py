@@ -319,15 +319,15 @@ class StatefulEntity(Entity):
 	@classmethod
 	def capabilities(cls):
 		return {
-			"actions": {key: action.info() for key, action in cls.ACTIONS.items()},
-			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items()},
+			"actions": {key: action.info() for key, action in cls.ACTIONS.iteritems()},
+			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.iteritems()},
 			"states": cls.STATES,
 			"default_state": cls.DEFAULT_STATE
 		}
 
 	def info(self):
 		info = {}
-		for key, attr in self.ATTRIBUTES.items():
+		for key, attr in self.ATTRIBUTES.iteritems():
 			if isinstance(attr, StatefulAttribute) and not attr.readableStates is None and not self.state in attr.readableStates:
 				continue
 			info[key] = attr.get(self)
