@@ -38,8 +38,6 @@ def dumpException(dump_on_error=True):
           if isinstance(exc, Error):
             errorgroup_id = "Error__"+exc.group_id()
             #fixme: add a second boolean field that indicates whether an error has been dumped
-          else:
-            errorgroup_id = "Exception__"+dump_lib.get_exception_groupid(exc)
 
         else:
           errorgroup_id = dump_lib.load_dump(dump_id, False)["group_id"]

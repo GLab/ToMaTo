@@ -354,7 +354,7 @@ def dumpException(**kwargs):
 	return dumpUnknownException(type_, value, trace, **kwargs)
 
 
-def get_exception_groupid(exc):
+def get_exception_groupid(type_, value, trace):
 	exception_forid = {"type": type_.__name__, "value": re.sub("[a-fA-F0-9]+", "x", str(value)), "trace": trace}
 	return hashlib.md5(json.dumps(exception_forid)).hexdigest()
 
@@ -368,7 +368,7 @@ def dumpUnknownException(type_, value, trace, **kwargs):
 		"trace": trace,
 		"inspect_trace": generate_inspect_trace(inspect.currentframe())
 	}
-	exception_id = get_exception_groupid()
+	exception_id = get_exception_groupid(type_, value, trace)
 	description = {"subject": exception['value'], "type": exception['type']}
 
 	data = {"exception": exception}
