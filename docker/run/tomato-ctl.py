@@ -400,7 +400,7 @@ def generate_default_config():
 		},
 		'backend_debug': {
 			'enabled': True,
-			'image': 'tomato_backend_users',
+			'image': 'tomato_backend_debug',
 			'ports': [8005],
 			'timezone': 'Europe/Berlin',
 			'additional_args': [],

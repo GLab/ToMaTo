@@ -312,6 +312,9 @@ class Topology(Entity, BaseDocument):
 	def __str__(self):
 		return "%s [#%s]" % (self.name, self.id)
 
+	def __repr__(self):
+		return "Topology(%s)" % self
+
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(_remove, check=checkRemove),
 		ActionName.START: Action(action_start, check=lambda self: self.checkCompoundAction(ActionName.START), paramSchema=schema.Constant({})),
