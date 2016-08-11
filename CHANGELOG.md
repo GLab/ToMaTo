@@ -23,9 +23,10 @@ Entries should be sorted by component and status with important entries and entr
 - [backend_api, fixed] Fixed __statistics__ API call
 - [backend_api, fixed] Fixed authorization for download actions on elements
 - [backend_api, changed] Removed configuration info calls
+- [backend_core, changed] Topology site setting is now applied on element prepare instead of element creation
+- [backend_core, changed] Now preventing timed-out topologies from preparing or starting new elements
 - [backend_core, fixed] Fixed topology removal
 - [backend_core, fixed] Fixed an unnecessary dumped error that spammed dump management
-- [backend_core, changed] Topology site setting is now applied on element prepare instead of element creation
 - [backend_core, fixed] Now allowing deployment of elements on hosts where template is known but not yet fetched
 - [web, changed] Added a hint for the packet filter syntax in connection settings
 - [web, changed] Better debug dropdown menu for debug users
