@@ -224,7 +224,7 @@ var Component = Class.extend({
 				editor.rextfv_status_updater.add(t, 5000);
 		 	},
 		 	errorFn: function(error) {
-		 		new errorWindow({error:error});
+		 		t.onActionError(error);
 		 		t.update();
 		 		t.setBusy(false);
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
@@ -233,5 +233,15 @@ var Component = Class.extend({
 		});
 	},
 	onConnected: function() {
+	},
+	onActionError: function(error) {
+		if (error.parsedResponse != undefined && error.parsedResponse.error != undefined && error.parsedResponse.error.raw != undefined && error.parsedResponse.error.raw.code != undefined) {
+			code = error.parsedResponse.error.raw.code;
+			if (code == "timed_out") {
+				this.topology.renewDialog();
+				return;
+			}
+		}
+		new errorWindow({error:error});
 	}
 });
