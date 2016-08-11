@@ -11,14 +11,15 @@ Entries should be sorted by component and status with important entries and entr
 
 ### UNRELEASED (NOT RUNNING ON SERVERS)
 
+- [config, changed] Topology section now requires a `timeout-destroy` value
+- [backend_core, changed] Better timeout notifications and times
+
+### UNRELEASED (RUNNING ON SERVERS)
+
 - [config, changed] In dumpmanager config section, api_store_secret_key must now be set.
 - [config, changed] web module now requires a simple dump config
 - [docker, changed] web docker image now supports a log directory
 - [backend_api, backend_debug, changed] Now allowing dump storing via API
-- [web, changed] web now sends error dumps to backend via API
-
-### UNRELEASED (RUNNING ON SERVERS)
-
 - [backend_api, fixed] Fixed __statistics__ API call
 - [backend_api, fixed] Fixed authorization for download actions on elements
 - [backend_api, changed] Removed configuration info calls
@@ -28,6 +29,7 @@ Entries should be sorted by component and status with important entries and entr
 - [backend_core, fixed] Now allowing deployment of elements on hosts where template is known but not yet fetched
 - [web, changed] Added a hint for the packet filter syntax in connection settings
 - [web, changed] Better debug dropdown menu for debug users
+- [web, changed] web now sends error dumps to backend via API
 - [web, fixed] Average host load and availability on sites and organizations is now calculated correctly
 - [web, fixed] Inter-site and intra-site statistics pages now work properly
 - [cli, fixed] Updated template migration script to support URL-based templates

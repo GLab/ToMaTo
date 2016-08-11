@@ -211,11 +211,12 @@ email:
         The ToMaTo Testbed
 
 topologies:
-  timeout-initial: 3600
-  timeout-default: 259200  # 3 days
-  timeout-max: 2592000  # 30 days
-  timeout-warning: 86400  # 1 day
-  timeout-remove: 7776000  # 90 days
+  timeout-initial: 3600  # 1 hour - initialization value for topology timeout
+  timeout-default: 259200  # 3 days - default timeout setting for user interface
+  timeout-max: 2592000  # 30 days - maximum allowed timeout
+  timeout-warning: 86400  # 1 day - warning n seconds before timeout
+  timeout-destroy: 1209600  # 14 days - topology destructed n seconds after timeout
+  timeout-remove: 7776000  # 90 days - topology removed n seconds after timeout
   timeout-options: [86400, 259200, 1209600, 2592000]  # 1, 3, 14, 30 days
 
 user-quota:
