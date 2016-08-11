@@ -38,6 +38,16 @@ def debug_services_reachable():
 
 
 def debug_debug_internal_api_call(_tomato_module, _command, args=None, kwargs=None, profile=True):
+	"""
+	debug an internal API call
+	use lib.debug.DebugResult.unmarshal on the result to get more functionality
+	:param _tomato_module:
+	:param _command:
+	:param args:
+	:param kwargs:
+	:param profile:
+	:return:
+	"""
 	getCurrentUserInfo().check_may_view_debugging_info()
 	if is_self(_tomato_module):
 		from .. import api
@@ -75,7 +85,7 @@ def debug_throw_error(tomato_module=None):
 		tomato_module = Config.TOMATO_MODULE_BACKEND_API
 	UserError.check(tomato_module != Config.TOMATO_MODULE_BACKEND_ACCOUNTING, code=UserError.INVALID_VALUE, message="backend_accounting does not support dumps")
 	UserError.check(tomato_module in Config.TOMATO_BACKEND_MODULES, code=UserError.INVALID_VALUE, message="bad tomato module", data={"tomato_module": tomato_module})
-	if tomato_module == Config.TOMATO_MODULE_BACKEND_API:
+	if is_self(tomato_module):
 		try:
 			InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True)
 		except:
