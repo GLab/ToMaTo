@@ -87,7 +87,7 @@ class ExternalNetwork(Element):
 	})
 
 	ACTIONS = {
-		ActionName.START: StatefulAction(action_start, allowedStates=[ST_CREATED], stateChange=ST_STARTED),
+		ActionName.START: StatefulAction(action_start, check=Element.checkTopologyTimeout, allowedStates=[ST_CREATED], stateChange=ST_STARTED),
 		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_CREATED),
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED])
 	}
@@ -179,7 +179,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		ActionName.START: StatefulAction(action_start, allowedStates=[ST_CREATED, "default"], stateChange=ST_STARTED),
+		ActionName.START: StatefulAction(action_start, check=Element.checkTopologyTimeout, allowedStates=[ST_CREATED, "default"], stateChange=ST_STARTED),
 		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED, ST_CREATED, "default"], stateChange=ST_CREATED)
 	})
 

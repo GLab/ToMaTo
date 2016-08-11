@@ -1,5 +1,3 @@
-#fixme: this is an out-of-date version. symlink ../../shared/generic.py instead!
-
 import threading
 from .lib.error import UserError as Error
 from .lib import schema
@@ -99,12 +97,12 @@ class Entity(object):
 	def type(self):
 		return self.__class__.__name__.lower()
 
-	def init(self, attrs):
+	def init(self, **attrs):
 		toSet = {}
 		toSet.update(self.DEFAULT_ATTRIBUTES)
 		if attrs:
 			toSet.update(attrs)
-		self.modify(toSet)
+		self.modify(**toSet)
 
 	def checkUnknownAttribute(self, key, value):
 		raise Error(code=Error.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
@@ -115,7 +113,7 @@ class Entity(object):
 	def onError(self, exc):
 		pass
 
-	def modify(self, attrs):
+	def modify(self, **attrs):
 		ATTRIBUTES = self.ATTRIBUTES
 		for key, value in attrs.items():
 			attr = ATTRIBUTES.get(key)
@@ -189,6 +187,19 @@ class Entity(object):
 			"actions": {key: action.info() for key, action in cls.ACTIONS.items()},
 			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items()},
 		}
+
+	@classmethod
+	def create(cls, **kwargs):
+		obj = cls()
+		try:
+			obj.init(**kwargs)
+			obj.save()
+		except:
+			if obj.id:
+				obj.remove()
+			raise
+		return obj
+
 
 class StatefulAction(Action):
 	__slots__ = ("allowedStates", "stateChange")
@@ -270,12 +281,12 @@ class LockedEntity(Entity):
 		else:
 			return super(LockedEntity, self).action(action, params)
 
-	def modify(self, attrs):
+	def modify(self, **attrs):
 		if self.LOCKED_MODIFY:
 			with self.lock:
-				return super(LockedEntity, self).modify(attrs)
+				return super(LockedEntity, self).modify(**attrs)
 		else:
-			return super(LockedEntity, self).modify(attrs)
+			return super(LockedEntity, self).modify(**attrs)
 
 	def info(self):
 		if self.LOCKED_INFO:
@@ -301,22 +312,22 @@ class StatefulEntity(Entity):
 	state = setState =None
 	del state, setState
 
-	def init(self, attrs):
+	def init(self, **attrs):
 		self.setState(self.DEFAULT_STATE)
-		super(StatefulEntity, self).init(attrs)
+		super(StatefulEntity, self).init(**attrs)
 
 	@classmethod
 	def capabilities(cls):
 		return {
-			"actions": {key: action.info() for key, action in cls.ACTIONS.items()},
-			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items()},
+			"actions": {key: action.info() for key, action in cls.ACTIONS.iteritems()},
+			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.iteritems()},
 			"states": cls.STATES,
 			"default_state": cls.DEFAULT_STATE
 		}
 
 	def info(self):
 		info = {}
-		for key, attr in self.ATTRIBUTES.items():
+		for key, attr in self.ATTRIBUTES.iteritems():
 			if isinstance(attr, StatefulAttribute) and not attr.readableStates is None and not self.state in attr.readableStates:
 				continue
 			info[key] = attr.get(self)

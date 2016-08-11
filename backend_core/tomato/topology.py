@@ -255,9 +255,12 @@ class Topology(Entity, BaseDocument):
 	def checkModify(self, attr):
 		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
 
+	def checkTimeout(self):
+		UserError.check(self.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
+
 	def checkCompoundAction(self, action, **params):
 		if action in ["start", "prepare"]:
-			UserError.check(self.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
+			self.checkTimeout()
 		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
 		return True
 

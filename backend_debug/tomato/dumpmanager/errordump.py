@@ -37,7 +37,7 @@ class ErrorDump(EmbeddedDocument):
 			dumpId=dump_dict.get('dump_id', str(time.time())),
 			timestamp=dump_dict.get('timestamp', None),
 			description=dump_dict.get('description', None),
-			type=dump_dict.get('type', None),
+			type=dump_dict.get('type', "API_receive"),
 			softwareVersion=dump_dict.get('software_version', None),
 			data=dump_dict.get("data", None)
 		)

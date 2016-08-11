@@ -22,6 +22,7 @@ from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc, AuthError, wrap_json
 from .lib import anyjson as json
+from .lib.handleerror import push_all_dumps
 from django.http import HttpResponseRedirect, HttpResponse
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
@@ -70,7 +71,7 @@ def group_list(api, request):
 			if s.startswith('host'):
 				host_count += 1
 			else:
-				e['frontend_mod']['sources'].append(s.replace('backend:', ''))
+				e['frontend_mod']['sources'].append(s.replace('backend:', '').replace('api:', ''))
 		if host_count > 0:
 			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
 		e['frontend_mod']['sources'] = ", ".join(e['frontend_mod']['sources'])
@@ -103,7 +104,7 @@ def group_info(api, request, group_id):
 			errordump['source___link'] = errordump['source'].replace('host:', '')
 			errordump['source___displayname'] = errordump['source']
 		else:
-			errordump['source___displayname'] = errordump['source'].replace('backend:', '')
+			errordump['source___displayname'] = errordump['source'].replace('backend:', '').replace('api:', '')
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	errorgroup['github_url'] = errorgroup.get('_github_url', False)
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup, 'github_enabled': github_enabled()})
@@ -171,6 +172,7 @@ def dump_export_with_data(request, group_id, source, dump_id):
 @wrap_rpc
 def refresh(api,request):
 	api.errordumps_force_refresh()
+	push_all_dumps()
 	return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
 
 @wrap_rpc
@@ -219,14 +221,18 @@ def errorgroup_github(api, request, group_id):
 		dump_tofetch = info['dumps'][0]
 		dump_info = api.errordump_info(group_id, dump_tofetch['source'], dump_tofetch['dump_id'], include_data=True)
 
-		backend_modules = set()
+		backend_web_modules = set()
 		host_names = set()
 		for source in info['dump_contents']['source']:
 			if source.startswith("backend:"):
-				backend_modules.add(source[8:])
+				backend_web_modules.add(source[8:])
+			elif source.startswith("api:"):
+				backend_web_modules.add(source[4:])
 			elif source.startswith('host:'):
 				host_names.add(source)
-		source_str = ", ".join(backend_modules)
+			else:
+				backend_web_modules.add(source)
+		source_str = ", ".join(backend_web_modules)
 		if len(host_names) > 0:
 			host_str = ('%d Hostmanager%s' % (len(host_names), "s" if len(host_names) > 1 else ""))
 			if source_str:

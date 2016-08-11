@@ -16,10 +16,9 @@ def dump_pusher():
 	# there must be one thread running this.
 	# this thread is started in init()
 	while auto_push:
-		time.sleep(5)  # avoid flooding: only one dump per 5 seconds via push!
 		try:
 			with dump_lib.dumps_lock:
-				if len(dump_lib.dumps) > 0:
+				if len(dump_lib.list_all_dumps_ids()) > 0:
 					# get dump_id with smallest timestamp
 					dump_id = sorted(dump_lib.dumps.iteritems(), key=lambda d: d[1]['timestamp'])[0][0]
 
@@ -34,6 +33,7 @@ def dump_pusher():
 					must_autopush.clear()
 		except:
 			must_autopush.clear()  # wait for next round if an error occurred.
+		time.sleep(5)  # avoid flooding: only one dump per 5 seconds via push!
 		must_autopush.wait()
 
 

@@ -148,6 +148,9 @@ backend_debug:
 web:
   paths:
     log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
   ssl:
     cert:  /etc/tomato/web.pem
     key:  /etc/tomato/web.pem
@@ -231,6 +234,7 @@ user-quota:
 
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
+  api_store_secret_key: "CHANGEME"  # secret key to store dumps from anonymous API calls
 
 debugging:
   enabled: false
@@ -548,6 +552,9 @@ class SettingsProvider:
 		"""
 		return {k: v for k, v in self.original_settings['topologies'].iteritems()}
 
+	def get_dumpmanager_api_key(self):
+		return self.original_settings["dumpmanager"]["api_store_secret_key"]
+
 	def get_dump_config(self):
 		"""
 		get the dump config
@@ -809,14 +816,16 @@ class SettingsProvider:
 			print "Configuration ERROR at /dumpmanager: is missing."
 			print " using default dumpmanager settings."
 			self.original_settings['dumpmanager'] = default_settings['dumpmanager']
-		else:
-			for k, v in default_settings['dumpmanager'].iteritems():
-				if not self.original_settings['dumpmanager'].get(k, None):
-					print "Configuration ERROR at /dumpmanager/%s: is missing." % k
-					print " using default setting for %s" % k
-					self.original_settings['dumpmanager'][k] = v
+		for k, v in default_settings['dumpmanager'].iteritems():
+			if not self.original_settings['dumpmanager'].get(k, None):
+				print "Configuration ERROR at /dumpmanager/%s: is missing." % k
+				print " using default setting for %s" % k
+				self.original_settings['dumpmanager'][k] = v
+			if k == "api_store_secret_key" and v == default_settings["dumpmanager"]["api_store_secret_key"]:
+					print "Configuration WARNING at /dumpmanager/api_store_secret_key: is default"
+					print "This is a secret key that should be changed."
 
-		# dumpmanager
+		# debugging
 		if not self.original_settings.get('debugging', None):
 			print "Configuration ERROR at /debugging: is missing."
 			print " using default debugging settings."

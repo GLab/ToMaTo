@@ -166,9 +166,12 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if self.mainConnection:
 			self.mainConnection.modify(self._remoteAttrs)
 
+	def checkTopologyTimeout(self):
+		self.topology.checkTimeout()
+
 	def checkUnknownAction(self, action, params=None):
-		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT]:
-			UserError.check(self.topology.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
+		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_GRANT]:
+			self.checkTopologyTimeout()
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
 			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")
 		UserError.check(self.mainConnection, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action")

@@ -1,8 +1,6 @@
 import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip, inspect
 
 from . import anyjson as json
-from .cmd import run, CommandError  # @UnresolvedImport
-from .. import scheduler
 from .error import InternalError, generate_inspect_trace
 
 from settings import settings, Config
@@ -21,6 +19,11 @@ tomato_version = None
 dumps = {}
 #when adding or removing keys to this array, it has to be locked.
 dumps_lock = threading.RLock()
+
+#set to true when initialized.
+#In uninitialized mode, the dumps dict is not used.
+initialized = False
+
 
 # will be called when a dump is created.
 # should be overwritten if needed.
@@ -45,6 +48,9 @@ boot_time = 0
 
 #use envCmds to get the environment data.
 def getEnv():
+	if not initialized:
+		return {}
+	from .cmd import run, CommandError  # @UnresolvedImport
 	data = {}
 	for name, cmd in envCmds.items():
 		try:
@@ -53,6 +59,17 @@ def getEnv():
 			data[name] = str(err)
 	return data
 
+def list_all_dumps_ids():
+	if initialized:
+		with dumps_lock:
+			return dumps.keys()
+	else:
+		dump_dir = settings.get_dump_config()[Config.DUMPS_DIRECTORY]
+		if os.path.exists(dump_dir):
+			return [re.sub('\.meta\.json', '', d) for d in os.listdir(dump_dir) if d.endswith(".meta.json")]
+		else:
+			os.makedirs(dump_dir)
+			return []
 
 def getCaller():
 	caller = None
@@ -69,6 +86,7 @@ def getCaller():
 #get the absolute path of a dump for the given filename
 #is_meta: if true, this is the filename for the meta file, if false, this is the filename for the data file
 def get_absolute_path(dump_id, is_meta, dump_file_version=1):
+
 	filename = None
 	if is_meta:
 		filename = dump_id + ".meta.json"
@@ -77,7 +95,11 @@ def get_absolute_path(dump_id, is_meta, dump_file_version=1):
 			filename = dump_id + ".data.json"
 		elif dump_file_version == 1:
 			filename = dump_id + ".data.gz"
-	return os.path.join(settings.get_dump_config()[Config.DUMPS_DIRECTORY], filename)
+
+	dump_dir = settings.get_dump_config()[Config.DUMPS_DIRECTORY]
+	if not os.path.exists(dump_dir):
+		os.makedirs(dump_dir)
+	return os.path.join(dump_dir, filename)
 
 
 #get a free dump ID
@@ -140,7 +162,9 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 			fp.write(data_str)
 		finally:
 			fp.close()
-		dumps[dump_id] = dump_meta
+
+		if initialized:
+			dumps[dump_id] = dump_meta
 
 	try:
 		on_dump_create()
@@ -159,7 +183,7 @@ def load_dump(dump_id, load_data=True, compress_data=False, push_to_dumps=False,
 	global dumps
 	with dumps_lock:
 		dump = None
-		if load_from_file:
+		if load_from_file or not initialized:
 			filename = get_absolute_path(dump_id, True)
 			try:
 				with open(filename, "r") as f:
@@ -172,7 +196,7 @@ def load_dump(dump_id, load_data=True, compress_data=False, push_to_dumps=False,
 			else:
 				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, todump=dump_on_error)
 
-		if push_to_dumps:
+		if push_to_dumps and initialized:
 			dumps[dump_id] = dump.copy()
 
 		dump_file_version = 0
@@ -216,9 +240,10 @@ def remove_dump(dump_id):
 	with dumps_lock:
 		global dumps
 		if dump_id in dumps:
-			os.remove(get_absolute_path(dump_id, True))
-			os.remove(get_absolute_path(dump_id, False))
 			del dumps[dump_id]
+		for p in (get_absolute_path(dump_id, True), get_absolute_path(dump_id, False)):
+			if os.path.exists(p):
+				os.remove(p)
 
 
 #remove all dumps matching a criterion. If criterion is set to None, ignore this criterion.
@@ -231,7 +256,7 @@ def remove_all_where(before=None, group_id=None):
 		return
 
 	with dumps_lock:
-		for d in list(dumps):
+		for d in list_all_dumps_ids():
 			dump = dumps[d]
 
 			#for every criterion: if it is not none and does not apply, do not remove the dump file
@@ -264,8 +289,10 @@ def getCount():
 def getAll(after=None, list_only=False, include_data=False):
 	global dumps
 	return_list = []
+
 	with dumps_lock:  # the use of load_dump in the loop would throw an error if a dump is removed by the autopusher during this iteration.
-		for dump_id, _dump in dumps.iteritems():
+		for dump_id in list_all_dumps_ids():
+			_dump = load_dump(dump_id, False, False, dump_on_error=True)
 			if (after is None) or (_dump['timestamp'] >= after):
 				if list_only:
 					dump = dump_id
@@ -295,18 +322,19 @@ def init(env_cmds, tomatoVersion):
 
 		dump_dir = settings.get_dump_config()[Config.DUMPS_DIRECTORY]
 		if not os.path.exists(dump_dir):
-			os.mkdir(dump_dir)
+			os.makedirs(dump_dir)
 		else:
-			dump_file_list = os.listdir(dump_dir)
-			for d in dump_file_list:
-				if d.endswith('.meta.json'):
-					dump_id = re.sub('\.meta\.json', '', d)
-					try:
-						dump = load_dump(dump_id, push_to_dumps=True, load_data=False, load_from_file=True, dump_on_error=True)
-					except:
-						import traceback
-						traceback.print_exc()
 
+			dump_id_list = list_all_dumps_ids()
+			global initialized
+			initialized = True
+			for dump_id in dump_id_list:
+				try:
+					load_dump(dump_id, push_to_dumps=True, load_data=False, load_from_file=True, dump_on_error=True)
+				except:
+					import traceback
+					traceback.print_exc()
+	from .. import scheduler
 	scheduler.scheduleRepeated(60 * 60 * 24, auto_cleanup, immediate=True)
 
 
@@ -326,6 +354,11 @@ def dumpException(**kwargs):
 	return dumpUnknownException(type_, value, trace, **kwargs)
 
 
+def get_exception_groupid(type_, value, trace):
+	exception_forid = {"type": type_.__name__, "value": re.sub("[a-fA-F0-9]+", "x", str(value)), "trace": trace}
+	return hashlib.md5(json.dumps(exception_forid)).hexdigest()
+
+
 # function to handle an exception where no special handler is available.
 # Should only be called by dumpException	
 def dumpUnknownException(type_, value, trace, **kwargs):
@@ -335,8 +368,7 @@ def dumpUnknownException(type_, value, trace, **kwargs):
 		"trace": trace,
 		"inspect_trace": generate_inspect_trace(inspect.currentframe())
 	}
-	exception_forid = {"type": type_.__name__, "value": re.sub("[a-fA-F0-9]+","x",str(value)), "trace": trace}
-	exception_id = hashlib.md5(json.dumps(exception_forid)).hexdigest()
+	exception_id = get_exception_groupid(type_, value, trace)
 	description = {"subject": exception['value'], "type": exception['type']}
 
 	data = {"exception": exception}
