@@ -157,7 +157,7 @@ class Template(Entity, BaseDocument):
 			"preference": self.preference
 		}
 
-	def init(self, attrs):
+	def init(self, **attrs):
 		for attr in ["name", "tech", "urls"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Template needs attribute",
 				data={"attribute": attr})
@@ -166,9 +166,9 @@ class Template(Entity, BaseDocument):
 			del attrs['kblang']
 		else:
 			kblang=None
-		Entity.init(self, attrs)
+		Entity.init(self, **attrs)
 		if kblang:
-			self.modify({'kblang':kblang})
+			self.modify(kblang=kblang)
 		self.fetch(detached=True)
 
 	def fetch(self, detached=False):
@@ -225,14 +225,14 @@ class Template(Entity, BaseDocument):
 		return tmpls[0]
 
 	@classmethod
-	def create(cls, attrs):
+	def create(cls, **attrs):
 		tmpls = Template.objects.filter(name=attrs["name"], tech=attrs["tech"])
 		UserError.check(not tmpls, code=UserError.ALREADY_EXISTS,
 						message="There exists already a template for this technology with a similar name",
 						data={"name": attrs["name"], "tech": attrs["tech"]})
 		obj = cls()
 		try:
-			obj.init(attrs)
+			obj.init(**attrs)
 			obj.save()
 			return obj
 		except:

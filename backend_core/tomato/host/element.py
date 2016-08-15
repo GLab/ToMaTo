@@ -31,7 +31,7 @@ class HostElement(HostObject):
 		return self.host.createConnection(self, hel, type_, attrs, ownerConnection=ownerConnection,
 										  ownerElement=ownerElement)
 
-	def modify(self, attrs):
+	def modify(self, **attrs):
 		logging.logMessage("element_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
 		try:
 			self.objectInfo = self.host.getProxy().element_modify(self.num, attrs)
@@ -124,7 +124,7 @@ class HostElement(HostObject):
 			if not self.topologyElement and not self.topologyConnection:
 				self.remove()
 				return
-			self.modify({"timeout": time.time() + settings.get_host_connections_settings()['component-timeout']})
+			self.modify(timeout=time.time() + settings.get_host_connections_settings()['component-timeout'])
 		except error.UserError, err:
 			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)

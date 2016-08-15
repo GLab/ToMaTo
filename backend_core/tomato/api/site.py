@@ -23,7 +23,7 @@ def site_create(name, organization, label="", attrs=None):
 	if attrs is None:
 		attrs = {}
 
-	s = Site.create(name, organization, label, attrs)
+	s = Site.create(name, organization, label, **attrs)
 	return s.info()
 
 def site_info(name):
@@ -38,7 +38,7 @@ def site_modify(name, attrs):
 	undocumented
 	"""
 	site = _getSite(name)
-	site.modify(attrs)
+	site.modify(**attrs)
 	return site.info()
 
 def site_remove(name):

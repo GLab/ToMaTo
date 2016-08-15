@@ -48,7 +48,7 @@ def profile_create(tech, name, attrs=None):
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	attrs.update(name=name, tech=tech)
-	res = Profile.create(attrs)
+	res = Profile.create(**attrs)
 	return res.info()
 
 
@@ -74,7 +74,7 @@ def profile_modify(id, attrs):
 	  exist* is raised.
 	"""
 	res = _getProfile(id)
-	res.modify(attrs)
+	res.modify(**attrs)
 	return res.info()
 
 

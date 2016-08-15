@@ -15,7 +15,7 @@ class HostConnection(HostObject):
 		]
 	}
 
-	def modify(self, attrs):
+	def modify(self, **attrs):
 		logging.logMessage("connection_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
 		try:
 			self.objectInfo = self.host.getProxy().connection_modify(self.num, attrs)

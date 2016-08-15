@@ -23,8 +23,8 @@ class Site(Entity, BaseDocument):
 		from . import Host
 		return Host.objects(site=self)
 
-	def init(self, attrs):
-		self.modify(attrs)
+	def init(self, **attrs):
+		self.modify(**attrs)
 
 	def modify_geolocation(self, value):
 		if isinstance(value, dict):
@@ -78,7 +78,7 @@ class Site(Entity, BaseDocument):
 			return None
 
 	@classmethod
-	def create(cls, name, organization, label="", attrs=None):
+	def create(cls, name, organization, label="", **attrs):
 		if not attrs:
 			attrs = {}
 		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Site name may not include a '/'")
@@ -91,7 +91,7 @@ class Site(Entity, BaseDocument):
 			attrs_ = attrs.copy()
 			attrs_['name'] = name
 			attrs_['label'] = label
-			site.init(attrs_)
+			site.init(**attrs_)
 			site.save()
 		except:
 			site.remove()

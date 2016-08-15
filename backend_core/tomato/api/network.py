@@ -42,7 +42,7 @@ def network_create(kind, attrs=None):
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	attrs.update(kind=kind)
-	res = Network.create(attrs)
+	res = Network.create(**attrs)
 	return res.info()
 
 
@@ -67,7 +67,7 @@ def network_modify(id, attrs):
 	  exist* is raised.
 	"""
 	res = _getNetwork(id)
-	res.modify(attrs)
+	res.modify(**attrs)
 	return res.info()
 
 

@@ -32,12 +32,12 @@ class KVMQM(VMElement):
 	def init(self, *args, **kwargs):
 		VMElement.init(self, *args, **kwargs)
 		if self.template.kblang:
-			self.modify({"kblang": self.template.kblang})
+			self.modify(kblang=self.template.kblang)
 
 	def modify_template(self, tmplName):
 		VMElement.modify_template(self, tmplName)
 		if self.template.kblang:
-			self.modify({"kblang": self.template.kblang})
+			self.modify(kblang=self.template.kblang)
 
 class KVMQM_Interface(VMInterface):
 	TYPE = TypeName.KVMQM_INTERFACE

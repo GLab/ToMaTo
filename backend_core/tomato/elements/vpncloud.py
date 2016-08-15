@@ -70,7 +70,7 @@ class VpnCloud(ConnectingElement, Element):
 			assert isinstance(ch, VpnCloudEndpoint)
 			assert ch.element
 			addr = "%s:%d" % (ch.element.host.address, ch.element.getAttrs()['port'])
-			ch.modify({"peers": filter(lambda p: p!=addr, common_peers)})
+			ch.modify(peers=filter(lambda p: p!=addr, common_peers))
 
 	def _parallelChildActions(self, childList, action, params=None, maxThreads=10):
 		if not params: params = {}

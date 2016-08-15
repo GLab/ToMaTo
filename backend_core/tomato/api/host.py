@@ -82,7 +82,7 @@ def host_create(name, site, attrs=None):
 	"""
 	if not attrs: attrs = {}
 	site = _getSite(site)
-	h = Host.create(name, site, attrs)
+	h = Host.create(name, site, **attrs)
 	return h.info()
 
 def host_info(name):
@@ -97,7 +97,7 @@ def host_modify(name, attrs):
 	undocumented
 	"""
 	h = _getHost(name)
-	h.modify(attrs)
+	h.modify(**attrs)
 	return h.info()
 
 def host_remove(name):
