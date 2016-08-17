@@ -11,6 +11,7 @@ from django.shortcuts import render
 import time
 from .lib import wrap_rpc
 from .lib.reference_library import techs
+from .lib.exceptionhandling import wrap_and_handle_current_exception
 
 def web_resources():
 	return {
@@ -26,9 +27,7 @@ def custom_element_icons(ignore_errors=True):
 			l["url"] = urljoin(url, l["url"])
 		return icon_setting_list
 	except:
-		if ignore_errors:
-			return []
-		raise
+		wrap_and_handle_current_exception(re_raise=not ignore_errors)
 
 
 def executable_archives(split_alternatives=True, ignore_errors=True):
@@ -94,9 +93,7 @@ def executable_archives(split_alternatives=True, ignore_errors=True):
 
 		return default_archive_list
 	except:
-		if ignore_errors:
-			return []
-		raise
+		wrap_and_handle_current_exception(re_raise=not ignore_errors)
 
 
 
