@@ -19,6 +19,7 @@ Entries should be sorted by component and status with important entries and entr
 
 ### UNRELEASED (RUNNING ON SERVERS)
 
+- [backend_users, fixed] Logins are now saved again for display in 30-day active users count
 - [backend_api, fixed] Fixed __statistics__ API call
 - [backend_api, fixed] Fixed authorization for download actions on elements
 - [backend_api, changed] Removed configuration info calls
