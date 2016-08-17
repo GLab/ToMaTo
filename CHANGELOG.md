@@ -16,6 +16,7 @@ Entries should be sorted by component and status with important entries and entr
 - [docker, changed] web docker image now supports a log directory
 - [backend_api, backend_debug, changed] Now allowing dump storing via API
 - [web, changed] web now sends error dumps to backend via API
+- [web, changed] editor now allows to set custom icons for elements
 
 ### UNRELEASED (RUNNING ON SERVERS)
 
