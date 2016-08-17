@@ -18,9 +18,6 @@
 
 {% if icon_list %}
 
-<p>In the topology editor, you can set custom icons for elements.</p>
-<p>In general, you can provide any URL, including icons that are hosted by your own organization</p>
-<p>This is a list of icons provided by us for your convenience.</p>
 	<script src="/js/enhancetable.js"></script>
 	<table class="sortable,filterable table table-striped">
 	  <tr>
@@ -48,9 +45,9 @@
 	<div class="alert alert-info col-xs-12 text-center" style="">
 		{% if index_url %}
 			Default executable archives are described at <a style="text-decoration:underline;" href="{{index_url}}">{{index_url}}</a><br />
-			This location can be changed in the webfrontend settings via 'default_executable_archives_list_url'.
+			This location can be changed in the web/web-resources settings via 'custom-element-icons'.
 		{% else %}
-			You can describe default executable archives via the webfrontend settings by providing a URL for the setting 'default_executable_archives_list_url'.
+			You can describe default executable archives via the web/web-resources settings by providing a URL for the setting 'custom-element-icons'.
 		{% endif %}
 	</div>
 </div>
