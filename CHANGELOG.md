@@ -13,6 +13,7 @@ Entries should be sorted by component and status with important entries and entr
 
 - [config, changed] In dumpmanager config section, api_store_secret_key must now be set.
 - [config, changed] web module now requires a simple dump config
+- [config, changed] web/web-resources now requires the __custom-element-icons__ key 
 - [docker, changed] web docker image now supports a log directory
 - [backend_api, backend_debug, changed] Now allowing dump storing via API
 - [web, changed] web now sends error dumps to backend via API
