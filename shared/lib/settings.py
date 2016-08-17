@@ -173,6 +173,7 @@ web:
   web-resources:
     tutorial-list:        http://packages.tomato-lab.org/tutorials/index.json
     default-executable-archive-list:
+    custom-element-icons:
 
   # specify how often user information is updated (seconds between updates).
   # a longer interval improves performance for webfrontend and backend,
@@ -315,6 +316,7 @@ class Config:
 
 	WEB_RESOURCE_TUTORIAL_LIST = "tutorial-list"
 	WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST = "default-executable-archive-list"
+	WEB_RESOURCE_CUSTOM_ELEMENT_ICONS = "custom-element-icons"
 
 	EXTERNAL_URL_AUP = "aup"
 	EXTERNAL_URL_HELP = "help"

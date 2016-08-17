@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+
+{% load tomato %}
+
+{% block title %}
+<title>Default Executable Archives - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block content %}
+<h1>Custom Element Icons</h1>
+
+<p>In the topology editor, you can set custom icons for elements.</p>
+<p>In general, you can provide any URL, including icons that are hosted by your own organization, and data URLs. This is a list of icons provided by us for your convenience.</p>
+
+<div class="skip-sm"></div>
+
+{% if icon_list %}
+
+<p>In the topology editor, you can set custom icons for elements.</p>
+<p>In general, you can provide any URL, including icons that are hosted by your own organization</p>
+<p>This is a list of icons provided by us for your convenience.</p>
+	<script src="/js/enhancetable.js"></script>
+	<table class="sortable,filterable table table-striped">
+	  <tr>
+	  	<th class="icononly"></th>
+	    <th>Label</th>
+	    <th>URL</th>
+	  </tr>
+	{% for icon_entry in icon_list %}
+	  <tr>
+	  	<td align="right" class="icononly">
+	  		<img src="{{icon_entry.url}}" />
+		</td>
+	    <td>{{icon_entry.label}}</td>
+	    <td><pre style="border:0; background: None;">{{icon_entry.url}}</pre></td>
+	  </tr>
+	{% endfor %}
+	</table>
+{% else %}
+	<p>No default executable archives.</p>
+{% endif %}
+
+{% if request.session.user.isGlobalHostManager %}
+
+<div class="row">
+	<div class="alert alert-info col-xs-12 text-center" style="">
+		{% if index_url %}
+			Default executable archives are described at <a style="text-decoration:underline;" href="{{index_url}}">{{index_url}}</a><br />
+			This location can be changed in the webfrontend settings via 'default_executable_archives_list_url'.
+		{% else %}
+			You can describe default executable archives via the webfrontend settings by providing a URL for the setting 'default_executable_archives_list_url'.
+		{% endif %}
+	</div>
+</div>
+{% endif %}
+
+{% endblock %}

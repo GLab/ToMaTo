@@ -14,8 +14,22 @@ from .lib.reference_library import techs
 
 def web_resources():
 	return {
-		'executable_archives': executable_archives()
+		'executable_archives': executable_archives(),
+		'custom_element_icons': custom_element_icons()
 	}
+
+def custom_element_icons(ignore_errors=True):
+	url = settings.get_web_resource_location(Config.WEB_RESOURCE_CUSTOM_ELEMENT_ICONS)
+	try:
+		icon_setting_list = json.load(urllib2.urlopen(url))
+		for l in icon_setting_list:
+			l["url"] = urljoin(url, l["url"])
+		return icon_setting_list
+	except:
+		if ignore_errors:
+			return []
+		raise
+
 
 def executable_archives(split_alternatives=True, ignore_errors=True):
 	default_executable_archives_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST)
@@ -92,6 +106,12 @@ def executable_archive_list(request):
 	for archive in archives:
 		archive['alternatives'] = len(archive['alternatives'])
 	return render(request, 'web_resources/default_executable_archive_list.html', {'archive_list': archives, 'default_executable_archives_list_url': default_executable_archives_list_url})
+
+
+def custom_element_icon_list(request):
+	url = settings.get_web_resource_location(Config.WEB_RESOURCE_CUSTOM_ELEMENT_ICONS)
+	icons = custom_element_icons(True)
+	return render(request, 'web_resources/custom_element_icons_list.html', {'icon_list': icons, 'index_url': url})
 
 @wrap_rpc
 def executable_archive_info(api, request, name):
