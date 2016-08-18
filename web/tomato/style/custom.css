@@ -184,6 +184,7 @@ usage example:
 
 div.hoverdescription {
 	display:inline;
+	position:relative;
 }
 div.hoverdescription div.hiddenbox {
 	display:none;
@@ -192,8 +193,10 @@ div.hoverdescription div.hiddenbox {
 	z-index: 1000;
 }
 div.hoverdescription:hover div.hiddenbox {
-	display:inline;
+	display:block;
 	position:absolute;
+	right:0px;
+	min-width: 5cm;
 	margin: 2px;
 	margin-left: 0px;
 	margin-top: 0px;
