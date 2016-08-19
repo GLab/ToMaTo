@@ -11,15 +11,17 @@ Entries should be sorted by component and status with important entries and entr
 
 ### UNRELEASED (NOT RUNNING ON SERVERS)
 
-- [config, changed] Topology section now requires a `timeout-destroy` value
-- [backend_core, changed] Better timeout notifications and times
 
 ### UNRELEASED (RUNNING ON SERVERS)
 
+- [config, changed] Topology section now requires a `timeout-destroy` value
+- [backend_core, changed] Better timeout notifications and times
 - [config, changed] In dumpmanager config section, api_store_secret_key must now be set.
 - [config, changed] web module now requires a simple dump config
 - [docker, changed] web docker image now supports a log directory
 - [backend_api, backend_debug, changed] Now allowing dump storing via API
+- [web, changed] web now sends error dumps to backend via API
+- [backend_users, fixed] Logins are now saved again for display in 30-day active users count
 - [backend_api, fixed] Fixed __statistics__ API call
 - [backend_api, fixed] Fixed authorization for download actions on elements
 - [backend_api, changed] Removed configuration info calls

@@ -231,6 +231,10 @@ class User(Entity, BaseDocument):
 		notif.read = read
 		self.save()
 
+	def register_activity(self):
+		self.lastLogin = time.time()
+		self.save()
+
 	def clean_up_notifications(self):
 		border_read = time.time() - 60*60*24*30  # fixme: should be configurable
 		border_unread = time.time() - 60*60*24*180  # fixme: should be configurable
