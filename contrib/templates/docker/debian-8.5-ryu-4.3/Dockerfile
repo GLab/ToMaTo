@@ -8,7 +8,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-instal
   build-essential python-dev \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade netaddr && pip install ryu==4.3
+RUN pip install --upgrade netaddr && pip install ryu==4.3 six==1.9
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get remove -y build-essential python-dev && apt-get -y autoremove
 
