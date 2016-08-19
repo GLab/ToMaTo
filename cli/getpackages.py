@@ -1,5 +1,5 @@
 import os, random, textwrap, threading, tarfile, re, urllib2, sys, json
-import argparse, getpass
+import argparse, getpass, traceback
 from time import sleep
 from lib import getConnection, createUrl
 from lib.upload_download import upload, upload_and_use_rextfv
@@ -16,12 +16,14 @@ def retryThreeTimes(func):
 			assert res is not None
 			return res
 		except:
+			traceback.print_exc()
 			try:
 				print "Don't worry, I'll retry."
 				res = func(*args, **kwargs)
 				assert res is not None
 				return res
 			except:
+				traceback.print_exc()
 				print "Don't worry, I'll retry."
 				return func(*args, **kwargs)
 	return call
@@ -225,9 +227,10 @@ class TestTopology:
 		sleep(3)
 		elinfo = self.api.element_info(self.el_id)
 		while not elinfo["rextfv_run_status"].get("done", False):
-			sleep(3)
 			if not elinfo["rextfv_run_status"]["isAlive"]:
-				return None
+				print elinfo["rextfv_run_status"]
+				return elinfo["rextfv_run_status"].get("custom", None)
+			sleep(3)
 			elinfo = self.api.element_info(self.el_id)
 		return elinfo["rextfv_run_status"]["custom"]
 
@@ -269,6 +272,9 @@ class GetPacketArchive(object):
 						    ;;
 						  Debian*7*)
 						    DISTRO="debian_7"
+						    ;;
+						  Debian*8*)
+						    DISTRO="debian_8"
 						    ;;
 						  Ubuntu*10.04*)
 						    DISTRO="ubuntu_1004"
