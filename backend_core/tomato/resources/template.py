@@ -134,7 +134,7 @@ class Template(Entity, BaseDocument):
 		"show_as_common": Attribute(field=showAsCommon),
 		"creation_date": Attribute(field=creationDate, schema=schema.Number(null=True)),
 		"icon": Attribute(field=icon),
-		"size": Attribute(field=size, readOnly=True, schema=schema.Int(null=False)),
+		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True, schema=schema.Number()),
 		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
 		"ready": Attribute(readOnly=True, get=getReadyInfo, schema=schema.StringMap(items={
 				'backend': schema.Bool(),
