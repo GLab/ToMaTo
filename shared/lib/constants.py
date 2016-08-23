@@ -24,6 +24,9 @@ class TypeName:
 	KVMQM = "kvmqm"
 	KVMQM_INTERFACE = "kvmqm_interface"
 
+	KVM = "kvm"
+	KVM_INTERFACE = "kvm_interface"
+
 	REPY = "repy"
 	REPY_INTERFACE = "repy_interface"
 
