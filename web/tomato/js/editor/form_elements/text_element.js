@@ -4,7 +4,9 @@ var TextElement = FormElement.extend({
 		this.pattern = options.pattern || /^.*$/;
 		this.element = $('<div class="col-sm-12" />');
 		this.textfield = $('<input class="form-control" type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
-
+		if (options.hint != undefined) {
+			this.setHint(options.hint);
+		}
 		this.element.append(this.textfield);
 		
 		if (options.disabled) this.textfield.attr({disabled: true});
@@ -27,5 +29,8 @@ var TextElement = FormElement.extend({
 	isValid: function(value) {
 		var val = value || this.getValue();
 		return this.pattern.test(val);
+	},
+	setHint: function(value) {
+		this.textfield.attr("placeholder", value);
 	}
 });

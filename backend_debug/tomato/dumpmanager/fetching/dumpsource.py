@@ -10,6 +10,12 @@ class DumpSource(object):
 	def dump_source_name(self):
 		raise NotImplemented()
 
+	def get_last_updatetime(self):
+		return data.get("dumpsource:%s/last_updatetime" % self.dump_source_name(), 0)
+
+	def _set_last_updatetime(self, last_updatetime):
+		data.set("dumpsource:%s/last_updatetime" % self.dump_source_name(), last_updatetime)
+
 
 
 class PullingDumpSource(DumpSource):
@@ -28,12 +34,6 @@ class PullingDumpSource(DumpSource):
 	def _clock_offset(self):
 		raise NotImplemented()
 
-	def get_last_updatetime(self):
-		return data.get("dumpsource:%s/last_updatetime" % self.dump_source_name(), 0)
-
-	def _set_last_updatetime(self, last_updatetime):
-		data.set("dumpsource:%s/last_updatetime" % self.dump_source_name(), last_updatetime)
-
 	@on_error_continue()
 	def fetch_new_dumps(self, insert_dump_func):
 		"""
@@ -44,6 +44,11 @@ class PullingDumpSource(DumpSource):
 		:rtype: None
 		"""
 		offset = self._clock_offset()
+		if offset is None:
+			return  # if this is unavailable, something really strange is happening on backend_core. Let's not fetch for now.
+							# probably, this is simply because backend_core hasn't received any host info yet.
+
+
 		this_fetch_time = time.time() - offset
 
 		fetch_results = self._fetch_dumps(self.get_last_updatetime())

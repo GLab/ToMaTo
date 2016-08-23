@@ -8,6 +8,58 @@ from django.shortcuts import render, redirect
 import xmlrpclib, socket, sys, inspect
 from . import anyjson as json
 from django.http import HttpResponse
+import dump as dump_lib
+
+from settings import get_settings, Config
+from .. import settings as config_module
+settings = get_settings(config_module)
+
+from versioninfo import getVersionStr
+
+def dumpException(dump_on_error=True):
+    errorgroup_id = None
+
+    try:
+      if settings.get_dump_config()[Config.DUMPS_ENABLED]:
+
+        from . import AuthError
+        (type_, exc, _) = sys.exc_info()
+        if type_ == AuthError:
+          return
+
+        dump_lib.tomato_component = Config.TOMATO_MODULE_WEB
+        dump_lib.tomato_version = getVersionStr()
+        dump_lib.settings = settings
+
+        dump_id = dump_lib.dumpException()
+        if dump_id is None:
+
+          # try to reconstruct exception group id
+          if isinstance(exc, Error):
+            errorgroup_id = "Error__"+exc.group_id()
+            #fixme: add a second boolean field that indicates whether an error has been dumped
+
+        else:
+          errorgroup_id = dump_lib.load_dump(dump_id, False)["group_id"]
+
+        push_all_dumps()
+
+    except:
+      if dump_on_error:
+        dumpException(dump_on_error=False)
+
+    return errorgroup_id
+
+def push_all_dumps():
+      from . import getapi
+      api = getapi()
+      dump_lib.settings = settings
+
+      with dump_lib.dumps_lock:
+        for dump_id in dump_lib.list_all_dumps_ids():
+          dump = dump_lib.load_dump(dump_id, True)
+          api.errordump_store(Config.TOMATO_MODULE_WEB, dump, store_key=settings.get_dumpmanager_api_key())
+          dump_lib.remove_dump(dump_id)
 
 def interpretError(error):
     debuginfos_dict = {} # list of key-value pairs, where the key and value must be strings to be shown to humans
@@ -60,20 +112,20 @@ def interpretError(error):
 
 
 
-def renderError(request, error):
+def renderError(request, error, errorgroup_id=None):
 
     if isinstance(error, NetworkError):
       return render(request, "error/backend_trouble.html", {'tomato_module': error.data.get("tomato_module"), 'code': error.code, 'text': error.onscreenmessage})
 
     typemsg, errormsg, debuginfos, _, responsecode, frame_trace = interpretError(error)
-    return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos, 'frame_trace': frame_trace}, status=responsecode)
+    return render(request, "error/error.html", {'typemsg': typemsg, 'errormsg': errormsg, 'debuginfos': debuginfos, 'frame_trace': frame_trace, "errorgroup_id": errorgroup_id}, status=responsecode)
 
-def renderFault (request, fault):
+def renderFault (request, fault, errorgroup_id=None):
     import traceback
     from . import AuthError
     traceback.print_exc()
     if isinstance(fault, Error):
-        return renderError(request, fault)
+        return renderError(request, fault, errorgroup_id=errorgroup_id)
     elif isinstance(fault, socket.error):
         import os
         etype = "Socket error"
@@ -98,7 +150,7 @@ def renderFault (request, fault):
         ecode = ""
         etext = fault.message
     _, _, etraceback =sys.exc_info()
-    return render(request, "error/exception.html", {'type': etype, 'text': etext, 'traceback': traceback.extract_tb(etraceback), 'frame_trace': None}, status=500)
+    return render(request, "error/exception.html", {'type': etype, 'text': etext, 'traceback': traceback.extract_tb(etraceback), 'frame_trace': None, "errorgroup_id": errorgroup_id}, status=500)
         
 def renderMessage(request, message, heading=None, data={}, responsecode=500):
     debuginfos = []

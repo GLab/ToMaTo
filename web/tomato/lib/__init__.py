@@ -18,10 +18,12 @@
 
 from django.http import HttpResponse
 import xmlrpclib, urllib, hashlib, time
+from django.utils.functional import cached_property
+
 import anyjson as json
 import os
 from .error import Error  # @UnresolvedImport
-from .handleerror import renderError, ajaxError, renderFault, ajaxFault
+from .handleerror import renderError, ajaxError, renderFault, ajaxFault, dumpException
 from thread import start_new_thread
 from versioninfo import getVersionStr
 from .cmd import runUnchecked
@@ -29,7 +31,6 @@ from .cmd import runUnchecked
 from settings import get_settings, Config
 from .. import settings as config_module
 settings = get_settings(config_module)
-
 
 
 def getauth(request):
@@ -135,6 +136,9 @@ def api_duration_log():
 def log_api_duration(name, duration, args, kwargs):
 	api_duration_log().log_call(name, duration, args, kwargs)
 
+def get_server_proxy(url, **kwargs):
+	return ServerProxy(url, **kwargs)
+
 class ServerProxy(object):
 	def __init__(self, url, **kwargs):
 		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
@@ -177,7 +181,7 @@ def getapi(request=None):
 		server_settings = settings.get_interface(Config.TOMATO_MODULE_BACKEND_API, False, 'http')
 	try:
 		if auth:
-			api = ServerProxy('%s://%s:%s@%s:%s' % (
+			api = get_server_proxy('%s://%s:%s@%s:%s' % (
 			server_settings['protocol'], username, password, server_settings['host'], server_settings['port']), allow_none=True)
 			api.user = UserObj(api)
 		else:
@@ -208,7 +212,8 @@ class wrap_rpc:
 				request.session['user'].checkUpdate(api)
 			return self.fun(api, request, *args, **kwargs)
 		except Exception, e:
-			return renderFault(request, e)
+			errorgroup_id = dumpException()
+			return renderFault(request, e, errorgroup_id=errorgroup_id)
 
 
 class wrap_json:
@@ -224,12 +229,17 @@ class wrap_json:
 				res = self.fun(api, request, *args, **data)
 				return HttpResponse(json.dumps({"success": True, "result": res}))
 			except Exception, e:
+				dumpException()
 				return ajaxFault(e)
 		except xmlrpclib.ProtocolError, e:
+			dumpException()
 			return HttpResponse(json.dumps({"success": False, "error": 'Error %s: %s' % (e.errcode, e.errmsg)}),
 				status=e.errcode if e.errcode in [401, 403] else 200)
 		except xmlrpclib.Fault, f:
+			dumpException()
 			return HttpResponse(json.dumps({"success": False, "error": 'Error %s' % f}))
+		except:
+			dumpException()
 
 
 @cached(600)
@@ -243,20 +253,24 @@ from urlparse import urljoin
 
 @cached(3600)
 def getNews():
-	url = settings.get_external_url(Config.EXTERNAL_URL_JSON_FEED)
-	news = json.load(urllib2.urlopen(url))
-	pattern = re.compile("<[^>]+((?:src|href)=(?:[\"']([^\"']+)[\"']))[^>]*>")
-	for item in news["items"]:
-		desc = item["description"]
-		for term, url in pattern.findall(desc):
-			if url.startswith("mailto:") or url.startswith("&#109;&#097;&#105;&#108;&#116;&#111;:"):
-				continue
-			nurl = urljoin(item["link"], url)
-			nterm = term.replace(url, nurl)
-			desc = desc.replace(term, nterm)
-		item["description"] = desc
-	news["items"] = news["items"][:3]
-	return news
+	try:
+		url = settings.get_external_url(Config.EXTERNAL_URL_JSON_FEED)
+		news = json.load(urllib2.urlopen(url))
+		pattern = re.compile("<[^>]+((?:src|href)=(?:[\"']([^\"']+)[\"']))[^>]*>")
+		for item in news["items"]:
+			desc = item["description"]
+			for term, url in pattern.findall(desc):
+				if url.startswith("mailto:") or url.startswith("&#109;&#097;&#105;&#108;&#116;&#111;:"):
+					continue
+				nurl = urljoin(item["link"], url)
+				nterm = term.replace(url, nurl)
+				desc = desc.replace(term, nterm)
+			item["description"] = desc
+		news["items"] = news["items"][:3]
+		return news
+	except:
+		dumpException()
+		return None
 
 
 @cached(3600)

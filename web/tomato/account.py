@@ -30,7 +30,7 @@ from django.utils.html import conditional_escape
 
 from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 
-from lib import wrap_rpc, getapi, AuthError, serverInfo, wrap_json
+from lib import wrap_rpc, getapi, AuthError, serverInfo, wrap_json, userflags
 
 from lib.error import UserError #@UnresolvedImport
 
@@ -48,16 +48,11 @@ settings = get_settings(config_module)
 
 # value: flags of account to display
 # flags: all flags
-def render_account_flag_fixedlist(api, value, flag_config=None):
-	if flag_config is None:
-		flag_config = api.account_flag_configuration()
-	FlagTranslationDict = flag_config['flags']
-	categories = flag_config['categories']
-	
+def render_account_flag_fixedlist(api, value):
 	output = []
 	isFirst = True #is first category (set to Flase after first category has been found)
 	
-	for cat in categories:
+	for cat in userflags.categories:
 		foundOne = False #found a match in current category
 		for v in cat['flags']:
 			if v in value:
@@ -69,7 +64,7 @@ def render_account_flag_fixedlist(api, value, flag_config=None):
 					output.append('<ul>')
 					output.append('<b>' + cat['onscreentitle'] + '</b>')
 					foundOne = True
-				output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
+				output.append('<li style="margin-left:20px;">' + userflags.flags.get(v, v) + '</li>')
 		
 	return output
 			
@@ -95,16 +90,11 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 		final_attrs = self.build_attrs(attrs, name=name)
 		str_values = set([force_unicode(v) for v in value])
 		
-		config = self.api.account_flag_configuration()
-	
-		FlagTranslationDict = config['flags']
-		categories = config['categories']
-		
 		#algorithm similar to render_account_flag_fixedlist
 		output = []
 		isFirst = True
 		
-		for cat in categories:
+		for cat in userflags.categories:
 			foundOne = False
 			for v in cat['flags']:
 				if not foundOne:
@@ -116,7 +106,7 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 					foundOne = True
 					
 				if has_id:
-					final_attrs = dict(final_attrs, id='%s_%s' % (attrs['id'], self.choices.index((v,FlagTranslationDict.get(v,v)))))
+					final_attrs = dict(final_attrs, id='%s_%s' % (attrs['id'], self.choices.index((v, userflags.flags.get(v,v)))))
 					label_for = u' for="%s"' % final_attrs['id']
 				else:
 					label_for = ''
@@ -124,7 +114,7 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 				cb = forms.widgets.CheckboxInput(final_attrs, check_test=lambda value: value in str_values)
 				option_value = force_unicode(v)
 				rendered_cb = cb.render(name, option_value)
-				option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
+				option_label = conditional_escape(force_unicode(userflags.flags.get(v, v)))
 				output.append(u'<label style="font-weight:normal;" class="checkbox%s">' % (self.inline_class))
 				output.append(rendered_cb.replace("form-control", "") + option_label)
 				output.append('</label>')
@@ -134,7 +124,7 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 	def __init__(self, api, *args, **kwargs):
 		super(AccountFlagCheckboxList, self).__init__(*args, **kwargs)
 		self.api = api
-		self.choices = api.account_flags().items()
+		self.choices = userflags.flags.items()
 	
 class AccountForm(BootstrapForm):
 	name = forms.CharField(label="Account name", max_length=50)
@@ -163,7 +153,7 @@ class AccountForm(BootstrapForm):
 class AccountChangeForm(AccountForm):
 	def __init__(self, api, data):
 		AccountForm.__init__(self, api, data)
-		flags = api.account_flags().items()
+		flags = userflags.flags.items()
 		self.fields["name"].widget = FixedText()
 		del self.fields["origin"]
 		del self.fields["_reason"]
@@ -277,9 +267,8 @@ def list(api, request, with_flag=None, organization=True):
 		organization_label = api.organization_info(organization)['label']
 	accs = api.account_list(organization=organization, with_flag=with_flag)
 	orgas = api.organization_list()
-	flag_config = api.account_flag_configuration()
 	for acc in accs:
-		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,acc['flags'], flag_config=flag_config)))
+		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api, acc['flags'])))
 	return render(request, "account/list.html", {'accounts': accs, 'orgas': orgas, 'with_flag': with_flag, 'organization':organization, 'organization_label':organization_label})
 
 @wrap_rpc
@@ -287,16 +276,15 @@ def info(api, request, id=None):
 	if not api.user:
 		raise AuthError()
 	user = api.account_info(id) if id else api.user.data
-	account_flags = api.account_flags()
 	organization = api.organization_info(user["organization"])
 	user["reason"] = user.get("_reason")
 	flags = []
 	for flag in user["flags"] or []:
-		if flag in account_flags:
-			flags.append(account_flags[flag])
+		if flag in userflags.flags:
+			flags.append(userflags.flags[flag])
 		else:
 			flags.append(flag+" (unknown flag)")
-	flaglist = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,user['flags'] or [])))
+	flaglist = mark_safe(u'\n'.join(render_account_flag_fixedlist(api, user['flags'] or [])))
 	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": flags, 'flaglist': flaglist})                   
 
 @wrap_rpc
@@ -335,7 +323,7 @@ def edit(api, request, id):
 			if 'flags' in data:
 				old_flags = api.account_info(id)['flags']
 				newflags = {}
-				for flag in api.account_flags().iterkeys():
+				for flag in userflags.flags.iterkeys():
 					if flag in data['flags']:
 						if flag not in old_flags:
 							newflags[flag] = True
@@ -459,7 +447,7 @@ def _own_notifications(api, request, show_read, ref_filter=None, subject_group=N
 
 	notifications = sorted(notifications, key=lambda n: n['timestamp'], reverse=True)
 
-	show_mark_all_read_button = is_filtered or len(notifications) > 10
+	show_mark_all_read_button = len(notifications) > 1
 
 	return render(request, "account/notifications.html", {"notifications": notifications, "include_read": show_read, 'is_filtered': is_filtered, "show_mark_all_read_button": show_mark_all_read_button})
 

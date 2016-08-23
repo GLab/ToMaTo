@@ -5,6 +5,9 @@ var VMElement = IconElement.extend({
 		return this._super() && !this.busy;
 	},
 	iconUrl: function() {
+		if (this.data._custom_icon != undefined && this.data._custom_icon != null && this.data._custom_icon != "") {
+			return this.data._custom_icon;
+		}
 		return this.getTemplate() ? this.getTemplate().iconUrl() : this._super(); 
 	},
 	isRemovable: function() {
@@ -33,7 +36,7 @@ var VMElement = IconElement.extend({
 	},
 	configWindowSettings: function() {
 		var config = this._super();
-		config.order = ["name", "site", "profile", "template", "_endpoint"];
+		config.order = ["name", "site", "profile", "template", "_endpoint", "_custom_icon"];
 		config.ignore.push("info_last_sync");
 		
 		var profileInfo = {};
@@ -130,13 +133,14 @@ var VMElement = IconElement.extend({
 			type: this.data.type,
 			call_element: this
 		});
+		topology_site = this.editor.topology.data.site
 		config.special.site = new ChoiceElement({
 			label: "Site",
 			name: "site",
 			info: siteInfo,
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.label || site.name) + (site.location ? (", " + site.location) : "");
-			}, {"": "Any site"}),
+			}, {"": topology_site ? "Topology Default ("+this.editor.sites_dict[topology_site].label+")" : "Any site"}),
 			value: (this.data.host_info && this.data.host_info.site) || this.data.site || this.caps.attributes.site["default"],
 			disabled: !this.attrEnabled("site")
 		});
@@ -155,7 +159,13 @@ var VMElement = IconElement.extend({
 			choices: {true: "Seperates segments", false: "Connects segments"},
 			value: this.isEndpoint(),
 			inputConverter: Boolean.parse
-		}); 
+		});
+		config.special._custom_icon = new TextElement({
+			label: "Custom icon",
+			name: "_custom_icon",
+			value:this.data._custom_icon,
+			hint: "URL to 32x32 PNG image"
+		});
 		return config;
 	},
 	getConnectTarget: function(callback) {

@@ -3,7 +3,7 @@
 This file should be used to track all changes to ToMaTo in a similar way to [VpnCloud](https://github.com/dswd/vpncloud.rs/blob/master/CHANGELOG.md)
 Entries should be prefixed with some tags:
 - Status tags: `added`, `fixed`, `changed`, `removed`
-- Component tags: `backend_api`, `backend_accounting`, `backend_core`, `backend_debug`, `backend_users`, `web`, `cli`, `hostmanager`, `misc`
+- Component tags: `backend_api`, `backend_accounting`, `backend_core`, `backend_debug`, `backend_users`, `web`, `cli`, `hostmanager`, `misc`, `config`, `docker`
 Entries should be sorted by component and status with important entries and entries with multiple components being on top and **bold**.
 
 
@@ -11,7 +11,33 @@ Entries should be sorted by component and status with important entries and entr
 
 ### UNRELEASED (NOT RUNNING ON SERVERS)
 
+
 ### UNRELEASED (RUNNING ON SERVERS)
+
+- [config, changed] Topology section now requires a `timeout-destroy` value
+- [backend_core, changed] Better timeout notifications and times
+- [config, changed] In dumpmanager config section, api_store_secret_key must now be set.
+- [config, changed] web module now requires a simple dump config
+- [config, changed] web/web-resources now requires the __custom-element-icons__ key 
+- [docker, changed] web docker image now supports a log directory
+- [backend_api, backend_debug, changed] Now allowing dump storing via API
+- [web, changed] web now sends error dumps to backend via API
+- [backend_users, fixed] Logins are now saved again for display in 30-day active users count
+- [web, changed] editor now allows to set custom icons for elements
+- [backend_api, fixed] Fixed __statistics__ API call
+- [backend_api, fixed] Fixed authorization for download actions on elements
+- [backend_api, changed] Removed configuration info calls
+- [backend_core, changed] Topology site setting is now applied on element prepare instead of element creation
+- [backend_core, changed] Now preventing timed-out topologies from preparing or starting new elements
+- [backend_core, fixed] Fixed topology removal
+- [backend_core, fixed] Fixed an unnecessary dumped error that spammed dump management
+- [backend_core, fixed] Now allowing deployment of elements on hosts where template is known but not yet fetched
+- [web, changed] Added a hint for the packet filter syntax in connection settings
+- [web, changed] Better debug dropdown menu for debug users
+- [web, changed] web now sends error dumps to backend via API
+- [web, fixed] Average host load and availability on sites and organizations is now calculated correctly
+- [web, fixed] Inter-site and intra-site statistics pages now work properly
+- [cli, fixed] Updated template migration script to support URL-based templates
 
 ### Version 4.0 (Released 2016-07-18)
 - **[backend, changed] Split backend into multiple services: backend_core, backend_accounting, backend_users and backend_debug under one central backend_api**

@@ -232,14 +232,19 @@ class Topology(Entity, BaseDocument):
 		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		if self.id:
+			for con in self.connections:
+				con._remove()
 			for el in self.elements:
 				el._remove(recurse=recurse)
-			for con in self.connections:
-				con._remove(recurse=recurse)
 			self.delete()
 
 	def modify_site(self, val):
-		self.site = Site.get(val)
+		if val:
+			site = Site.get(val)
+			UserError.check(site, code=UserError.ENTITY_DOES_NOT_EXIST, message="site does not exist", data={"site": val})
+			self.site = site
+		else:
+			self.site = None
 
 	def modifyRole(self, user, role):
 		UserError.check(role in Role.RANKING or not role, code=UserError.INVALID_VALUE, message="Invalid role",
@@ -250,9 +255,12 @@ class Topology(Entity, BaseDocument):
 	def checkModify(self, attr):
 		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
 
+	def checkTimeout(self):
+		UserError.check(self.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
+
 	def checkCompoundAction(self, action, **params):
 		if action in ["start", "prepare"]:
-			UserError.check(self.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
+			self.checkTimeout()
 		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
 		return True
 
@@ -304,6 +312,9 @@ class Topology(Entity, BaseDocument):
 	def __str__(self):
 		return "%s [#%s]" % (self.name, self.id)
 
+	def __repr__(self):
+		return "Topology(%s)" % self
+
 	ACTIONS = {
 		Entity.REMOVE_ACTION: Action(_remove, check=checkRemove),
 		ActionName.START: Action(action_start, check=lambda self: self.checkCompoundAction(ActionName.START), paramSchema=schema.Constant({})),
@@ -317,8 +328,7 @@ class Topology(Entity, BaseDocument):
 		"id": IdAttribute(),
 		"permissions": Attribute(readOnly=True, get=lambda self: {str(p.user): p.role for p in self.permissions},
 			schema=schema.StringMap(additional=True)),
-		"site": Attribute(get=lambda self: self.site.name if self.site else None,
-			set=modify_site, schema=schema.Identifier(null=True)),
+		"site": Attribute(get=lambda self: self.site.name if self.site else None, set=modify_site),
 		"elements": Attribute(readOnly=True, schema=schema.List()),
 		"connections": Attribute(readOnly=True, schema=schema.List()),
 		"timeout": Attribute(field=timeout, readOnly=True, schema=schema.Number()),
@@ -365,12 +375,13 @@ def timeout_task():
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.WARNED, timeout__lte=now):
 		try:
 			logging.logMessage("timeout stop", category="topology", id=top.idStr)
+			top.sendNotification(role=Role.owner, subject="Topology stopped: %s" % top, message="The topology %s has timed out and is now stopped. Your data is safe for now. The topology will be destroyed in the future, which may result in data loss. To stop this process, please log in and renew your topology, or download your data." % top)
 			top.action_stop()
 			top.timeoutStep = TimeoutStep.STOPPED
 			top.save()
 		except:
 			wrap_and_handle_current_exception(re_raise=False)
-	for top in Topology.objects.filter(timeoutStep=TimeoutStep.STOPPED, timeout__lte=now-topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]):
+	for top in Topology.objects.filter(timeoutStep=TimeoutStep.STOPPED, timeout__lte=now-topology_config[Config.TOPOLOGY_TIMEOUT_DESTROY]):
 		try:
 			logging.logMessage("timeout destroy", category="topology", id=top.idStr)
 			top.action_destroy()

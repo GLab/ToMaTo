@@ -108,37 +108,39 @@
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 			{% endif %}
-			
-    		<div class="hiddenbox"><table>
-    		{% if templ.description %}
-    			<tr>
-    				<td><img src="/img/info.png" /></td>
-	    			<td>{{ templ.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
-	    		</tr>
-	    	{%endif%}
-	    	
-	    	{% if templ.show_as_common %}
-	    		<tr>
-	    			<td><img src="/img/tick.png"/></td>
-	    			<td>This template appears as a common element in the editor.</td>
-	    		</tr>
-	    	{% endif %}
-	    	
-    		{% if not templ.nlXTP_installed and not templ.tech == 'repy' %}
-	    		<tr>
-		    		<td><img src="/img/warning16.png" /></td>
-		    		<td>nlXTP Guest Modules not installed</td>
-	    		</tr>
-    		{%endif%}
-	    	
-		    {% if templ.restricted %}
-				<tr>
-					<td><img src="/img/lock.png" /></td>
-					<td>This template is restricted.</td>
-				</tr>
+
+			{% if templ.description or templ.show_as_common or not templ.nlXTP_installed and templ.tech != 'repy' or templ.restricted %}
+				<div class="hiddenbox"><table>
+				{% if templ.description %}
+					<tr>
+						<td><img src="/img/info.png" /></td>
+						<td>{{ templ.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+					</tr>
+				{%endif%}
+
+				{% if templ.show_as_common %}
+					<tr>
+						<td><img src="/img/tick.png"/></td>
+						<td>This template appears as a common element in the editor.</td>
+					</tr>
+				{% endif %}
+
+				{% if not templ.nlXTP_installed and not templ.tech == 'repy' %}
+					<tr>
+						<td><img src="/img/warning16.png" /></td>
+						<td>nlXTP Guest Modules not installed</td>
+					</tr>
+				{%endif%}
+
+				{% if templ.restricted %}
+					<tr>
+						<td><img src="/img/lock.png" /></td>
+						<td>This template is restricted.</td>
+					</tr>
+				{% endif %}
+
+				</table></div>
 			{% endif %}
-			
-    		</table></div>
 		 </div>	    
 	    </td>
 	  </tr>

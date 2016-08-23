@@ -18,8 +18,9 @@
 from ..lib.service import get_backend_core_proxy, is_self, get_tomato_inner_proxy
 from ..lib.util import joinDicts
 from ..lib.versioninfo import getVersionStr
+from ..lib.cache import cached
 from ..misc import getCAPublicKey
-
+from ..lib.settings import settings, Config
 
 def server_info():
 	"""
@@ -42,28 +43,23 @@ def server_info():
 	  ``topology_timeout``
 		Timeout configuration for topologies. Clients that provide an interface for
 		setting timeouts should use this information to show options.
-
-	  ``TEMPLATE_TRACKER_URL``
-		Template tracker of this backend. Use this to create torrents for templates.
 	"""
-	try:
-		core_info = get_backend_core_proxy().server_info()
-	except:
-		core_info = {'public_key': None}
-	topology_config = settings.get_topology_settings()
-	return {
-		'public_key': getCAPublicKey(),
-		'version': getVersionStr(),
-		'api_version': [4, 0, 1],
-		'topology_timeout': {
-			'initial': topology_config[Config.TOPOLOGY_TIMEOUT_INITIAL],
-			'maximum': topology_config[Config.TOPOLOGY_TIMEOUT_MAX],
-			'options': topology_config[Config.TOPOLOGY_TIMEOUT_OPTIONS],
-			'default': topology_config[Config.TOPOLOGY_TIMEOUT_DEFAULT],
-			'warning': topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]
-		},
-		'web_url': settings.get_web_url()
-	}
+	return server_info_res
+
+topology_config = settings.get_topology_settings()
+server_info_res = {
+	'public_key': getCAPublicKey(),
+	'version': getVersionStr(),
+	'api_version': [4, 0, 2],
+	'topology_timeout': {
+		'initial': topology_config[Config.TOPOLOGY_TIMEOUT_INITIAL],
+		'maximum': topology_config[Config.TOPOLOGY_TIMEOUT_MAX],
+		'options': topology_config[Config.TOPOLOGY_TIMEOUT_OPTIONS],
+		'default': topology_config[Config.TOPOLOGY_TIMEOUT_DEFAULT],
+		'warning': topology_config[Config.TOPOLOGY_TIMEOUT_WARNING]
+	},
+	'web_url': settings.get_web_url()
+}
 
 def link_statistics(siteA, siteB):
 	"""
@@ -150,5 +146,3 @@ def statistics():
 			stat_update = get_tomato_inner_proxy(mod).statistics()
 			stats = joinDicts(stats, stat_update)
 	return stats
-
-from ..lib.settings import settings, Config

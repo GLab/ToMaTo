@@ -2,7 +2,7 @@ from auth import user_check_password
 
 from dump import dump_list
 
-from debug import debug_stats, ping, debug_execute_task, debug_debug_internal_api_call
+from debug import debug_stats, ping, debug_execute_task, debug_debug_internal_api_call, debug_throw_error
 
 from notification import notification_get, notification_list, notification_set_read, send_message,\
 	broadcast_message, broadcast_message_multifilter

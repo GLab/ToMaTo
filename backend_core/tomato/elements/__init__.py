@@ -23,6 +23,7 @@ from ..lib.decorators import *
 from ..lib.cache import cached
 from ..lib.error import UserError
 from ..connections import Connection
+from ..lib.constants import ActionName
 
 TYPES = {}
 
@@ -123,6 +124,9 @@ class Element(LockedStatefulEntity, BaseDocument):
 				attrs[key] = value
 		return attrs
 
+	def checkTopologyTimeout(self):
+		return self.topology.checkTimeout()
+
 	def checkUnknownAttribute(self, key, value):
 		if key.startswith("_"):
 			return True
@@ -157,6 +161,8 @@ class Element(LockedStatefulEntity, BaseDocument):
 			self.save()
 		UserError.check(action in self.mainElement.getAllowedActions(),
 			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (not supported by deployed element)")
+		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_GRANT]:
+			self.checkTopologyTimeout()
 		return True
 
 	def executeUnknownAction(self, action, params=None):

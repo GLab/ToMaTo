@@ -17,6 +17,9 @@
 
 from api_helpers import getCurrentUserInfo
 from ..lib.service import get_backend_debug_proxy
+from ..lib.exceptionhandling import wrap_and_handle_current_exception
+from ..lib.error import UserError, TransportError
+from ..lib.settings import settings
 
 def errordump_info(group_id, source, dump_id, include_data=False):
     """
@@ -148,3 +151,41 @@ def errorgroup_favorite(group_id, is_favorite):
     """
     getCurrentUserInfo().check_may_view_debugging_info()
     get_backend_debug_proxy().errorgroup_favorite(getCurrentUserInfo().get_username(), group_id, is_favorite)
+
+def errordump_store(source_name, dump_dict, store_key=None):
+    """
+    receive a dump from the webfrontend or editor.
+    This function will only raise UserErrors.
+
+    Every ToMaTo user is allowed to use this; simply let store_key be None in this case.
+    When calling this anonymously, you have to provide the correct store_key.
+    The store_key is found in the config.yaml file.
+
+    Dump dicts must contain the following keys:
+        str dump_id: identifying the dump on source_name
+        str group_id: used for grouping dumps belonging to the same fault
+        dict description: more information about the error. Must at least contain one item.
+        float timestamp (timestamp of the error)
+
+    The name for new groups will be derived from one of the following:
+        description.message
+        description.subject
+        group_id (if no other match)
+
+    Dump should contain the following:
+        software_version: {version, component}
+                                        where component should be equal to source_name
+
+    :param str source_name:
+    :param dict dump_dict:
+    :param str store_key: secret key that must be provided if called anonymously.
+    :return:
+    """
+    try:
+        if store_key is None:
+            getCurrentUserInfo()
+        else:
+            UserError.check(store_key == settings.get_dumpmanager_api_key(), code=UserError.NOT_LOGGED_IN, message="wrong store_key")
+        get_backend_debug_proxy().receive_dump_from_api(source_name, dump_dict)
+    except Exception, e:
+        wrap_and_handle_current_exception(re_raise=not (isinstance(e, UserError) or isinstance(e, TransportError)))

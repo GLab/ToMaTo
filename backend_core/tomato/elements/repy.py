@@ -55,7 +55,7 @@ class Repy(VMElement):
 
 	ACTIONS = VMElement.ACTIONS.copy()
 	ACTIONS.update({
-		ActionName.PREPARE: StatefulAction(action_prepare, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
+		ActionName.PREPARE: StatefulAction(action_prepare, check=VMElement.checkTopologyTimeout, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
 		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
 	})
 	

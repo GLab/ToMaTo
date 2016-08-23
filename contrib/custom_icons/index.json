@@ -1,0 +1,22 @@
+[
+  {
+    "url": "./computer-laptop.png",
+    "label": "Notebook"
+  },
+  {
+    "url": "./network-server-database.png",
+    "label": "Network Database"
+  },
+  {
+    "url": "./phone.png",
+    "label": "Phone"
+  },
+  {
+    "url": "./server-database.png",
+    "label": "Database"
+  },
+  {
+    "url": "./smartphone.png",
+    "label": "Smartphone"
+  }
+]

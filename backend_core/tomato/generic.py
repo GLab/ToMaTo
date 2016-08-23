@@ -1,3 +1,5 @@
+#fixme: this is an out-of-date version. symlink ../../shared/generic.py instead!
+
 import threading
 from .lib.error import UserError as Error
 from .lib import schema

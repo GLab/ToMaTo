@@ -98,15 +98,17 @@ def list(api, request):
     hosts = api.host_list()
     omap = {}
     for o in organizations:
-        o["hosts"] = {"count": 0, "avg_load": 0.0, "avg_availability": 0.0}
+        o["hosts"] = {"count": 0, "load_counted": 0, "avg_load": 0.0, "avg_availability": 0.0}
         omap[o["name"]] = o
     for h in hosts:
         o = omap[h["organization"]]
         o["hosts"]["count"] += 1
-        o["hosts"]["avg_load"] += h["load"] if "host_info" in h else 0.0
-        o["hosts"]["avg_availability"] += h["availability"] if "host_info" in h else 0.0
+        if h.get("host_info", None):
+          o["hosts"]["load_counted"] += 1
+          o["hosts"]["avg_load"] += h["load"]
+          o["hosts"]["avg_availability"] += h["availability"]
     for o in organizations:
-        o["hosts"]["avg_load"] = (o["hosts"]["avg_load"] / o["hosts"]["count"]) if o["hosts"]["count"] else None  
+        o["hosts"]["avg_load"] = (o["hosts"]["avg_load"] / o["hosts"]["load_counted"]) if o["hosts"]["load_counted"] else None
         o["hosts"]["avg_availability"] = (o["hosts"]["avg_availability"] / o["hosts"]["count"]) if o["hosts"]["count"] else None
     organizations.sort(key=lambda o: o["hosts"]["count"], reverse=True)  
     return render(request, "organization/list.html", {'organizations': organizations, 'sites': sites})
@@ -130,20 +132,23 @@ def info(api, request, name):
                 site['geolocation']['latitude'] = str(-site['geolocation']['latitude']) + 'S'
 
         smap[site['name']] = site
-        site['hosts'] = {"count": 0, "avg_load": 0.0, "avg_availability": 0.0}
-    orga['hosts'] = {"count": 0, "avg_load": 0.0, "avg_availability": 0.0}
+        site['hosts'] = {"count": 0, "load_counted": 0, "avg_load": 0.0, "avg_availability": 0.0}
+    orga['hosts'] = {"count": 0, "load_counted": 0, "avg_load": 0.0, "avg_availability": 0.0}
     for h in hosts:
         s = smap[h['site']]
         s["hosts"]["count"] += 1
-        s["hosts"]["avg_load"] += h["load"] if "host_info" in h else 0.0
-        s["hosts"]["avg_availability"] += h["availability"] if "host_info" in h else 0.0
         orga["hosts"]["count"] += 1
-        orga["hosts"]["avg_load"] += h["load"] if "host_info" in h else 0.0
-        orga["hosts"]["avg_availability"] += h["availability"] if "host_info" in h else 0.0
+        if h.get("host_info", None):
+          s["hosts"]["load_counted"] += 1
+          s["hosts"]["avg_load"] += h["load"]
+          s["hosts"]["avg_availability"] += h["availability"]
+          orga["hosts"]["load_counted"] += 1
+          orga["hosts"]["avg_load"] += h["load"]
+          orga["hosts"]["avg_availability"] += h["availability"]
     for s in sites:
-        s["hosts"]["avg_load"] = (s["hosts"]["avg_load"] / s["hosts"]["count"]) if s["hosts"]["count"] else None
+        s["hosts"]["avg_load"] = (s["hosts"]["avg_load"] / s["hosts"]["load_counted"]) if s["hosts"]["load_counted"] else None
         s["hosts"]["avg_availability"] = (s["hosts"]["avg_availability"] / s["hosts"]["count"]) if s["hosts"]["count"] else None
-    orga["hosts"]["avg_load"] = (orga["hosts"]["avg_load"] / orga["hosts"]["count"]) if orga["hosts"]["count"] else None
+    orga["hosts"]["avg_load"] = (orga["hosts"]["avg_load"] / orga["hosts"]["load_counted"]) if orga["hosts"]["load_counted"] else None
     orga["hosts"]["avg_availability"] = (orga["hosts"]["avg_availability"] / orga["hosts"]["count"]) if orga["hosts"]["count"] else None
 
     return render(request, "organization/info.html", {'organization': orga, 'sites': sites})

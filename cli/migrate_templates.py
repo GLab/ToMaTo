@@ -90,79 +90,20 @@ def parseArgs():
 
 	return options
 
-
-
-def _read_templates_3_0_0(api, include_restricted, template_names):
-	results = []
-	templates = api.resource_list('template')
-	for t in templates:
-		if include_restricted or not t['attrs'].get('restricted', False):
-			if template_names is None or t['attrs']['name'] in template_names:
-				templ = api.resource_info(t['id'], include_torrent_data=True)
-				res_entry = {
-					'name': templ['attrs']['name'],
-					'tech': templ['attrs']['tech'],
-					'attrs': {k: v for k, v in templ['attrs'].iteritems()
-									 if k not in ['name', 'tech', 'torrent_data', 'torrent_data_hash', 'ready']},
-					'torrent_data': templ['attrs']['torrent_data']
-				}
-
-				if 'creation_date' in res_entry['attrs']:
-					res_entry['attrs']['creation_date'] = time.mktime(datetime.datetime.strptime(res_entry['attrs']['creation_date'], "%Y-%m-%d").timetuple())
-
-				results.append(res_entry)
-
-	return results
-
-
-def _read_templates_4_0_0(api, include_restricted, template_names):
+def _read_templates_4_0_2(api, include_restricted, template_names):
 	results = []
 	templates = api.template_list()
 	for t in templates:
 		if include_restricted or not t.get('restricted', False):
 			if template_names is None or t['name'] in template_names:
-				templ = api.template_info(t['id'], True)
-				res_entry = {
-					'name': templ['name'],
-					'tech': templ['tech'],
-					'torrent_data': templ['torrent_data'],
-					'attrs': {k: v for k, v in templ.iteritems()
-									  if k not in ['name', 'tech', 'torrent_data', 'torrent_data_hash', 'ready', 'size', 'id']}
-				}
-				results.append(res_entry)
+				for k in ("all_urls", "popularity", "kblang", "checksum", "ready", "size", "id"):
+					del t[k]
+				results.append(t)
 	return results
 
-def _insert_template_3_0_0(api, template, overwrite_on_conflict):
+def _insert_template_4_0_2(api, template, overwrite_on_conflict):
 	try:
-		t = api.resource_create('template', {
-			'tech': template['tech'],
-			'name': template['name'],
-			'torrent_data': template['torrent_data']
-		})
-		templ_id = t['id']
-	except Exception, e:
-		if not overwrite_on_conflict:
-			raise e
-		try:
-			templates = api.resource_list['template']
-			for t in templates:
-				if t['attrs']['name'] == template['name'] and t['attrs']['tech'] == template['tech']:
-					templ_id  = t['id']
-		except:
-			raise e
-	try:
-		api.resource_modify(templ_id, template['attrs'])
-	except:
-		for k, v in template['attrs'].iteritems():
-			try:
-				api.template_modify(templ_id, {k: v})
-			except:
-				print "  error setting %s=%s" % (k, v)
-
-
-def _insert_template_4_0_0(api, template, overwrite_on_conflict):
-	try:
-		t = api.template_create(template['tech'], template['name'], {'torrent_data': template['torrent_data']})
+		t = api.template_create(template['tech'], template['name'], {k: v for k, v in template.iteritems() if k not in ("tech", "name")})
 		templ_id = t['id']
 	except Exception, e:  # something went wrong.
 		if not overwrite_on_conflict:  # if we don't want to overwrite this, abort.
@@ -174,36 +115,23 @@ def _insert_template_4_0_0(api, template, overwrite_on_conflict):
 					templ_id = t['id']
 		except:
 			raise e
-	try:
-		api.template_modify(templ_id, template['attrs'])
-	except:
-		for k, v in template['attrs'].iteritems():
-			try:
-				api.template_modify(templ_id, {k: v})
-			except:
-				print "  error setting %s=%s" % (k, v)
-
 
 
 def read_templates(api, version, include_restricted, template_names):
-	if version not in [[3, 0, 0], [4, 0, 0], [4, 0, 1]]:
+	if version not in [[4, 0, 2]]:
 		print "unsupported source version: %s.%s.%s" % (version[0], version[1], version[2])
 		return []
 
-	if version[0] == 3:
-		return _read_templates_3_0_0(api, include_restricted, template_names)
 	elif version[0] == 4:
-		return _read_templates_4_0_0(api, include_restricted, template_names)
+		return _read_templates_4_0_2(api, include_restricted, template_names)
 
 def insert_template(api, version, template, overwrite_on_conflict):
-	if version not in [[3, 0, 0], [4, 0, 0], [4, 0, 1]]:
-		print "unsupported destination version: %s.%s.%s" % (version[0], version[1], version[2])
+	if version not in [[4, 0, 2]]:
+		print "unsupported source version: %s.%s.%s" % (version[0], version[1], version[2])
 		return
 
-	if version[0] == 3:
-		return _insert_template_3_0_0(api, template, overwrite_on_conflict)
 	elif version[0] == 4:
-		return _insert_template_4_0_0(api, template, overwrite_on_conflict)
+		return _insert_template_4_0_2(api, template, overwrite_on_conflict)
 
 
 

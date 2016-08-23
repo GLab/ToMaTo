@@ -8,8 +8,12 @@ class ActionName:
 
 	UPLOAD_GRANT = "upload_grant"
 	UPLOAD_USE = "upload_use"
+	DOWNLOAD_GRANT = "download_grant"
+
 	REXTFV_UPLOAD_GRANT = "rextfv_upload_grant"
 	REXTFV_UPLOAD_USE = "rextfv_upload_use"
+	REXTFV_DOWNLOAD_GRANT = "rextfv_download_grant"
+
 	CHANGE_TEMPLATE = "change_template"
 
 class StateName:

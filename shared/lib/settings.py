@@ -148,6 +148,9 @@ backend_debug:
 web:
   paths:
     log:  /var/log/tomato/main.log
+  dumps:
+    enabled:  true
+    directory:  /var/log/tomato/dumps  # location where error dumps are stored
   ssl:
     cert:  /etc/tomato/web.pem
     key:  /etc/tomato/web.pem
@@ -170,6 +173,7 @@ web:
   web-resources:
     tutorial-list:        http://packages.tomato-lab.org/tutorials/index.json
     default-executable-archive-list:
+    custom-element-icons:
 
   # specify how often user information is updated (seconds between updates).
   # a longer interval improves performance for webfrontend and backend,
@@ -214,11 +218,12 @@ email:
         The ToMaTo Testbed
 
 topologies:
-  timeout-initial: 3600
-  timeout-default: 259200  # 3 days
-  timeout-max: 2592000  # 30 days
-  timeout-warning: 86400  # 1 day
-  timeout-remove: 7776000  # 90 days
+  timeout-initial: 3600  # 1 hour - initialization value for topology timeout
+  timeout-default: 259200  # 3 days - default timeout setting for user interface
+  timeout-max: 2592000  # 30 days - maximum allowed timeout
+  timeout-warning: 86400  # 1 day - warning n seconds before timeout
+  timeout-destroy: 1209600  # 14 days - topology destructed n seconds after timeout
+  timeout-remove: 7776000  # 90 days - topology removed n seconds after timeout
   timeout-options: [86400, 259200, 1209600, 2592000]  # 1, 3, 14, 30 days
 
 user-quota:
@@ -231,6 +236,7 @@ user-quota:
 
 dumpmanager:
   collection-interval: 1800  # 30 minutes. Interval in which the dumpmanager will collect error dumps from sources.
+  api_store_secret_key: "CHANGEME"  # secret key to store dumps from anonymous API calls
 
 debugging:
   enabled: false
@@ -311,6 +317,7 @@ class Config:
 
 	WEB_RESOURCE_TUTORIAL_LIST = "tutorial-list"
 	WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST = "default-executable-archive-list"
+	WEB_RESOURCE_CUSTOM_ELEMENT_ICONS = "custom-element-icons"
 
 	EXTERNAL_URL_AUP = "aup"
 	EXTERNAL_URL_HELP = "help"
@@ -324,6 +331,7 @@ class Config:
 	TOPOLOGY_TIMEOUT_DEFAULT = 'timeout-default'
 	TOPOLOGY_TIMEOUT_MAX = 'timeout-max'
 	TOPOLOGY_TIMEOUT_WARNING = 'timeout-warning'
+	TOPOLOGY_TIMEOUT_DESTROY = 'timeout-destroy'
 	TOPOLOGY_TIMEOUT_REMOVE = 'timeout-remove'
 	TOPOLOGY_TIMEOUT_OPTIONS = 'timeout-options'
 
@@ -547,6 +555,9 @@ class SettingsProvider:
 		:rtype: dict
 		"""
 		return {k: v for k, v in self.original_settings['topologies'].iteritems()}
+
+	def get_dumpmanager_api_key(self):
+		return self.original_settings["dumpmanager"]["api_store_secret_key"]
 
 	def get_dump_config(self):
 		"""
@@ -809,14 +820,16 @@ class SettingsProvider:
 			print "Configuration ERROR at /dumpmanager: is missing."
 			print " using default dumpmanager settings."
 			self.original_settings['dumpmanager'] = default_settings['dumpmanager']
-		else:
-			for k, v in default_settings['dumpmanager'].iteritems():
-				if not self.original_settings['dumpmanager'].get(k, None):
-					print "Configuration ERROR at /dumpmanager/%s: is missing." % k
-					print " using default setting for %s" % k
-					self.original_settings['dumpmanager'][k] = v
+		for k, v in default_settings['dumpmanager'].iteritems():
+			if not self.original_settings['dumpmanager'].get(k, None):
+				print "Configuration ERROR at /dumpmanager/%s: is missing." % k
+				print " using default setting for %s" % k
+				self.original_settings['dumpmanager'][k] = v
+			if k == "api_store_secret_key" and v == default_settings["dumpmanager"]["api_store_secret_key"]:
+					print "Configuration WARNING at /dumpmanager/api_store_secret_key: is default"
+					print "This is a secret key that should be changed."
 
-		# dumpmanager
+		# debugging
 		if not self.original_settings.get('debugging', None):
 			print "Configuration ERROR at /debugging: is missing."
 			print " using default debugging settings."

@@ -11,7 +11,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-instal
   python-openssl python-django apache2 libapache2-mod-wsgi busybox \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /config /code \
+RUN mkdir -p /config /code /logs \
+    && ln -s /logs /var/log/tomato \
     && ln -s /config /etc/tomato
 
 ADD code/ /code/
@@ -24,7 +25,9 @@ RUN a2ensite tomato-web; a2dissite 000-default; a2dismod mpm_event; a2enmod mpm_
 ENV PYTHONUNBUFFERED 0
 ENV TIMEZONE UTC
 
-VOLUME ["/config", "/code", "/var/log/apache2"]
+VOLUME ["/config", "/code", "/var/log/apache2", "/logs"]
+RUN chown www-data:www-data /logs
+
 EXPOSE 80 443
 
 CMD ["busybox", "init"]

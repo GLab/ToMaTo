@@ -104,6 +104,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				var info = con.caps.attributes[name];
 				info.name = name;
 				var el = this.autoElement(info, con.data[name], con.attrEnabled(name));
+				if (name == "capture_filter") {
+					console.log(el);
+					el.setHint("pcap filter");
+				}
 				this.capturing_elements.push(el);
 				this.elements.push(el);
 				packet_capturing.append($('<div class="form-group" />')
