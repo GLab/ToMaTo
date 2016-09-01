@@ -27,40 +27,36 @@ class virsh:
 		ActionName.STOP: StateName.PREPARED,
 	}
 
-	def __init__(self):
-		#go through currently listed vms and add them to vm_list
-		list_raw = run(["virsh", "list --all"])
-		list_split = list_raw.split("vm_")[1:]
-		list_vm_ids = []
-		for item in list_split:
-			list_vm_ids.append(item.split(" ")[0])
-		for id in list_vm_ids:
-			self.vm_list.append(int(id))
-		print self.vm_list
+	def __init__(self,type):
+		self.update_vm_list()
 
-		#read standard kvm config, extracting path to images
-		self.tree = ET.parse(self.config_path)
-		self.root = self.tree.getroot()
+		self.TYPE = type
+		if self.TYPE == TypeName.KVM:
+			#read standard kvm config, extracting path to images
+			self.tree = ET.parse(self.config_path)
+			self.root = self.tree.getroot()
 
-		for devices in self.root.findall('devices'):
-			for disks in devices.findall('disk'):
-				for original in disks.findall('source'):
-					self.original_image = original.get('file')
-					print self.original_image
-					parts = self.original_image.split("/")
-					self.imagepath = ""
-					for i in range(0, parts.__len__() - 1):
-						self.imagepath += parts[i]
-						self.imagepath += "/"
+			for devices in self.root.findall('devices'):
+				for disks in devices.findall('disk'):
+					for original in disks.findall('source'):
+						self.original_image = original.get('file')
+						print self.original_image
+						parts = self.original_image.split("/")
+						self.imagepath = ""
+						for i in range(0, parts.__len__() - 1):
+							self.imagepath += parts[i]
+							self.imagepath += "/"
 
 	def vm_start(self, vmid, params=None):
 		#check if vmid is already in list:
+		self.update_vm_list()
 		if self.vm_list.__contains__(vmid):
 			run(["virsh", "start", "%s" % vmid])
 		else:
 			InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be started" % vmid, data={"type": self.TYPE})
 
 	def vm_prepare(self, vmid, type="kvm"):
+		self.update_vm_list()
 		InternalError.check(not self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does already exist on this host" % vmid, data={"type": self.TYPE})
 		#copy template
 		path = self.imagepath
@@ -80,11 +76,12 @@ class virsh:
 
 		self.tree.write(config_path)
 
-		#define and start vm
+		#define vm
 		run(["virsh", "define", "%s" % config_path])
-		run(["virsh", "create", "%s" % config_path])
+		#run(["virsh", "create", "%s" % config_path])
 
 	def vm_stop(self, vmid, forced=False):
+		self.update_vm_list()
 		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be stopped" % vmid, data={"type": self.TYPE})
 		if forced:
 			run(["virsh", "destroy", "vm_%s" % vmid])
@@ -92,10 +89,11 @@ class virsh:
 			run(["virsh", "shutdown", "vm_%s" % vmid])
 
 	def vm_destroy(self, vmid):
+		self.update_vm_list()
 		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be destroyed" % vmid, data={"type": self.TYPE})
-		if self.checkState(vmid) == "running":
+		if self._checkState(vmid) == "running":
 			run(["virsh", "destroy", "vm_%s" % vmid])
-		while(self.checkState(vmid) != "shut off"):
+		while(self._checkState(vmid) != "shut off"):
 			time.sleep(1)
 		time.sleep(1)
 		run(["virsh", "undefine", "vm_%s" % vmid]) #--remove-all-storage --managed-save --snapshots-metadata
@@ -107,11 +105,84 @@ class virsh:
 		run(["rm", config_path])
 		self.vm_list.remove(vmid)
 
-	def checkState(self, vmid):
+	def _checkState(self, vmid):
 		state = run(["virsh", "domstate", "vm_%s" % vmid])
 		state = state[:-2]
 		#print self.state
 		return state
+
+	def getVMs(self):
+		self.update_vm_list()
+		return self.vm_list
+
+	def getState(self,vmid):
+		self.update_vm_list()
+		#InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host" % vmid, data={"type": self.TYPE})
+		if self.vm_list.__contains__(vmid):
+			if self._checkState(vmid) == "shut off":
+				return StateName.PREPARED
+			if self._checkState(vmid) == "running":
+				return StateName.STARTED
+		else:
+			return StateName.CREATED
+
+	def update_vm_list(self):
+		#go through currently listed vms and add them to vm_list
+		self.vm_list = []
+		list_raw = run(["virsh", "list --all"])
+		list_split = list_raw.split("vm_")[1:]
+		list_vm_ids = []
+		for item in list_split:
+			list_vm_ids.append(item.split(" ")[0])
+		for id in list_vm_ids:
+			self.vm_list.append(int(id))
+		#print self.vm_list
+
+	def set_Attributes(self, vmid, attrs):
+		self.update_vm_list()
+		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host" % vmid, data={"type": self.TYPE})
+		InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+		print "checking attrs"
+		print attrs
+		for attr in attrs:
+			print attr
+			if attr == "cpu":
+				print "cpu changed"
+				self.root.find("vcpu").text = str(attrs.get("cpu"))
+			if attr == "ram":
+				self.root.find("memory").text = str(attrs.get("ram"))
+				self.root.find("currentMemory").text = str(attrs.get("ram"))
+			if attr == "kblang":
+				self.root.find("devices").find("graphics").set("keymap",str(attrs.get("kblang")))
+			if attr == "usbtablet":
+				usbtablet_exists = False
+				usbtablet_entry = None
+				for device in self.root.find("devices"):
+					if device.get("bus") == "usb" and device.tag == "input":
+						usbtablet_exists = True
+						usbtablet_entry = device
+
+				print "usbtable exits: " + str(usbtablet_exists)
+
+				if bool(attrs.get("usbtablet")):
+					print "setting to True"
+					if not usbtablet_exists:
+						usbtablet_entry = ET.Element("input", {"bus": "usb", "type": "tablet"})
+						usbtablet_entry.append(ET.Element("alias",{"name": "input0"}))
+						for element in self.root.getchildren():
+							if element.tag == "devices":
+								element.append(usbtablet_entry)
+				else:
+					if usbtablet_exists:
+						print "removing usbtablet"
+						for element in self.root.getchildren():
+							if element.tag == "devices":
+								element.remove(usbtablet_entry)
+
+		config_path = self.imagepath
+		config_path += ("%s.xml" % vmid)
+		self.tree.write(config_path)
+
 
 	def random_mac(self):
 		mac = [ 0x00, 0x16, 0x3e,

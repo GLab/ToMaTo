@@ -1,18 +1,22 @@
 from util import run
-from constants import ActionName, StateName, TypeName
+from ..lib.constants import ActionName, StateName, TypeName
+from ..lib.newcmd import virsh_lib
 import time
 import xml.etree.ElementTree as ET
+import random
 
-
-
-class kvm:
-
+class KVM:
 
 	vmid = "bob"
-	state = "init"
+	state = StateName.CREATED
 	tree = None
 	imagepath = ""
 	original_image = ""
+	vir = vir = virsh_lib.virsh(TypeName.KVM)
+	cpu = 1
+	ram = 1048576
+	kblang = "en-us"
+	usbtablet = True
 
 	TYPE = TypeName.KVM
 	CAP_ACTIONS = {
@@ -29,55 +33,60 @@ class kvm:
 	}
 
 	def __init__(self):
-		self.vmid = "bob"
-		self.state = "init"
-
-		self.tree = ET.parse('%s.xml' % self.vmid)
-		root = self.tree.getroot()
-
-		for devices in root.findall('devices'):
-			for disks in devices.findall('disk'):
-				for original in disks.findall('source'):
-					self.original_image = original.get('file')
-					print self.original_image
-					parts = self.original_image.split("/")
-					for i in range(0, parts.__len__() - 1):
-						self.imagepath += parts[i]
-						self.imagepath += "/"
-					self.imagepath += ("%s.qcow2" % self.vmid)
-					print self.imagepath
+		current_vms = self.vir.getVMs()
+		vmid_valid = False
+		while not vmid_valid:
+			self.vmid = int(random.random()*10000)
+			if not self.vmid in current_vms:
+				vmid_valid = True
+		self.state = StateName.CREATED
 
 	def action_start(self):
-		run(["virsh", "start", "%s" % self.vmid])
+		if self.state == StateName.PREPARED:
+			self.vir.vm_start(self.vmid)
+			self.state = StateName.STARTED
 
 	def action_prepare(self):
-		#copy template
-		run(["cp", self.original_image, self.imagepath])
-		#copy xml file and adjust UUID etc.
-
-		#define and start vm
-		run(["virsh", "define", "%s.xml" % self.vmid])
-		run(["virsh", "create", "%s.xml" % self.vmid])
+		if self.state == StateName.CREATED:
+			self.vir.vm_prepare(self.vmid)
+			self.state = StateName.PREPARED
 
 	def action_stop(self):
-		run(["virsh", "shutdown", "%s" % self.vmid])
+		if self.state == StateName.STARTED:
+			self.vir.vm_stop(self.vmid)
+			self.state = StateName.PREPARED
 
 	def action_destroy(self):
-		run(["virsh", "shutdown", "%s" % self.vmid])
-		while(self.state != "shut off"):
-			time.sleep(1)
-			self.checkState()
-		time.sleep(2)
-		run(["virsh", "undefine", "%s" % self.vmid]) #--remove-all-storage --managed-save --snapshots-metadata
-		run(["rm", self.imagepath])
+		self.vir.vm_destroy(self.vmid)
+		self.state = StateName.CREATED
+
+	def modify_cpus(self, cpus):
+		if self.state == StateName.CREATED or self.state == StateName.PREPARED:
+			self.cpus = cpus
+		if self.state == StateName.PREPARED:
+			self.vir.setAttributes(self.vmid,{"cpu": self.cpus})
+
+	def modify_ram(self, ram):
+		if self.state == StateName.CREATED or self.state == StateName.PREPARED:
+			self.ram = ram
+		if self.state == StateName.PREPARED:
+			self.vir.setAttributes(self.vmid,{"ram": self.ram})
+
+	def modify_kblang(self, kblang):
+		if self.state == StateName.CREATED or self.state == StateName.PREPARED:
+			self.kblang = kblang
+		if self.state == StateName.PREPARED:
+			self.vir.setAttributes(self.vmid,{"kblang": self.kblang})
+
+	def modify_usbtablet(self, usbtablet):
+		if self.state == StateName.CREATED or self.state == StateName.PREPARED:
+			self.usbtablet = usbtablet
+		if self.state == StateName.PREPARED:
+			self.vir.setAttributes(self.vmid,{"usbtablet": self.usbtablet})
 
 	def checkState(self):
-		self.state = run(["virsh", "domstate", "%s" % self.vmid])
-		self.state = self.state[:-2]
+		realState = self.vir.getState(self.vmid)
+		#maybe add some checks if realstate differs from saved state
+		self.state = realState
 		#print self.state
 		return self.state
-
-var = kvm()
-var.checkState()
-#var.action_prepare()
-#var.action_destroy()
