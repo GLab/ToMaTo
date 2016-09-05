@@ -10,6 +10,7 @@ class virsh:
 
 	vm_list = []
 	kvm_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
+	lxc_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_lxc_config.xml" #standard_kvm_config.xml"
 	imagepath = ""
 	original_image = ""
 
@@ -47,6 +48,22 @@ class virsh:
 							self.imagepath += parts[i]
 							self.imagepath += "/"
 
+		if self.TYPE == TypeName.LXC:
+			#read standard kvm config, extracting path to images
+			self.tree = ET.parse(self.lxc_config_path)
+			self.root = self.tree.getroot()
+
+			for devices in self.root.findall('devices'):
+				for disks in devices.findall('disk'):
+					for original in disks.findall('source'):
+						self.original_image = original.get('file')
+						print self.original_image
+						parts = self.original_image.split("/")
+						self.imagepath = ""
+						for i in range(0, parts.__len__() - 1):
+							self.imagepath += parts[i]
+							self.imagepath += "/"
+
 	def vm_start(self, vmid, params=None):
 		#check if vmid is already in list:
 		self.update_vm_list()
@@ -64,8 +81,13 @@ class virsh:
 			self.tree = ET.parse(self.kvm_config_path)
 			self.root = self.tree.getroot()
 
+		if type == TypeName.LXC:
+			#read standard kvm config
+			self.tree = ET.parse(self.lxc_config_path)
+			self.root = self.tree.getroot()
+
 		#copy template
-		if type == TypeName.KVM and template == None:
+		if template == None:
 			self._setImage(vmid, self.original_image)
 		else:
 			path = self.imagepath + template

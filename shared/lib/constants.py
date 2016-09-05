@@ -31,6 +31,9 @@ class TypeName:
 	KVM = "kvm"
 	KVM_INTERFACE = "kvm_interface"
 
+	LXC = "lxc"
+	LXC_INTERFACE = "lxc_interface"
+
 	REPY = "repy"
 	REPY_INTERFACE = "repy_interface"
 
