@@ -4,13 +4,40 @@ from ..error import UserError, InternalError
 import time
 import xml.etree.ElementTree as ET
 import uuid, random
+from threading import Lock
 
+class IDManager(object):
+
+	__slots__ = ("minid", "maxid", "idpoint", "lock")
+
+	def __init__(self):
+		self.minid = 1000
+		self.maxid = 9999
+		self.idpoint = self.maxid
+		self.lock = Lock()
+
+	def _move_right(self):
+		self.idpoint+=1
+		if self.idpoint > self.maxid:
+			self.idpoint = self.minid
+
+	def _check_free(self, id_):
+		raise NotImplementedError()
+
+	def getFreeID(self):
+		with self.lock:
+			self._move_right()
+			while not self._check_free(self.idpoint):
+				self._move_right()
+			return self.idpoint
+
+idmanager = IDManager()
 
 class virsh:
 
 	vm_list = []
 	kvm_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
-	lxc_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_lxc_config.xml" #standard_kvm_config.xml"
+	lxc_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_lxc_config.xml" #standard_lxc_config.xml"
 	imagepath = ""
 	original_image = ""
 
@@ -87,11 +114,14 @@ class virsh:
 			self.root = self.tree.getroot()
 
 		#copy template
+		path = self.imagepath
+		path += ("%s.qcow2" % vmid)
+
 		if template == None:
 			self._setImage(vmid, self.original_image)
 		else:
-			path = self.imagepath + template
-			self._setImage(vmid, path)
+			pathToImage = self.imagepath + template
+			self._setImage(vmid, pathToImage)
 
 		config_path = self.imagepath
 		config_path += ("%s.xml" % vmid)
@@ -232,7 +262,7 @@ class virsh:
 		self.tree.write(config_path)
 
 	def _setImage(self, vmid, img_path):
-		InternalError.check(self.getState(vmid) == StateName.STARTED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+		#InternalError.check(self.getState(vmid) == StateName.STARTED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
 
 		path = self.imagepath
 		path += ("%s.qcow2" % vmid)
