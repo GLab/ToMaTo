@@ -1,8 +1,8 @@
 from util import run
 from ..lib.constants import ActionName, StateName, TypeName
-from ..lib.newcmd import virsh_lib
 from .. import connections, elements, resources, config
 from ..lib import cmd #@UnresolvedImport
+from ..lib.newcmd import virsh
 import time
 import xml.etree.ElementTree as ET
 import random
@@ -14,7 +14,7 @@ class KVM(elements.Element):
 	tree = None
 	imagepath = ""
 	original_image = ""
-	vir = vir = virsh_lib.virsh(TypeName.KVM)
+	vir = vir = virsh.virsh(TypeName.KVM)
 	cpu = 1
 	ram = 1048576
 	kblang = "en-us"

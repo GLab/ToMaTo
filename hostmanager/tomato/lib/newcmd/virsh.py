@@ -1,9 +1,10 @@
-from util import run
+from util import run, CommandError, cmd
 from ..constants import ActionName, StateName, TypeName
 from ..error import UserError, InternalError
 import time
 import xml.etree.ElementTree as ET
 import uuid, random
+from .. import decorators
 from threading import Lock
 
 class IDManager(object):
@@ -36,12 +37,18 @@ idmanager = IDManager()
 class virsh:
 
 	vm_list = []
-	kvm_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
-	lxc_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_lxc_config.xml" #standard_lxc_config.xml"
+	kvm_config_path = "/home/masterpeace/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
+	lxc_config_path = "/home/masterpeace/ToMaTo/hostmanager/tomato/lib/standard_lxc_config.xml" #standard_lxc_config.xml"
 	imagepath = ""
 	original_image = ""
 
 	TYPE = TypeName.KVM
+
+	HYPERVISOR_MAPPING = {
+		"lxc": "LXC://",
+		"kvm": "qemu:///system"
+	}
+
 	CAP_ACTIONS = {
 		ActionName.PREPARE: [StateName.CREATED],
 		ActionName.DESTROY: [StateName.PREPARED],
@@ -91,11 +98,20 @@ class virsh:
 							self.imagepath += parts[i]
 							self.imagepath += "/"
 
+
+	def _virsh(self, cmd_, args=None, timeout=None):
+		if not args: args = []
+		cmd_ = ["virsh", "-c", self.HYPERVISOR_MAPPING[self.TYPE], cmd_] + args
+		if timeout:
+			cmd_ = ["perl", "-e", "alarm %d; exec @ARGV" % timeout] + cmd_
+		out = cmd.run(cmd_)
+		return out
+
 	def vm_start(self, vmid, params=None):
 		#check if vmid is already in list:
 		self.update_vm_list()
 		if self.vm_list.__contains__(vmid):
-			run(["virsh", "start", "vm_%s" % vmid])
+			self._virsh("start", ["vm_%s" % vmid])
 		else:
 			InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be started" % vmid, data={"type": self.TYPE})
 
@@ -139,7 +155,7 @@ class virsh:
 		self.tree.write(config_path)
 
 		#define vm
-		run(["virsh", "define", "%s" % config_path])
+		self._virsh("define", ["%s" % config_path])
 		#run(["virsh", "create", "%s" % config_path])
 
 	def vm_stop(self, vmid, forced=False):

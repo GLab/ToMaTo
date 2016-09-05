@@ -1,4 +1,4 @@
-import lib.newcmd.virsh_lib
+import lib.newcmd.virsh
 import sys
 from lib.constants import ActionName, StateName, TypeName
 
@@ -9,7 +9,7 @@ if sys.argv.__len__() >= 3 :
 	args = sys.argv[2]
 
 
-vir = lib.newcmd.virsh_lib.virsh(TypeName.LXC)
+vir = lib.newcmd.virsh.virsh(TypeName.LXC)
 
 if command == "start":
 	vir.vm_start(int(args))
