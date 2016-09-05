@@ -95,7 +95,7 @@ class virsh:
 		#check if vmid is already in list:
 		self.update_vm_list()
 		if self.vm_list.__contains__(vmid):
-			run(["virsh", "start", "%s" % vmid])
+			run(["virsh", "start", "vm_%s" % vmid])
 		else:
 			InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be started" % vmid, data={"type": self.TYPE})
 
