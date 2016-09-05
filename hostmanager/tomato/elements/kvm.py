@@ -1,11 +1,13 @@
 from util import run
 from ..lib.constants import ActionName, StateName, TypeName
 from ..lib.newcmd import virsh_lib
+from .. import connections, elements, resources, config
+from ..lib import cmd #@UnresolvedImport
 import time
 import xml.etree.ElementTree as ET
 import random
 
-class KVM:
+class KVM(elements.Element):
 
 	vmid = "bob"
 	state = StateName.CREATED
@@ -40,6 +42,16 @@ class KVM:
 			if not self.vmid in current_vms:
 				vmid_valid = True
 		self.state = StateName.CREATED
+
+	def init(self, *args, **kwargs):
+		self.type = self.TYPE
+		self.state = StateName.CREATED
+		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		self.vmid = self.getResource("vmid")
+		self.vncport = self.getResource("port")
+		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
+		self.vncpassword = cmd.randomPassword()
+		#template: None, default template
 
 	def action_start(self):
 		if self.state == StateName.PREPARED:
