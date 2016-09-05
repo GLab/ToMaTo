@@ -9,7 +9,7 @@ import uuid, random
 class virsh:
 
 	vm_list = []
-	config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
+	kvm_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
 	imagepath = ""
 	original_image = ""
 
@@ -33,7 +33,7 @@ class virsh:
 		self.TYPE = type
 		if self.TYPE == TypeName.KVM:
 			#read standard kvm config, extracting path to images
-			self.tree = ET.parse(self.config_path)
+			self.tree = ET.parse(self.kvm_config_path)
 			self.root = self.tree.getroot()
 
 			for devices in self.root.findall('devices'):
@@ -55,15 +55,25 @@ class virsh:
 		else:
 			InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be started" % vmid, data={"type": self.TYPE})
 
-	def vm_prepare(self, vmid, type="kvm"):
+	def vm_prepare(self, vmid, type=TypeName.KVM, template=None):
 		self.update_vm_list()
 		InternalError.check(not self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does already exist on this host" % vmid, data={"type": self.TYPE})
+		#read standard config:
+		if type == TypeName.KVM:
+			#read standard kvm config
+			self.tree = ET.parse(self.kvm_config_path)
+			self.root = self.tree.getroot()
+
 		#copy template
-		path = self.imagepath
-		path += ("%s.qcow2" % vmid)
+		if type == TypeName.KVM and template == None:
+			self._setImage(vmid, self.original_image)
+		else:
+			path = self.imagepath + template
+			self._setImage(vmid, path)
+
 		config_path = self.imagepath
 		config_path += ("%s.xml" % vmid)
-		run(["cp", self.original_image, path])
+		#run(["cp", self.original_image, path])
 		#copy xml file and adjust UUID etc.
 		self.root.set("id",str(vmid))
 		self.root.find("name").text = ("vm_%s" % vmid)
@@ -141,20 +151,34 @@ class virsh:
 	def set_Attributes(self, vmid, attrs):
 		self.update_vm_list()
 		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host" % vmid, data={"type": self.TYPE})
-		InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
+		#reading xml file of vm:
+		config_path = self.imagepath
+		config_path += ("%s.xml" % vmid)
+		self.tree = ET.parse(self.config_path)
+		self.root = self.tree.getroot()
+
 		print "checking attrs"
 		print attrs
 		for attr in attrs:
 			print attr
 			if attr == "cpu":
+				InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
 				print "cpu changed"
 				self.root.find("vcpu").text = str(attrs.get("cpu"))
 			if attr == "ram":
+				InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
 				self.root.find("memory").text = str(attrs.get("ram"))
 				self.root.find("currentMemory").text = str(attrs.get("ram"))
 			if attr == "kblang":
+				InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
 				self.root.find("devices").find("graphics").set("keymap",str(attrs.get("kblang")))
 			if attr == "usbtablet":
+				InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
 				usbtablet_exists = False
 				usbtablet_entry = None
 				for device in self.root.find("devices"):
@@ -178,11 +202,21 @@ class virsh:
 						for element in self.root.getchildren():
 							if element.tag == "devices":
 								element.remove(usbtablet_entry)
+			if attr == "template":
+				path = self.imagepath + attrs.get("template")
+				self._setImage(vmid, path)
 
-		config_path = self.imagepath
-		config_path += ("%s.xml" % vmid)
+
 		self.tree.write(config_path)
 
+	def _setImage(self, vmid, img_path):
+		InternalError.check(self.getState(vmid) == StateName.STARTED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
+		path = self.imagepath
+		path += ("%s.qcow2" % vmid)
+
+		#run(["cp", self.original_image, path])
+		run(["cp", img_path, path])
 
 	def random_mac(self):
 		mac = [ 0x00, 0x16, 0x3e,
