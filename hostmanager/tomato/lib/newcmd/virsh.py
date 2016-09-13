@@ -37,8 +37,8 @@ idmanager = IDManager()
 class virsh:
 
 	vm_list = []
-	kvm_config_path = "/home/masterpeace/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
-	lxc_config_path = "/home/masterpeace/ToMaTo/hostmanager/tomato/lib/standard_lxc_config.xml" #standard_lxc_config.xml"
+	kvm_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
+	lxc_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_lxc_config.xml" #standard_lxc_config.xml"
 	imagepath = ""
 	original_image = ""
 
@@ -64,7 +64,7 @@ class virsh:
 
 	def __init__(self,type):
 		self.update_vm_list()
-
+		print "init"
 		self.TYPE = type
 		if self.TYPE == TypeName.KVM:
 			#read standard kvm config, extracting path to images
@@ -157,6 +157,8 @@ class virsh:
 		#define vm
 		self._virsh("define", ["%s" % config_path])
 		#run(["virsh", "create", "%s" % config_path])
+
+		self.writeInitialConfig()
 
 	def vm_stop(self, vmid, forced=False):
 		self.update_vm_list()
@@ -293,3 +295,180 @@ class virsh:
 			random.randint(0x00, 0xff) ]
 		return ':'.join(map(lambda x: "%02x" % x, mac))
 
+	def writeInitialConfig(self, type):
+		initNode = ET.fromstring("<domain></domain>")
+		initNode.set("id", "2")
+		initNode.set("type", "kvm")
+
+		elementName = ET.Element("name")
+		elementName.text = "Not Initiated"
+		initNode.append(elementName)
+
+		elementUUID = ET.Element("uuid")
+		elementUUID.text = "1b565254-c508-eabf-ce0e-2ba22f4d6e40"
+		initNode.append(elementUUID)
+
+		elementMemory = ET.Element("memory", {"unit": "KiB"})
+		elementMemory.text = "1048576"
+		initNode.append(elementMemory)
+
+		elementCurrentMemory = ET.Element("currentMemory", {"unit": "KiB"})
+		elementCurrentMemory.text = "1048576"
+		initNode.append(elementCurrentMemory)
+
+		elementVCPU = ET.Element("vcpu", {"placement": "static"})
+		elementVCPU.text = "1"
+		initNode.append(elementVCPU)
+
+		elementResource = ET.Element("resource")
+		elementPartition = ET.Element("partition")
+		elementPartition.text = "/machine"
+		elementResource.append(elementPartition)
+		initNode.append(elementResource)
+
+		elementOS = ET.Element("os")
+		elementType =ET.Element("type", {"arch": "x86_64", "machine": "pc-i440fx-trusty"})
+		elementType.text = "hvm"
+		elementOS.append(elementType)
+		elementBoot = ET.Element("boot", {"dev": "hd"})
+		elementOS.append(elementBoot)
+		initNode.append(elementOS)
+
+		elementFeatures = ET.Element("features")
+		elementACPI = ET.Element("acpi")
+		elementFeatures.append(elementACPI)
+		elementAPIC = ET.Element("apic")
+		elementFeatures.append(elementAPIC)
+		elementPAE = ET.Element("pae")
+		elementFeatures.append(elementPAE)
+		initNode.append(elementFeatures)
+
+		elementClock = ET.Element("clock", {"offset": "utc"})
+		initNode.append(elementClock)
+
+		elementONPOWEROFF = ET.Element("on_poweroff")
+		elementONPOWEROFF.text = "destroy"
+		initNode.append(elementONPOWEROFF)
+
+		elementOnReboot = ET.Element("on_reboot")
+		elementOnReboot.text = "restart"
+		initNode.append(elementOnReboot)
+
+		elementOnCrash = ET.Element("on_crash")
+		elementOnCrash.text = "restart"
+		initNode.append(elementOnCrash)
+
+		elementDevices = ET.Element("devices")
+
+		elementEmulator = ET.Element("emulator")
+		elementEmulator.text = "/usr/bin/kvm-spice"
+		elementDevices.append(elementEmulator)
+
+		elementDisk = ET.Element("disk", {"device": "disk", "type": "file"})
+		elementDriver = ET.Element("driver", {"name": "qemu", "type": "qcow2"})
+		elementDisk.append(elementDriver)
+		elementSource = ET.Element("source",{"file": "/home/stephan/work/kvm_test/bob_image.qcow2"})
+		elementDisk.append(elementSource)
+		elementOriginal = ET.Element("original", {"file": "/home/stephan/work/kvm_test/initial_image.qcow2"})
+		elementDisk.append(elementOriginal)
+		elementTarget = ET.Element("target", {"bus": "virtio", "dev": "vda"})
+		elementDisk.append(elementTarget)
+		elementAlias = ET.Element("alias", {"name": "virtio-disk0"})
+		elementDisk.append(elementAlias)
+		elementAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x05", "type": "pci"})
+		elementDisk.append(elementAddress)
+		elementDevices.append(elementDisk)
+
+		elementController2 = ET.Element("controller", {"index": "0", "type": "usb"})
+		elementControllerAlias2 = ET.Element("alias", {"name": "usb0"})
+		elementController2.append(elementControllerAlias2)
+		elementControllerAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x2", "slot": "0x01", "type": "pci"})
+		elementController2.append(elementControllerAddress)
+		elementDevices.append(elementController2)
+
+		elementController = ET.Element("controller", {"index": "0", "model": "pci-root", "type": "pci"})
+		elementControllerAlias = ET.Element("alias", {"name": "pci.0"})
+		elementController.append(elementControllerAlias)
+		elementDevices.append(elementController)
+
+		elementInterface = ET.Element("interface", {"type": "bridge"})
+		elementInterfaceSource = ET.Element("source", {"bridge": "br0"})
+		elementInterface.append(elementInterfaceSource)
+		elementMac = ET.Element("mac", {"address": "52:54:00:bb:d5:2b" })
+		elementInterface.append(elementMac)
+		elementDevices.append(elementInterface)
+
+		elementSerial = ET.Element("serial", {"type": "pty"})
+		elementSerialSource = ET.Element("source", {"path": "/dev/pts/6"})
+		elementSerial.append(elementSerialSource)
+		elementSerialTarget = ET.Element("target", {"port": "0"})
+		elementSerial.append(elementSerialTarget)
+		elementSerialAlias = ET.Element("alias", {"name": "serial0"})
+		elementSerial.append(elementSerialAlias)
+		elementDevices.append(elementSerial)
+
+		elementConsole = ET.Element("console", {"tty": "/dev/pts/6", "type": "pty"})
+		elementConsoleSource = ET.Element("source", {"path": "/dev/pts/6"})
+		elementConsole.append(elementConsoleSource)
+		elementConsoleTarget = ET.Element("target", {"port": "0", "type": "serial"})
+		elementConsole.append(elementConsoleTarget)
+		elementConsoleAlias = ET.Element("alias", {"name": "serial0"})
+		elementConsole.append(elementConsoleAlias)
+		elementDevices.append(elementConsole)
+
+		elementInput = ET.Element("input", {"bus": "usb", "type": "tablet"})
+		elementInputAlias = ET.Element("alias", {"name": "input0"})
+		elementInput.append(elementInputAlias)
+		elementDevices.append(elementInput)
+
+		elementInput2 = ET.Element("input", {"bus": "ps2", "type": "mouse"})
+		elementDevices.append(elementInput2)
+
+		elementInput3 = ET.Element("input", {"bus": "ps2", "type": "keyboard"})
+		elementDevices.append(elementInput3)
+
+		elementGraphics = ET.Element("graphics", {"autoport": "yes", "listen": "127.0.0.1", "port": "5900", "type": "vnc"})
+		elementListen = ET.Element("listen", {"address": "127.0.0.1", "type": "address"})
+		elementGraphics.append(elementListen)
+		elementDevices.append(elementGraphics)
+
+		elementSound = ET.Element("sound", {"model": "ich6"})
+		elementSoundAlias = ET.Element("alias", {"name": "sound0"})
+		elementSound.append(elementSoundAlias)
+		elementSoundAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x04", "type": "pci"})
+		elementSound.append(elementSoundAddress)
+		elementDevices.append(elementSound)
+
+		elementVideo = ET.Element("video")
+		elementModel = ET.Element("model", {"heads": "1", "type": "cirrus", "vram": "9216"})
+		elementVideo.append(elementModel)
+		elementVideoAlias = ET.Element("alias", {"name": "video0"})
+		elementVideo.append(elementVideoAlias)
+		elementVideoAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x02", "type": "pci"})
+		elementVideo.append(elementVideoAddress)
+		elementDevices.append(elementVideo)
+
+		elementMemBalloon = ET.Element("memballoon", {"model": "virtio"})
+		elementMemBalloonAlias = ET.Element("alias", {"name": "balloon0"})
+		elementMemBalloon.append(elementMemBalloonAlias)
+		elementMemballoonAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x06", "type": "pci"})
+		elementMemBalloon.append(elementMemballoonAddress)
+		elementDevices.append(elementMemBalloon)
+
+		initNode.append(elementDevices)
+
+		elementSecLabel = ET.Element("seclabel", {"model": "apparmor", "relabel": "yes", "type": "dynamic"})
+		elementLabel = ET.Element("label")
+		elementLabel.text = "libvirt-1b565254-c508-eabf-ce0e-2ba22f4d6e40"
+		elementSecLabel.append(elementLabel)
+		elementImageLabel = ET.Element("imagelabel")
+		elementImageLabel.text = "libvirt-1b565254-c508-eabf-ce0e-2ba22f4d6e40"
+		elementSecLabel.append(elementImageLabel)
+		initNode.append(elementSecLabel)
+
+		print "Writing test.xml"
+
+		config_path = self.imagepath
+		config_path += ("%test.xml")
+		tree = ET.ElementTree(initNode)
+		tree.write(config_path)
