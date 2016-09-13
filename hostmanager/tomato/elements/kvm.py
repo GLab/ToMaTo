@@ -7,7 +7,9 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import cmd #@UnresolvedImport
 from ..lib.newcmd import virsh, qemu_img
 from ..lib.newcmd.util import io
-from ..lib.error import UserError
+from ..lib.error import UserError, InternalError
+
+
 import time
 import xml.etree.ElementTree as ET
 import random, os
@@ -62,7 +64,15 @@ class KVM(elements.Element):
 		ActionName.DESTROY: [StateName.PREPARED],
 		ActionName.START: [StateName.PREPARED],
 		ActionName.STOP: [StateName.STARTED],
+		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
+		ActionName.REXTFV_UPLOAD_GRANT: [StateName.PREPARED],
+		ActionName.UPLOAD_USE: [StateName.PREPARED],
+		ActionName.REXTFV_UPLOAD_USE: [StateName.PREPARED],
+		"download_grant": [StateName.PREPARED],
+		"rextfv_download_grant": [StateName.PREPARED, StateName.STARTED],
+		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
+
 	CAP_NEXT_STATE = {
 		ActionName.PREPARE: StateName.PREPARED,
 		ActionName.DESTROY: StateName.CREATED,
@@ -89,20 +99,61 @@ class KVM(elements.Element):
 		self.vncpassword = cmd.randomPassword()
 		#template: None, default template
 
-	def action_start(self):
-		if self.state == StateName.PREPARED:
-			self.vir.vm_start(self.vmid)
-			self.state = StateName.STARTED
+	def _configure(self):
+		assert self.state == StateName.PREPARED
+		kblang = self.kblang
+		if kblang is None:
+			kblang = self._template().kblang
+		self.vir.setAttributes(self.vmid, cores=self.cpus, memory=self.ram, keyboard=kblang, tablet=self.usbtablet,
+			hda=self._imagePath(), fda=self._nlxtp_floppy_filename(), hdb=self._nlxtp_device_filename())
 
-	def action_prepare(self):
-		if self.state == StateName.CREATED:
-			self.vir.vm_prepare(self.vmid)
-			self.state = StateName.PREPARED
+	def action_start(self):
+		self._checkState()
+		self.vir.start(self.vmid)
+		self.setState(StateName.STARTED, True)
+		for interface in self.getChildren():
+			con = interface.getConnection()
+			if con:
+				con.connectInterface(self.vir.getNicName(self.vmid, interface.num))
+			interface._start()
+		if not self.websocket_port:
+			self.websocket_port = self.getResource("port")
+		self.vncpid, self.websocket_pid = self.vir.startVnc(self.vmid, self.vncpassword, self.vncport, self.websocket_port, '/etc/tomato/server.pem')
 
 	def action_stop(self):
-		if self.state == StateName.STARTED:
-			self.vir.vm_stop(self.vmid)
-			self.state = StateName.PREPARED
+		self._checkState()
+		for interface in self.getChildren():
+			con = interface.getConnection()
+			if con:
+				con.disconnectInterface(self.vir.getNicName(self.vmid, interface.num))
+			interface._stop()
+		if self.vncpid:
+			self.vir.stopVnc(self.vncpid, self.websocket_pid)
+			del self.vncpid
+			del self.websocket_pid
+		self.vir.stop(self.vmid)
+		self.setState(StateName.PREPARED, True)
+
+	def action_prepare(self):
+		self._checkState()
+		self.vir.writeInitialConfig(TypeName.KVM, self.vmid, self._imagePathDir())
+		self._configure()
+		self.vir.create(self.vmid)
+		self.setState(StateName.PREPARED, True)
+		templ = self._template()
+		templ.fetch()
+		self._useImage(templ.getPath(), backing=True)
+		self._nlxtp_create_device_and_mountpoint()
+		# add all interfaces
+		for interface in self.getChildren():
+			self._addInterface(interface)
+
+	def action_destroy(self):
+		self._checkState()
+		self.vir.destroy(self.vmid)
+		self.setState(StateName.CREATED, True)
+
+
 
 	def action_destroy(self):
 		self.vir.vm_destroy(self.vmid)
@@ -151,12 +202,14 @@ class KVM(elements.Element):
 		else:
 			io.copy(path_, self._imagePath())
 
-	def checkState(self):
+
+	def _checkState(self):
+		savedState = self.state
 		realState = self.vir.getState(self.vmid)
-		#maybe add some checks if realstate differs from saved state
-		self.state = realState
-		#print self.state
-		return self.state
+		if savedState != realState:
+			self.setState(realState, True)
+		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
+			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _imagePathDir(self):
 		return "/var/lib/vz/images/%d" % self.vmid

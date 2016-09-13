@@ -2,10 +2,14 @@ from util import run, CommandError, cmd
 from ..constants import ActionName, StateName, TypeName
 from ..error import UserError, InternalError
 import time
+from util import LockMatrix
 import xml.etree.ElementTree as ET
-import uuid, random
+import uuid, random, collections
+from ...elements import Element, kvm
 from .. import decorators
 from threading import Lock
+
+locks = LockMatrix()
 
 class IDManager(object):
 
@@ -107,7 +111,7 @@ class virsh:
 		out = cmd.run(cmd_)
 		return out
 
-	def vm_start(self, vmid, params=None):
+	def start(self, vmid, params=None):
 		#check if vmid is already in list:
 		self.update_vm_list()
 		if self.vm_list.__contains__(vmid):
@@ -115,44 +119,15 @@ class virsh:
 		else:
 			InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be started" % vmid, data={"type": self.TYPE})
 
-	def vm_prepare(self, vmid, type=TypeName.KVM, template=None):
+	def prepare(self,vmid, path):
+		#Remove when finished
 		self.update_vm_list()
 		InternalError.check(not self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does already exist on this host" % vmid, data={"type": self.TYPE})
-		#read standard config:
-		self.tree = self.writeInitialConfig(type, vmid)
-		#self.tree = ET.parse(self.lxc_config_path)
-		self.root = self.tree.getroot()
 
-		#copy template
-		path = self.imagepath
-		path += ("%s.qcow2" % vmid)
+		self._virsh("define", [(path + "/%s.xml" % vmid)])
 
-		if template == None:
-			self._setImage(vmid, self.original_image)
-		else:
-			pathToImage = self.imagepath + template
-			self._setImage(vmid, pathToImage)
 
-		config_path = self.imagepath
-		config_path += ("%s.xml" % vmid)
-		#run(["cp", self.original_image, path])
-		#copy xml file and adjust UUID etc.
-		self.root.set("id",str(vmid))
-		self.root.find("name").text = ("vm_%s" % vmid)
-		vm_uuid = uuid.uuid4()
-		self.root.find("uuid").text = str(vm_uuid)
-		self.root.find("devices").find("disk").find("source").set("file",path)
-		self.root.find("devices").find("interface").find("mac").set("address", self.random_mac())
-		self.root.find("seclabel").find("label").text = ("libvirt-%s" % vm_uuid)
-		self.root.find("seclabel").find("imagelabel").text = ("libvirt-%s" % vm_uuid)
-
-		self.tree.write(config_path)
-
-		#define vm
-		self._virsh("define", ["%s" % config_path])
-		#run(["virsh", "create", "%s" % config_path])
-
-	def vm_stop(self, vmid, forced=False):
+	def stop(self, vmid, forced=False):
 		self.update_vm_list()
 		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be stopped" % vmid, data={"type": self.TYPE})
 		if forced:
@@ -160,7 +135,7 @@ class virsh:
 		else:
 			run(["virsh", "shutdown", "vm_%s" % vmid])
 
-	def vm_destroy(self, vmid):
+	def destroy(self, vmid):
 		self.update_vm_list()
 		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be destroyed" % vmid, data={"type": self.TYPE})
 		if self._checkState(vmid) == "running":
@@ -198,6 +173,35 @@ class virsh:
 		else:
 			return StateName.CREATED
 
+	def _checkStatus(self,vmid, statuses):
+		if not isinstance(statuses, collections.Iterable):
+			statuses = [statuses]
+		status = self.getState(vmid)
+		#TODO: Correct error typing
+		InternalError.check(status in statuses, InternalError.INVALID_STATE, "VM is in invalid status",
+					  {"vmid": vmid, "status": status, "expected": statuses})
+
+	def	addNic(self, vmid, num, bridge="dummy", model="e1000", mac=None):
+		'''
+		vmid = params.convert(vmid, convert=int, gte=1)
+		num = params.convert(num, convert=int, gte=0, lte=31)
+		bridge = params.convert(bridge, convert=str)
+		model = params.convert(model, convert=str, oneOf=["e1000", "i82551", "rtl8139"])
+		mac = params.convert(mac, convert=str, regExp="^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$", null=True)
+		'''
+		with locks[vmid]:
+			self._checkStatus(vmid, StateName.PREPARED)
+			if num in getNicList(vmid):
+				raise QMError(QMError.CODE_NIC_ALREADY_EXISTS, "Nic already exists", {"vmid": vmid, "num": num})
+
+			self._virsh("attach-interface",
+						["--domain vm_%d" % vmid,
+						 "--target net%d" % num,
+						 "--model %s " % model,
+						 ("--mac %s" % mac) if mac else "",
+						 (",bridge=%s" % bridge) if bridge else "",
+						 "--config"])
+
 	def update_vm_list(self):
 		#go through currently listed vms and add them to vm_list
 		self.vm_list = []
@@ -210,7 +214,8 @@ class virsh:
 			self.vm_list.append(int(id))
 		#print self.vm_list
 
-	def set_Attributes(self, vmid, attrs):
+	def setAttributes(self, vmid, cores=None, memory=None, keyboard=None, tablet=None,
+			hda=None, fda=None, hdb=None)
 		self.update_vm_list()
 		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host" % vmid, data={"type": self.TYPE})
 
@@ -220,55 +225,55 @@ class virsh:
 		self.tree = ET.parse(self.config_path)
 		self.root = self.tree.getroot()
 
-		print "checking attrs"
-		print attrs
-		for attr in attrs:
-			print attr
-			if attr == "cpu":
-				InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
-
-				print "cpu changed"
-				self.root.find("vcpu").text = str(attrs.get("cpu"))
-			if attr == "ram":
-				InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
-
-				self.root.find("memory").text = str(attrs.get("ram"))
-				self.root.find("currentMemory").text = str(attrs.get("ram"))
-			if attr == "kblang":
-				InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
-
-				self.root.find("devices").find("graphics").set("keymap",str(attrs.get("kblang")))
-			if attr == "usbtablet":
-				InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
-
-				usbtablet_exists = False
-				usbtablet_entry = None
-				for device in self.root.find("devices"):
-					if device.get("bus") == "usb" and device.tag == "input":
-						usbtablet_exists = True
-						usbtablet_entry = device
-
-				print "usbtable exits: " + str(usbtablet_exists)
-
-				if bool(attrs.get("usbtablet")):
-					print "setting to True"
-					if not usbtablet_exists:
-						usbtablet_entry = ET.Element("input", {"bus": "usb", "type": "tablet"})
-						usbtablet_entry.append(ET.Element("alias",{"name": "input0"}))
-						for element in self.root.getchildren():
-							if element.tag == "devices":
-								element.append(usbtablet_entry)
-				else:
-					if usbtablet_exists:
-						print "removing usbtablet"
-						for element in self.root.getchildren():
-							if element.tag == "devices":
-								element.remove(usbtablet_entry)
-			if attr == "template":
-				path = self.imagepath + attrs.get("template")
-				self._setImage(vmid, path)
+		if hda:
+			if type == TypeName.KVM:
+				self.root.find("./devices/disk/target[@dev='vda']/../source").set("file",hda)
+			if type == TypeName.LXC:
+				self.root.find("./devices/filesystem/target[@dir='/']/../source").set("dir",hda)
+		#if fda:
+		#if hdb:
 
 
+		if cores:
+			InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
+			print "cpu changed"
+			self.root.find("vcpu").text = str(cores)
+		if memory:
+			InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
+			self.root.find("memory").text = str(memory)
+			self.root.find("currentMemory").text = str(memory)
+
+		if keyboard:
+			InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+			self.root.find("devices").find("graphics").set("keymap",str(keyboard))
+		if tablet:
+			InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
+
+			usbtablet_exists = False
+			usbtablet_entry = None
+			for device in self.root.find("devices"):
+				if device.get("bus") == "usb" and device.tag == "input":
+					usbtablet_exists = True
+					usbtablet_entry = device
+
+			print "usbtable exits: " + str(usbtablet_exists)
+
+			if bool(tablet):
+				print "setting to True"
+				if not usbtablet_exists:
+					usbtablet_entry = ET.Element("input", {"bus": "usb", "type": "tablet"})
+					usbtablet_entry.append(ET.Element("alias",{"name": "input0"}))
+					for element in self.root.getchildren():
+						if element.tag == "devices":
+							element.append(usbtablet_entry)
+			else:
+				if usbtablet_exists:
+					print "removing usbtablet"
+					for element in self.root.getchildren():
+						if element.tag == "devices":
+							element.remove(usbtablet_entry)
 		self.tree.write(config_path)
 
 	def _setImage(self, vmid, img_path):
@@ -287,9 +292,10 @@ class virsh:
 			random.randint(0x00, 0xff) ]
 		return ':'.join(map(lambda x: "%02x" % x, mac))
 
-	def writeInitialConfig(self, type, vmid):
+	def writeInitialConfig(self, type, vmid, path):
 		initNode = ET.fromstring("<domain></domain>")
 		initNode.set("id", "%s" % vmid)
+
 		if type == TypeName.KVM:
 			initNode.set("type", "kvm")
 		if type == TypeName.LXC:
@@ -299,8 +305,9 @@ class virsh:
 		elementName.text = "vm_%s" % vmid
 		initNode.append(elementName)
 
+		vm_uuid = uuid.uuid4()
 		elementUUID = ET.Element("uuid")
-		elementUUID.text = "1b565254-c508-eabf-ce0e-2ba22f4d6e40"
+		elementUUID.text = str(vm_uuid)
 		initNode.append(elementUUID)
 
 		elementMemory = ET.Element("memory", {"unit": "KiB"})
@@ -378,10 +385,8 @@ class virsh:
 			elementDisk = ET.Element("disk", {"device": "disk", "type": "file"})
 			elementDriver = ET.Element("driver", {"name": "qemu", "type": "qcow2"})
 			elementDisk.append(elementDriver)
-			elementSource = ET.Element("source",{"file": "/home/stephan/work/kvm_test/bob_image.qcow2"})
+			elementSource = ET.Element("source",{"file": path + "/%d/disk.qcow2" % vmid})
 			elementDisk.append(elementSource)
-			elementOriginal = ET.Element("original", {"file": "/home/stephan/work/kvm_test/initial_image.qcow2"})
-			elementDisk.append(elementOriginal)
 			elementTarget = ET.Element("target", {"bus": "virtio", "dev": "vda"})
 			elementDisk.append(elementTarget)
 			elementAlias = ET.Element("alias", {"name": "virtio-disk0"})
@@ -414,7 +419,7 @@ class virsh:
 			elementInterface = ET.Element("interface", {"type": "bridge"})
 			elementInterfaceSource = ET.Element("source", {"bridge": "br0"})
 			elementInterface.append(elementInterfaceSource)
-			elementMac = ET.Element("mac", {"address": "52:54:00:bb:d5:2b" })
+			elementMac = ET.Element("mac", {"address": str(self.random_mac()) })
 			elementInterface.append(elementMac)
 			elementDevices.append(elementInterface)
 		if type == TypeName.LXC:
@@ -423,7 +428,7 @@ class virsh:
 			elementInterface.append(elementInterfaceTarget)
 			elementInterfaceSource = ET.Element("source", {"network": "default", "bridge": "virbr0"})
 			elementInterface.append(elementInterfaceSource)
-			elementMac = ET.Element("mac", {"address": "52:54:00:bb:d5:2b" })
+			elementMac = ET.Element("mac", {"address": str(self.random_mac()) })
 			elementInterface.append(elementMac)
 			elementGuest = ET.Element("guest", {"dev": "eth0"})
 			elementInterface.append(elementGuest)
@@ -502,10 +507,10 @@ class virsh:
 
 		elementSecLabel = ET.Element("seclabel", {"model": "apparmor", "relabel": "yes", "type": "dynamic"})
 		elementLabel = ET.Element("label")
-		elementLabel.text = "libvirt-1b565254-c508-eabf-ce0e-2ba22f4d6e40"
+		elementLabel.text = ("libvirt-%s" % vm_uuid)
 		elementSecLabel.append(elementLabel)
 		elementImageLabel = ET.Element("imagelabel")
-		elementImageLabel.text = "libvirt-1b565254-c508-eabf-ce0e-2ba22f4d6e40"
+		elementImageLabel.text = ("libvirt-%s" % vm_uuid)
 		elementSecLabel.append(elementImageLabel)
 		initNode.append(elementSecLabel)
 
