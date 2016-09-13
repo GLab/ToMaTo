@@ -1,20 +1,56 @@
 from util import run
 from ..lib.constants import ActionName, StateName, TypeName
+from django.db import models
+from ..resources import template
 from .. import connections, elements, resources, config
+from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import cmd #@UnresolvedImport
-from ..lib.newcmd import virsh
+from ..lib.newcmd import virsh, qemu_img
+from ..lib.newcmd.util import io
+from ..lib.error import UserError
 import time
 import xml.etree.ElementTree as ET
-import random
+import random, os
+
+kblang_options = {"en-us": "English (US)",
+					"en-gb": "English (GB)",
+					"de": "German",
+					"fr": "French",
+					"ja": "Japanese"
+					}
+
 
 class KVM(elements.Element):
+	vmid_attr = Attr("vmid", type="int")
+	vmid = vmid_attr.attribute()
+	websocket_port_attr = Attr("websocket_port", type="int")
+	websocket_port = websocket_port_attr.attribute()
+	websocket_pid_attr = Attr("websocket_pid", type="int")
+	websocket_pid = websocket_pid_attr.attribute()
+	vncport_attr = Attr("vncport", type="int")
+	vncport = vncport_attr.attribute()
+	vncpid_attr = Attr("vncpid", type="int")
+	vncpid = vncpid_attr.attribute()
+	vncpassword_attr = Attr("vncpassword", type="str")
+	vncpassword = vncpassword_attr.attribute()
+	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[StateName.CREATED, StateName.PREPARED], type="int", minValue=1, maxValue=4, default=1)
+	cpus = cpus_attr.attribute()
+	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[StateName.CREATED, StateName.PREPARED], type="int", minValue=64, maxValue=8192, default=256)
+	ram = ram_attr.attribute()
+	kblang_attr = Attr("kblang", desc="Keyboard language", states=[StateName.CREATED, StateName.PREPARED], type="str", options=kblang_options, default=None, null=True)
+	#["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br", "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"]
+	kblang = kblang_attr.attribute()
+	usbtablet_attr = Attr("usbtablet", desc="USB tablet mouse mode", states=[StateName.CREATED, StateName.PREPARED], type="bool", default=True)
+	usbtablet = usbtablet_attr.attribute()
+	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
+	template = models.ForeignKey(template.Template, null=True)
 
-	vmid = "bob"
+	#vmid = "bob"
 	state = StateName.CREATED
 	tree = None
 	imagepath = ""
 	original_image = ""
-	vir = vir = virsh.virsh(TypeName.KVM)
+	vir = virsh.virsh(TypeName.KVM)
 	cpu = 1
 	ram = 1048576
 	kblang = "en-us"
@@ -96,9 +132,34 @@ class KVM(elements.Element):
 		if self.state == StateName.PREPARED:
 			self.vir.setAttributes(self.vmid,{"usbtablet": self.usbtablet})
 
+	def modify_template(self, tmplName):
+		self._checkState()
+		self.template = resources.template.get(self.TYPE, tmplName)
+		if tmplName:
+			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
+		if self.state == StateName.PREPARED:
+			templ = self._template()
+			templ.fetch()
+			self._useImage(templ.getPath(), backing=True)
+
+	def _useImage(self, path_, backing=False):
+		assert self.state == StateName.PREPARED
+		if backing:
+			if os.path.exists(self._imagePath()):
+				os.unlink(self._imagePath())
+			qemu_img.create(self._imagePath(), backingImage=path_)
+		else:
+			io.copy(path_, self._imagePath())
+
 	def checkState(self):
 		realState = self.vir.getState(self.vmid)
 		#maybe add some checks if realstate differs from saved state
 		self.state = realState
 		#print self.state
 		return self.state
+
+	def _imagePathDir(self):
+		return "/var/lib/vz/images/%d" % self.vmid
+
+	def _imagePath(self, file="disk.qcow2"): #@ReservedAssignment
+		return os.path.join(self._imagePathDir(), file)

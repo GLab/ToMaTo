@@ -68,7 +68,7 @@ class virsh:
 		self.TYPE = type
 		if self.TYPE == TypeName.KVM:
 			#read standard kvm config, extracting path to images
-			self.tree = ET.parse(self.kvm_config_path)
+			self.tree = self.writeInitialConfig(self.TYPE, 1337)
 			self.root = self.tree.getroot()
 
 			for devices in self.root.findall('devices'):
@@ -84,7 +84,7 @@ class virsh:
 
 		if self.TYPE == TypeName.LXC:
 			#read standard kvm config, extracting path to images
-			self.tree = ET.parse(self.lxc_config_path)
+			self.tree = self.writeInitialConfig(self.TYPE, 1337)
 			self.root = self.tree.getroot()
 
 			for devices in self.root.findall('devices'):
@@ -119,15 +119,9 @@ class virsh:
 		self.update_vm_list()
 		InternalError.check(not self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does already exist on this host" % vmid, data={"type": self.TYPE})
 		#read standard config:
-		if type == TypeName.KVM:
-			#read standard kvm config
-			self.tree = ET.parse(self.kvm_config_path)
-			self.root = self.tree.getroot()
-
-		if type == TypeName.LXC:
-			#read standard kvm config
-			self.tree = ET.parse(self.lxc_config_path)
-			self.root = self.tree.getroot()
+		self.tree = self.writeInitialConfig(type, vmid)
+		#self.tree = ET.parse(self.lxc_config_path)
+		self.root = self.tree.getroot()
 
 		#copy template
 		path = self.imagepath
@@ -157,8 +151,6 @@ class virsh:
 		#define vm
 		self._virsh("define", ["%s" % config_path])
 		#run(["virsh", "create", "%s" % config_path])
-
-		self.writeInitialConfig()
 
 	def vm_stop(self, vmid, forced=False):
 		self.update_vm_list()
@@ -295,13 +287,16 @@ class virsh:
 			random.randint(0x00, 0xff) ]
 		return ':'.join(map(lambda x: "%02x" % x, mac))
 
-	def writeInitialConfig(self, type):
+	def writeInitialConfig(self, type, vmid):
 		initNode = ET.fromstring("<domain></domain>")
-		initNode.set("id", "2")
-		initNode.set("type", "kvm")
+		initNode.set("id", "%s" % vmid)
+		if type == TypeName.KVM:
+			initNode.set("type", "kvm")
+		if type == TypeName.LXC:
+			initNode.set("type", "lxc")
 
 		elementName = ET.Element("name")
-		elementName.text = "Not Initiated"
+		elementName.text = "vm_%s" % vmid
 		initNode.append(elementName)
 
 		elementUUID = ET.Element("uuid")
@@ -327,21 +322,31 @@ class virsh:
 		initNode.append(elementResource)
 
 		elementOS = ET.Element("os")
-		elementType =ET.Element("type", {"arch": "x86_64", "machine": "pc-i440fx-trusty"})
-		elementType.text = "hvm"
-		elementOS.append(elementType)
-		elementBoot = ET.Element("boot", {"dev": "hd"})
-		elementOS.append(elementBoot)
+		if type == TypeName.KVM:
+			elementType =ET.Element("type", {"arch": "x86_64", "machine": "pc-i440fx-trusty"})
+			elementType.text = "hvm"
+			elementOS.append(elementType)
+			elementBoot = ET.Element("boot", {"dev": "hd"})
+			elementOS.append(elementBoot)
+		if type == TypeName.LXC:
+			elementType =ET.Element("type", {"arch": "x86_64"})
+			elementType.text = "exe"
+			elementOS.append(elementType)
+			elementInit = ET.Element("init")
+			elementInit.text = "/sbin/init"
+			elementOS.append(elementInit)
+
 		initNode.append(elementOS)
 
-		elementFeatures = ET.Element("features")
-		elementACPI = ET.Element("acpi")
-		elementFeatures.append(elementACPI)
-		elementAPIC = ET.Element("apic")
-		elementFeatures.append(elementAPIC)
-		elementPAE = ET.Element("pae")
-		elementFeatures.append(elementPAE)
-		initNode.append(elementFeatures)
+		if type == TypeName.KVM:
+			elementFeatures = ET.Element("features")
+			elementACPI = ET.Element("acpi")
+			elementFeatures.append(elementACPI)
+			elementAPIC = ET.Element("apic")
+			elementFeatures.append(elementAPIC)
+			elementPAE = ET.Element("pae")
+			elementFeatures.append(elementPAE)
+			initNode.append(elementFeatures)
 
 		elementClock = ET.Element("clock", {"offset": "utc"})
 		initNode.append(elementClock)
@@ -356,104 +361,142 @@ class virsh:
 
 		elementOnCrash = ET.Element("on_crash")
 		elementOnCrash.text = "restart"
+		if type == TypeName.LXC:
+			elementOnCrash.text = "destroy"
 		initNode.append(elementOnCrash)
 
 		elementDevices = ET.Element("devices")
 
 		elementEmulator = ET.Element("emulator")
-		elementEmulator.text = "/usr/bin/kvm-spice"
+		if type == TypeName.KVM:
+			elementEmulator.text = "/usr/bin/kvm-spice"
+		if type == TypeName.LXC:
+			elementEmulator.text = "/usr/lib/libvirt/libvirt_lxc"
 		elementDevices.append(elementEmulator)
 
-		elementDisk = ET.Element("disk", {"device": "disk", "type": "file"})
-		elementDriver = ET.Element("driver", {"name": "qemu", "type": "qcow2"})
-		elementDisk.append(elementDriver)
-		elementSource = ET.Element("source",{"file": "/home/stephan/work/kvm_test/bob_image.qcow2"})
-		elementDisk.append(elementSource)
-		elementOriginal = ET.Element("original", {"file": "/home/stephan/work/kvm_test/initial_image.qcow2"})
-		elementDisk.append(elementOriginal)
-		elementTarget = ET.Element("target", {"bus": "virtio", "dev": "vda"})
-		elementDisk.append(elementTarget)
-		elementAlias = ET.Element("alias", {"name": "virtio-disk0"})
-		elementDisk.append(elementAlias)
-		elementAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x05", "type": "pci"})
-		elementDisk.append(elementAddress)
-		elementDevices.append(elementDisk)
+		if type == TypeName.KVM:
+			elementDisk = ET.Element("disk", {"device": "disk", "type": "file"})
+			elementDriver = ET.Element("driver", {"name": "qemu", "type": "qcow2"})
+			elementDisk.append(elementDriver)
+			elementSource = ET.Element("source",{"file": "/home/stephan/work/kvm_test/bob_image.qcow2"})
+			elementDisk.append(elementSource)
+			elementOriginal = ET.Element("original", {"file": "/home/stephan/work/kvm_test/initial_image.qcow2"})
+			elementDisk.append(elementOriginal)
+			elementTarget = ET.Element("target", {"bus": "virtio", "dev": "vda"})
+			elementDisk.append(elementTarget)
+			elementAlias = ET.Element("alias", {"name": "virtio-disk0"})
+			elementDisk.append(elementAlias)
+			elementAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x05", "type": "pci"})
+			elementDisk.append(elementAddress)
+			elementDevices.append(elementDisk)
+		if type == TypeName.LXC:
+			elementFileSystem = ET.Element("filesystem", {"type": "mount", "accessmode": "passthrough"})
+			elementFSSource = ET.Element("source", {"dir": "/var/lib/lxc/vm_%s/rootfs" % vmid})
+			elementFileSystem.append(elementFSSource)
+			elementFSTarget = ET.Element("target", {"dir": "/"})
+			elementFileSystem.append(elementFSTarget)
+			elementDevices.append(elementFileSystem)
 
-		elementController2 = ET.Element("controller", {"index": "0", "type": "usb"})
-		elementControllerAlias2 = ET.Element("alias", {"name": "usb0"})
-		elementController2.append(elementControllerAlias2)
-		elementControllerAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x2", "slot": "0x01", "type": "pci"})
-		elementController2.append(elementControllerAddress)
-		elementDevices.append(elementController2)
+		if type == TypeName.KVM:
+			elementController2 = ET.Element("controller", {"index": "0", "type": "usb"})
+			elementControllerAlias2 = ET.Element("alias", {"name": "usb0"})
+			elementController2.append(elementControllerAlias2)
+			elementControllerAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x2", "slot": "0x01", "type": "pci"})
+			elementController2.append(elementControllerAddress)
+			elementDevices.append(elementController2)
 
-		elementController = ET.Element("controller", {"index": "0", "model": "pci-root", "type": "pci"})
-		elementControllerAlias = ET.Element("alias", {"name": "pci.0"})
-		elementController.append(elementControllerAlias)
-		elementDevices.append(elementController)
+			elementController = ET.Element("controller", {"index": "0", "model": "pci-root", "type": "pci"})
+			elementControllerAlias = ET.Element("alias", {"name": "pci.0"})
+			elementController.append(elementControllerAlias)
+			elementDevices.append(elementController)
 
-		elementInterface = ET.Element("interface", {"type": "bridge"})
-		elementInterfaceSource = ET.Element("source", {"bridge": "br0"})
-		elementInterface.append(elementInterfaceSource)
-		elementMac = ET.Element("mac", {"address": "52:54:00:bb:d5:2b" })
-		elementInterface.append(elementMac)
-		elementDevices.append(elementInterface)
+		if type == TypeName.KVM:
+			elementInterface = ET.Element("interface", {"type": "bridge"})
+			elementInterfaceSource = ET.Element("source", {"bridge": "br0"})
+			elementInterface.append(elementInterfaceSource)
+			elementMac = ET.Element("mac", {"address": "52:54:00:bb:d5:2b" })
+			elementInterface.append(elementMac)
+			elementDevices.append(elementInterface)
+		if type == TypeName.LXC:
+			elementInterface = ET.Element("interface", {"type": "network"})
+			elementInterfaceTarget = ET.Element("target", {"dev": "vnet0"})
+			elementInterface.append(elementInterfaceTarget)
+			elementInterfaceSource = ET.Element("source", {"network": "default", "bridge": "virbr0"})
+			elementInterface.append(elementInterfaceSource)
+			elementMac = ET.Element("mac", {"address": "52:54:00:bb:d5:2b" })
+			elementInterface.append(elementMac)
+			elementGuest = ET.Element("guest", {"dev": "eth0"})
+			elementInterface.append(elementGuest)
+			elementDevices.append(elementInterface)
 
-		elementSerial = ET.Element("serial", {"type": "pty"})
-		elementSerialSource = ET.Element("source", {"path": "/dev/pts/6"})
-		elementSerial.append(elementSerialSource)
-		elementSerialTarget = ET.Element("target", {"port": "0"})
-		elementSerial.append(elementSerialTarget)
-		elementSerialAlias = ET.Element("alias", {"name": "serial0"})
-		elementSerial.append(elementSerialAlias)
-		elementDevices.append(elementSerial)
+		if type == TypeName.KVM:
+			elementSerial = ET.Element("serial", {"type": "pty"})
+			elementSerialSource = ET.Element("source", {"path": "/dev/pts/6"})
+			elementSerial.append(elementSerialSource)
+			elementSerialTarget = ET.Element("target", {"port": "0"})
+			elementSerial.append(elementSerialTarget)
+			elementSerialAlias = ET.Element("alias", {"name": "serial0"})
+			elementSerial.append(elementSerialAlias)
+			elementDevices.append(elementSerial)
 
-		elementConsole = ET.Element("console", {"tty": "/dev/pts/6", "type": "pty"})
-		elementConsoleSource = ET.Element("source", {"path": "/dev/pts/6"})
-		elementConsole.append(elementConsoleSource)
-		elementConsoleTarget = ET.Element("target", {"port": "0", "type": "serial"})
-		elementConsole.append(elementConsoleTarget)
-		elementConsoleAlias = ET.Element("alias", {"name": "serial0"})
-		elementConsole.append(elementConsoleAlias)
-		elementDevices.append(elementConsole)
+		if type == TypeName.KVM:
+			elementConsole = ET.Element("console", {"tty": "/dev/pts/6", "type": "pty"})
+			elementConsoleSource = ET.Element("source", {"path": "/dev/pts/6"})
+			elementConsole.append(elementConsoleSource)
+			elementConsoleTarget = ET.Element("target", {"port": "0", "type": "serial"})
+			elementConsole.append(elementConsoleTarget)
+			elementConsoleAlias = ET.Element("alias", {"name": "serial0"})
+			elementConsole.append(elementConsoleAlias)
+			elementDevices.append(elementConsole)
+		if type == TypeName.LXC:
+			elementConsole = ET.Element("console", {"tty": "/dev/pts/22", "type": "pty"})
+			elementConsoleSource = ET.Element("source", {"path": "/dev/pts/22"})
+			elementConsole.append(elementConsoleSource)
+			elementConsoleTarget = ET.Element("target", {"port": "0", "type": "lxc"})
+			elementConsole.append(elementConsoleTarget)
+			elementConsoleAlias = ET.Element("alias", {"name": "console0"})
+			elementConsole.append(elementConsoleAlias)
+			elementDevices.append(elementConsole)
 
-		elementInput = ET.Element("input", {"bus": "usb", "type": "tablet"})
-		elementInputAlias = ET.Element("alias", {"name": "input0"})
-		elementInput.append(elementInputAlias)
-		elementDevices.append(elementInput)
+		if type == TypeName.KVM:
+			elementInput = ET.Element("input", {"bus": "usb", "type": "tablet"})
+			elementInputAlias = ET.Element("alias", {"name": "input0"})
+			elementInput.append(elementInputAlias)
+			elementDevices.append(elementInput)
 
-		elementInput2 = ET.Element("input", {"bus": "ps2", "type": "mouse"})
-		elementDevices.append(elementInput2)
+			elementInput2 = ET.Element("input", {"bus": "ps2", "type": "mouse"})
+			elementDevices.append(elementInput2)
 
-		elementInput3 = ET.Element("input", {"bus": "ps2", "type": "keyboard"})
-		elementDevices.append(elementInput3)
+			elementInput3 = ET.Element("input", {"bus": "ps2", "type": "keyboard"})
+			elementDevices.append(elementInput3)
 
-		elementGraphics = ET.Element("graphics", {"autoport": "yes", "listen": "127.0.0.1", "port": "5900", "type": "vnc"})
-		elementListen = ET.Element("listen", {"address": "127.0.0.1", "type": "address"})
-		elementGraphics.append(elementListen)
-		elementDevices.append(elementGraphics)
+			elementGraphics = ET.Element("graphics", {"autoport": "yes", "listen": "127.0.0.1", "port": "5900", "type": "vnc"})
+			elementListen = ET.Element("listen", {"address": "127.0.0.1", "type": "address"})
+			elementGraphics.append(elementListen)
+			elementDevices.append(elementGraphics)
 
-		elementSound = ET.Element("sound", {"model": "ich6"})
-		elementSoundAlias = ET.Element("alias", {"name": "sound0"})
-		elementSound.append(elementSoundAlias)
-		elementSoundAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x04", "type": "pci"})
-		elementSound.append(elementSoundAddress)
-		elementDevices.append(elementSound)
+			elementSound = ET.Element("sound", {"model": "ich6"})
+			elementSoundAlias = ET.Element("alias", {"name": "sound0"})
+			elementSound.append(elementSoundAlias)
+			elementSoundAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x04", "type": "pci"})
+			elementSound.append(elementSoundAddress)
+			elementDevices.append(elementSound)
 
-		elementVideo = ET.Element("video")
-		elementModel = ET.Element("model", {"heads": "1", "type": "cirrus", "vram": "9216"})
-		elementVideo.append(elementModel)
-		elementVideoAlias = ET.Element("alias", {"name": "video0"})
-		elementVideo.append(elementVideoAlias)
-		elementVideoAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x02", "type": "pci"})
-		elementVideo.append(elementVideoAddress)
-		elementDevices.append(elementVideo)
+			elementVideo = ET.Element("video")
+			elementModel = ET.Element("model", {"heads": "1", "type": "cirrus", "vram": "9216"})
+			elementVideo.append(elementModel)
+			elementVideoAlias = ET.Element("alias", {"name": "video0"})
+			elementVideo.append(elementVideoAlias)
+			elementVideoAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x02", "type": "pci"})
+			elementVideo.append(elementVideoAddress)
+			elementDevices.append(elementVideo)
 
-		elementMemBalloon = ET.Element("memballoon", {"model": "virtio"})
-		elementMemBalloonAlias = ET.Element("alias", {"name": "balloon0"})
-		elementMemBalloon.append(elementMemBalloonAlias)
-		elementMemballoonAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x06", "type": "pci"})
-		elementMemBalloon.append(elementMemballoonAddress)
-		elementDevices.append(elementMemBalloon)
+			elementMemBalloon = ET.Element("memballoon", {"model": "virtio"})
+			elementMemBalloonAlias = ET.Element("alias", {"name": "balloon0"})
+			elementMemBalloon.append(elementMemBalloonAlias)
+			elementMemballoonAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x06", "type": "pci"})
+			elementMemBalloon.append(elementMemballoonAddress)
+			elementDevices.append(elementMemBalloon)
 
 		initNode.append(elementDevices)
 
@@ -472,3 +515,5 @@ class virsh:
 		config_path += ("%test.xml")
 		tree = ET.ElementTree(initNode)
 		tree.write(config_path)
+
+		return tree
