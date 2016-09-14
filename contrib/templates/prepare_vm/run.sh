@@ -14,10 +14,10 @@ set -e
 
 VMTYPE=""
 if [ -d /proc/vz ]; then
-  VMTYPE="openvz"
+  VMTYPE="container"
 fi
 if fgrep -q docker /proc/1/cgroup; then
-  VMTYPE="openvz"
+  VMTYPE="container"
 fi
 if dmesg | fgrep -q QEMU; then
   VMTYPE="kvm"
@@ -107,7 +107,7 @@ echo
 echo "Installing packages..."
 case $DISTRO in
   debian*|ubuntu*)
-    apt-get install --no-install-recommends -y ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less net-tools
+    apt-get install --no-install-recommends -y ssh nano iperf tcpdump screen vim-tiny locales manpages man-db less net-tools isc-dhcp-client
     ;;
   *)
     fail "$DISTRO unsupported"
@@ -198,9 +198,10 @@ esac
 
 
 echo
-echo "Graphical auto-login..."
+echo "Graphical fixes..."
 case $DISTRO in
   ubuntu*)
+    # Automatic login
     if [ -d /etc/lightdm/lightdm.conf.d ]; then
       cat <<EOF >/etc/lightdm/lightdm.conf.d/90-autologin.conf
 [SeatDefaults]
@@ -212,8 +213,18 @@ autologin-user=root
 autologin-user-timeout=0
 EOF
     fi
+    # Remove error message
     if [ -f /root/.profile ]; then
       sed -i -e 's/^mesg n || true$/tty -s \&\& mesg n || true/g' /root/.profile
+    fi
+    # Disable automatic lock
+    if which gsettings >/dev/null; then
+      gsettings set org.gnome.desktop.screensaver idle-activation-enabled true
+      gsettings set org.gnome.desktop.screensaver lock-enabled false
+      gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
+    fi
+    if [ -f /etc/xdg/autostart/light-locker.desktop ]; then
+      sed -i 's/Exec=.*/Exec=/g' /etc/xdg/autostart/light-locker.desktop
     fi
   ;;
 esac
@@ -370,7 +381,7 @@ case $DISTRO in
     ;;
 esac
 
-if [ "$VMTYPE" == "openvz" ]; then
+if [ "$VMTYPE" == "container" ]; then
   echo "OpenVZ specific changes..."
 
   case $DISTRO in
@@ -471,10 +482,12 @@ case $DISTRO in
   *)
     fail "$DISTRO unsupported"
 esac
-if [ "$VMTYPE" == "kvm" ]; then
-  mkdir -p /mnt/nlXTP
-  echo "/dev/fd0 /mnt/nlXTP auto defaults,sync,nofail 0 0" >> /etc/fstab
-fi
+case $VMTYPE in
+  kvm)
+    mkdir -p /mnt/nlXTP
+    echo "/dev/sdb1 /mnt/nlXTP auto defaults,sync,nofail 0 0" >> /etc/fstab
+    ;;
+esac
 
 
 echo
@@ -490,6 +503,6 @@ esac
 
 echo
 echo "Done. Please reboot VM to use it"
-if [ "$VMTYPE" == "openvz" ]; then
+if [ "$VMTYPE" == "container" ]; then
   echo "Size inside VM: $(du -shx / | cut -f1)"
 fi

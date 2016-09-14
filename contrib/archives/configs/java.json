@@ -1,0 +1,17 @@
+[
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"debian-8",
+     "packets":["openjdk-7-jre-headless"]
+    },
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"ubuntu-14.04",
+     "packets":["openjdk-7-jre-headless"]
+    },
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"ubuntu-16.04",
+     "packets":["openjdk-9-jre-headless"]
+    }    
+]

@@ -139,7 +139,7 @@ Additional software:
 ## Template: Debian 8 (OpenVZ)
 - Base image: Debian "Jessie" 8.5
 - Variant: Taken directly from Docker (debian:8.5)
-- Build date: 2016-07-22
+- Build date: 2016-08-19
 
 Changes to default installation:
 - No user created besides "root"
@@ -161,7 +161,7 @@ Additional software:
 ## Template: Ryu
 - Base image: Debian "Jessie" 8.5
 - Variant: Taken directly from Docker (debian:8.5)
-- Build date: 2016-08-16
+- Build date: 2016-08-19
 
 Changes to default installation:
 - No user created besides "root"
@@ -185,7 +185,7 @@ Additional software:
 ## Template: Ubuntu 14.04 (OpenVZ)
 - Base image: Ubuntu "Trusty" 14.04.4
 - Variant: Taken directly from Docker (ubuntu:14.04.4)
-- Build date: 2016-07-22
+- Build date: 2016-08-19
 
 Changes to default installation:
 - No user created besides "root"
@@ -207,7 +207,7 @@ Additional software:
 ## Template: Ubuntu 16.04 (OpenVZ)
 - Base image: Ubuntu "Xenial" 16.04.1
 - Variant: Taken directly from Docker (ubuntu:16.04)
-- Build date: 2016-07-22
+- Build date: 2016-08-19
 
 Changes to default installation:
 - No user created besides "root"

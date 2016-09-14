@@ -11,7 +11,6 @@
 		text: '<p class="tutorialExplanation">For this tutorial you need 4 files. We will use them later to create our chat servers and show some aspects of ToMaTo.<br />\
 			Please save them to your disk now.<br/>\
 			<ul>\
-			<li><a href="'+tutorial_base_url+'install_python.tar.gz" class="download" download="install_python.tar.gz">Python install package</a></li>\
 			<li><a href="'+tutorial_base_url+'chat_client.tar.gz"  class="download" download="chat_client.tar.gz">Chat client software</a></li>\
 			<li><a href="'+tutorial_base_url+'chat_monitor.repy"  class="download" download="chat_monitor.repy">Chat monitor script</a></li>\
 			<li><a href="'+tutorial_base_url+'chat_sender.repy"  class="download" download="chat_sender.repy">Chat sender script</a></li>\
@@ -130,9 +129,8 @@ These buttons are smart and know the states of the elements. If you select <i>st
 		text: '<p class="tutorialExplanation">Now we will install python via executable archives. We will need it for the chat client. <br /> \
 			This archive has a <i>auto_exec.sh</i> file in it.  <br /> \
 			It will automaticly be executed after it is uploaded.<br /> \
-			Right-click on the virtual machines and select <i>Executable archive &gt; Upload Archive</i>;</p>\
-			<p>Download: <a href="'+tutorial_base_url+'install_python.tar.gz"  class="download" download="install_python.tar.gz">Python install package</a></p>\
-			<p class="tutorialCommand">Upload the <i>install_python.tar.gz</i> archive to both VMs.</p>',
+			Right-click on the virtual machines and select <i>Executable archive &gt; Use a Default Archive</i>;</p>\
+			<p class="tutorialCommand">Install python on both VMs.</p>',
 		trigger: function(event) {
 			var data = getTutorialData();
 			if (! data.tmp) data.tmp = 0;

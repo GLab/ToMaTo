@@ -74,10 +74,11 @@ class SSLServer(SocketServer.TCPServer):
 
 
 class SSLConnection:
-	def __init__(self, server_address, **sslargs):
+	def __init__(self, server_address, timeout=60, **sslargs):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket = ssl.wrap_socket(self.socket, **sslargs)
 		self.socket.connect(server_address)
+		self.socket.settimeout(timeout)
 		self.rfile = self.socket.makefile('rb', -1)
 		self.wfile = self.socket.makefile('wb', 0)
 
