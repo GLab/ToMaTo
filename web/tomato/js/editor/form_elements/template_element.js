@@ -15,7 +15,7 @@ var TemplateElement = FormElement.extend({
 		this.element.append(this.infoarea);
 		
 		template = editor.templates.get(options.type,options.value);
-		if (options.custom_template) {
+		if (options.custom_template || !template) {
 			this.change_value(new DummyForCustomTemplate(template));
 		} else {
 			this.change_value(template);
