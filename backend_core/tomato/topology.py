@@ -375,8 +375,8 @@ def timeout_task():
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.WARNED, timeout__lte=now):
 		try:
 			logging.logMessage("timeout stop", category="topology", id=top.idStr)
-			top.sendNotification(role=Role.owner, subject="Topology stopped: %s" % top, message="The topology %s has timed out and is now stopped. Your data is safe for now. The topology will be destroyed in the future, which may result in data loss. To stop this process, please log in and renew your topology, or download your data." % top)
 			top.action_stop()
+			top.sendNotification(role=Role.owner, subject="Topology stopped: %s" % top, message="The topology %s has timed out and is now stopped. Your data is safe for now. The topology will be destroyed in the future, which may result in data loss. To stop this process, please log in and renew your topology, or download your data." % top)
 			top.timeoutStep = TimeoutStep.STOPPED
 			top.save()
 		except:

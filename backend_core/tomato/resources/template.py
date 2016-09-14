@@ -183,6 +183,7 @@ class Template(Entity, BaseDocument):
 		self.checksum = "sha1:%s" % fs.checksum(path, "sha1")
 		if old_checksum != self.checksum:
 			self.host_urls = []
+			self.hosts = []
 		self.save()
 
 	def getPath(self):

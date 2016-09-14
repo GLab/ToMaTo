@@ -181,7 +181,7 @@ web:
   # updates are only done when the user opens a page which uses the API.
   account-info-update-interval: 120
 
-rpc-timeout: 60
+rpc-timeout: 300
 
 email:
   smtp-server: localhost

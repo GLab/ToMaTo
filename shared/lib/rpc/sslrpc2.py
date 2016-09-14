@@ -53,9 +53,9 @@ class SSLServer(SocketServer.TCPServer):
 
 
 class SSLConnection:
-	def __init__(self, server_address, **sslargs):
+	def __init__(self, server_address, timeout=60, **sslargs):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.socket.settimeout(60)
+		self.socket.settimeout(timeout)
 		self.socket = ssl.wrap_socket(self.socket, **sslargs)
 		self.socket.connect(server_address)
 		self.rfile = self.socket.makefile('rb', -1)
@@ -452,7 +452,7 @@ class Handler(SocketServer.StreamRequestHandler):
 
 
 class Proxy:
-	def __init__(self, address, onError=(lambda x: x), **sslargs):
+	def __init__(self, address, onError=(lambda x: x), timeout=60, **sslargs):
 		self._con = None
 		self._onError = onError
 		self._address = address
@@ -466,10 +466,11 @@ class Proxy:
 		self._results = {}
 		self._errors = {}
 		self._waiting = set()
+		self._timeout = timeout
 
 	def _reconnect(self):
 		try:
-			self._con = SSLConnection(self._address, **self._sslargs)
+			self._con = SSLConnection(self._address, timeout=self._timeout, **self._sslargs)
 		except socket.error, err:
 			raise self._onError(NetworkError(NetworkError.ReadError))
 
