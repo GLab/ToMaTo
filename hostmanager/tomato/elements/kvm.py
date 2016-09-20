@@ -1,6 +1,5 @@
-from util import run
 from ..lib.constants import ActionName, StateName, TypeName
-from django.db import models
+from django.db import models #@UnresolvedImport
 from ..resources import template
 from .. import connections, elements, resources, config
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -150,14 +149,13 @@ class KVM(elements.Element):
 
 	def action_destroy(self):
 		self._checkState()
-		self.vir.destroy(self.vmid)
+		self.vir.destroy(self.vmid, self._imagePathDir())
 		self.setState(StateName.CREATED, True)
 
 
-
-	def action_destroy(self):
-		self.vir.vm_destroy(self.vmid)
-		self.state = StateName.CREATED
+	def _addInterface(self, interface):
+		assert self.state == StateName.PREPARED
+		self.vir.addNic(self.vmid, interface.num)
 
 	def modify_cpus(self, cpus):
 		if self.state == StateName.CREATED or self.state == StateName.PREPARED:

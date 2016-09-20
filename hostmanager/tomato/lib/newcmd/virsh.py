@@ -1,10 +1,11 @@
-from util import run, CommandError, cmd
+from util import run, CommandError, cmd, proc
 from ..constants import ActionName, StateName, TypeName
 from ..error import UserError, InternalError
 import time
-from util import LockMatrix
+from util import LockMatrix, params, spawnDaemon
 import xml.etree.ElementTree as ET
-import uuid, random, collections
+import uuid, random, collections, re
+from . import websockify
 from ...elements import Element, kvm
 from .. import decorators
 from threading import Lock
@@ -112,51 +113,30 @@ class virsh:
 		return out
 
 	def start(self, vmid, params=None):
-		#check if vmid is already in list:
-		self.update_vm_list()
-		if self.vm_list.__contains__(vmid):
-			self._virsh("start", ["vm_%s" % vmid])
-		else:
-			InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be started" % vmid, data={"type": self.TYPE})
+		self._checkStatus(vmid,[StateName.PREPARED, StateName.STOPPED])
+		self._virsh("start", ["vm_%s" % vmid])
 
 	def prepare(self,vmid, path):
-		#Remove when finished
-		self.update_vm_list()
-		InternalError.check(not self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does already exist on this host" % vmid, data={"type": self.TYPE})
-
+		self._checkState(vmid)
 		self._virsh("define", [(path + "/%s.xml" % vmid)])
 
 
-	def stop(self, vmid, forced=False):
+	def stop(self, vmid, forced=True):
 		self.update_vm_list()
-		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be stopped" % vmid, data={"type": self.TYPE})
 		if forced:
-			run(["virsh", "destroy", "vm_%s" % vmid])
+			self._virsh("destroy", "vm_%s" % vmid)
 		else:
-			run(["virsh", "shutdown", "vm_%s" % vmid])
+			self._virsh("shutdown", "vm_%s" % vmid)
 
-	def destroy(self, vmid):
+	def destroy(self, vmid, path):
+		self._checkStatus(vmid, [StateName.STOPPED, StateName.PREPARED])
+		self._virsh("undefine", "vm_%s" % vmid)
+		run(["rm","-rf", path])
 		self.update_vm_list()
-		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host and cannot be destroyed" % vmid, data={"type": self.TYPE})
-		if self._checkState(vmid) == "running":
-			run(["virsh", "destroy", "vm_%s" % vmid])
-		while(self._checkState(vmid) != "shut off"):
-			time.sleep(1)
-		time.sleep(1)
-		run(["virsh", "undefine", "vm_%s" % vmid]) #--remove-all-storage --managed-save --snapshots-metadata
-		path = self.imagepath
-		path += ("%s.qcow2" % vmid)
-		run(["rm", path])
-		config_path = self.imagepath
-		config_path += ("%s.xml" % vmid)
-		run(["rm", config_path])
-		self.vm_list.remove(vmid)
 
 	def _checkState(self, vmid):
-		state = run(["virsh", "domstate", "vm_%s" % vmid])
-		state = state[:-2]
-		#print self.state
-		return state
+		return self._virsh("domstate", "vm_%s" % vmid)
+
 
 	def getVMs(self):
 		self.update_vm_list()
@@ -165,11 +145,15 @@ class virsh:
 	def getState(self,vmid):
 		self.update_vm_list()
 		#InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host" % vmid, data={"type": self.TYPE})
-		if self.vm_list.__contains__(vmid):
-			if self._checkState(vmid) == "shut off":
-				return StateName.PREPARED
-			if self._checkState(vmid) == "running":
-				return StateName.STARTED
+		state = self._checkState(vmid)
+		if state == "shut off":
+			return StateName.PREPARED
+		if state == "running":
+			return StateName.STARTED
+		if "error:" in state:
+			InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR,
+								"VM %s does not exist on this host and cannot be started" % vmid,
+								data={"type": self.TYPE,"errorMsg": state})
 		else:
 			return StateName.CREATED
 
@@ -181,26 +165,42 @@ class virsh:
 		InternalError.check(status in statuses, InternalError.INVALID_STATE, "VM is in invalid status",
 					  {"vmid": vmid, "status": status, "expected": statuses})
 
+	def getNicList(self, vmid):
+		with locks[vmid]:
+			self._checkStatus(vmid, [StateName.STOPPED, StateName.STARTED])
+			return self._getNicNames(vmid).keys()
+
+	def _getNicNames(self, vmid):
+		vmNicList = ET.fromstring(self._virsh(vmid, "dumpxml")).findall("interface")
+		vmNicNameList = []
+		for iface in vmNicList:
+			vmNicNameList += (re.findall("net(\d+)",iface.find("alias").get("name")),iface.find("source").get("bridge"))
+		return dict((int(num), name) for num, name in vmNicList)
+
 	def	addNic(self, vmid, num, bridge="dummy", model="e1000", mac=None):
-		'''
 		vmid = params.convert(vmid, convert=int, gte=1)
 		num = params.convert(num, convert=int, gte=0, lte=31)
 		bridge = params.convert(bridge, convert=str)
 		model = params.convert(model, convert=str, oneOf=["e1000", "i82551", "rtl8139"])
 		mac = params.convert(mac, convert=str, regExp="^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$", null=True)
-		'''
 		with locks[vmid]:
 			self._checkStatus(vmid, StateName.PREPARED)
-			if num in getNicList(vmid):
-				raise QMError(QMError.CODE_NIC_ALREADY_EXISTS, "Nic already exists", {"vmid": vmid, "num": num})
+			if num in self.getNicList(vmid):
+				raise InternalError(InternalError.INVALID_PARAMETER, "Nic already exists", {"vmid": vmid, "num": num})
+				#raise QMError(QMError.CODE_NIC_ALREADY_EXISTS, "Nic already exists", {"vmid": vmid, "num": num})
 
 			self._virsh("attach-interface",
 						["--domain vm_%d" % vmid,
+						 "--source $s" %bridge if bridge else "",
 						 "--target net%d" % num,
-						 "--model %s " % model,
+						 "--model %s" % model,
 						 ("--mac %s" % mac) if mac else "",
-						 (",bridge=%s" % bridge) if bridge else "",
 						 "--config"])
+
+	def getNicList(self, vmid):
+		with locks[vmid]:
+			self._checkStatus(vmid, [StateName.STOPPED, StateName.STARTED])
+			return self._getNicNames(vmid).keys()
 
 	def update_vm_list(self):
 		#go through currently listed vms and add them to vm_list
@@ -214,8 +214,32 @@ class virsh:
 			self.vm_list.append(int(id))
 		#print self.vm_list
 
+	def startVnc(self, vmid, vncpassword, vncport, websockifyPort=None, websockifyCert=None):
+		vmid = params.convert(vmid, convert=int, gte=1)
+		vncpassword = params.convert(vncpassword, convert=unicode)
+		vncport = params.convert(vncport, convert=int, gte=1, lt=2 ** 16)
+		with locks[vmid]:
+			self._checkStatus(vmid, StateName.STARTED)
+			self._setVncPassword(vmid, vncpassword)
+			vncPid = spawnDaemon(
+				["socat", "TCP-LISTEN:%d,reuseaddr,fork" % vncport, "UNIX-CLIENT:/var/run/qemu-server/%d.vnc" % vmid])
+			websockifyPid = None
+			try:
+				if websockifyPort:
+					websockifyPid = websockify.start(websockifyPort, vncport, websockifyCert)
+			except:
+				self.stopVnc(vncPid)
+				raise
+			return vncPid, websockifyPid
+
+	def stopVnc(self, pid, websockifyPid=None):
+			proc.autoKill(pid, group=True)
+			#QMError.check(not proc.isAlive(pid), QMError.CODE_STILL_RUNNING, "Failed to stop socat")
+			if websockifyPid:
+				websockify.stop(websockifyPid)
+
 	def setAttributes(self, vmid, cores=None, memory=None, keyboard=None, tablet=None,
-			hda=None, fda=None, hdb=None)
+			hda=None, fda=None, hdb=None, vncpassword=None, vncport=None):
 		self.update_vm_list()
 		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host" % vmid, data={"type": self.TYPE})
 
@@ -248,6 +272,12 @@ class virsh:
 		if keyboard:
 			InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
 			self.root.find("devices").find("graphics").set("keymap",str(keyboard))
+
+		if vncpassword:
+			self.root.find("devices").find("graphics").set("passwd", vncpassword)
+		if vncport:
+			self.root.find("devices").find("graphics").set("port", vncport)
+
 		if tablet:
 			InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
 
