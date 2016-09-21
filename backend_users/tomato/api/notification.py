@@ -58,3 +58,7 @@ def notification_get(username, notificationId):
 def notification_set_read(username, notificationId, read=True):
 	user = _getUser(username)
 	return user.notification_set_read(notificationId, read)
+
+def notification_set_all_read(username, read=True):
+	user = _getUser(username)
+	return user.notification_set_all_read(read)

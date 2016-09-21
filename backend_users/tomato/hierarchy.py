@@ -7,11 +7,11 @@ import organization
 # user
 
 def user_exists(id_):
-	return (user.User.get(id_) is not None)
+	return (user.User.get(id_, include_notifications=False) is not None)
 
 
 def user_parents(id_):
-	u = user.User.get(id_)
+	u = user.User.get(id_, include_notifications=False)
 	UserError.check(u is not None, UserError.ENTITY_DOES_NOT_EXIST, message="entity doesn't exist.",
 	                data={"class_name": hierarchy.ClassName.TOPOLOGY, "id_": id_})
 	return [(hierarchy.ClassName.ORGANIZATION, u.organization.name)]
