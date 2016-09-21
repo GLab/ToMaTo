@@ -263,6 +263,8 @@ def list(api, request, with_flag=None, organization=True):
 	organization_label = None
 	if organization is True:
 		organization = api.user.organization
+	else:
+		organization = None
 	if organization:
 		organization_label = api.organization_info(organization)['label']
 	accs = api.account_list(organization=organization, with_flag=with_flag)
@@ -463,6 +465,12 @@ def filtered_unread_notifications(request, ref_entity, ref_id, subject_group):
 @wrap_json
 def notification_mark_read(api, request, notification_id, read):
 	api.account_notification_set_read(notification_id, read)
+	request.session["user"].updateData(api)
+	return True
+
+@wrap_json
+def notification_mark_all_read(api, request, read):
+	api.account_notification_set_all_read(read)
 	request.session["user"].updateData(api)
 	return True
 
