@@ -26,6 +26,18 @@ def account_notification_set_read(notification_id, read):
 	api.notification_set_read(username, notification_id, read)
 	get_user_info(username).invalidate_info()
 
+def account_notification_set_all_read(read):
+	"""
+	Modify the read status of all notifications
+
+	:param bool read: new read status of the notification
+	:return: None
+	"""
+	username = getCurrentUserName()
+	api = get_backend_users_proxy()
+	api.notification_set_all_read(read)
+	get_user_info(username).invalidate_info()
+
 def account_send_notification(name, subject, message, ref=None, from_support=False, subject_group=None):
 	"""
 	Sends an email to the account and also sends a message via the internal message system

@@ -141,14 +141,30 @@ class User(Entity, BaseDocument):
 		return self.password == crypt.crypt(password, self.password)
 
 	@classmethod
-	def get(cls, name, **kwargs):
+	def get(cls, name, include_notifications=True, **kwargs):
 		"""
 		:rtype : User
 		"""
 		try:
-			return User.objects.get(name=name, **kwargs)
+			if include_notifications:
+				return User.objects.get(name=name, **kwargs)
+			else:
+				return User.objects.filter(name=name, **kwargs).exclude("notifications").first()
 		except User.DoesNotExist:
 			return None
+
+	@classmethod
+	def list(cls, organization=None, include_notifications=True):
+		if organization is None:
+			if include_notifications:
+				return User.objects.all()
+			else:
+				return User.objects.exclude('notifications')
+		else:
+			if include_notifications:
+				return User.objects(organization=organization)
+			else:
+				return User.objects(organization=organization).exclude('notifications')
 
 	def modify_organization(self, val):
 		from .organization import Organization
@@ -229,6 +245,11 @@ class User(Entity, BaseDocument):
 	def notification_set_read(self, notification_id, read=True):
 		notif = self.notification_get(notification_id)
 		notif.read = read
+		self.save()
+
+	def notification_set_all_read(self, read=True):
+		for notif in self.notifications:
+			notif.read=read
 		self.save()
 
 	def register_activity(self):
