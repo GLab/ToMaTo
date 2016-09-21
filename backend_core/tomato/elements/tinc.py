@@ -61,7 +61,7 @@ class TincVPN(ConnectingElement, Element):
 	def modify_mode(self, val):
 		self.mode = val
 		for ch in self.children:
-			ch.modify({"mode": self.mode})
+			ch.modify(mode=self.mode)
 
 	def _crossConnect(self):
 		def _isEndpoint(obj):
@@ -154,7 +154,7 @@ class TincVPN(ConnectingElement, Element):
 			peers[src.id].append(peerInfo[dst.id])
 		for ch in children:
 			info = ch.info()
-			ch.modify({"peers": peers[ch.id]})
+			ch.modify(peers=peers[ch.id])
 
 	def _parallelChildActions(self, childList, action, params=None, maxThreads=10):
 		if not params: params = {}
@@ -261,7 +261,7 @@ class TincEndpoint(ConnectingElement, Element):
 	def modify_mode(self, val):
 		self.mode = val
 		if self.element:
-			self.element.modify({"mode": val})
+			self.element.modify(mode=val)
 
 	def onError(self, exc):
 		if self.element:

@@ -85,8 +85,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	SAME_HOST_AFFINITY = -10 #distribute load
 	SAME_SITE_AFFINITY = 20 #keep traffic local and latencies low
 	
-	def init(self, topology, parent=None, attrs=None):
-		if not attrs: attrs = {}
+	def init(self, topology, parent=None, **attrs):
 		if parent:
 			UserError.check(parent.type in self.CAP_PARENT, code=UserError.INVALID_VALUE,
 				message="Parent type not allowed for this type", data={"parent_type": parent.type, "type": self.type})
@@ -100,7 +99,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 				data={"type": self.type})
 		self.topology = topology
 		self.parent = parent
-		Entity.init(self, attrs)
+		Entity.init(self, **attrs)
 
 	@property
 	def hasParent(self):
@@ -149,7 +148,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 				remoteAttrs[key] = value
 		self.directData.update(remoteAttrs)
 		if self.mainElement:
-			self.mainElement.modify(remoteAttrs)
+			self.mainElement.modify(**remoteAttrs)
 
 	def checkUnknownAction(self, action, params=None):
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
@@ -357,9 +356,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 			return None
 
 	@classmethod
-	def create(cls, top, type_=None, parent=None, attrs=None):
-		if not attrs:
-			attrs = {}
+	def create(cls, top, type_=None, parent=None, **attrs):
 		if not type_:
 			type_ = cls.TYPE
 		if parent:
@@ -368,7 +365,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		UserError.check(type_ in TYPES, code=UserError.UNSUPPORTED_TYPE, message="Unsupported type", data={"type": type_})
 		el = TYPES[type_]()
 		try:
-			el.init(top, parent, attrs)
+			el.init(top, parent, **attrs)
 			el.save()
 		except:
 			#el.remove()

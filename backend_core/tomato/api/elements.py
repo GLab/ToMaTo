@@ -63,7 +63,7 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	top = _getTopology(top)
 	if parent:
 		parent = _getElement(parent)
-	el = Element.create(top, type, parent, attrs)
+	el = Element.create(top, type, parent, **attrs)
 	return el.info()
 
 def element_modify(id, attrs): #@ReservedAssignment
@@ -96,7 +96,7 @@ def element_modify(id, attrs): #@ReservedAssignment
 	  and state.
 	"""
 	el = _getElement(id)
-	el.modify(attrs)
+	el.modify(**attrs)
 	return el.info()
 
 def element_action(id, action, params=None): #@ReservedAssignment

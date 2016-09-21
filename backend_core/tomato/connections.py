@@ -95,13 +95,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	DOC=""
 
 	# noinspection PyMethodOverriding
-	def init(self, topology, el1, el2, attrs=None):
+	def init(self, topology, el1, el2, **attrs):
 		if not attrs: attrs = {}
 		self.topology = topology
 		self.state = ST_CREATED
 		self.elementFrom = el1
 		self.elementTo = el2
-		Entity.init(self, attrs)
+		Entity.init(self, **attrs)
 		
 	@classmethod
 	def canConnect(cls, el1, el2):
@@ -164,7 +164,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 				remoteAttrs[key] = value
 		self.directData.update(remoteAttrs)
 		if self.mainConnection:
-			self.mainConnection.modify(self._remoteAttrs)
+			self.mainConnection.modify(**self._remoteAttrs)
 
 	def checkTopologyTimeout(self):
 		self.topology.checkTimeout()
@@ -283,7 +283,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			self.connectionFrom = el1.connectWith(self.connectionElementFrom, attrs={}, ownerConnection=self)
 			self.connectionTo = el2.connectWith(self.connectionElementTo, attrs={}, ownerConnection=self)
 			if "emulation" in self.connectionTo.getAllowedAttributes():
-				self.connectionTo.modify({"emulation": False})
+				self.connectionTo.modify(emulation=False)
 			self.save()
 			self.connectionElementFrom.action(ActionName.START)
 			self.connectionElementTo.action(ActionName.START)
@@ -294,7 +294,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		# Find out and set allowed attributes
 		allowed = self.connectionFrom.getAllowedAttributes()
 		attrs = dict(filter(lambda (k, v): k in allowed, self._remoteAttrs.items()))
-		self.connectionFrom.modify(attrs)
+		self.connectionFrom.modify(**attrs)
 		# Unset all disallowed attributes
 		for key in self._remoteAttrs.keys():
 			if not key in allowed:
@@ -474,7 +474,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			return None
 
 	@classmethod
-	def create(cls, el1, el2, attrs=None):
+	def create(cls, el1, el2, **attrs):
 		if not attrs: attrs = {}
 		UserError.check(el1 != el2, code=UserError.INVALID_CONFIGURATION, message="Cannot connect element with itself")
 		UserError.check(not el1.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
@@ -488,7 +488,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
 			message="Can only connect elements from same topology")
 		con = cls()
-		con.init(el1.topology, el1, el2, attrs)
+		con.init(el1.topology, el1, el2, **attrs)
 		con.save()
 		el1.connection = con
 		el1.save()

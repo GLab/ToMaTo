@@ -161,12 +161,12 @@ class Host(Entity, BaseDocument):
 		"networks": Attribute(field=hostNetworks, readOnly=True, schema=schema.List())
 	}
 
-	def init(self, attrs=None):
+	def init(self, **attrs):
 		self.hostInfoTimestamp = 0
 		self.accountingTimestamp = 0
 		self.lastResourcesSync = 0
 		if attrs:
-			self.modify(attrs)
+			self.modify(**attrs)
 		self.update()
 		self.synchronizeResources()
 
@@ -637,16 +637,15 @@ class Host(Entity, BaseDocument):
 		return Host.objects.filter(**kwargs)
 
 	@classmethod
-	def create(cls, name, site, attrs=None):
+	def create(cls, name, site, **attrs):
 		UserError.check(Host.get(name=name) is None, code=UserError.ALREADY_EXISTS, message="Host with that name (\"\") already exists")
-		if not attrs: attrs = {}
 		UserError.check('/' not in name, code=UserError.INVALID_VALUE, message="Host name may not include a '/'") #FIXME: find out if still used
 		for attr in ["address", "rpcurl"]:
 			UserError.check(attr in attrs.keys(), code=UserError.INVALID_CONFIGURATION, message="Missing attribute for host: %s" % attr)
 		host = Host(name=name, site=site)
 		try:
 			attrs_ = attrs.copy()
-			host.init(attrs_)
+			host.init(**attrs_)
 			host.save()
 			logging.logMessage("create", category="host", info=host.info())
 		except:

@@ -74,17 +74,16 @@ class Topology(Entity, BaseDocument):
 
 	DOC = ""
 
-	def init(self, owner, attrs=None):
+	def init(self, owner, **attrs):
 		"""
 		:type owner: auth.User
 		"""
-		if not attrs: attrs = {}
 		self.set_role(owner, Role.owner, skip_save=True)
 		self.timeout = time.time() + settings.get_topology_settings()[Config.TOPOLOGY_TIMEOUT_INITIAL]
 		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
 		self.save()
 		self.name = "Topology [%s]" % self.idStr
-		self.modify(attrs)
+		self.modify(**attrs)
 
 	def isBusy(self):
 		return hasattr(self, "_busy") and self._busy
@@ -352,10 +351,9 @@ def get(id_, **kwargs):
 def getAll(**kwargs):
 	return list(Topology.objects.filter(**kwargs))
 
-def create(owner, attrs=None):
-	if not attrs: attrs = {}
+def create(owner, **attrs):
 	top = Topology()
-	top.init(owner=owner, attrs=attrs)
+	top.init(owner=owner, **attrs)
 	logging.logMessage("create", category="topology", id=top.idStr)
 	logging.logMessage("info", category="topology", id=top.idStr, info=top.info())
 	return top

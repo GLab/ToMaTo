@@ -58,7 +58,7 @@ def network_instance_create(network, host, attrs=None):
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	attrs.update(host=host, network=network)
-	res = NetworkInstance.create(attrs)
+	res = NetworkInstance.create(**attrs)
 	return res.info()
 
 
@@ -83,7 +83,7 @@ def network_instance_modify(id, attrs):
 	  exist* is raised.
 	"""
 	res = _getNetworkInstance(id)
-	res.modify(attrs)
+	res.modify(**attrs)
 	return res.info()
 
 

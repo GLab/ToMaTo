@@ -118,7 +118,7 @@ class VMElement(Element):
 		UserError.check(profile, code=UserError.INVALID_VALUE, message="No such profile", data={"value": val})
 		self.profile = profile
 		if self.element:
-			self.element.modify(self._profileAttrs)
+			self.element.modify(**self._profileAttrs)
 
 	def modify_template(self, tmplName):
 		template = Template.get(self.TYPE, tmplName)
@@ -126,7 +126,7 @@ class VMElement(Element):
 		self.template = template
 		template.on_selected()
 		if self.element:
-			self.element.modify({"template": self.template.name})
+			self.element.modify(template=self.template.name)
 
 	def onChildAdded(self, iface):
 		if self.element:
