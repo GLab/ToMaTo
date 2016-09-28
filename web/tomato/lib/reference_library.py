@@ -6,7 +6,9 @@ from constants import TypeName
 
 def tech_to_label(tech):
 	if tech == TypeName.KVMQM:
-		return "KVM"
+		return "KVM/QM"
+	if tech == TypeName.KVM:
+		return "KVM/VirSH"
 	if tech == TypeName.OPENVZ:
 		return "OpenVZ"
 	if tech == TypeName.REPY:
@@ -14,7 +16,7 @@ def tech_to_label(tech):
 	return tech
 
 def techs():
-	return [TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]
+	return [TypeName.KVM, TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]
 
 def entity_to_label(entity):
 	if entity == 'topology':
