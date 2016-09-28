@@ -6,8 +6,6 @@ from util import LockMatrix, params, spawnDaemon
 import xml.etree.ElementTree as ET
 import uuid, random, collections, re
 from . import websockify
-from ...elements import Element, kvm
-from .. import decorators
 from threading import Lock
 
 locks = LockMatrix()
@@ -69,11 +67,12 @@ class virsh:
 
 	def __init__(self,type):
 		self.update_vm_list()
-		print "init"
 		self.TYPE = type
+
+		"""
 		if self.TYPE == TypeName.KVM:
 			#read standard kvm config, extracting path to images
-			self.tree = self.writeInitialConfig(self.TYPE, 1337)
+			self.tree = self.writeInitialConfig(self.TYPE, vmid)
 			self.root = self.tree.getroot()
 
 			for devices in self.root.findall('devices'):
@@ -102,7 +101,7 @@ class virsh:
 						for i in range(0, parts.__len__() - 1):
 							self.imagepath += parts[i]
 							self.imagepath += "/"
-
+		"""
 
 	def _virsh(self, cmd_, args=None, timeout=None):
 		if not args: args = []
@@ -205,7 +204,7 @@ class virsh:
 	def update_vm_list(self):
 		#go through currently listed vms and add them to vm_list
 		self.vm_list = []
-		list_raw = run(["virsh", "list --all"])
+		list_raw = self._virsh("list",["--all"])
 		list_split = list_raw.split("vm_")[1:]
 		list_vm_ids = []
 		for item in list_split:
@@ -445,6 +444,7 @@ class virsh:
 			elementController.append(elementControllerAlias)
 			elementDevices.append(elementController)
 
+		"""
 		if type == TypeName.KVM:
 			elementInterface = ET.Element("interface", {"type": "bridge"})
 			elementInterfaceSource = ET.Element("source", {"bridge": "br0"})
@@ -463,7 +463,7 @@ class virsh:
 			elementGuest = ET.Element("guest", {"dev": "eth0"})
 			elementInterface.append(elementGuest)
 			elementDevices.append(elementInterface)
-
+		"""
 		if type == TypeName.KVM:
 			elementSerial = ET.Element("serial", {"type": "pty"})
 			elementSerialSource = ET.Element("source", {"path": "/dev/pts/6"})
@@ -547,7 +547,7 @@ class virsh:
 		print "Writing test.xml"
 
 		config_path = self.imagepath
-		config_path += ("%test.xml")
+		config_path += ("vm_%d.xml" % vmid)
 		tree = ET.ElementTree(initNode)
 		tree.write(config_path)
 

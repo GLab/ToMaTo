@@ -17,6 +17,7 @@
 
 from elements import Element #@UnusedImport
 from elements.kvmqm import KVMQM, KVMQM_Interface #@UnusedImport
+from elements.kvm import KVM #@UnusedImport
 from elements.openvz import OpenVZ, OpenVZ_Interface #@UnusedImport
 from elements.repy import Repy, Repy_Interface #@UnusedImport
 from elements.external_network import External_Network #@UnusedImport

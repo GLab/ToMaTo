@@ -28,6 +28,7 @@ from ..lib.constants import TypeName
 
 PATTERNS = {
 	TypeName.KVMQM: "%s.qcow2",
+	TypeName.KVM: "%s.qcow2",
 	TypeName.OPENVZ: "%s.tar.gz",
 	TypeName.REPY: "%s.repy",
 }

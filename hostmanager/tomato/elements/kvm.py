@@ -5,13 +5,13 @@ from .. import connections, elements, resources, config
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import cmd #@UnresolvedImport
 from ..lib.newcmd import virsh, qemu_img
-from ..lib.newcmd.util import io
+from ..lib.newcmd.util import io, net
 from ..lib.error import UserError, InternalError
 
 
 import time
 import xml.etree.ElementTree as ET
-import random, os
+import random, os, sys
 
 kblang_options = {"en-us": "English (US)",
 					"en-gb": "English (GB)",
@@ -200,7 +200,6 @@ class KVM(elements.Element):
 		else:
 			io.copy(path_, self._imagePath())
 
-
 	def _checkState(self):
 		savedState = self.state
 		realState = self.vir.getState(self.vmid)
@@ -214,3 +213,156 @@ class KVM(elements.Element):
 
 	def _imagePath(self, file="disk.qcow2"): #@ReservedAssignment
 		return os.path.join(self._imagePathDir(), file)
+
+def register():  # pragma: no cover
+		print "register KVM"
+		if not os.path.exists("/dev/kvm"):
+			print "Nope os path"
+			print >> sys.stderr, "Warning: KVM needs /dev/kvm, disabled"
+			return
+		if not virshVersion:
+			print "Nope virsh"
+			print >> sys.stderr, "Warning: KVM needs virsh, disabled"
+			return
+		if not ([0, 3] <= virshVersion < [2, 3]):
+			print "Nope virsh Version"
+			print >> sys.stderr, "Warning: KVM not supported on pve-qemu-kvm version %s, disabled" % virshVersion
+			return
+		if not socatVersion:
+			print >> sys.stderr, "Warning: KVM needs socat, disabled"
+			return
+		if not tcpserverVersion:
+			print >> sys.stderr, "Warning: KVM needs ucspi-tcp, disabled"
+			return
+		if not dosfstoolsVersion:
+			print >> sys.stderr, "Warning: KVM needs dosfstools, disabled"
+			return
+		if not ipspyVersion:
+			print >> sys.stderr, "Warning: ipspy not available"
+		elements.TYPES[KVM.TYPE] = KVM
+
+if not config.MAINTENANCE:
+	tcpserverVersion = cmd.getDpkgVersion("ucspi-tcp")
+	websockifyVersion = cmd.getDpkgVersion("websockify")
+	socatVersion = cmd.getDpkgVersion("socat")
+	virshVersion = cmd.getVirshVersion()
+	dosfstoolsVersion = cmd.getDpkgVersion("dosfstools")
+	ipspyVersion = cmd.getDpkgVersion("ipspy")
+	register()
+
+
+DOC_IFACE = """
+Element type: ``kvm_interface``
+
+Description:
+	This element type represents a network interface of kvmqm element type. Its
+	state is managed by and synchronized with the parent element.
+
+Possible parents: ``kvmqm``
+
+Possible children: None
+
+Default state: *created*
+
+Removable in states: *created* and *prepared*
+
+Connection concepts: *interface*
+
+States:
+	*created*: In this state the interface is known of but qm does not know about
+		it.
+	*prepared*: In this state the interface is present in the qm configuration
+		but not running.
+	*started*: In this state the interface is running.
+
+Attributes: None
+
+Actions: None
+"""
+
+"""
+class KVM_Interface(elements.Element):
+	num_attr = Attr("num", type="int")
+	num = num_attr.attribute()
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[StateName.CREATED])
+	mac_attr = Attr("mac", desc="MAC Address", type="str")
+	mac = mac_attr.attribute()
+	ipspy_pid_attr = Attr("ipspy_pid", type="int")
+	ipspy_pid = ipspy_pid_attr.attribute()
+	used_addresses_attr = Attr("used_addresses", type=list, default=[])
+	used_addresses = used_addresses_attr.attribute()
+
+	TYPE = TypeName.KVM_INTERFACE
+	CAP_ACTIONS = {
+		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
+	}
+	CAP_NEXT_STATE = {}
+	CAP_ATTRS = {
+		"name": name_attr,
+		"timeout": elements.Element.timeout_attr
+	}
+	CAP_CHILDREN = {}
+	CAP_PARENT = [KVM.TYPE]
+	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
+	DOC = DOC_IFACE
+	__doc__ = DOC_IFACE  # @ReservedAssignment
+
+	class Meta:
+		db_table = "tomato_kvm_interface"
+		app_label = 'tomato'
+
+	def init(self, *args, **kwargs):
+		self.type = self.TYPE
+		self.state = StateName.CREATED
+		elements.Element.init(self, *args, **kwargs)  # no id and no attrs before this line
+		assert isinstance(self.getParent(), KVMQM)
+		self.num = self.getParent()._nextIfaceNum()
+		self.mac = net.randomMac()
+
+	def modify_name(self, val):
+		self.num = int(re.match("^eth([0-9]+)$", val).groups()[0])
+
+	def interfaceName(self):
+		if self.state != StateName.CREATED:
+			try:
+				return qm.getNicName(self.getParent().vmid, self.num)
+			except qm.QMError as err:
+				if err.code == qm.QMError.CODE_NO_SUCH_NIC:
+					return
+				raise
+		else:
+			return None
+
+	def upcast(self):
+		return self
+
+	def _start(self):
+		self.ipspy_pid = ipspy.start(self.interfaceName(), self.dataPath("ipspy.json"))
+		self.save()
+
+	def _stop(self):
+		if self.ipspy_pid:
+			ipspy.stop(self.ipspy_pid)
+			del self.ipspy_pid
+		self.save()
+
+	def info(self):
+		path = self.dataPath("ipspy.json")
+		if self.state == StateName.STARTED and os.path.exists(path):
+			self.used_addresses = ipspy.read(path)
+		else:
+			self.used_addresses = []
+		info = elements.Element.info(self)
+		info["attrs"]["name"] = "eth%d" % (self.num or 0)
+		return info
+
+	def updateUsage(self, usage, data):
+		if self.state == StateName.STARTED:
+			ifname = self.interfaceName()
+			if net.ifaceExists(ifname):
+				traffic = sum(net.trafficInfo(ifname))
+				usage.updateContinuous("traffic", traffic, data)
+
+
+KVM_Interface.__doc__ = DOC_IFACE
+"""

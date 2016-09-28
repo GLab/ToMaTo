@@ -15,6 +15,10 @@ KVM with QM frontend (``kvmqm``, ``kvmqm_interface``)
 
 .. autoclass:: hostmanager.tomato.elements.kvmqm.KVMQM_Interface
 
+KVM with VirSH frontend (``kvm``)
+-----------------------------------------------------
+.. autoclass:: hostmanager.tomato.elements.kvm.KVM
+
 
 Repy (``repy``, ``repy_interface``)
 -----------------------------------
