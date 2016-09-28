@@ -34,3 +34,4 @@ tomato_backend_accounting_image:
 	mkdir -p tomato_backend_accounting/code/shared-rust
 	rsync -aL ../../shared-rust/ tomato_backend_accounting/code/shared-rust/ --filter 'merge backend_accounting-files'
 	./build.sh tomato_backend_accounting
+
