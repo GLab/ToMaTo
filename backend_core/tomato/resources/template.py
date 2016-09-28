@@ -35,6 +35,7 @@ kblang_options = {
 
 
 PATTERNS = {
+	"kvm": "%s.qcow2",
 	"kvmqm": "%s.qcow2",
 	"openvz": "%s.tar.gz",
 	"repy": "%s.repy",
