@@ -36,20 +36,24 @@
 
 	function mark_all_read() {
 		if (confirm("Do you really want to mark all these notifications as read?")){
-			var url = "{% url 'notification_mark_read' '__NOTIFICATIONID__'%}";
-			var notification_ids = [];
-			{% for notification in notifications %}
-				{% if not notification.read %}
+			var url = "{% url 'notification_mark_all_read' %}";
+			try {
+				var xmlhttp=new XMLHttpRequest();
+				xmlhttp.onreadystatechange = function() {
+				if (xmlhttp.readyState==4) {
 					try {
-						var xmlhttp=new XMLHttpRequest();
-						xmlhttp.open("GET",url.replace('__NOTIFICATIONID__', "{{notification.id}}"),false);
-						xmlhttp.send();
 						res = JSON.parse(xmlhttp.responseText);
-					}catch(ex) {
-
+					} catch(ex) {
+						alert('Failed to mark notifification');
 					}
-				{% endif %}
-			{% endfor %}
+
+					location.reload();
+				}
+				xmlhttp.open("GET", url, true);
+				xmlhttp.send();
+			}catch(ex) {
+
+			}
 
 			window.location = '{% url 'tomato.account.unread_notifications' %}';
 		}

@@ -65,7 +65,7 @@ def connection_create(el1, el2, attrs=None): #@ReservedAssignment
 	if not attrs: attrs = {}
 	el1 = _getElement(el1)
 	el2 = _getElement(el2)
-	con = Connection.create(el1, el2, attrs)
+	con = Connection.create(el1, el2, **attrs)
 	return con.info()
 
 def connection_modify(id, attrs): #@ReservedAssignment
@@ -98,7 +98,7 @@ def connection_modify(id, attrs): #@ReservedAssignment
 	  state.
 	"""
 	con = _getConnection(id)
-	con.modify(attrs)
+	con.modify(**attrs)
 	return con.info()
 
 def connection_action(id, action, params=None): #@ReservedAssignment

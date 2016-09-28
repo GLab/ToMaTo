@@ -60,10 +60,9 @@ class Network(Entity, BaseDocument):
 		"description": Attribute(field=description, schema=schema.String())
 	}
 
-	def init(self, *args, **kwargs):
-		attrs = args[0]
+	def init(self, **attrs):
 		UserError.check("kind" in attrs, code=UserError.INVALID_CONFIGURATION, message="Network needs attribute kind")
-		Entity.init(self, attrs)
+		Entity.init(self, **attrs)
 
 	@classmethod
 	def get(cls, kind):
@@ -72,9 +71,9 @@ class Network(Entity, BaseDocument):
 				return net
 
 	@classmethod
-	def create(cls, attrs):
+	def create(cls, **attrs):
 		obj = cls()
-		obj.init(attrs)
+		obj.init(**attrs)
 		obj.save()
 		return obj
 
@@ -110,11 +109,11 @@ class NetworkInstance(Entity, BaseDocument):
 		"bridge": Attribute(field=bridge, schema=schema.Identifier(strict=True))
 	}
 
-	def init(self, attrs):
+	def init(self, **attrs):
 		for attr in ["network", "host", "bridge"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Network_Instance needs attribute",
 				data={"attribute": attr})
-		Entity.init(self, attrs)
+		Entity.init(self, **attrs)
 
 	def getBridge(self):
 		return self.bridge
@@ -141,8 +140,8 @@ class NetworkInstance(Entity, BaseDocument):
 		raise UserError(code=UserError.NO_RESOURCES, message="No network instances found", data={"network": kind, "host": host})
 
 	@classmethod
-	def create(cls, attrs):
+	def create(cls, **attrs):
 		obj = cls()
-		obj.init(attrs)
+		obj.init(**attrs)
 		obj.save()
 		return obj

@@ -64,11 +64,11 @@ class Profile(Entity, BaseDocument):
 		"diskspace": Attribute(field=diskspace, schema=schema.Int(minValue=0))
 	}
 
-	def init(self, attrs):
+	def init(self, **attrs):
 		for attr in ["name", "tech"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Profile needs attribute",
 				data={"attribute": attr})
-		Entity.init(self, attrs)
+		Entity.init(self, **attrs)
 
 	@classmethod
 	def get(cls, tech, name):
@@ -84,12 +84,12 @@ class Profile(Entity, BaseDocument):
 		return prfls[0]
 
 	@classmethod
-	def create(cls, attrs):
+	def create(cls, **attrs):
 		prfls = Profile.objects.filter(name=attrs["name"], tech=attrs["tech"])
 		UserError.check(not prfls, code=UserError.ALREADY_EXISTS,
 						message="There exists already a profile for this technology with a similar name",
 						data={"name":attrs["name"],"tech":attrs["tech"]})
 		obj = cls()
-		obj.init(attrs)
+		obj.init(**attrs)
 		obj.save()
 		return obj

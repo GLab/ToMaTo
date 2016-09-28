@@ -71,7 +71,6 @@ class MiscTestCase(ProxyHoldingTestCase):
 		self.assertTrue("version" in res)
 		self.assertTrue("api_version" in res)
 		self.assertTrue("topology_timeout" in res)
-		self.assertTrue("TEMPLATE_TRACKER_URL" in res)
 
 	def test_statistics(self):
 		res = self.proxy_holder.backend_api.statistics()

@@ -3,5 +3,10 @@
     "name": "install_python",
     "label": "Install Python",
     "url": "install_python/index.json"
+  },
+  {
+    "name": "install_java",
+    "label": "Install Java",
+    "url": "install_java/index.json"
   }
 ]
