@@ -501,7 +501,8 @@ class Host(Entity, BaseDocument):
 				pass
 		from ..resources.template import Template
 		for t in Template.objects():
-			t.hosts.remove(self.name)
+			if self.name in t.hosts:
+				t.hosts.remove(self.name)
 			t.save()
 		if self.id:
 			self.delete()
