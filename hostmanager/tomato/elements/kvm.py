@@ -4,14 +4,14 @@ from ..resources import template
 from .. import connections, elements, resources, config
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import cmd #@UnresolvedImport
-from ..lib.newcmd import virsh, qemu_img
+from ..lib.newcmd import virsh, qemu_img, ipspy
 from ..lib.newcmd.util import io, net
 from ..lib.error import UserError, InternalError
 
 
 import time
 import xml.etree.ElementTree as ET
-import random, os, sys
+import random, os, sys, re
 
 kblang_options = {"en-us": "English (US)",
 					"en-gb": "English (GB)",
@@ -280,7 +280,7 @@ Attributes: None
 Actions: None
 """
 
-"""
+
 class KVM_Interface(elements.Element):
 	num_attr = Attr("num", type="int")
 	num = num_attr.attribute()
@@ -315,7 +315,7 @@ class KVM_Interface(elements.Element):
 		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs)  # no id and no attrs before this line
-		assert isinstance(self.getParent(), KVMQM)
+		assert isinstance(self.getParent(), KVM)
 		self.num = self.getParent()._nextIfaceNum()
 		self.mac = net.randomMac()
 
@@ -325,9 +325,9 @@ class KVM_Interface(elements.Element):
 	def interfaceName(self):
 		if self.state != StateName.CREATED:
 			try:
-				return qm.getNicName(self.getParent().vmid, self.num)
-			except qm.QMError as err:
-				if err.code == qm.QMError.CODE_NO_SUCH_NIC:
+				return virsh.getNicName(self.getParent().vmid, self.num)
+			except virsh.QMError as err:
+				if err.code == virsh.QMError.CODE_NO_SUCH_NIC:
 					return
 				raise
 		else:
@@ -365,4 +365,3 @@ class KVM_Interface(elements.Element):
 
 
 KVM_Interface.__doc__ = DOC_IFACE
-"""
