@@ -214,43 +214,6 @@ class KVM(elements.Element):
 	def _imagePath(self, file="disk.qcow2"): #@ReservedAssignment
 		return os.path.join(self._imagePathDir(), file)
 
-def register():  # pragma: no cover
-		print "register KVM"
-		if not os.path.exists("/dev/kvm"):
-			print "Nope os path"
-			print >> sys.stderr, "Warning: KVM needs /dev/kvm, disabled"
-			return
-		if not virshVersion:
-			print "Nope virsh"
-			print >> sys.stderr, "Warning: KVM needs virsh, disabled"
-			return
-		if not ([0, 3] <= virshVersion < [2, 3]):
-			print "Nope virsh Version"
-			print >> sys.stderr, "Warning: KVM not supported on pve-qemu-kvm version %s, disabled" % virshVersion
-			return
-		if not socatVersion:
-			print >> sys.stderr, "Warning: KVM needs socat, disabled"
-			return
-		if not tcpserverVersion:
-			print >> sys.stderr, "Warning: KVM needs ucspi-tcp, disabled"
-			return
-		if not dosfstoolsVersion:
-			print >> sys.stderr, "Warning: KVM needs dosfstools, disabled"
-			return
-		if not ipspyVersion:
-			print >> sys.stderr, "Warning: ipspy not available"
-		elements.TYPES[KVM.TYPE] = KVM
-
-if not config.MAINTENANCE:
-	tcpserverVersion = cmd.getDpkgVersion("ucspi-tcp")
-	websockifyVersion = cmd.getDpkgVersion("websockify")
-	socatVersion = cmd.getDpkgVersion("socat")
-	virshVersion = cmd.getVirshVersion()
-	dosfstoolsVersion = cmd.getDpkgVersion("dosfstools")
-	ipspyVersion = cmd.getDpkgVersion("ipspy")
-	register()
-
-
 DOC_IFACE = """
 Element type: ``kvm_interface``
 
@@ -365,3 +328,41 @@ class KVM_Interface(elements.Element):
 
 
 KVM_Interface.__doc__ = DOC_IFACE
+
+
+def register():  # pragma: no cover
+		print "register KVM"
+		if not os.path.exists("/dev/kvm"):
+			print "Nope os path"
+			print >> sys.stderr, "Warning: KVM needs /dev/kvm, disabled"
+			return
+		if not virshVersion:
+			print "Nope virsh"
+			print >> sys.stderr, "Warning: KVM needs virsh, disabled"
+			return
+		if not ([0, 3] <= virshVersion < [2, 3]):
+			print "Nope virsh Version"
+			print >> sys.stderr, "Warning: KVM not supported on pve-qemu-kvm version %s, disabled" % virshVersion
+			return
+		if not socatVersion:
+			print >> sys.stderr, "Warning: KVM needs socat, disabled"
+			return
+		if not tcpserverVersion:
+			print >> sys.stderr, "Warning: KVM needs ucspi-tcp, disabled"
+			return
+		if not dosfstoolsVersion:
+			print >> sys.stderr, "Warning: KVM needs dosfstools, disabled"
+			return
+		if not ipspyVersion:
+			print >> sys.stderr, "Warning: ipspy not available"
+		elements.TYPES[KVM.TYPE] = KVM
+		elements.TYPES[KVM_Interface.TYPE] = KVM_Interface
+
+if not config.MAINTENANCE:
+	tcpserverVersion = cmd.getDpkgVersion("ucspi-tcp")
+	websockifyVersion = cmd.getDpkgVersion("websockify")
+	socatVersion = cmd.getDpkgVersion("socat")
+	virshVersion = cmd.getVirshVersion()
+	dosfstoolsVersion = cmd.getDpkgVersion("dosfstools")
+	ipspyVersion = cmd.getDpkgVersion("ipspy")
+	register()
