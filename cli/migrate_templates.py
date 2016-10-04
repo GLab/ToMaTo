@@ -57,12 +57,29 @@ def parseArgs():
 	parser.add_argument("--username_destination", "-dU", help="the username to use for login on destination server")
 	parser.add_argument("--password_destination", "-dP", help="the password to use for login on destination server")
 
+	parser.add_argument("--no-keyring", default=False, action="store_true", help="ignore passwords from keyring")
 	parser.add_argument("--include_restricted", default=False, help="whether to include restricted templates")
 	parser.add_argument("--templates", "-t", metavar='T', nargs="+", default=None, help="only migrate templates with this name")
 	parser.add_argument("--overwrite_on_conflict", default=False, action="store_true", help="in case of conflict, overwrite the template (default: ignore)")
 
 	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
 	options = parser.parse_args()
+
+	if not options.no_keyring:
+		try:
+			import keyring
+			KEYRING_SERVICE_NAME = "ToMaTo"
+
+			if options.username_source and not (options.password_source or options.client_cert_source):
+				KEYRING_USER_NAME = "%s/%s" % (options.hostname_source, options.username_source)
+				options.password_source = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USER_NAME)
+			if options.username_destination and not (options.password_destination or options.client_cert_destination):
+				KEYRING_USER_NAME = "%s/%s" % (options.hostname_destination, options.username_destination)
+				options.password_destination = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USER_NAME)
+
+		except ImportError:
+			pass
+
 
 	need_source_username = not options.username_source and not options.client_cert_source
 	need_source_password = not options.password_source and not options.client_cert_source
