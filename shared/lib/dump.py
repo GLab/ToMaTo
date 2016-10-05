@@ -3,7 +3,7 @@ import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip, ins
 from . import anyjson as json
 from .error import InternalError, generate_inspect_trace
 
-from settings import settings, Config
+from .settings import settings, Config
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
@@ -347,7 +347,7 @@ def dumpException(**kwargs):
 	trace = traceback.extract_tb(trace) if trace else None
 	
 	# check whether a handler for the given type of exception is known.
-	from error import Error
+	from .error import Error
 	if issubclass(type_, Error):
 		return dumpError(value)
 	
