@@ -34,7 +34,6 @@ def custom_element_icons(ignore_errors=True):
 
 
 def executable_archives(split_alternatives=True, ignore_errors=True):
-	raise Exception()
 	default_executable_archives_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST)
 	try:
 		default_archive_list = []
