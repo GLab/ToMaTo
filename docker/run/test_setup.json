@@ -21,7 +21,8 @@
   "template_source": {
     "port": "8000",
     "host": "master.tomato-lab.org",
-    "restricted_templates": false
+    "restricted_templates": false,
+    "username": null
   },
   "site": {
     "name": "ukl",

@@ -578,6 +578,7 @@ def parseArgs():
 	parser.add_argument("--client_cert", required=False, default=None, help="path of the ssl certificate")
 	parser.add_argument("--username", "-U", help="the username to use for login")
 	parser.add_argument("--password", "-P", help="the password to use for login")
+	parser.add_argument("--no-keyring", action="store_true", default=False, help="ignore password stored in keyring")
 	parser.add_argument("--target", "-t", help="the output filename.", required=True)
 	parser.add_argument("--packetconfig", "-c",
 	                    help='The archive configuration. This should point to a JSON file of the form [{tech:"string",site:"string",template:"string",packages:["string"]}]. Each entry must refer to a different operating system.',
@@ -587,7 +588,16 @@ def parseArgs():
 	if not options.username and not options.client_cert:
 		options.username = raw_input("Username: ")
 	if not options.password and not options.client_cert:
-		options.password = getpass.getpass("Password: ")
+		if not options.no_keyring:
+			try:
+				import keyring
+				KEYRING_SERVICE_NAME = "ToMaTo"
+				KEYRING_USER_NAME = "%s/%s" % (options.hostname, options.username)
+				options.password = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USER_NAME)
+			except ImportError:
+				pass
+		if not options.password:
+			options.password = getpass.getpass("Password: ")
 	if options.verbose:
 		debugger.setVerbose()
 	return options
