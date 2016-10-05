@@ -42,6 +42,13 @@ var createTopologyMenu = function(obj) {
 				}
 			},
 			"sep1": "---",
+			"tabbedConsoleWindow": {
+				name:"Tabbed Console (NoVNC)",
+				icon:"console",
+				callback: function() {
+					obj.tabbedConsoleWindow();
+				}
+			},
 			"notes": {
 				name:"Notes",
 				icon:"notes",
