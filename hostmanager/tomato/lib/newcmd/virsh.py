@@ -2,11 +2,12 @@ from util import run, CommandError, cmd, proc
 from ..constants import ActionName, StateName, TypeName
 from ..error import UserError, InternalError
 import time
-from util import LockMatrix, params, spawnDaemon
+from util import LockMatrix, params, spawnDaemon, wait, net
 import xml.etree.ElementTree as ET
 import uuid, random, collections, re
-from . import websockify
+from . import websockify, Error, brctl
 from threading import Lock
+import os
 
 locks = LockMatrix()
 
@@ -28,7 +29,7 @@ class IDManager(object):
 	def _check_free(self, id_):
 		raise NotImplementedError()
 
-	def getFreeID(self):
+def getFreeID(self):
 		with self.lock:
 			self._move_right()
 			while not self._check_free(self.idpoint):
@@ -37,11 +38,24 @@ class IDManager(object):
 
 idmanager = IDManager()
 
+class QMError(Error):
+	CODE_UNKNOWN="qm.unknown"
+	CODE_UNKNOWN_STATUS="qm.unknown_status"
+	CODE_INVALID_STATUS="qm.invalid_status"
+	CODE_INVALID_PARAMETER="qm.invalid_parameter"
+	CODE_PARAMETER_NOT_SET="qm.parameter_not_set"
+	CODE_PARAMETER_STILL_SET="qm.parameter_still_set"
+	CODE_UNSUPPORTED="qm.unsupported"
+	CODE_NOT_INITIALIZED="qm.not_initialized"
+	CODE_CONTROL="qm.control_socket"
+	CODE_NO_SUCH_NIC="qm.no_such_nic"
+	CODE_NIC_ALREADY_EXISTS="qm.nix_already_exists"
+	CODE_COMMAND="qm.command"
+	CODE_STILL_RUNNING="qm.still_running"
+
 class virsh:
 
 	vm_list = []
-	kvm_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_kvm_config.xml" #standard_kvm_config.xml"
-	lxc_config_path = "/home/stephan/ToMaTo/hostmanager/tomato/lib/standard_lxc_config.xml" #standard_lxc_config.xml"
 	imagepath = ""
 	original_image = ""
 
@@ -49,7 +63,7 @@ class virsh:
 
 	HYPERVISOR_MAPPING = {
 		"lxc": "LXC://",
-		"kvm": "qemu:///system"
+		"kvm": "qemu:///session"
 	}
 
 	CAP_ACTIONS = {
@@ -108,33 +122,54 @@ class virsh:
 		cmd_ = ["virsh", "-c", self.HYPERVISOR_MAPPING[self.TYPE], cmd_] + args
 		if timeout:
 			cmd_ = ["perl", "-e", "alarm %d; exec @ARGV" % timeout] + cmd_
+		#print "Executing virsh command: %s" % cmd_
 		out = cmd.run(cmd_)
 		return out
 
-	def start(self, vmid, params=None):
-		self._checkStatus(vmid,[StateName.PREPARED, StateName.STOPPED])
-		self._virsh("start", ["vm_%s" % vmid])
+	def _configPath(self, vmid):
+		return "/var/lib/vz/images/%d/vm_%d.xml" % (vmid, vmid)
 
-	def prepare(self,vmid, path):
-		self._checkState(vmid)
-		self._virsh("define", [(path + "/%s.xml" % vmid)])
+	def _imagePath(self, vmid):
+		return "/var/lib/vz/images/%d/disk.qcow2" % vmid
+
+	def _folderPath(self, vmid):
+		return "/var/lib/vz/images/%d/" % vmid
+
+	def start(self, vmid, detachInterfaces=True):
+		with locks[vmid]:
+			self._checkStatus(vmid,[StateName.PREPARED])
+			self._virsh("start", ["vm_%s" % vmid])
+			self._checkStatus(vmid,[StateName.STARTED])
+			try:
+				for ifname in self._getNicNames(vmid).values():
+					wait.waitFor(lambda :net.ifaceExists(ifname), failCond=lambda :self.getState(vmid) != StateName.STARTED)
+					bridge = net.ifaceBridge(ifname)
+					if bridge and detachInterfaces:
+						brctl.detach(bridge, ifname)
+			except:
+				self._virsh("stop", ["vm_%s" % vmid])
+				raise
+
+	def prepare(self,vmid):
+		self._checkStatus(vmid,[StateName.CREATED])
+		self._virsh("define", [self._configPath(vmid)])
 
 
 	def stop(self, vmid, forced=True):
 		self.update_vm_list()
 		if forced:
-			self._virsh("destroy", "vm_%s" % vmid)
+			self._virsh("destroy", ["vm_%s" % vmid])
 		else:
-			self._virsh("shutdown", "vm_%s" % vmid)
+			self._virsh("shutdown", ["vm_%s" % vmid])
 
-	def destroy(self, vmid, path):
-		self._checkStatus(vmid, [StateName.STOPPED, StateName.PREPARED])
-		self._virsh("undefine", "vm_%s" % vmid)
-		run(["rm","-rf", path])
+	def destroy(self, vmid):
+		self._checkStatus(vmid, [StateName.PREPARED])
+		self._virsh("undefine", ["vm_%s" % vmid])
+		run(["rm","-rf", self._folderPath(vmid)])
 		self.update_vm_list()
 
 	def _checkState(self, vmid):
-		return self._virsh("domstate", "vm_%s" % vmid)
+		return self._virsh("domstate", ["vm_%s" % vmid])
 
 
 	def getVMs(self):
@@ -144,17 +179,26 @@ class virsh:
 	def getState(self,vmid):
 		self.update_vm_list()
 		#InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host" % vmid, data={"type": self.TYPE})
-		state = self._checkState(vmid)
-		if state == "shut off":
-			return StateName.PREPARED
-		if state == "running":
-			return StateName.STARTED
-		if "error:" in state:
-			InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR,
-								"VM %s does not exist on this host and cannot be started" % vmid,
-								data={"type": self.TYPE,"errorMsg": state})
-		else:
+		if not vmid:
 			return StateName.CREATED
+		try:
+			state = self._checkState(vmid)
+		except:
+			return StateName.CREATED
+		if state.find("shut off") >= 0:
+			return StateName.PREPARED
+		if state.find("paused") >= 0:
+			return StateName.PREPARED
+		if state.find("running") >= 0:
+			return StateName.STARTED
+		#if "error:" in state:
+			#InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR,
+			#					"VM %s does not exist on this host and cannot be started" % vmid,
+			#					data={"type": self.TYPE,"errorMsg": state})
+		#else:
+			#return StateName.CREATED
+		return StateName.CREATED
+
 
 	def _checkStatus(self,vmid, statuses):
 		if not isinstance(statuses, collections.Iterable):
@@ -166,15 +210,32 @@ class virsh:
 
 	def getNicList(self, vmid):
 		with locks[vmid]:
-			self._checkStatus(vmid, [StateName.STOPPED, StateName.STARTED])
+			self._checkStatus(vmid, [StateName.CREATED,StateName.PREPARED])
 			return self._getNicNames(vmid).keys()
 
 	def _getNicNames(self, vmid):
-		vmNicList = ET.fromstring(self._virsh(vmid, "dumpxml")).findall("interface")
+		vmNicList = ET.parse(self._configPath(vmid))
+		vmNicList = vmNicList.findall(".//interface")
 		vmNicNameList = []
 		for iface in vmNicList:
-			vmNicNameList += (re.findall("net(\d+)",iface.find("alias").get("name")),iface.find("source").get("bridge"))
-		return dict((int(num), name) for num, name in vmNicList)
+			#print "iface:"
+			#print ET.tostring(iface)
+			#print "Regular expression:"
+			#print re.findall("net(\d+)", iface.find("alias").get("name"))
+			#print "bridge:"
+			#print iface.find("source").get("bridge")
+			vmNicNameList.append((re.findall("net(\d+)", iface.find("alias").get("name"))[0], iface.find("source").get("bridge")))
+
+		#print "full list"
+		#print vmNicNameList
+		return dict((int(num), name) for num, name in vmNicNameList)
+
+	def getNicName(self, vmid, num):
+		with locks[vmid]:
+			self._checkStatus(vmid, [StateName.PREPARED, StateName.STARTED])
+			names = self._getNicNames(vmid)
+		InternalError.check(num in names, InternalError.INVALID_PARAMETER, "No such nic", {"vmid": vmid, "num": num})
+		return names[num]
 
 	def	addNic(self, vmid, num, bridge="dummy", model="e1000", mac=None):
 		vmid = params.convert(vmid, convert=int, gte=1)
@@ -183,23 +244,55 @@ class virsh:
 		model = params.convert(model, convert=str, oneOf=["e1000", "i82551", "rtl8139"])
 		mac = params.convert(mac, convert=str, regExp="^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$", null=True)
 		with locks[vmid]:
-			self._checkStatus(vmid, StateName.PREPARED)
+			self._checkStatus(vmid, [StateName.CREATED, StateName.PREPARED])
 			if num in self.getNicList(vmid):
 				raise InternalError(InternalError.INVALID_PARAMETER, "Nic already exists", {"vmid": vmid, "num": num})
 				#raise QMError(QMError.CODE_NIC_ALREADY_EXISTS, "Nic already exists", {"vmid": vmid, "num": num})
 
-			self._virsh("attach-interface",
+			tree = ET.parse(self._configPath(vmid))
+			root = tree.getroot()
+
+			elementInterface = ET.Element("interface", {"type": "bridge"})
+
+			if mac:
+				elementMac = ET.Element("mac", {"address": "%s" % mac})
+				elementInterface.append(elementMac)
+			elementSource = ET.Element("source", {"bridge": bridge})
+			elementAlias = ET.Element("alias", {"name": "net%d" % num})
+			elementTarget = ET.Element("target", {"dev": "tap%di%d" % (vmid, num)})
+			elementModel = ET.Element("model", {"type": "%s" % model})
+			elementAddress = ET.Element("address",
+										{"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x04", "type": "pci"})
+
+			elementInterface.append(elementSource)
+			elementInterface.append(elementTarget)
+			elementInterface.append(elementAlias)
+			elementInterface.append(elementModel)
+			elementInterface.append(elementAddress)
+
+
+			for element in root.getchildren():
+				if element.tag == "devices":
+					element.append(elementInterface)
+
+			if not os.path.exists(os.path.dirname(self._configPath(vmid))):
+				os.makedirs(os.path.dirname(self._configPath(vmid)))
+
+			tree.write(self._configPath(vmid))
+			self._virsh("define", [self._configPath(vmid)])
+
+
+	def delNic(self, vmid, num):
+		with locks[vmid]:
+			self._checkStatus(vmid, [StateName.CREATED, StateName.PREPARED])
+			if not num in self.getNicList(vmid):
+				raise InternalError(InternalError.INVALID_PARAMETER, "No such nic", {"vmid": vmid, "num": num})
+			mac = ET.fromstring(self._virsh(vmid, "dumpxml")).find("interface/alias[@name='net%d']/../mac" % num).get("address")
+			self._virsh("detach-interface",
 						["--domain vm_%d" % vmid,
-						 "--source $s" %bridge if bridge else "",
-						 "--target net%d" % num,
-						 "--model %s" % model,
+						 "--type bridge",
 						 ("--mac %s" % mac) if mac else "",
 						 "--config"])
-
-	def getNicList(self, vmid):
-		with locks[vmid]:
-			self._checkStatus(vmid, [StateName.STOPPED, StateName.STARTED])
-			return self._getNicNames(vmid).keys()
 
 	def update_vm_list(self):
 		#go through currently listed vms and add them to vm_list
@@ -211,15 +304,15 @@ class virsh:
 			list_vm_ids.append(item.split(" ")[0])
 		for id in list_vm_ids:
 			self.vm_list.append(int(id))
-		#print self.vm_list
 
-	def startVnc(self, vmid, vncpassword, vncport, websockifyPort=None, websockifyCert=None):
+	def startVnc(self, vmid,vncpassword, vncport, websockifyPort=None, websockifyCert=None):
 		vmid = params.convert(vmid, convert=int, gte=1)
 		vncpassword = params.convert(vncpassword, convert=unicode)
 		vncport = params.convert(vncport, convert=int, gte=1, lt=2 ** 16)
 		with locks[vmid]:
 			self._checkStatus(vmid, StateName.STARTED)
 			self._setVncPassword(vmid, vncpassword)
+			self._virsh("qemu-monitor-command", ["vm_%d" % vmid, "--hmp", "change", "vnc", "unix:/var/run/qemu-server/%d.vnc,password" % vmid])
 			vncPid = spawnDaemon(
 				["socat", "TCP-LISTEN:%d,reuseaddr,fork" % vncport, "UNIX-CLIENT:/var/run/qemu-server/%d.vnc" % vmid])
 			websockifyPid = None
@@ -237,15 +330,30 @@ class virsh:
 			if websockifyPid:
 				websockify.stop(websockifyPid)
 
+	def _setVncPassword(self, vmid, vncpassword):
+		self.setAttributes(vmid, vncpassword=vncpassword)
+
+	def	getStatistics(self, vmid):
+		with locks[vmid]:
+			self._checkStatus(vmid, StateName.STARTED)
+			pid = self._getPid(vmid)
+			return proc.getStatistics(pid)
+
+	def _getPid(self, vmid):
+		try:
+			with open("/var/run/libvirt/qemu/vm_%d.pid" % vmid) as fp:
+				pid = int(fp.readline().strip())
+			return pid
+		except IOError:
+			raise QMError(QMError.INVALID_STATE, "Pid file does not exist", {"vmid": vmid})
+
 	def setAttributes(self, vmid, cores=None, memory=None, keyboard=None, tablet=None,
 			hda=None, fda=None, hdb=None, vncpassword=None, vncport=None):
 		self.update_vm_list()
 		InternalError.check(self.vm_list.__contains__(vmid), InternalError.HOST_ERROR, "VM %s does not exist on this host" % vmid, data={"type": self.TYPE})
 
 		#reading xml file of vm:
-		config_path = self.imagepath
-		config_path += ("%s.xml" % vmid)
-		self.tree = ET.parse(self.config_path)
+		self.tree = ET.parse(self._configPath(vmid))
 		self.root = self.tree.getroot()
 
 		if hda:
@@ -260,7 +368,6 @@ class virsh:
 		if cores:
 			InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
 
-			print "cpu changed"
 			self.root.find("vcpu").text = str(cores)
 		if memory:
 			InternalError.check(self.getState(vmid) == StateName.PREPARED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
@@ -287,10 +394,8 @@ class virsh:
 					usbtablet_exists = True
 					usbtablet_entry = device
 
-			print "usbtable exits: " + str(usbtablet_exists)
 
 			if bool(tablet):
-				print "setting to True"
 				if not usbtablet_exists:
 					usbtablet_entry = ET.Element("input", {"bus": "usb", "type": "tablet"})
 					usbtablet_entry.append(ET.Element("alias",{"name": "input0"}))
@@ -299,20 +404,11 @@ class virsh:
 							element.append(usbtablet_entry)
 			else:
 				if usbtablet_exists:
-					print "removing usbtablet"
 					for element in self.root.getchildren():
 						if element.tag == "devices":
 							element.remove(usbtablet_entry)
-		self.tree.write(config_path)
-
-	def _setImage(self, vmid, img_path):
-		#InternalError.check(self.getState(vmid) == StateName.STARTED, InternalError.HOST_ERROR, "VM %s is in an invalid state" % vmid, data={"type": self.TYPE})
-
-		path = self.imagepath
-		path += ("%s.qcow2" % vmid)
-
-		#run(["cp", self.original_image, path])
-		run(["cp", img_path, path])
+		self.tree.write(self._configPath(vmid))
+		self._virsh("define", [self._configPath(vmid)])
 
 	def random_mac(self):
 		mac = [ 0x00, 0x16, 0x3e,
@@ -321,7 +417,9 @@ class virsh:
 			random.randint(0x00, 0xff) ]
 		return ':'.join(map(lambda x: "%02x" % x, mac))
 
-	def writeInitialConfig(self, type, vmid, path):
+
+
+	def writeInitialConfig(self, type, vmid):
 		initNode = ET.fromstring("<domain></domain>")
 		initNode.set("id", "%s" % vmid)
 
@@ -339,11 +437,11 @@ class virsh:
 		elementUUID.text = str(vm_uuid)
 		initNode.append(elementUUID)
 
-		elementMemory = ET.Element("memory", {"unit": "KiB"})
+		elementMemory = ET.Element("memory", {"unit": "MiB"})
 		elementMemory.text = "1048576"
 		initNode.append(elementMemory)
 
-		elementCurrentMemory = ET.Element("currentMemory", {"unit": "KiB"})
+		elementCurrentMemory = ET.Element("currentMemory", {"unit": "MiB"})
 		elementCurrentMemory.text = "1048576"
 		initNode.append(elementCurrentMemory)
 
@@ -359,7 +457,7 @@ class virsh:
 
 		elementOS = ET.Element("os")
 		if type == TypeName.KVM:
-			elementType =ET.Element("type", {"arch": "x86_64", "machine": "pc-i440fx-trusty"})
+			elementType =ET.Element("type", {"arch": "x86_64", "machine": "pc-i440fx-2.2"})
 			elementType.text = "hvm"
 			elementOS.append(elementType)
 			elementBoot = ET.Element("boot", {"dev": "hd"})
@@ -405,7 +503,7 @@ class virsh:
 
 		elementEmulator = ET.Element("emulator")
 		if type == TypeName.KVM:
-			elementEmulator.text = "/usr/bin/kvm-spice"
+			elementEmulator.text = "/usr/bin/kvm"
 		if type == TypeName.LXC:
 			elementEmulator.text = "/usr/lib/libvirt/libvirt_lxc"
 		elementDevices.append(elementEmulator)
@@ -414,14 +512,14 @@ class virsh:
 			elementDisk = ET.Element("disk", {"device": "disk", "type": "file"})
 			elementDriver = ET.Element("driver", {"name": "qemu", "type": "qcow2"})
 			elementDisk.append(elementDriver)
-			elementSource = ET.Element("source",{"file": path + "/%d/disk.qcow2" % vmid})
+			elementSource = ET.Element("source",{"file": ("%s" % self._imagePath(vmid))})
 			elementDisk.append(elementSource)
 			elementTarget = ET.Element("target", {"bus": "virtio", "dev": "vda"})
 			elementDisk.append(elementTarget)
 			elementAlias = ET.Element("alias", {"name": "virtio-disk0"})
 			elementDisk.append(elementAlias)
-			elementAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x05", "type": "pci"})
-			elementDisk.append(elementAddress)
+			#elementAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x05", "type": "pci"})
+			#elementDisk.append(elementAddress)
 			elementDevices.append(elementDisk)
 		if type == TypeName.LXC:
 			elementFileSystem = ET.Element("filesystem", {"type": "mount", "accessmode": "passthrough"})
@@ -439,31 +537,6 @@ class virsh:
 			elementController2.append(elementControllerAddress)
 			elementDevices.append(elementController2)
 
-			elementController = ET.Element("controller", {"index": "0", "model": "pci-root", "type": "pci"})
-			elementControllerAlias = ET.Element("alias", {"name": "pci.0"})
-			elementController.append(elementControllerAlias)
-			elementDevices.append(elementController)
-
-		"""
-		if type == TypeName.KVM:
-			elementInterface = ET.Element("interface", {"type": "bridge"})
-			elementInterfaceSource = ET.Element("source", {"bridge": "br0"})
-			elementInterface.append(elementInterfaceSource)
-			elementMac = ET.Element("mac", {"address": str(self.random_mac()) })
-			elementInterface.append(elementMac)
-			elementDevices.append(elementInterface)
-		if type == TypeName.LXC:
-			elementInterface = ET.Element("interface", {"type": "network"})
-			elementInterfaceTarget = ET.Element("target", {"dev": "vnet0"})
-			elementInterface.append(elementInterfaceTarget)
-			elementInterfaceSource = ET.Element("source", {"network": "default", "bridge": "virbr0"})
-			elementInterface.append(elementInterfaceSource)
-			elementMac = ET.Element("mac", {"address": str(self.random_mac()) })
-			elementInterface.append(elementMac)
-			elementGuest = ET.Element("guest", {"dev": "eth0"})
-			elementInterface.append(elementGuest)
-			elementDevices.append(elementInterface)
-		"""
 		if type == TypeName.KVM:
 			elementSerial = ET.Element("serial", {"type": "pty"})
 			elementSerialSource = ET.Element("source", {"path": "/dev/pts/6"})
@@ -502,20 +575,12 @@ class virsh:
 			elementInput2 = ET.Element("input", {"bus": "ps2", "type": "mouse"})
 			elementDevices.append(elementInput2)
 
-			elementInput3 = ET.Element("input", {"bus": "ps2", "type": "keyboard"})
-			elementDevices.append(elementInput3)
+			#elementInput3 = ET.Element("input", {"bus": "ps2", "type": "keyboard"})
+			#elementDevices.append(elementInput3)
 
-			elementGraphics = ET.Element("graphics", {"autoport": "yes", "listen": "127.0.0.1", "port": "5900", "type": "vnc"})
-			elementListen = ET.Element("listen", {"address": "127.0.0.1", "type": "address"})
-			elementGraphics.append(elementListen)
+			elementGraphics = ET.Element("graphics", {"listen": "127.0.0.1", "port": "5900", "type": "vnc"})
 			elementDevices.append(elementGraphics)
 
-			elementSound = ET.Element("sound", {"model": "ich6"})
-			elementSoundAlias = ET.Element("alias", {"name": "sound0"})
-			elementSound.append(elementSoundAlias)
-			elementSoundAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x04", "type": "pci"})
-			elementSound.append(elementSoundAddress)
-			elementDevices.append(elementSound)
 
 			elementVideo = ET.Element("video")
 			elementModel = ET.Element("model", {"heads": "1", "type": "cirrus", "vram": "9216"})
@@ -526,12 +591,12 @@ class virsh:
 			elementVideo.append(elementVideoAddress)
 			elementDevices.append(elementVideo)
 
-			elementMemBalloon = ET.Element("memballoon", {"model": "virtio"})
-			elementMemBalloonAlias = ET.Element("alias", {"name": "balloon0"})
-			elementMemBalloon.append(elementMemBalloonAlias)
-			elementMemballoonAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x06", "type": "pci"})
-			elementMemBalloon.append(elementMemballoonAddress)
-			elementDevices.append(elementMemBalloon)
+		#	elementMemBalloon = ET.Element("memballoon", {"model": "virtio"})
+		#	elementMemBalloonAlias = ET.Element("alias", {"name": "balloon0"})
+		#	elementMemBalloon.append(elementMemBalloonAlias)
+		#	elementMemballoonAddress = ET.Element("address", {"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x06", "type": "pci"})
+		#	elementMemBalloon.append(elementMemballoonAddress)
+		#	elementDevices.append(elementMemBalloon)
 
 		initNode.append(elementDevices)
 
@@ -544,10 +609,10 @@ class virsh:
 		elementSecLabel.append(elementImageLabel)
 		initNode.append(elementSecLabel)
 
-		print "Writing test.xml"
+		config_path = self._configPath(vmid)
+		if not os.path.exists(os.path.dirname(config_path)):
+			os.makedirs(os.path.dirname(config_path))
 
-		config_path = self.imagepath
-		config_path += ("vm_%d.xml" % vmid)
 		tree = ET.ElementTree(initNode)
 		tree.write(config_path)
 

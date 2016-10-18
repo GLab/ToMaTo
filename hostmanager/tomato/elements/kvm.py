@@ -4,14 +4,15 @@ from ..resources import template
 from .. import connections, elements, resources, config
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import cmd #@UnresolvedImport
-from ..lib.newcmd import virsh, qemu_img, ipspy
-from ..lib.newcmd.util import io, net
+from ..lib.newcmd import virsh, vfat, qemu_img, ipspy
+from ..lib.newcmd.util import io,  net, proc
 from ..lib.error import UserError, InternalError
+from ..lib.util import joinDicts #@UnresolvedImport
 
 
 import time
 import xml.etree.ElementTree as ET
-import random, os, sys, re
+import random, os, sys, re, shutil
 
 kblang_options = {"en-us": "English (US)",
 					"en-gb": "English (GB)",
@@ -20,8 +21,11 @@ kblang_options = {"en-us": "English (US)",
 					"ja": "Japanese"
 					}
 
+DOC="""
+Test
+"""
 
-class KVM(elements.Element):
+class KVM(elements.RexTFVElement,elements.Element):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
 	websocket_port_attr = Attr("websocket_port", type="int")
@@ -46,16 +50,8 @@ class KVM(elements.Element):
 	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 
-	#vmid = "bob"
-	state = StateName.CREATED
-	tree = None
-	imagepath = ""
-	original_image = ""
+	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
 	vir = virsh.virsh(TypeName.KVM)
-	cpu = 1
-	ram = 1048576
-	kblang = "en-us"
-	usbtablet = True
 
 	TYPE = TypeName.KVM
 	CAP_ACTIONS = {
@@ -78,15 +74,25 @@ class KVM(elements.Element):
 		ActionName.START: StateName.STARTED,
 		ActionName.STOP: StateName.PREPARED,
 	}
+	CAP_ATTRS = {
+		"cpus": cpus_attr,
+		"ram": ram_attr,
+		"kblang": kblang_attr,
+		"usbtablet": usbtablet_attr,
+		"template": template_attr,
+		"timeout": elements.Element.timeout_attr
+	}
+	CAP_CHILDREN = {
+		TypeName.KVM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
+	}
+	CAP_PARENT = [None]
+	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": None, "usbtablet": True}
+	__doc__ = DOC  # @ReservedAssignment
+	DOC = DOC
 
-	def __init__(self):
-		current_vms = self.vir.getVMs()
-		vmid_valid = False
-		while not vmid_valid:
-			self.vmid = int(random.random()*10000)
-			if not self.vmid in current_vms:
-				vmid_valid = True
-		self.state = StateName.CREATED
+	class Meta:
+		db_table = "tomato_kvm"
+		app_label = 'tomato'
 
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
@@ -106,18 +112,33 @@ class KVM(elements.Element):
 		self.vir.setAttributes(self.vmid, cores=self.cpus, memory=self.ram, keyboard=kblang, tablet=self.usbtablet,
 			hda=self._imagePath(), fda=self._nlxtp_floppy_filename(), hdb=self._nlxtp_device_filename())
 
+
+	def info(self):
+		info = elements.Element.info(self)
+		info = joinDicts(info, elements.RexTFVElement.info(self))
+		info["attrs"]["template"] = self.template.upcast().name if self.template else None
+		return info
+
 	def action_start(self):
 		self._checkState()
-		self.vir.start(self.vmid)
 		self.setState(StateName.STARTED, True)
 		for interface in self.getChildren():
+			print "interface"
+			print interface.num
 			con = interface.getConnection()
+			print con
 			if con:
+				print "is a connection"
 				con.connectInterface(self.vir.getNicName(self.vmid, interface.num))
+				print "connection created"
+			print "start interface"
 			interface._start()
+			print "interface started"
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
+		self.vir.start(self.vmid)
 		self.vncpid, self.websocket_pid = self.vir.startVnc(self.vmid, self.vncpassword, self.vncport, self.websocket_port, '/etc/tomato/server.pem')
+
 
 	def action_stop(self):
 		self._checkState()
@@ -135,27 +156,92 @@ class KVM(elements.Element):
 
 	def action_prepare(self):
 		self._checkState()
-		self.vir.writeInitialConfig(TypeName.KVM, self.vmid, self._imagePathDir())
-		self._configure()
-		self.vir.create(self.vmid)
+		self.vir.writeInitialConfig(TypeName.KVM, self.vmid)
+		self.vir.prepare(self.vmid)
+		for interface in self.getChildren():
+			self._addInterface(interface)
 		self.setState(StateName.PREPARED, True)
 		templ = self._template()
 		templ.fetch()
 		self._useImage(templ.getPath(), backing=True)
 		self._nlxtp_create_device_and_mountpoint()
+		self._configure()
 		# add all interfaces
-		for interface in self.getChildren():
-			self._addInterface(interface)
 
 	def action_destroy(self):
 		self._checkState()
-		self.vir.destroy(self.vmid, self._imagePathDir())
+		self.vir.destroy(self.vmid)
 		self.setState(StateName.CREATED, True)
 
+	def _template(self):
+		if self.template:
+			return self.template.upcast()
+		pref = resources.template.getPreferred(self.TYPE)
+		InternalError.check(pref, InternalError.UNKNOWN, "Failed to find template", data={"type": self.TYPE})
+		return pref
+
+	# The nlXTP directory
+	def _nlxtp_path(self, filename):
+		return self.dataPath(os.path.join("nlxtp", "mountpoint", filename))
+
+	# The nlXTP device
+	def _nlxtp_device_filename(self):
+		return self.dataPath(os.path.join("nlxtp", "bigdevice"))
+
+	# The nlXTP device
+	def _nlxtp_floppy_filename(self):
+		return self.dataPath(os.path.join("nlxtp", "device"))
+
+	def _nlxtp_make_readable(self):  # mount device file readonly
+		self._nlxtp_create_device_and_mountpoint()
+		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
+		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), readOnly=True, partition=1)
+
+	def _nlxtp_make_writeable(self):  # mount device file r/w
+		self._nlxtp_create_device_and_mountpoint()
+		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
+		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), sync=True, partition=1)
+
+	def _nlxtp_close(self):  # unmount device file
+		vfat.unmount(self._nlxtp_path(""))
+
+	def _nlxtp_create_device_and_mountpoint(self):  # if device file or mount point do not exist: create
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+		shutil.copy(config.DUMMY_FLOPPY, self._nlxtp_floppy_filename())
+		if not os.path.exists(self._nlxtp_device_filename()):
+			vfat.create(self._nlxtp_device_filename(), KVM.rextfv_max_size / 1024,
+						nested=True)  # size (last argument) depends on nlxtp_max_size
+
+	def upcast(self):
+		return self
 
 	def _addInterface(self, interface):
-		assert self.state == StateName.PREPARED
+		assert self.state == StateName.CREATED or self.state == StateName.PREPARED
 		self.vir.addNic(self.vmid, interface.num)
+
+	def _removeInterface(self, interface):
+		assert self.state == StateName.CREATED or self.state == StateName.PREPARED
+		try:
+			self.vir.delNic(self.vmid, interface.num)
+		except self.vir.QMError as err:
+			if err.code == self.vir.QMError.CODE_NO_SUCH_NIC:
+				err.dump()
+				# ignore error as it is exactly what we wanted
+			else:
+				raise
+
+	def onChildAdded(self, interface):
+		self._checkState()
+		if self.state == StateName.PREPARED:
+			self._addInterface(interface)
+		interface.setState(self.state)
+
+	def onChildRemoved(self, interface):
+		self._checkState()
+		if self.state == StateName.PREPARED:
+			self._removeInterface(interface)
+		interface.setState(self.state)
 
 	def modify_cpus(self, cpus):
 		if self.state == StateName.CREATED or self.state == StateName.PREPARED:
@@ -200,6 +286,19 @@ class KVM(elements.Element):
 		else:
 			io.copy(path_, self._imagePath())
 
+	def _nextIfaceNum(self):
+		ifaces = self.getChildren()
+		num = 0
+		while num in [iface.num for iface in ifaces]:
+			num += 1
+		return num
+
+	def _checkImage(self, path):
+		try:
+			qemu_img.check(path, format='qcow2')
+		except self.vir.qm.QMError:
+			raise UserError(UserError.INVALID_VALUE, "File is not a valid qcow2 image")
+
 	def _checkState(self):
 		savedState = self.state
 		realState = self.vir.getState(self.vmid)
@@ -214,6 +313,29 @@ class KVM(elements.Element):
 	def _imagePath(self, file="disk.qcow2"): #@ReservedAssignment
 		return os.path.join(self._imagePathDir(), file)
 
+	def updateUsage(self, usage, data):
+		self._checkState()
+		if self.state == StateName.CREATED:
+			return
+		if self.state == StateName.STARTED:
+			memory = 0
+			cputime = 0
+			stats = self.vir.getStatistics(self.vmid)
+			memory += stats.memory_used
+			cputime += stats.cputime_total
+			if self.vncpid and proc.isAlive(self.vncpid):
+				stats = proc.getStatistics(self.vncpid)
+				memory += stats.memory_used
+				cputime += stats.cputime_total
+			if self.websocket_pid and proc.isAlive(self.websocket_pid):
+				stats = proc.getStatistics(self.websocket_pid)
+				memory += stats.memory_used
+				cputime += stats.cputime_total
+			usage.memory = memory
+			usage.updateContinuous("cputime", cputime, data)
+		usage.diskspace = io.getSize(self._imagePathDir())
+
+
 DOC_IFACE = """
 Element type: ``kvm_interface``
 
@@ -221,7 +343,7 @@ Description:
 	This element type represents a network interface of kvmqm element type. Its
 	state is managed by and synchronized with the parent element.
 
-Possible parents: ``kvmqm``
+Possible parents: ``kvm``
 
 Possible children: None
 
@@ -255,6 +377,8 @@ class KVM_Interface(elements.Element):
 	used_addresses_attr = Attr("used_addresses", type=list, default=[])
 	used_addresses = used_addresses_attr.attribute()
 
+
+	vir = virsh.virsh(TypeName.KVM)
 	TYPE = TypeName.KVM_INTERFACE
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
@@ -271,7 +395,7 @@ class KVM_Interface(elements.Element):
 	__doc__ = DOC_IFACE  # @ReservedAssignment
 
 	class Meta:
-		db_table = "tomato_kvm_interface"
+		db_table = "tomato_kvm_virsh_interface"
 		app_label = 'tomato'
 
 	def init(self, *args, **kwargs):
@@ -288,9 +412,11 @@ class KVM_Interface(elements.Element):
 	def interfaceName(self):
 		if self.state != StateName.CREATED:
 			try:
-				return virsh.getNicName(self.getParent().vmid, self.num)
-			except virsh.QMError as err:
-				if err.code == virsh.QMError.CODE_NO_SUCH_NIC:
+				return self.vir.getNicName(self.getParent().vmid, self.num)
+			except InternalError as err:
+				"Ich hab nen fehler beim Interface Name"
+				if err.code == InternalError.INVALID_PARAMETER:
+					"Ich hab nen fehler beim Interface Name"
 					return
 				raise
 		else:
@@ -331,17 +457,13 @@ KVM_Interface.__doc__ = DOC_IFACE
 
 
 def register():  # pragma: no cover
-		print "register KVM"
 		if not os.path.exists("/dev/kvm"):
-			print "Nope os path"
 			print >> sys.stderr, "Warning: KVM needs /dev/kvm, disabled"
 			return
 		if not virshVersion:
-			print "Nope virsh"
 			print >> sys.stderr, "Warning: KVM needs virsh, disabled"
 			return
 		if not ([0, 3] <= virshVersion < [2, 3]):
-			print "Nope virsh Version"
 			print >> sys.stderr, "Warning: KVM not supported on pve-qemu-kvm version %s, disabled" % virshVersion
 			return
 		if not socatVersion:
