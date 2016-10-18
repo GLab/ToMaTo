@@ -575,6 +575,9 @@ var Topology = Class.extend({
 		}
 		dialog.show();
 	},
+	tabbedConsoleWindow: function() {
+	    window.open('../topology/'+this.id+'/tabbed-console', '_blank', "innerWidth=760,innerheight=483,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+	},
 	initialDialog: function() {
 		var t = this;
 		var dialog, name, description, timeout;
