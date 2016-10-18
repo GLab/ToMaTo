@@ -2,8 +2,8 @@ import os, hashlib, re, sys
 import httplib
 import inspect, traceback
 
-from . import anyjson as json
-import exceptionhandling
+import anyjson as json
+from .exceptionhandling import writedown_current_exception
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
@@ -108,7 +108,7 @@ class Error(Exception):
 		"""
 		pass this error to the exceptionhandling library
 		"""
-		exceptionhandling.writedown_current_exception()
+		writedown_current_exception()
 
 	@property
 	def raw(self):

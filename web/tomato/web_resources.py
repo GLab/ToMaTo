@@ -27,10 +27,14 @@ def custom_element_icons(ignore_errors=True):
 			l["url"] = urljoin(url, l["url"])
 		return icon_setting_list
 	except:
-		wrap_and_handle_current_exception(re_raise=not ignore_errors)
+		if ignore_errors:
+			return ()
+		else:
+			raise
 
 
 def executable_archives(split_alternatives=True, ignore_errors=True):
+	raise Exception()
 	default_executable_archives_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST)
 	try:
 		default_archive_list = []
@@ -93,19 +97,22 @@ def executable_archives(split_alternatives=True, ignore_errors=True):
 
 		return default_archive_list
 	except:
-		wrap_and_handle_current_exception(re_raise=not ignore_errors)
+		if ignore_errors:
+			return ()
+		else:
+			raise
 
 
-
-def executable_archive_list(request):
+@wrap_rpc
+def executable_archive_list(api, request):
 	default_executable_archives_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST)
 	archives = executable_archives(False, True)
 	for archive in archives:
 		archive['alternatives'] = len(archive['alternatives'])
 	return render(request, 'web_resources/default_executable_archive_list.html', {'archive_list': archives, 'default_executable_archives_list_url': default_executable_archives_list_url})
 
-
-def custom_element_icon_list(request):
+@wrap_rpc
+def custom_element_icon_list(api, request):
 	url = settings.get_web_resource_location(Config.WEB_RESOURCE_CUSTOM_ELEMENT_ICONS)
 	icons = custom_element_icons(True)
 	return render(request, 'web_resources/custom_element_icons_list.html', {'icon_list': icons, 'index_url': url})
