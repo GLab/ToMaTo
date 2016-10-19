@@ -156,16 +156,21 @@ class KVM(elements.RexTFVElement,elements.Element):
 
 	def action_prepare(self):
 		self._checkState()
-		self.vir.writeInitialConfig(TypeName.KVM, self.vmid)
-		self.vir.prepare(self.vmid)
-		for interface in self.getChildren():
-			self._addInterface(interface)
-		self.setState(StateName.PREPARED, True)
 		templ = self._template()
 		templ.fetch()
 		self._useImage(templ.getPath(), backing=True)
+		self.vir.prepare(self.vmid,
+						 imagepath=self._imagePath(),
+						 ram=self.ram,
+						 cpus=self.cpus,
+						 vncport=self.vncport,
+						 vncpassword=self.vncpassword)
+		self.vir.writeInitialConfig(TypeName.KVM, self.vmid)
+		for interface in self.getChildren():
+			self._addInterface(interface)
+		self.setState(StateName.PREPARED, True)
 		self._nlxtp_create_device_and_mountpoint()
-		self._configure()
+		#self._configure()
 		# add all interfaces
 
 	def action_destroy(self):
@@ -278,7 +283,10 @@ class KVM(elements.RexTFVElement,elements.Element):
 			self._useImage(templ.getPath(), backing=True)
 
 	def _useImage(self, path_, backing=False):
-		assert self.state == StateName.PREPARED
+		assert self.state == StateName.CREATED
+
+		if not os.path.exists(os.path.dirname(self._imagePath())):
+			os.makedirs(os.path.dirname(self._imagePath()))
 		if backing:
 			if os.path.exists(self._imagePath()):
 				os.unlink(self._imagePath())

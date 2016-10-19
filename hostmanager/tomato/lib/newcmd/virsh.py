@@ -147,12 +147,26 @@ class virsh:
 					if bridge and detachInterfaces:
 						brctl.detach(bridge, ifname)
 			except:
-				self._virsh("stop", ["vm_%s" % vmid])
+				self._virsh("destroy", ["vm_%s" % vmid])
 				raise
 
-	def prepare(self,vmid):
+	def prepare(self,vmid,imagepath,ram=512,cpus=1, vncport=None, vncpassword=None):
 		self._checkStatus(vmid,[StateName.CREATED])
-		self._virsh("define", [self._configPath(vmid)])
+		cmd_ = ["virt-install",
+				"--connect", self.HYPERVISOR_MAPPING[self.TYPE],
+				"--name", "vm_%d" % vmid,
+				"--ram",  str(ram),
+				"--vcpus", str(cpus),
+				#"--os-type", ostype,
+				"--disk", "path=%s,device=disk,bus=virtio" % imagepath,
+				"--graphics", "vnc%s%s" % (
+					(",port=%s" % vncport if vncpassword else ""),
+					(",password=%s" % vncpassword if vncpassword else "")),
+				"--nonetworks", #Don't create a bridge without my permission
+				"--noautoconsole", # Don't enter a console on the device after install
+				"--import", #Use the image given to install a guest os
+				"--noreboot"] #Don't boot the device after install
+		out = cmd.run(cmd_)
 
 
 	def stop(self, vmid, forced=True):
@@ -224,7 +238,10 @@ class virsh:
 			#print re.findall("net(\d+)", iface.find("alias").get("name"))
 			#print "bridge:"
 			#print iface.find("source").get("bridge")
-			vmNicNameList.append((re.findall("net(\d+)", iface.find("alias").get("name"))[0], iface.find("source").get("bridge")))
+			alias = iface.find("alias").get("name")
+			number = re.findall("net(\d+)", alias)[0]
+			bridge = iface.find("source").get("bridge")
+			vmNicNameList.append((number, bridge))
 
 		#print "full list"
 		#print vmNicNameList
@@ -261,14 +278,11 @@ class virsh:
 			elementAlias = ET.Element("alias", {"name": "net%d" % num})
 			elementTarget = ET.Element("target", {"dev": "tap%di%d" % (vmid, num)})
 			elementModel = ET.Element("model", {"type": "%s" % model})
-			elementAddress = ET.Element("address",
-										{"bus": "0x00", "domain": "0x0000", "function": "0x0", "slot": "0x04", "type": "pci"})
 
 			elementInterface.append(elementSource)
 			elementInterface.append(elementTarget)
 			elementInterface.append(elementAlias)
 			elementInterface.append(elementModel)
-			elementInterface.append(elementAddress)
 
 
 			for element in root.getchildren():
@@ -420,6 +434,19 @@ class virsh:
 
 
 	def writeInitialConfig(self, type, vmid):
+
+		config_path = self._configPath(vmid)
+		if not os.path.exists(os.path.dirname(config_path)):
+			os.makedirs(os.path.dirname(config_path))
+
+		configeXML=ET.fromstring(self._virsh("dumpxml", ["vm_%s" % vmid, "--security-info"]))
+
+		tree = ET.ElementTree(configeXML)
+		tree.write(config_path)
+
+		return tree
+
+		"""
 		initNode = ET.fromstring("<domain></domain>")
 		initNode.set("id", "%s" % vmid)
 
@@ -617,3 +644,4 @@ class virsh:
 		tree.write(config_path)
 
 		return tree
+		"""
