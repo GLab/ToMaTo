@@ -224,8 +224,8 @@ class KVM(elements.RexTFVElement,elements.Element):
 		assert self.state == StateName.CREATED or self.state == StateName.PREPARED
 		try:
 			self.vir.delNic(self.vmid, interface.num)
-		except self.vir.QMError as err:
-			if err.code == self.vir.QMError.CODE_NO_SUCH_NIC:
+		except InternalError as err:
+			if  err.code == InternalError.INVALID_PARAMETER:
 				err.dump()
 				# ignore error as it is exactly what we wanted
 			else:

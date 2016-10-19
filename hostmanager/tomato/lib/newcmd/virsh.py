@@ -345,7 +345,7 @@ class virsh:
 				pid = int(fp.readline().strip())
 			return pid
 		except IOError:
-			raise QMError(QMError.INVALID_STATE, "Pid file does not exist", {"vmid": vmid})
+			raise InternalError(InternalError.INVALID_STATE, "Pid file does not exist", {"vmid": vmid})
 
 	def setAttributes(self, vmid, cores=None, memory=None, keyboard=None, tablet=None,
 			hda=None, fda=None, hdb=None, vncpassword=None, vncport=None):
