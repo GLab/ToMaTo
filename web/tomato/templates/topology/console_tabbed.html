@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+{% load tomato %}
+{% block header %}
+
+<style>
+
+	li.active a {
+		background-color: #eee !important;
+	}
+
+</style>
+
+{% endblock %}
+
+{% block page %}
+
+
+<ul class="nav nav-tabs" style="margin-bottom:0px; margin-top:-19px;">
+	{% for el in topology.elements %}
+		<li{% if forloop.first %} class="active"{% endif %}>
+			<a data-toggle="tab" href="#console-{{el.id}}">{{el.name}}</a>
+		</li>
+	{% endfor %}
+
+</ul>
+
+
+
+<div class="tab-content">
+	{% for el in topology.elements %}
+		<div id="console-{{el.id}}" class="tab-pane{% if forloop.first %} in active{% endif %}">
+			{% if el.state == 'started' %}
+				<iframe src="{% url 'tomato.element.console_novnc' el.id %}" style="width:760px; height:440px; padding:0px; border:0px;"></iframe>
+			{% else %}
+				<div class="alert alert-warning text-center" style="margin-top: 100px; margin-left: 20%; margin-right: 20%;">
+					<h4 class="alert-heading">The Element is not started.</h4>
+					<p>Reload this page after starting to access the console.</p>
+				</div>
+			{% endif %}
+		</div>
+	{% endfor %}
+
+</div>
+
+
+{% endblock %}
