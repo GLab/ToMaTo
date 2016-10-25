@@ -121,6 +121,7 @@ class KVM(elements.RexTFVElement,elements.Element):
 
 	def action_start(self):
 		self._checkState()
+		self.vir.start(self.vmid)
 		self.setState(StateName.STARTED, True)
 		for interface in self.getChildren():
 			print "interface"
@@ -128,15 +129,14 @@ class KVM(elements.RexTFVElement,elements.Element):
 			con = interface.getConnection()
 			print con
 			if con:
-				print "is a connection"
-				con.connectInterface(self.vir.getNicName(self.vmid, interface.num))
-				print "connection created"
+				nicname = self.vir.getNicName(self.vmid, interface.num)
+				print "nicname: %s" % nicname
+				con.connectInterface(nicname)
 			print "start interface"
 			interface._start()
 			print "interface started"
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
-		self.vir.start(self.vmid)
 		self.vncpid, self.websocket_pid = self.vir.startVnc(self.vmid, self.vncpassword, self.vncport, self.websocket_port, '/etc/tomato/server.pem')
 
 

@@ -136,6 +136,9 @@ class virsh:
 		return "/var/lib/vz/images/%d/" % vmid
 
 	def start(self, vmid, detachInterfaces=True):
+		vmid = params.convert(vmid, convert=int, gte=1)
+		if not net.bridgeExists("dummy"):
+			brctl.create("dummy")
 		with locks[vmid]:
 			self._checkStatus(vmid,[StateName.PREPARED])
 			self._virsh("start", ["vm_%s" % vmid])
@@ -232,19 +235,11 @@ class virsh:
 		vmNicList = vmNicList.findall(".//interface")
 		vmNicNameList = []
 		for iface in vmNicList:
-			#print "iface:"
-			#print ET.tostring(iface)
-			#print "Regular expression:"
-			#print re.findall("net(\d+)", iface.find("alias").get("name"))
-			#print "bridge:"
-			#print iface.find("source").get("bridge")
 			alias = iface.find("alias").get("name")
 			number = re.findall("net(\d+)", alias)[0]
-			bridge = iface.find("source").get("bridge")
+			bridge = iface.find("target").get("dev")
 			vmNicNameList.append((number, bridge))
 
-		#print "full list"
-		#print vmNicNameList
 		return dict((int(num), name) for num, name in vmNicNameList)
 
 	def getNicName(self, vmid, num):
@@ -252,6 +247,7 @@ class virsh:
 			self._checkStatus(vmid, [StateName.PREPARED, StateName.STARTED])
 			names = self._getNicNames(vmid)
 		InternalError.check(num in names, InternalError.INVALID_PARAMETER, "No such nic", {"vmid": vmid, "num": num})
+
 		return names[num]
 
 	def	addNic(self, vmid, num, bridge="dummy", model="e1000", mac=None):
@@ -279,6 +275,17 @@ class virsh:
 			elementTarget = ET.Element("target", {"dev": "tap%di%d" % (vmid, num)})
 			elementModel = ET.Element("model", {"type": "%s" % model})
 
+			"""
+			elementInterface = ET.Element("network")
+
+			if mac:
+				elementMac = ET.Element("mac", {"address": "%s" % mac})
+				elementInterface.append(elementMac)
+			elementSource = ET.Element("bridge", {"name": bridge})
+			elementAlias = ET.Element("name")
+			elementAlias.set("name","net%d" % num)
+			elementModel = ET.Element("model", {"type": "%s" % model})
+"""
 			elementInterface.append(elementSource)
 			elementInterface.append(elementTarget)
 			elementInterface.append(elementAlias)
@@ -302,10 +309,13 @@ class virsh:
 			if not num in self.getNicList(vmid):
 				raise InternalError(InternalError.INVALID_PARAMETER, "No such nic", {"vmid": vmid, "num": num})
 			mac = ET.fromstring(self._virsh(vmid, "dumpxml")).find("interface/alias[@name='net%d']/../mac" % num).get("address")
+
+			print ET.tostring(mac)
+
 			self._virsh("detach-interface",
 						["--domain vm_%d" % vmid,
 						 "--type bridge",
-						 ("--mac %s" % mac) if mac else "",
+						 ("--mac %s" % ET.tostring(mac)) if mac else "",
 						 "--config"])
 
 	def update_vm_list(self):
