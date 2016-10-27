@@ -453,10 +453,7 @@ class TopologyInfo(ActionObj):
 		return res
 
 	def existsRole(self,role):
-		for r in topology_role.Role.RANKING:
-			if r == role:
-				return True
-		return False
+		return role in topology_role.Role.RANKING
 
 
 
