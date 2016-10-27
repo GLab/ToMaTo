@@ -52,13 +52,57 @@ def parseArgs():
 	parser.add_argument("--client_cert", "-c", required=False, default=None, help="path of the ssl certificate")
 	parser.add_argument("--username", "-U", help="the username to use for login")
 	parser.add_argument("--password", "-P", help="the password to use for login")
+	parser.add_argument("--keyring", action="store_true", default=False,
+	                    help="Use your system keyring to manage the password. When used with --password, this overwrites the stored password.")
+	parser.add_argument("--reset-keyring", action="store_true", default=False,
+	                    help="Reset the password in your keyring. When used with --keyring or --password, this overwrites the stored password.")
 	parser.add_argument("--file", "-f", help="a file to execute")
 	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
 	options = parser.parse_args()
+
+
 	if not options.username and not (options.client_cert or options.url):
 		options.username=raw_input("Username: ")
+
+
+	KEYRING_SERVICE_NAME = "ToMaTo"
+	KEYRING_USER_NAME = "%s/%s" % (options.hostname, options.username)
+	keyring = None
+	if options.keyring or options.reset_keyring:
+		try:  # if keyring is unavailable, simply ignore it.
+			import keyring
+
+			# keyring content to be resetted
+			if options.reset_keyring:
+				try:
+					keyring.delete_password(KEYRING_SERVICE_NAME, KEYRING_USER_NAME)
+				except keyring.errors.PasswordDeleteError:
+					pass
+
+			# no password explicitly passed. options.keyring must be True here due to outer if-condition.
+			# -> get the password
+			elif not options.password:
+				options.password = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USER_NAME)
+
+			# password explicitly passed. options.keyring is still True here -> store the password
+			else:
+				try:
+					keyring.set_password(KEYRING_SERVICE_NAME, KEYRING_USER_NAME, options.password)
+				except keyring.errors.PasswordSetError:
+					pass
+		except ImportError:
+			print "Python package 'keyring' is required to use keyring features."
+
 	if not options.password and not (options.client_cert or options.url):
 		options.password=getpass.getpass("Password: ")
+
+		# store password in keyring if available and selected
+		if options.keyring and keyring is not None:
+			try:
+				keyring.set_password(KEYRING_SERVICE_NAME, KEYRING_USER_NAME, options.password)
+			except keyring.errors.PasswordSetError:
+				pass
+
 	if options.ssl and options.protocol == "http+xmlrpc":
 		options.protocol = "https+xmlrpc"
 	return options

@@ -123,11 +123,13 @@ var VMElement = IconElement.extend({
 			info.append(d);
 			siteInfo[site.name] = info;
 		}
-		
+
+		var tpl = this.data.template || this.caps.attributes.template["default"];
+		if (!this.getTemplate()) tpl = this.caps.attributes.template["default"];
 		config.special.template = new TemplateElement({
 			label: "Template",
 			name: "template",
-			value: this.data.template || this.caps.attributes.template["default"],
+			value: tpl,
 			custom_template: this.data.custom_template,
 			disabled: (this.data.state == "started"),
 			type: this.data.type,

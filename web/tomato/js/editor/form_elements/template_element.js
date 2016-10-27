@@ -27,7 +27,7 @@ var TemplateElement = FormElement.extend({
 	},
 	
 	change_value: function(template,loading) {
-		this.value = template.name;
+		this.value = template ? template.name : "";
 		this.template = template;
 		var t = this;
 		
@@ -64,9 +64,9 @@ var TemplateElement = FormElement.extend({
 		this.changebuttonarea.empty();
 		this.infoarea.empty();
 		
-		this.labelarea.append(this.template.label);
+		this.labelarea.append(this.template ? this.template.label : "Unknown");
 		this.changebuttonarea.append(changebutton);
-		this.infoarea.append($(this.template.infobox()));
+		if (this.template) this.infoarea.append($(this.template.infobox()));
 		
 		if (loading) {
 			this.labelarea.append($(' <img src="/img/loading.gif" />'));

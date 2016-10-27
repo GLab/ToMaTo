@@ -1,0 +1,6 @@
+{
+  "icon": "icon.png",
+  "default_archive": "install_java.tar.gz",
+  "description": "Install Java on debian or ubuntu",
+  "creation_date": "2016-08-19"
+}

@@ -36,7 +36,7 @@ class OpenVZ(VMElement):
 	
 	def modify_name(self, value):
 		self.name = value
-		self.modify({"hostname": util.filterStr(value, substitute="x")})
+		self.modify(hostname=util.filterStr(value, substitute="x"))
 
 	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
 	ATTRIBUTES.update({

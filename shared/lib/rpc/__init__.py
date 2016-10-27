@@ -60,9 +60,9 @@ def createJsonRpcProxy(address, sslcert, sslkey, sslca, timeout):
 								 message="address must contain port: %s" % address)
 	address, port = address.split(":")
 	port = int(port)
-	return sslrpc.RPCProxy((address, port), certfile=sslcert, keyfile=sslkey, ca_certs=sslca, onError=unwrapJsonRpcError)
+	return sslrpc.RPCProxy((address, port), timeout=timeout, certfile=sslcert, keyfile=sslkey, ca_certs=sslca, onError=unwrapJsonRpcError)
 
-def createProxy(url, sslcert, sslkey, sslca, timeout=30):
+def createProxy(url, sslcert, sslkey, sslca, timeout=60):
 	if not ":" in url:
 		raise TransportError(code=TransportError.INVALID_URL, message="invalid url: %s" % url)
 	schema, address = url.split(":", 1)

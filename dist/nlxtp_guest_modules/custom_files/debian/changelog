@@ -1,3 +1,9 @@
+nlxtp-guest-modules (0.3.2) stable; urgency=medium
+
+  * Fixed function exporting that got destroyed by shellshock fixes AGAIN
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 19 Aug 2016 12:39:37 +0200
+
 nlxtp-guest-modules (0.3.1) stable; urgency=medium
 
   * Fixed function exporting that got destroyed by shellshock fixes

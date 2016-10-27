@@ -129,6 +129,8 @@ migrate_template_params = [
 	]
 if config['template_source']['restricted_templates']:
 	migrate_template_params.append('--include_restricted')
+if config["template_source"]["username"]:
+	migrate_template_params.extend(('-sU', config["template_source"]["username"]))
 migrate_template_params.append("-t")
 for t in config['templates']:
 	migrate_template_params.append(t)

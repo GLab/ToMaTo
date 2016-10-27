@@ -56,7 +56,7 @@ class ExternalNetwork(Element):
 	def modify_kind(self, val):
 		self.kind = val
 		for ch in self.children:
-			ch.modify({"kind": val})
+			ch.modify(kind=val)
 
 	def action_stop(self):
 		for ch in self.children:

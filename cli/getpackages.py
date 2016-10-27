@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os, random, textwrap, threading, tarfile, re, urllib2, sys, json
 import argparse, getpass
 from time import sleep
@@ -222,14 +223,21 @@ class TestTopology:
 		upload_and_use_rextfv(self.api, self.el_id, filename)
 
 	def getArchiveResult(self):
-		sleep(3)
-		elinfo = self.api.element_info(self.el_id)
-		while not elinfo["rextfv_run_status"].get("done", False):
-			sleep(3)
-			if not elinfo["rextfv_run_status"]["isAlive"]:
+		timeout = 60
+		while True:
+			sleep(1)
+			timeout -= 1
+			if timeout == 0:
+				return None		
+			status = self.api.element_info(self.el_id)["rextfv_run_status"]
+			if status.get("isAlive", False) or status.get("done", False):
+				break
+		while not status.get("done", False):
+			if not status.get("isAlive", False):
 				return None
-			elinfo = self.api.element_info(self.el_id)
-		return elinfo["rextfv_run_status"]["custom"]
+			sleep(1)
+			status = self.api.element_info(self.el_id)["rextfv_run_status"]
+		return status["custom"]
 
 
 ###### Build the archive
@@ -270,6 +278,9 @@ class GetPacketArchive(object):
 						  Debian*7*)
 						    DISTRO="debian_7"
 						    ;;
+						  Debian*8*)
+						    DISTRO="debian_8"
+						    ;;
 						  Ubuntu*10.04*)
 						    DISTRO="ubuntu_1004"
 						    ;;
@@ -292,22 +303,22 @@ class GetPacketArchive(object):
 						    DISTRO="ubuntu_1304"
 						    ;;
 						  Ubuntu*13.10*)
-						    DISTRO="ubuntu_1210"
+						    DISTRO="ubuntu_1310"
 						    ;;
 						  Ubuntu*14.04*)
-						    DISTRO="ubuntu_1304"
+						    DISTRO="ubuntu_1404"
 						    ;;
 						  Ubuntu*14.10*)
-						    DISTRO="ubuntu_1210"
+						    DISTRO="ubuntu_1410"
 						    ;;
 						  Ubuntu*15.04*)
-						    DISTRO="ubuntu_1304"
+						    DISTRO="ubuntu_1504"
 						    ;;
 						  Ubuntu*15.10*)
-						    DISTRO="ubuntu_1210"
+						    DISTRO="ubuntu_1510"
 						    ;;
 						  Ubuntu*16.04*)
-						    DISTRO="ubuntu_1304"
+						    DISTRO="ubuntu_1604"
 						    ;;
 						  *)
 						    DISTRO="UNKNOWN"
@@ -336,7 +347,7 @@ class GetPacketArchive(object):
 						archive_setstatus "$apt_get_ident.$os_id.$(apt-get --print-uris -y -qq upgrade)"
 					}
 					setstatus_prepare_install_apt_get() {
-						archive_setstatus "$apt_get_ident.$os_id.$(apt-get --print-uris -y -qq install $@)"
+						archive_setstatus "$apt_get_ident.$os_id.$(apt-get --print-uris -y -qq install --no-install-recommends $@)"
 					}
 					install_file_apt_get() {
 						dpkglist=""
@@ -567,6 +578,7 @@ def parseArgs():
 	parser.add_argument("--client_cert", required=False, default=None, help="path of the ssl certificate")
 	parser.add_argument("--username", "-U", help="the username to use for login")
 	parser.add_argument("--password", "-P", help="the password to use for login")
+	parser.add_argument("--no-keyring", action="store_true", default=False, help="ignore password stored in keyring")
 	parser.add_argument("--target", "-t", help="the output filename.", required=True)
 	parser.add_argument("--packetconfig", "-c",
 	                    help='The archive configuration. This should point to a JSON file of the form [{tech:"string",site:"string",template:"string",packages:["string"]}]. Each entry must refer to a different operating system.',
@@ -576,7 +588,16 @@ def parseArgs():
 	if not options.username and not options.client_cert:
 		options.username = raw_input("Username: ")
 	if not options.password and not options.client_cert:
-		options.password = getpass.getpass("Password: ")
+		if not options.no_keyring:
+			try:
+				import keyring
+				KEYRING_SERVICE_NAME = "ToMaTo"
+				KEYRING_USER_NAME = "%s/%s" % (options.hostname, options.username)
+				options.password = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USER_NAME)
+			except ImportError:
+				pass
+		if not options.password:
+			options.password = getpass.getpass("Password: ")
 	if options.verbose:
 		debugger.setVerbose()
 	return options

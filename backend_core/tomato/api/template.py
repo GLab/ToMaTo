@@ -49,7 +49,7 @@ def template_create(tech, name, attrs=None):
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	attrs.update(name=name, tech=tech)
-	res = Template.create(attrs)
+	res = Template.create(**attrs)
 	return res.info()
 
 
@@ -75,7 +75,7 @@ def template_modify(id, attrs):
 	  exist* is raised.
 	"""
 	res = _getTemplate(id)
-	res.modify(attrs)
+	res.modify(**attrs)
 	return res.info()
 
 
