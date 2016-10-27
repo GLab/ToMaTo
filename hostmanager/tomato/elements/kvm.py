@@ -4,11 +4,11 @@ from ..resources import template
 from .. import connections, elements, resources, config
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import cmd #@UnresolvedImport
+from ..lib.cmd import fileserver
 from ..lib.newcmd import virsh, vfat, qemu_img, ipspy
 from ..lib.newcmd.util import io,  net, proc
 from ..lib.error import UserError, InternalError
 from ..lib.util import joinDicts #@UnresolvedImport
-
 
 import time
 import xml.etree.ElementTree as ET
@@ -182,39 +182,6 @@ class KVM(elements.RexTFVElement,elements.Element):
 		InternalError.check(pref, InternalError.UNKNOWN, "Failed to find template", data={"type": self.TYPE})
 		return pref
 
-	# The nlXTP directory
-	def _nlxtp_path(self, filename):
-		return self.dataPath(os.path.join("nlxtp", "mountpoint", filename))
-
-	# The nlXTP device
-	def _nlxtp_device_filename(self):
-		return self.dataPath(os.path.join("nlxtp", "bigdevice"))
-
-	# The nlXTP device
-	def _nlxtp_floppy_filename(self):
-		return self.dataPath(os.path.join("nlxtp", "device"))
-
-	def _nlxtp_make_readable(self):  # mount device file readonly
-		self._nlxtp_create_device_and_mountpoint()
-		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
-		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), readOnly=True, partition=1)
-
-	def _nlxtp_make_writeable(self):  # mount device file r/w
-		self._nlxtp_create_device_and_mountpoint()
-		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
-		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), sync=True, partition=1)
-
-	def _nlxtp_close(self):  # unmount device file
-		vfat.unmount(self._nlxtp_path(""))
-
-	def _nlxtp_create_device_and_mountpoint(self):  # if device file or mount point do not exist: create
-		if not os.path.exists(self._nlxtp_path("")):
-			os.makedirs(self._nlxtp_path(""))
-		shutil.copy(config.DUMMY_FLOPPY, self._nlxtp_floppy_filename())
-		if not os.path.exists(self._nlxtp_device_filename()):
-			vfat.create(self._nlxtp_device_filename(), KVM.rextfv_max_size / 1024,
-						nested=True)  # size (last argument) depends on nlxtp_max_size
-
 	def upcast(self):
 		return self
 
@@ -339,6 +306,84 @@ class KVM(elements.RexTFVElement,elements.Element):
 			usage.memory = memory
 			usage.updateContinuous("cputime", cputime, data)
 		usage.diskspace = io.getSize(self._imagePathDir())
+
+	"""
+	RexTFV
+	"""
+	def action_upload_grant(self):
+		return fileserver.addGrant(self._imagePath("uploaded.qcow2"), fileserver.ACTION_UPLOAD)
+
+
+	def action_rextfv_upload_grant(self):
+		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
+
+
+	def action_upload_use(self):
+		UserError.check(os.path.exists(self._imagePath("uploaded.qcow2")), UserError.NO_DATA_AVAILABLE,
+						"No file has been uploaded")
+		self._checkImage(self._imagePath("uploaded.qcow2"))
+		os.rename(self._imagePath("uploaded.qcow2"), self._imagePath())
+
+
+	def action_rextfv_upload_use(self):
+		UserError.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), UserError.NO_DATA_AVAILABLE,
+						"No file has been uploaded")
+		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
+		shutil.copy(config.DUMMY_FLOPPY, self._nlxtp_floppy_filename())
+
+
+	def action_download_grant(self):
+		qemu_img.export(self._imagePath(), self._imagePath("download.qcow2"))
+		return fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD,
+								   removeFn=fileserver.deleteGrantFile)
+
+
+	def action_rextfv_download_grant(self):
+		self._create_rextfv_archive(self.dataPath("rextfv.tar.gz"))
+		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD,
+								   removeFn=fileserver.deleteGrantFile)
+
+	"""
+	nlXTP
+	"""
+	# The nlXTP directory
+	def _nlxtp_path(self, filename):
+		return self.dataPath(os.path.join("nlxtp", "mountpoint", filename))
+
+
+	# The nlXTP device
+	def _nlxtp_device_filename(self):
+		return self.dataPath(os.path.join("nlxtp", "bigdevice"))
+
+
+	# The nlXTP device
+	def _nlxtp_floppy_filename(self):
+		return self.dataPath(os.path.join("nlxtp", "device"))
+
+
+	def _nlxtp_make_readable(self):  # mount device file readonly
+		self._nlxtp_create_device_and_mountpoint()
+		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
+		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), readOnly=True, partition=1)
+
+
+	def _nlxtp_make_writeable(self):  # mount device file r/w
+		self._nlxtp_create_device_and_mountpoint()
+		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
+		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), sync=True, partition=1)
+
+
+	def _nlxtp_close(self):  # unmount device file
+		vfat.unmount(self._nlxtp_path(""))
+
+
+	def _nlxtp_create_device_and_mountpoint(self):  # if device file or mount point do not exist: create
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+		shutil.copy(config.DUMMY_FLOPPY, self._nlxtp_floppy_filename())
+		if not os.path.exists(self._nlxtp_device_filename()):
+			vfat.create(self._nlxtp_device_filename(), KVM.rextfv_max_size / 1024,
+						nested=True)  # size (last argument) depends on nlxtp_max_size
 
 
 DOC_IFACE = """

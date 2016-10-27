@@ -399,8 +399,6 @@ class virsh:
 
 		configXML=ET.fromstring(self._virsh("dumpxml", ["vm_%s" % vmid, "--security-info"]))
 
-		print ET.tostring(configXML)
-
 		tree = ET.ElementTree(configXML)
 		tree.write(config_path)
 
