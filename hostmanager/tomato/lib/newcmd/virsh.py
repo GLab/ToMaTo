@@ -93,7 +93,6 @@ class virsh:
 		cmd_ = ["virsh", "-c", self.HYPERVISOR_MAPPING[self.TYPE], cmd_] + args
 		if timeout:
 			cmd_ = ["perl", "-e", "alarm %d; exec @ARGV" % timeout] + cmd_
-		#print "Executing virsh command: %s" % cmd_
 		out = cmd.run(cmd_)
 		return out
 
@@ -134,10 +133,10 @@ class virsh:
 				"--vcpus", str(cpus),
 				#"--os-type", ostype,
 				"--import", #Use the image given to install a guest os
-				"--disk", "path=%s,device=disk,driver_type=%s,bus=virtio,boot_order=1" % (imagepath, driver_type), # HDA
-				("--disk" if nlxtp_device_filename else ""),("path=%s" % nlxtp_device_filename if nlxtp_device_filename else ""),
+				"--disk", "path=%s,device=disk,driver_type=%s,bus=virtio" % (imagepath, driver_type), # HDA
+				("--disk" if nlxtp_device_filename else ""),("path=%s,device=disk,bus=virtio" % nlxtp_device_filename if nlxtp_device_filename else ""),
 				("--disk" if nlxtp_floppy_filename else ""),
-				("path=%s,device=floppy,cache=writethrough" % nlxtp_floppy_filename) if nlxtp_floppy_filename else "",
+				("path=%s,device=floppy,cache=writethrough" % nlxtp_floppy_filename if nlxtp_floppy_filename else ""),
 				"--graphics", "vnc%s%s,keymap=%s" % (
 					(",port=%s" % vncport if vncpassword else ""),
 					(",password=%s" % vncpassword if vncpassword else ""),
@@ -263,8 +262,6 @@ class virsh:
 			self._checkStatus(vmid, [StateName.CREATED, StateName.PREPARED])
 			VirshError.check(num in self.getNicList(vmid), VirshError.CODE_NO_SUCH_NIC, "No such nic exists", {"vmid: ": vmid, "num: ": num})
 			mac = ET.fromstring(self._virsh(vmid, "dumpxml")).find("interface/alias[@name='net%d']/../mac" % num).get("address")
-
-			print ET.tostring(mac)
 
 			self._virsh("detach-interface",
 						["--domain vm_%d" % vmid,
