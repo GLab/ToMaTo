@@ -62,10 +62,15 @@ class virsh:
 	TYPE = TypeName.KVM
 
 	HYPERVISOR_MAPPING = {
-		"lxc": "LXC://",
-		"kvm": "qemu:///session"
+		TypeName.LXC: "LXC://",
+		TypeName.KVM: "qemu:///session"
 	}
-
+	DRIVER_MAPPING = {
+		TypeName.KVMQM: "qcow2",
+		TypeName.KVM: "qcow2",
+		TypeName.LXC: "raw",
+		TypeName.OPENVZ: "raw",
+	}
 	CAP_ACTIONS = {
 		ActionName.PREPARE: [StateName.CREATED],
 		ActionName.DESTROY: [StateName.PREPARED],
@@ -153,23 +158,29 @@ class virsh:
 				self._virsh("destroy", ["vm_%s" % vmid])
 				raise
 
-	def prepare(self,vmid,imagepath,ram=512,cpus=1, vncport=None, vncpassword=None):
+	def prepare(self, vmid, imagepath, nlxtp_floppy_filename=None, nlxtp_device_filename=None,ram=512,cpus=1, vncport=None, vncpassword=None,keyboard="en-us"):
 		self._checkStatus(vmid,[StateName.CREATED])
+		driver_type = self.DRIVER_MAPPING[self.TYPE]
 		cmd_ = ["virt-install",
 				"--connect", self.HYPERVISOR_MAPPING[self.TYPE],
 				"--name", "vm_%d" % vmid,
 				"--ram",  str(ram),
 				"--vcpus", str(cpus),
 				#"--os-type", ostype,
-				"--disk", "path=%s,device=disk,bus=virtio" % imagepath,
-				"--graphics", "vnc%s%s" % (
+				"--import", #Use the image given to install a guest os
+				"--disk", "path=%s,device=disk,driver_type=%s,bus=virtio,boot_order=1" % (imagepath, driver_type), # HDA
+				("--disk" if nlxtp_device_filename else ""),("path=%s" % nlxtp_device_filename if nlxtp_device_filename else ""),
+				("--disk" if nlxtp_floppy_filename else ""),
+				("path=%s,device=floppy,cache=writethrough" % nlxtp_floppy_filename) if nlxtp_floppy_filename else "",
+				"--graphics", "vnc%s%s,keymap=%s" % (
 					(",port=%s" % vncport if vncpassword else ""),
-					(",password=%s" % vncpassword if vncpassword else "")),
+					(",password=%s" % vncpassword if vncpassword else ""),
+					keyboard),
 				"--nonetworks", #Don't create a bridge without my permission
 				"--noautoconsole", # Don't enter a console on the device after install
-				"--import", #Use the image given to install a guest os
 				"--noreboot"] #Don't boot the device after install
-		out = cmd.run(cmd_)
+		cmd.run(cmd_)
+		self.writeInitialConfig(self.TYPE, vmid)
 
 
 	def stop(self, vmid, forced=True):
@@ -237,8 +248,8 @@ class virsh:
 		for iface in vmNicList:
 			alias = iface.find("alias").get("name")
 			number = re.findall("net(\d+)", alias)[0]
-			bridge = iface.find("target").get("dev")
-			vmNicNameList.append((number, bridge))
+			interfacename = iface.find("target").get("dev")
+			vmNicNameList.append((number, interfacename))
 
 		return dict((int(num), name) for num, name in vmNicNameList)
 
@@ -449,9 +460,11 @@ class virsh:
 		if not os.path.exists(os.path.dirname(config_path)):
 			os.makedirs(os.path.dirname(config_path))
 
-		configeXML=ET.fromstring(self._virsh("dumpxml", ["vm_%s" % vmid, "--security-info"]))
+		configXML=ET.fromstring(self._virsh("dumpxml", ["vm_%s" % vmid, "--security-info"]))
 
-		tree = ET.ElementTree(configeXML)
+		print ET.tostring(configXML)
+
+		tree = ET.ElementTree(configXML)
 		tree.write(config_path)
 
 		return tree

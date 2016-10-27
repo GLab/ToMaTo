@@ -159,17 +159,20 @@ class KVM(elements.RexTFVElement,elements.Element):
 		templ = self._template()
 		templ.fetch()
 		self._useImage(templ.getPath(), backing=True)
+		self._nlxtp_create_device_and_mountpoint()
 		self.vir.prepare(self.vmid,
 						 imagepath=self._imagePath(),
+						 nlxtp_device_filename=self._nlxtp_device_filename(),
+						 nlxtp_floppy_filename=self._nlxtp_floppy_filename(),
 						 ram=self.ram,
 						 cpus=self.cpus,
 						 vncport=self.vncport,
-						 vncpassword=self.vncpassword)
+						 vncpassword=self.vncpassword,
+						 keyboard=self.kblang)
 		self.vir.writeInitialConfig(TypeName.KVM, self.vmid)
 		for interface in self.getChildren():
 			self._addInterface(interface)
 		self.setState(StateName.PREPARED, True)
-		self._nlxtp_create_device_and_mountpoint()
 		#self._configure()
 		# add all interfaces
 
