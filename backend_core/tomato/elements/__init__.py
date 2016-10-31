@@ -215,7 +215,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 					hcon.remove()
 				except:
 					pass
-		if self.connection:
+		if recurse and self.connection:
 			self.connection.remove()
 		if self.id:
 			self.delete()
