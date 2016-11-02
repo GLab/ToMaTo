@@ -22,7 +22,115 @@ kblang_options = {"en-us": "English (US)",
 					}
 
 DOC="""
-Test
+Element type: ``kvm``
+
+Description:
+	This element type provides full virtualization by using the KVM
+	virtualization technology. Virsh is used to control KVM
+
+Possible parents: None
+
+Possible children:
+	``kvm_interface`` (can be added in states *created* and *prepared*)
+
+Default state: *created*
+
+Removable in states: *created*
+
+Connection concepts: None
+
+States:
+	*created*: In this state the VM is known of but virsh has not defined it yet.
+		No state is stored and no resources are consumed in this state.
+	*prepared*: In this state the VM is present in the virsh configuration and the
+		disk image exists but the VM is not running. The disk image stores some
+		state information. The VM is not consuming any resources except for the
+		disk image.
+	*started*: In this state the VM is running and can be accessed by the user.
+		The VM holds a disk state and a memory state. It consumes disk storage
+		memory, cpu power, io and networking resources.
+
+Attributes:
+	*cpus*: int, changeable in states *created* and *prepared*, default: ``1``
+		The number of virtual processors that the VM should have. Each virtual
+		processor can take the resources of one physical processor.
+	*ram*: int, changeable in states *created* and *prepared*, default: ``256``
+		The amount of memory the VM should have in megabytes. The virtual
+		machine will only be able to access this much virtual memory. RAM that
+		has been allocated once will stay allocated as long as the VM is
+		running, so in the long run VMs tend to use the maximum amount of RAM.
+	*kblang*: str, changeable in states *created* and *prepared*, default: ``de``
+		The language of the emulated keyboard. This attribute defines how
+		keyboard input is translated in keycodes that are handed over to the
+		VM. This setting should correspond to the keyboard setting inside of
+		the VM.
+	*usbtablet*: bool, changeable in states *created* and *prepared*, default: ``True``
+		Whether to emulate an USB tablet input device or a normal PS/2 mouse.
+		A USB tablet input has the advantage that it uses absolute positions
+		to position the mouse pointer instead of relative movements like PS/2
+		does. That means that it is easier for viewers to track the mouse
+		position and to avoid offsets. On operating systems that do not support
+		USB tablet devices this setting must be disabled, otherwise no mouse
+		will be available.
+	*template*: str, changeable in states *created* and *prepared*
+		The name of a template of matching virtualization technology to be used
+		for this VM. A copy of this template will be used as an initial disk
+		image when the device is being prepared. When this attribute is changed
+		in the state prepared, the disk image will be reset to the template.
+		If no template with the given name exists (esp. for template=None),
+		a default template is chosen instead.
+		WARNING: Setting this attribute for a prepared VM will cause the loss
+		of the disk image.
+	*vncport*: int, read-only
+		The port on this host on which the VM can be accessed via VNC when it
+		is running.
+	*vncpassword*: int, read-only
+		The random password that has to be used to connect to this VM using
+		VNC. This password should be kept secret.
+
+Actions:
+	*prepare*, callable in state *created*, next state: *prepared*
+		Creates a virsh configuration entry for this VM and uses a copy of the
+		template as disk image.
+	*destroy*, callable in state *prepared*, next state: *created*
+	 	Removes the virsh configuration entry and deletes the disk image.
+	*start*, callable in state *prepared*, next state: *started*
+	 	Starts the VM and initiates a boot of the contained OS. This action
+	 	also starts a VNC server for the VM and connects all the interfaces
+	 	of the device.
+	*stop*, callable in state *started*, next state: *prepared*
+	 	Stops the VNC server, disconnects all the interfaces of the VM and
+	 	then initiates an OS shutdown using an ACPI shutdown request. The
+	 	contained OS then has 10 seconds to shut down by itself. After this
+	 	time, the VM is just stopped.
+	 	Note: Users should make sure their VMs shut down properly to decrease
+	 	stop time and to avoid data loss or damages in the virtual machine.
+	*upload_grant*, callable in state *prepared*
+	 	Create/update a grant to upload an image for the VM. The created grant
+	 	will be available as an attribute called upload_grant. The grant allows
+	 	the user to upload a file for a certain time. The url where the file
+	 	must be uploaded has the form http://server:port/grant/upload where
+	 	server is the address of this host, port is the fileserver port of this
+	 	server (can be requested via host_info) and grant is the grant.
+	 	The uploaded file can be used as the VM image with the upload_use
+	 	action.
+	*rextfv_upload_grant*, callable in state *prepared*
+		same as upload_grant, but for use with rextfv_upload_use.
+	*upload_use*, callable in state *prepared*
+		Uses a previously uploaded file as the image of the VM.
+	*rextfv_upload_use*, callable in state *prepared*
+		Uses a previously uploaded archive to insert into the VM's nlXTP directory.
+		Deletes old content from this directory.
+	*download_grant*, callable in state *prepared*
+	 	Create/update a grant to download the image for the VM. The created
+	 	grant will be available as an attribute called download_grant. The
+	 	grant allows the user to download the VM image once for a certain time.
+	 	The url where the file can be downloaded from has the form
+	 	http://server:port/grant/download where server is the address of this
+	 	host, port is the fileserver port of this server (can be requested via
+	 	host_info) and grant is the grant.
+	*rextfv_download_grant*, callable in state *prepared* or *started*
+		same as download_grant, but only for the nlXTP folder
 """
 
 class KVM(elements.RexTFVElement,elements.Element):
@@ -390,7 +498,7 @@ DOC_IFACE = """
 Element type: ``kvm_interface``
 
 Description:
-	This element type represents a network interface of kvmqm element type. Its
+	This element type represents a network interface of kvm element type. Its
 	state is managed by and synchronized with the parent element.
 
 Possible parents: ``kvm``
@@ -404,9 +512,9 @@ Removable in states: *created* and *prepared*
 Connection concepts: *interface*
 
 States:
-	*created*: In this state the interface is known of but qm does not know about
+	*created*: In this state the interface is known of but virsh does not know about
 		it.
-	*prepared*: In this state the interface is present in the qm configuration
+	*prepared*: In this state the interface is present in the virsh configuration
 		but not running.
 	*started*: In this state the interface is running.
 
