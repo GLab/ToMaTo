@@ -147,6 +147,40 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 
 		self.assertRaisesError(UserError,UserError.DENIED,self.proxy_holder_tester.backend_api.connection_create,self.testelement1_interface_id,self.testelement2_interface_id)
 
+	def test_connection_create_for_all_technologies(self):
+		"""
+		Create two elements and a connection between them for each template to test all technologies
+		"""
+		for temp in self.test_temps:
+			self.testelement_attrs = {
+				"profile": self.default_profile_name,
+				"name": temp['label'],
+				"template": temp['name']
+			}
+
+			self.testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																		 type=temp['tech'],
+																		 attrs=self.testelement_attrs)
+			self.testelement2 = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																		 type=temp['tech'],
+																		 attrs=self.testelement_attrs)
+
+			self.testelement_id = self.testelement['id']
+			self.testelement_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
+																		type=self.test_temps[0]['tech']+"_interface",
+																		parent=self.testelement_id)
+			self.testelement_interface_id = self.testelement_interface["id"]
+
+			self.testelement2_id = self.testelement2['id']
+			self.testelement2_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
+																		type=self.test_temps[0]['tech']+"_interface",
+																		parent=self.testelement2_id)
+			self.testelement2_interface_id = self.testelement2_interface["id"]
+
+
+			self.testconnection2 = self.proxy_holder.backend_api.connection_create(self.testelement_interface_id,self.testelement2_interface_id)
+			self.assertIsNotNone(self.testconnection2)
+
 	def test_connection_create_missing_element(self):
 		"""
 		tests whether backend_api.connection_create responds correctly when called without 2 existing elements

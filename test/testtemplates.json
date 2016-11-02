@@ -40,6 +40,20 @@
     "creation_date": 1462881777.857998
   },
   {
+    "tech": "kvm",
+    "name": "tinycore-7.0",
+    "nlXTP_installed": false,
+    "description": "",
+    "icon": "",
+    "show_as_common": false,
+    "restricted": false,
+    "label": "TinyCore 7.0 (x86)",
+    "subtype": "linux",
+    "preference": 0,
+    "urls":["http://packages.tomato-lab.org/templates_eseewe7KaiSh9aiD/tinycore-7.0.qcow2"],
+    "creation_date": 1462881777.857998
+  },
+  {
     "tech": "repy",
     "name": "pingable_node",
     "nlXTP_installed": false,
