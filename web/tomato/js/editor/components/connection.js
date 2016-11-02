@@ -145,7 +145,7 @@ var Connection = Component.extend({
 		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
 		new Window({
 			title: "Live capture Information", 
-			content: '<p>Host: '+host+'<br />Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", 
+			content: '<p>Host: '+host+'<br />Port: '+port+"</p><p>Start live capture via: "+commandField(cmd)+"</p>",
 			autoShow: true,
 			width: 600
 		});

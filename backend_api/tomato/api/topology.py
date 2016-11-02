@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import getCurrentUserInfo, getCurrentUserName
+from ..lib.topology_role import Role
 from ..lib.remote_info import get_topology_info, get_topology_list, TopologyInfo,get_organization_info
 from ..lib.service import get_backend_core_proxy,get_backend_users_proxy
 from ..lib.error import UserError
@@ -221,6 +222,9 @@ def topology_set_permission(id, user, role): #@ReservedAssignment
 	  The name of the role for this user. If the user already has a role,
 	  if will be changed.
 	"""
+	if role is None:
+		role = Role.null
+
 	topl = get_topology_info(id)
 	UserError.check(topl.exists(), code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that name does not exist")
 	UserError.check(get_backend_users_proxy().user_exists(user), code=UserError.ENTITY_DOES_NOT_EXIST, message="User with that name does not exist")
