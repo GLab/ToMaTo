@@ -11,32 +11,17 @@ import os
 
 locks = LockMatrix()
 
-class IDManager(object):
+DOC="""
+Element type: ``virsh``
 
-	__slots__ = ("minid", "maxid", "idpoint", "lock")
+Description:
+	This element type provides access to different virtualization technologies
+	by using virsh as interface. The element should be instantiated to define
+	the technologie which should be accessed. ``Virsh`` is part of the libvirt package.
 
-	def __init__(self):
-		self.minid = 1000
-		self.maxid = 9999
-		self.idpoint = self.maxid
-		self.lock = Lock()
 
-	def _move_right(self):
-		self.idpoint+=1
-		if self.idpoint > self.maxid:
-			self.idpoint = self.minid
-
-	def _check_free(self, id_):
-		raise NotImplementedError()
-
-def getFreeID(self):
-		with self.lock:
-			self._move_right()
-			while not self._check_free(self.idpoint):
-				self._move_right()
-			return self.idpoint
-
-idmanager = IDManager()
+Possible parents: None
+"""
 
 class VirshError(Error):
 	CODE_UNKNOWN="virsh.unknown"
@@ -133,15 +118,16 @@ class virsh:
 				"--vcpus", str(cpus),
 				#"--os-type", ostype,
 				"--import", #Use the image given to install a guest os
-				"--disk", "path=%s,device=disk,driver_type=%s,bus=virtio" % (imagepath, driver_type), # HDA
-				("--disk" if nlxtp_device_filename else ""),("path=%s,device=disk,bus=virtio" % nlxtp_device_filename if nlxtp_device_filename else ""),
-				("--disk" if nlxtp_floppy_filename else ""),
+				"--disk", "path=%s,device=disk,driver_type=%s,bus=virtio" % (imagepath, driver_type), # VDA
+				("--disk" if nlxtp_device_filename else ""),("path=%s,device=disk,bus=virtio" % nlxtp_device_filename
+															 if nlxtp_device_filename else ""), # Virtual 'big' device for nlxtp
+				("--disk" if nlxtp_floppy_filename else ""), # Floppy device for nlXTP
 				("path=%s,device=floppy,cache=writethrough" % nlxtp_floppy_filename if nlxtp_floppy_filename else ""),
 				"--graphics", "vnc%s%s,keymap=%s" % (
 					(",port=%s" % vncport if vncpassword else ""),
 					(",password=%s" % vncpassword if vncpassword else ""),
 					keyboard),
-				"--nonetworks", #Don't create a bridge without my permission
+				"--nonetworks", #Don't create automatically a bridge
 				"--noautoconsole", # Don't enter a console on the device after install
 				"--noreboot"] #Don't boot the device after install
 		cmd.run(cmd_)
