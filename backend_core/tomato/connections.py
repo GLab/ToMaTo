@@ -24,6 +24,7 @@ from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
 from .lib.cache import cached #@UnresolvedImport
 from .lib.constants import ActionName, StateName
+from .lib.exceptionhandling import wrap_and_handle_current_exception
 
 REMOVE_ACTION = "(remove)"
 
@@ -199,7 +200,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	def checkRemove(self):
 		return True
 
-	def _remove(self):
+	def _remove(self, recurse=False):
 		try:
 			self.reload()
 		except Connection.DoesNotExist:
@@ -209,26 +210,43 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		self.triggerStop()
 		if self.id:
-			for el in self.elements:
-				el.connection = None
-				el.save()
+			connFrom = self.connectionFrom
+			connTo = self.connectionTo
+			elFrom = self.elementFrom
+			elTo = self.elementTo
+
 			try:
-				self.connectionFrom.remove()
-			except:
-				pass
-			try:
-				self.connectionTo.remove()
-			except:
-				pass
-			try:
-				self.connectionElementFrom.remove()
-			except:
-				pass
-			try:
-				self.connectionElementTo.remove()
-			except:
-				pass
-			self.delete()
+				self.delete()
+
+				if connFrom:
+					try:
+						connFrom.remove()
+					except:
+						wrap_and_handle_current_exception(re_raise=False)
+				if connTo:
+					try:
+						connTo.remove()
+					except:
+						wrap_and_handle_current_exception(re_raise=False)
+
+				if recurse:
+					elFrom.remove()
+					elTo.remove()
+
+			except:  # try to rollback changes
+				try:
+					self.elementTo.connection = self
+					self.elementTo.save()
+					self.elementFrom.connection = self
+					self.elementFrom.save()
+					if connTo:
+						connTo.save()
+					if connFrom:
+						connFrom.save()
+					self.save()
+				except:
+					wrap_and_handle_current_exception(re_raise=False)
+				raise
 
 	def setState(self, state):
 		self.state = state

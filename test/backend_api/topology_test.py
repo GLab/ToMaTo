@@ -286,6 +286,15 @@ class TopologyTestCase(ProxyHoldingTestCase):
 
 		self.proxy_holder_admin.backend_api.topology_set_permission(testtopology2["id"],self.testuser_info["name"],"user")
 
+	def test_topology_set_permission_to_none(self):
+		"""
+		Tests whether topology_set_permissions correctly sets the desired permissions on the given topology
+		"""
+
+		testtopology2 = self.proxy_holder_admin.backend_api.topology_create()
+
+		self.proxy_holder_admin.backend_api.topology_set_permission(testtopology2["id"],self.testuser_info["name"],None)
+
 	def test_topology_set_permission_without_permission(self):
 		"""
 		Tests whether topology_set_permissions correctly responds when called without sufficient permissions
