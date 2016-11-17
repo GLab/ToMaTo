@@ -118,8 +118,8 @@ class virsh:
 				"--vcpus", str(cpus),
 				#"--os-type", ostype,
 				"--import", #Use the image given to install a guest os
-				"--disk", "path=%s,device=disk,driver_type=%s,bus=virtio" % (imagepath, driver_type), # VDA
-				("--disk" if nlxtp_device_filename else ""),("path=%s,device=disk,bus=virtio" % nlxtp_device_filename
+				"--disk", "path=%s,driver_type=%s" % (imagepath, driver_type), # VDA ,device=disk,driver_type=%s,bus=virtio, % driver_type
+				("--disk" if nlxtp_device_filename else ""),("path=%s" % nlxtp_device_filename #,device=disk,bus=virtio
 															 if nlxtp_device_filename else ""), # Virtual 'big' device for nlxtp
 				("--disk" if nlxtp_floppy_filename else ""), # Floppy device for nlXTP
 				("path=%s,device=floppy,cache=writethrough" % nlxtp_floppy_filename if nlxtp_floppy_filename else ""),
