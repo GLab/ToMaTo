@@ -178,6 +178,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		return res
 
 	def checkRemove(self, recurse=True):
+		self.reload()
 		UserError.check(recurse or self.children.empty(), code=UserError.NOT_EMPTY, message="Cannot remove element with children")
 		for ch in self.children:
 			ch.checkRemove(recurse=recurse)
@@ -193,6 +194,10 @@ class Element(LockedStatefulEntity, BaseDocument):
 		self.save()
 
 	def _remove(self, recurse=True):
+		try:
+			self.reload()
+		except Element.DoesNotExist:
+			return
 		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		if self.parent:
@@ -210,7 +215,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 					hcon.remove()
 				except:
 					pass
-		if self.connection:
+		if recurse and self.connection:
 			self.connection.remove()
 		if self.id:
 			self.delete()
