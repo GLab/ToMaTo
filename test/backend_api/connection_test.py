@@ -38,6 +38,11 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 													testuser_attrs)
 		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
+		# Give admin access to restricted profiles and templates
+		flags = {}
+		flags["restricted_profiles"] = True
+		flags["restricted_templates"] = True
+		cls.proxy_holder.backend_api.account_modify(cls.default_user_name, {'flags': flags})
 
 		#Create empty  testtopology
 		cls.testtopology = cls.proxy_holder.backend_core.topology_create(cls.default_user_name)
@@ -146,40 +151,6 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		"""
 
 		self.assertRaisesError(UserError,UserError.DENIED,self.proxy_holder_tester.backend_api.connection_create,self.testelement1_interface_id,self.testelement2_interface_id)
-
-	def test_connection_create_for_all_technologies(self):
-		"""
-		Create two elements and a connection between them for each template to test all technologies
-		"""
-		for temp in self.test_temps:
-			self.testelement_attrs = {
-				"profile": self.default_profile_name,
-				"name": temp['label'],
-				"template": temp['name']
-			}
-
-			self.testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																		 type=temp['tech'],
-																		 attrs=self.testelement_attrs)
-			self.testelement2 = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																		 type=temp['tech'],
-																		 attrs=self.testelement_attrs)
-
-			self.testelement_id = self.testelement['id']
-			self.testelement_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		type=self.test_temps[0]['tech']+"_interface",
-																		parent=self.testelement_id)
-			self.testelement_interface_id = self.testelement_interface["id"]
-
-			self.testelement2_id = self.testelement2['id']
-			self.testelement2_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		type=self.test_temps[0]['tech']+"_interface",
-																		parent=self.testelement2_id)
-			self.testelement2_interface_id = self.testelement2_interface["id"]
-
-
-			self.testconnection2 = self.proxy_holder.backend_api.connection_create(self.testelement_interface_id,self.testelement2_interface_id)
-			self.assertIsNotNone(self.testconnection2)
 
 	def test_connection_create_missing_element(self):
 		"""
@@ -325,3 +296,105 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		testconnection_id = self.testconnection_id[12:24] + self.testconnection_id[0:12]
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.connection_usage, testconnection_id)
 
+
+class FullTechnologyTestCase(ProxyHoldingTestCase):
+
+	@classmethod
+	def setUpClass(cls):
+		cls.remove_all_other_accounts()
+		cls.remove_all_connections()
+		cls.remove_all_elements()
+		cls.remove_all_topologies()
+		cls.remove_all_templates()
+		cls.remove_all_profiles()
+		cls.remove_all_hosts()
+
+		for host in cls.test_host_addresses:
+			cls.add_host_if_missing(host)
+			host_name = cls.get_host_name(host)
+			cls.proxy_holder.backend_core.host_action(host_name, "forced_update")
+
+		cls.add_templates_if_missing()
+		cls.add_profiles()
+
+		# Create user without permission to create profiles
+		testuser_username = "testuser"
+		testuser_password = "123"
+		testuser_organization = cls.default_organization_name
+		testuser_attrs = {"realname": "Test User",
+						  "email": "test@example.com",
+						  "flags": {}
+						  }
+		cls.proxy_holder.backend_api.account_create(testuser_username, testuser_password, testuser_organization,
+													testuser_attrs)
+		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
+
+		# Give admin access to restricted profiles and templates
+		flags = {}
+		flags["restricted_profiles"] = True
+		flags["restricted_templates"] = True
+		cls.proxy_holder.backend_api.account_modify(cls.default_user_name, {'flags': flags})
+
+
+	def setUp(self):
+		#Create empty  testtopology
+		self.testtopology = self.proxy_holder.backend_core.topology_create(self.default_user_name)
+		self.testtopology_id = self.testtopology['id']
+
+	def tearDown(self):
+		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "destroy")
+
+	@classmethod
+	def tearDownClass(cls):
+		cls.remove_all_other_accounts()
+		cls.remove_all_connections()
+		cls.remove_all_elements()
+		cls.remove_all_topologies()
+		cls.remove_all_templates()
+		cls.remove_all_profiles()
+		cls.remove_all_hosts()
+
+	def test_connection_create_for_all_technologies(self):
+		"""
+		Create two elements and a connection between them for each template to test all technologies
+		"""
+		for temp in self.test_temps:
+			testelement_attrs = {
+				"profile": self.default_profile_name,
+				"name": temp['label'],
+				"template": temp['name']
+			}
+
+			#Creat two elements of the same technology
+			testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																	   type=temp['tech'],
+																	   attrs=testelement_attrs)
+			testelement2 = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																		type=temp['tech'],
+																		attrs=testelement_attrs)
+
+			#Interface for element1
+			testelement_id = testelement['id']
+			testelement_interface = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																				  type="%s_interface" % temp['tech'],
+																				  parent=testelement_id)
+			testelement_interface_id = testelement_interface["id"]
+
+
+
+			#Interface for element2
+			testelement2_id = testelement2['id']
+			testelement2_interface = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																				   type="%s_interface" % temp['tech'],
+																				   parent=testelement2_id)
+			testelement2_interface_id = testelement2_interface["id"]
+
+
+			#Create a connection between element1 and element2 by using the created interfaces
+			testconnection2 = self.proxy_holder.backend_api.connection_create(testelement_interface_id,
+																			  testelement2_interface_id)
+
+			self.assertIsNotNone(testconnection2)
+			self.proxy_holder.backend_api.topology_action(self.testtopology_id, "start")
+
+		self.proxy_holder.backend_api.topology_action(self.testtopology_id, "start")
