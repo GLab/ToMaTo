@@ -3,7 +3,9 @@ import sys, os, time, traceback, hashlib, zlib, threading, re, base64, gzip, ins
 from . import anyjson as json
 from .error import InternalError, generate_inspect_trace
 
-from settings import settings, Config
+from .settings import settings, Config
+
+DUMP_LIMIT = 1000  # maximum number of simultaneous dumps
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
@@ -165,6 +167,7 @@ def save_dump(timestamp=None, caller=None, description=None, type=None, group_id
 
 		if initialized:
 			dumps[dump_id] = dump_meta
+			remove_too_many_dumps()
 
 	try:
 		on_dump_create()
@@ -276,6 +279,19 @@ def auto_cleanup():
 	remove_all_where(before=before)
 
 
+#called after operations. remove oldest dumps if too many
+def remove_too_many_dumps():
+	global dumps
+	with dumps_lock:
+		todel = len(dumps) - DUMP_LIMIT
+		if todel > 0:
+			for d in sorted(dumps.itervalues(), key=lambda d: d['timestamp'])[:todel]:
+				remove_dump(d['dump_id'])
+
+
+
+
+
 #return the total number of error dumps
 def getCount():
 	global dumps
@@ -331,6 +347,7 @@ def init(env_cmds, tomatoVersion):
 			for dump_id in dump_id_list:
 				try:
 					load_dump(dump_id, push_to_dumps=True, load_data=False, load_from_file=True, dump_on_error=True)
+					remove_too_many_dumps()
 				except:
 					import traceback
 					traceback.print_exc()
@@ -347,7 +364,7 @@ def dumpException(**kwargs):
 	trace = traceback.extract_tb(trace) if trace else None
 	
 	# check whether a handler for the given type of exception is known.
-	from error import Error
+	from .error import Error
 	if issubclass(type_, Error):
 		return dumpError(value)
 	

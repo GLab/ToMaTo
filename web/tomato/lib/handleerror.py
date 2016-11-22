@@ -18,19 +18,25 @@ from versioninfo import getVersionStr
 
 def dumpException(dump_on_error=True):
     errorgroup_id = None
-
     try:
       if settings.get_dump_config()[Config.DUMPS_ENABLED]:
 
-        from . import AuthError
         (type_, exc, _) = sys.exc_info()
+
+        # web-specific error checks and wrapping
+        from . import AuthError
         if type_ == AuthError:
           return
+        if type_ == xmlrpclib.ProtocolError:
+          if exc.errcode == 401:
+            return
 
+        # prepare backend dumplib for web context
         dump_lib.tomato_component = Config.TOMATO_MODULE_WEB
         dump_lib.tomato_version = getVersionStr()
         dump_lib.settings = settings
 
+        # dump
         dump_id = dump_lib.dumpException()
         if dump_id is None:
 
@@ -45,10 +51,12 @@ def dumpException(dump_on_error=True):
         push_all_dumps()
 
     except:
+      # avoid endless recursion
       if dump_on_error:
         dumpException(dump_on_error=False)
 
     return errorgroup_id
+
 
 def push_all_dumps():
       from . import getapi

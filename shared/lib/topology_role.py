@@ -4,7 +4,7 @@ class Role:
 	user = "user" # no destroy/prepare, no topology changes, no permission changes
 	null = "null" # no access at all
 
-	RANKING=[null, user, manager, owner]
+	RANKING = [null, user, manager, owner]
 
 	@staticmethod
 	def max(role_1, role_2):

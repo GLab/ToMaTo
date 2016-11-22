@@ -24,6 +24,7 @@ from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
 from .lib.cache import cached #@UnresolvedImport
 from .lib.constants import ActionName, StateName
+from .lib.exceptionhandling import wrap_and_handle_current_exception
 
 REMOVE_ACTION = "(remove)"
 
@@ -95,13 +96,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	DOC=""
 
 	# noinspection PyMethodOverriding
-	def init(self, topology, el1, el2, attrs=None):
+	def init(self, topology, el1, el2, **attrs):
 		if not attrs: attrs = {}
 		self.topology = topology
 		self.state = ST_CREATED
 		self.elementFrom = el1
 		self.elementTo = el2
-		Entity.init(self, attrs)
+		Entity.init(self, **attrs)
 		
 	@classmethod
 	def canConnect(cls, el1, el2):
@@ -164,7 +165,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 				remoteAttrs[key] = value
 		self.directData.update(remoteAttrs)
 		if self.mainConnection:
-			self.mainConnection.modify(self._remoteAttrs)
+			self.mainConnection.modify(**self._remoteAttrs)
 
 	def checkTopologyTimeout(self):
 		self.topology.checkTimeout()
@@ -199,7 +200,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	def checkRemove(self):
 		return True
 
-	def _remove(self):
+	def _remove(self, recurse=False):
 		try:
 			self.reload()
 		except Connection.DoesNotExist:
@@ -209,26 +210,43 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		self.triggerStop()
 		if self.id:
-			for el in self.elements:
-				el.connection = None
-				el.save()
+			connFrom = self.connectionFrom
+			connTo = self.connectionTo
+			elFrom = self.elementFrom
+			elTo = self.elementTo
+
 			try:
-				self.connectionFrom.remove()
-			except:
-				pass
-			try:
-				self.connectionTo.remove()
-			except:
-				pass
-			try:
-				self.connectionElementFrom.remove()
-			except:
-				pass
-			try:
-				self.connectionElementTo.remove()
-			except:
-				pass
-			self.delete()
+				self.delete()
+
+				if connFrom:
+					try:
+						connFrom.remove()
+					except:
+						wrap_and_handle_current_exception(re_raise=False)
+				if connTo:
+					try:
+						connTo.remove()
+					except:
+						wrap_and_handle_current_exception(re_raise=False)
+
+				if recurse:
+					elFrom.remove()
+					elTo.remove()
+
+			except:  # try to rollback changes
+				try:
+					self.elementTo.connection = self
+					self.elementTo.save()
+					self.elementFrom.connection = self
+					self.elementFrom.save()
+					if connTo:
+						connTo.save()
+					if connFrom:
+						connFrom.save()
+					self.save()
+				except:
+					wrap_and_handle_current_exception(re_raise=False)
+				raise
 
 	def setState(self, state):
 		self.state = state
@@ -283,7 +301,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			self.connectionFrom = el1.connectWith(self.connectionElementFrom, attrs={}, ownerConnection=self)
 			self.connectionTo = el2.connectWith(self.connectionElementTo, attrs={}, ownerConnection=self)
 			if "emulation" in self.connectionTo.getAllowedAttributes():
-				self.connectionTo.modify({"emulation": False})
+				self.connectionTo.modify(emulation=False)
 			self.save()
 			self.connectionElementFrom.action(ActionName.START)
 			self.connectionElementTo.action(ActionName.START)
@@ -294,7 +312,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		# Find out and set allowed attributes
 		allowed = self.connectionFrom.getAllowedAttributes()
 		attrs = dict(filter(lambda (k, v): k in allowed, self._remoteAttrs.items()))
-		self.connectionFrom.modify(attrs)
+		self.connectionFrom.modify(**attrs)
 		# Unset all disallowed attributes
 		for key in self._remoteAttrs.keys():
 			if not key in allowed:
@@ -474,7 +492,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			return None
 
 	@classmethod
-	def create(cls, el1, el2, attrs=None):
+	def create(cls, el1, el2, **attrs):
 		if not attrs: attrs = {}
 		UserError.check(el1 != el2, code=UserError.INVALID_CONFIGURATION, message="Cannot connect element with itself")
 		UserError.check(not el1.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
@@ -488,7 +506,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
 			message="Can only connect elements from same topology")
 		con = cls()
-		con.init(el1.topology, el1, el2, attrs)
+		con.init(el1.topology, el1, el2, **attrs)
 		con.save()
 		el1.connection = con
 		el1.save()

@@ -528,14 +528,15 @@ var Editor = Class.extend({
 		
 		var tab = this.menu.addTab("Topology");
 
-		var group = tab.addGroup("");
+		var group = tab.addGroup("Functions");
+
 		group.addElement(Menu.button({
-			label: "Renew",
-			icon: "img/renew.png",
+			label: "Consoles (NoVNC)",
+			icon: "img/console32.png",
 			toggle: false,
 			small: false,
 			func: function(){
-				t.topology.renewDialog();
+				t.topology.tabbedConsoleWindow();
 			}
 		}));
 		group.addElement(Menu.button({
@@ -554,6 +555,19 @@ var Editor = Class.extend({
 			small: false,
 			func: function(){
 				t.topology.showUsage();
+			}
+		}));
+
+
+		var group = tab.addGroup("Management");
+
+		group.addElement(Menu.button({
+			label: "Renew",
+			icon: "img/renew.png",
+			toggle: false,
+			small: false,
+			func: function(){
+				t.topology.renewDialog();
 			}
 		}));
 		group.addStackedElements([

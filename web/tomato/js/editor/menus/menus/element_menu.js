@@ -99,7 +99,7 @@ var createElementMenu = function(obj) {
 							}
 						} : null,
 						"console_link": obj.consoleAvailable() ? {
-							name:"vnc:// link",
+							name:"open vnc:// link",
 							icon:"console",
 							callback: function(){
 								obj.openVNCurl();

@@ -52,7 +52,7 @@ class UDPEndpoint(Element):
 	def modify_connect(self, val):
 		self.connect = val
 		if self.element:
-			self.element.modify({"connect": val})
+			self.element.modify(connect=val)
 
 	def onError(self, exc):
 		if self.element:

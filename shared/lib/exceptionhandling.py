@@ -1,5 +1,4 @@
-import logging
-import error
+from .logging import logException
 import traceback
 import sys
 
@@ -8,6 +7,7 @@ def wrap_and_handle_current_exception(errorcls_func=None, errorcode=None, re_rai
 	if data is None:
 		data = {}
 	type_, exc, trace = sys.exc_info()
+	from . import error
 	if errorcls_func is None:
 		errorcls_func = lambda e: error.InternalError
 	if isinstance(exc, error.Error):
@@ -27,14 +27,15 @@ def writedown_current_exception(log_exception=True, dump_exception=True, print_e
 	if exc is None:
 		_, exc, _ = sys.exc_info()
 
+	from . import error
 	if isinstance(exc, error.Error):
 		if not exc.todump and not ignore_todump:
 			return
 
 	if log_exception:
-		logging.logException()
+		logException()
 	if dump_exception:
-		import dump
+		from . import dump
 		dump.dumpException()
 	if print_exception:
 		traceback.print_exc()

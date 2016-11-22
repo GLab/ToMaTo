@@ -168,6 +168,11 @@ def import_(api, request):
 		return render(request, "form.html", {'form': form, "heading": "Import Topology",
 		'message_before': "Here you can import a topology file which you have previously exported from the Editor."})
 
+@wrap_rpc
+def tabbed_console(api, request, id):
+	top = api.topology_info(id, True)
+	top["elements"].sort(key=lambda x: x.get('name', x.get('id', None)))
+	return render(request, "topology/console_tabbed.html", {"topology": top})
 
 @wrap_rpc
 def export(api, request, id):
