@@ -395,6 +395,5 @@ class FullTechnologyTestCase(ProxyHoldingTestCase):
 																			  testelement2_interface_id)
 
 			self.assertIsNotNone(testconnection2)
-			self.proxy_holder.backend_api.topology_action(self.testtopology_id, "start")
 
 		self.proxy_holder.backend_api.topology_action(self.testtopology_id, "start")
