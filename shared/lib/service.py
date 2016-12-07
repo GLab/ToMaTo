@@ -32,7 +32,7 @@ def createProxy(address, sslcert, sslkey, sslca, tomato_module=None):
 		raise TransportError(code=TransportError.INVALID_URL, message="address must contain port: %s" % address)
 	address, port = address.split(":")
 	port = int(port)
-	return Proxy((address, port), certfile=sslcert, keyfile=sslkey, ca_certs=sslca, cert_reqs=ssl.CERT_REQUIRED, onError=_convertError(tomato_module))
+	return Proxy((address, port), certfile=sslcert, keyfile=sslkey, ca_certs=sslca, cert_reqs=ssl.CERT_REQUIRED, onError=_convertError(tomato_module), timeout=settings.get_rpc_timeout())
 
 @cached(3600)
 def get_tomato_inner_proxy(tomato_module):
