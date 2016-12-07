@@ -694,20 +694,27 @@ class HostObject(BaseDocument):
 		return ret
 
 
-def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None, best=True, template=None):
+def select(site=None, elementTypeConfigurations=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None, best=True, template=None):
 	# STEP 1: limit host choices to what is possible
 	if not sitePrefs: sitePrefs = {}
 	if not hostPrefs: hostPrefs = {}
 	if not networkKinds: networkKinds = []
 	if not connectionTypes: connectionTypes = []
-	if not elementTypes: elementTypes = []
+	if not elementTypeConfigurations: elementTypeConfigurations = [[]]
 	all_ = Host.getAll(site=site) if site else Host.getAll()
 	hosts = []
 	for host in all_:
 		if host.problems():
 			continue
-		if elementTypes and set(elementTypes) - set(host.elementTypes):
+
+		fulfillsConfig = False  # accept host if one config is fulfilled
+		for elementTypes in elementTypeConfigurations:
+			if not (set(elementTypes) - set(host.elementTypes)):
+				fulfillsConfig = True
+				break
+		if not fulfillsConfig:
 			continue
+
 		if connectionTypes and set(connectionTypes) - set(host.connectionTypes):
 			continue
 		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):

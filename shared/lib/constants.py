@@ -21,7 +21,7 @@ class StateName:
 	PREPARED = "prepared"
 	STARTED = "started"
 
-class TypeName:
+class TechName:
 	OPENVZ = "openvz"
 	OPENVZ_INTERFACE = "openvz_interface"
 
@@ -33,6 +33,13 @@ class TypeName:
 
 	LXC = "lxc"
 	LXC_INTERFACE = "lxc_interface"
+
+class TypeName:
+	FULL_VIRTUALIZATION = "full"
+	FULL_VIRTUALIZATION_INTERFACE = "full_interface"
+
+	CONTAINER_VIRTUALIZATION = "container"
+	CONTAINER_VIRTUALIZATION_INTERFACE = "container_interface"
 
 	REPY = "repy"
 	REPY_INTERFACE = "repy_interface"

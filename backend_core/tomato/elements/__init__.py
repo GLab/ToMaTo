@@ -114,7 +114,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		return self.HOST_TYPE or self.type
 
 	@property
-	def _remoteAttrs(self):
+	def _remoteAttrs(self, **kwargs):
 		caps = host.getElementCapabilities(self.remoteType)
 		allowed = caps["attributes"].keys() if caps else []
 		attrs = {}
@@ -296,7 +296,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 			return host_
 		type_ = cls.HOST_TYPE or cls.TYPE
 		if not host_ or not type_ in host_.elementTypes:
-			host_ = host.select(elementTypes=[type_], best=False)
+			host_ = host.select(elementTypeConfigurations=[[type_]], best=False)
 		return host_
 
 	@classmethod
@@ -410,6 +410,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"tech": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
 		"topology": Attribute(field=topologyId, readOnly=True, schema=schema.Identifier()),
 		"parent": Attribute(field=parentId, readOnly=True, schema=schema.Identifier(null=True)),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),

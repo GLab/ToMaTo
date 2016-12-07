@@ -167,11 +167,21 @@ class VMElement(Element):
 	def action_change_template(self, template):
 		self.modify_template(template)
 
+	def _get_elementTypeConfigurations(self):
+		"""
+		get element type configurations for action_prepare()
+		:return:
+		"""
+		return [[self.TYPE] + self.CAP_CHILDREN.keys()]
+
+	def _select_tech(self, techs):
+		return self.type
+
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
-		_host = host.select(site=self.site if self.site else self.topology.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref, template=self.template)
+		_host = host.select(site=self.site if self.site else self.topology.site, elementTypeConfigurations=self._get_elementTypeConfigurations(), hostPrefs=hPref, sitePrefs=sPref, template=self.template)  # fixme: use tech
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
-			data={"type": self.TYPE})
+			data={"type": self.TYPE, "configs": self._get_elementTypeConfigurations()})
 		attrs = self._remoteAttrs
 		attrs.update({
 			"template": self.template.name,
@@ -236,6 +246,60 @@ class VMElement(Element):
 		ActionName.CHANGE_TEMPLATE: StatefulAction(action_change_template, allowedStates=[ST_CREATED, ST_PREPARED])
 	})
 
+class MultiTechElementMixin:
+	TECHS = []  # preferred techs first
+
+	@classmethod
+	def selectCapabilitiesHost(cls, host_):
+		if not (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
+			return host_
+		types_ = cls.TECHS
+
+		host_fulfills = False
+		if not host_:
+			host_fulfills = False
+		else:
+			for type_ in types_:
+				if type_ in host_.elementTypes:
+					host_fulfills = True
+		if not host_fulfills:
+			host_ = host.select(elementTypeConfigurations=types_, best=False)
+		return host_
+
+class MultiTechVMElement(VMElement, MultiTechElementMixin):
+	tech = StringField(required=False, default=None)
+
+	TECH_TO_CHILD_TECH = {}  # registry to map techs to their interface techs
+
+	# fixme: use tech for action_prepare in super
+
+	def modify_tech(self, tech):
+		UserError.check(tech in self.TECHS, UserError.INVALID_VALUE, "tech '%s' not supported for type '%s'" % (tech, self.TYPE), data={"tech": tech, "type": self.TYPE})
+		self.tech = tech
+
+	def _get_elementTypeConfigurations(self):
+		if self.tech:
+			return [[self.tech, self.TECH_TO_CHILD_TECH[self.tech]]]
+		return [[k, v] for k, v in self.TECH_TO_CHILD_TECH.iteritems()]
+
+	def get_tech_attribute(self):
+		return self.element.TYPE if self.element else self.tech
+
+	@property
+	def _remoteAttrs(self, host=None, **kwargs):
+		attrs = super(MultiTechVMElement, None)._remoteAttrs
+		if host:
+			for tech in self.TECHS:
+				if tech in host.elementTypes:
+					attrs["type"] = tech
+					return attrs
+		attrs["type"] = self.get_tech_attribute()
+		return attrs
+
+	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"tech": StatefulAttribute(get=lambda self: self.get_tech_attribute(), set=modify_tech, writableStates=[ST_CREATED], schema=schema.Identifier())
+	})
 
 class VMInterface(Element):
 	"""
@@ -286,6 +350,20 @@ class VMInterface(Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED, ST_PREPARED])
+	})
+
+
+class MultiTechVMInterface(VMInterface, MultiTechElementMixin):
+	@property
+	def _remoteAttrs(self, **kwargs):
+		attrs = super(MultiTechVMElement, None)._remoteAttrs
+		if host:
+			attrs["type"] = MultiTechVMElement.TECH_TO_CHILD_TECH[self.parent.get_tech_attribute()]
+		return attrs
+
+	ATTRIBUTES = VMInterface.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"tech": Attribute(get=lambda self: MultiTechVMElement.TECH_TO_CHILD_TECH[self.parent.get_tech_attribute()], readOnly=True, schema=schema.Identifier()),
 	})
 
 
