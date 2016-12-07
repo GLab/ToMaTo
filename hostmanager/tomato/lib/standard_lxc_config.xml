@@ -1,0 +1,40 @@
+<domain type='lxc' id='13035'>
+  <name>o1</name>
+  <uuid>441c9a55-e789-48ab-9a5e-cefd6cb9fbb3</uuid>
+  <memory unit='KiB'>327680</memory>
+  <currentMemory unit='KiB'>327680</currentMemory>
+  <vcpu placement='static'>1</vcpu>
+  <resource>
+    <partition>/machine</partition>
+  </resource>
+  <os>
+    <type arch='x86_64'>exe</type>
+    <init>/sbin/init</init>
+  </os>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>/usr/lib/libvirt/libvirt_lxc</emulator>
+    <filesystem type='mount' accessmode='passthrough'>
+      <source dir='/var/lib/lxc/o1/rootfs'/>
+      <target dir='/'/>
+    </filesystem>
+    <interface type='network'>
+      <mac address='52:54:00:b7:3c:d9'/>
+      <source network='default' bridge='virbr0'/>
+      <target dev='vnet0'/>
+      <guest dev='eth0'/>
+    </interface>
+    <console type='pty' tty='/dev/pts/22'>
+      <source path='/dev/pts/22'/>
+      <target type='lxc' port='0'/>
+      <alias name='console0'/>
+    </console>
+  </devices>
+  <seclabel type='dynamic' model='apparmor' relabel='yes'>
+    <label>libvirt-441c9a55-e789-48ab-9a5e-cefd6cb9fbb3</label>
+    <imagelabel>libvirt-441c9a55-e789-48ab-9a5e-cefd6cb9fbb3</imagelabel>
+  </seclabel>
+</domain>

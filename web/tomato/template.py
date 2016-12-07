@@ -33,7 +33,7 @@ from django.core.urlresolvers import reverse
 
 from lib.error import UserError #@UnresolvedImport
 
-techs = [{"name": t, "label": tech_to_label(t)} for t in [TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]]
+techs = [{"name": t, "label": tech_to_label(t)} for t in [TypeName.KVM, TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]]
 
 techs_dict = dict([(t["name"], t["label"]) for t in techs])
 

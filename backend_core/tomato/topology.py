@@ -103,26 +103,26 @@ class Topology(Entity, BaseDocument):
 
 	def action_prepare(self):
 		self._compoundAction(action="prepare", stateFilter=lambda state: state=="created", 
-							 typeOrder=["kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint"],
-							 typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
+							 typeOrder=["kvm","kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint"],
+							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
 	
 	def action_destroy(self):
 		self.action_stop()
 		self._compoundAction(action="destroy", stateFilter=lambda state: state=="prepared",
-							 typeOrder=["tinc_vpn", "udp_endpoint", "kvmqm", "openvz", "repy"],
-							 typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
+							 typeOrder=["tinc_vpn", "udp_endpoint", "kvm", "kvmqm", "openvz", "repy"],
+							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
 	
 	def action_start(self):
 		self.action_prepare()
 		self._compoundAction(action="start", stateFilter=lambda state: state!="started",
-							 typeOrder=["tinc_vpn", "udp_endpoint", "external_network", "kvmqm", "openvz", "repy"],
-							 typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
+							 typeOrder=["tinc_vpn", "udp_endpoint", "external_network", "kvm", "kvmqm", "openvz", "repy"],
+							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface"])
 		
 	
 	def action_stop(self):
 		self._compoundAction(action="stop", stateFilter=lambda state: state=="started", 
-							 typeOrder=["kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint", "external_network"],
-							 typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
+							 typeOrder=["kvm", "kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint", "external_network"],
+							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface"])
 
 	def action_renew(self, timeout):
 		topology_config = settings.get_topology_settings()

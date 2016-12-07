@@ -406,7 +406,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 		#Create network instances
 		self.testnetwork_instance_network = self.testnetwork_network
 		self.testnetwork_instance_host = self.get_host_name(self.test_host_addresses[0])
-		self.testnetwork_instance_host2 = self.get_host_name(self.test_host_addresses[1])
+		self.testnetwork_instance_host2 = self.get_host_name(self.test_host_addresses[-1])
 		self.testnetwork_instance_attrs = {'bridge': 'vmbr0'}
 
 		self.proxy_holder.backend_api.network_instance_create(self.testnetwork_instance_network, self.testnetwork_instance_host, self.testnetwork_instance_attrs)
@@ -415,7 +415,7 @@ class NetworkInstanceTestCase(ProxyHoldingTestCase):
 		self.testnetwork_instance_host1_id = self.proxy_holder.backend_api.network_instance_list()[0]['id']
 
 		self.testnetwork2_instance_network = self.testnetwork_network
-		self.testnetwork2_instance_host = self.get_host_name(self.test_host_addresses[1])
+		self.testnetwork2_instance_host = self.get_host_name(self.test_host_addresses[-1])
 		self.testnetwork2_instance_attrs = {'bridge': 'vmbr0'}
 
 		self.proxy_holder.backend_api.network_instance_create(self.testnetwork2_instance_network, self.testnetwork2_instance_host, self.testnetwork2_instance_attrs)

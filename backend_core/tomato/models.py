@@ -20,6 +20,7 @@ from .elements import Element
 from .elements.generic import VMElement, VMInterface
 from .elements.openvz import OpenVZ, OpenVZ_Interface
 from .elements.kvmqm import KVMQM, KVMQM_Interface
+from .elements.kvm import KVM, KVM_Interface
 from .elements.repy import Repy, Repy_Interface
 from .elements.tinc import TincVPN, TincEndpoint
 from .elements.vpncloud import VpnCloud, VpnCloudEndpoint
