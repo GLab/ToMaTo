@@ -25,7 +25,7 @@ from ..resources.template import Template
 from .. import elements, host
 from ..lib.error import UserError, InternalError
 import time
-from ..lib.constants import StateName, ActionName
+from ..lib.constants import StateName, ActionName, TypeTechTrans
 
 ST_CREATED = StateName.CREATED
 ST_PREPARED = StateName.PREPARED
@@ -246,30 +246,10 @@ class VMElement(Element):
 		ActionName.CHANGE_TEMPLATE: StatefulAction(action_change_template, allowedStates=[ST_CREATED, ST_PREPARED])
 	})
 
-class MultiTechElementMixin:
-	TECHS = []  # preferred techs first
 
-	@classmethod
-	def selectCapabilitiesHost(cls, host_):
-		if not (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
-			return host_
-		types_ = cls.TECHS
-
-		host_fulfills = False
-		if not host_:
-			host_fulfills = False
-		else:
-			for type_ in types_:
-				if type_ in host_.elementTypes:
-					host_fulfills = True
-		if not host_fulfills:
-			host_ = host.select(elementTypeConfigurations=types_, best=False)
-		return host_
-
-class MultiTechVMElement(VMElement, MultiTechElementMixin):
+class MultiTechVMElement(VMElement):
+	TECHS = []
 	tech = StringField(required=False, default=None)
-
-	TECH_TO_CHILD_TECH = {}  # registry to map techs to their interface techs
 
 	# fixme: use tech for action_prepare in super
 
@@ -279,8 +259,8 @@ class MultiTechVMElement(VMElement, MultiTechElementMixin):
 
 	def _get_elementTypeConfigurations(self):
 		if self.tech:
-			return [[self.tech, self.TECH_TO_CHILD_TECH[self.tech]]]
-		return [[k, v] for k, v in self.TECH_TO_CHILD_TECH.iteritems()]
+			return [[self.tech, TypeTechTrans.TECH_TO_CHILD_TECH[self.tech]]]
+		return [[k, v] for k, v in TypeTechTrans.TECH_TO_CHILD_TECH.iteritems()]
 
 	def get_tech_attribute(self):
 		return self.element.TYPE if self.element else self.tech
@@ -353,7 +333,9 @@ class VMInterface(Element):
 	})
 
 
-class MultiTechVMInterface(VMInterface, MultiTechElementMixin):
+class MultiTechVMInterface(VMInterface):
+	TECHS = []
+
 	@property
 	def _remoteAttrs(self, **kwargs):
 		attrs = super(MultiTechVMElement, None)._remoteAttrs

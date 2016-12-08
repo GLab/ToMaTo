@@ -18,6 +18,7 @@
 from ..generic import *
 from ..db import *
 from ..topology import Topology
+from ..host import Host
 from ..lib import logging
 from ..lib.decorators import *
 from ..lib.cache import cached
@@ -80,6 +81,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	@property
 	def type(self):
 		return self.TYPE
+
 
 	# whether neighboring elements should be on the same host/site
 	SAME_HOST_AFFINITY = -10 #distribute load
@@ -291,21 +293,11 @@ class Element(LockedStatefulEntity, BaseDocument):
 		pass
 
 	@classmethod
-	def selectCapabilitiesHost(cls, host_):
-		if not (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
-			return host_
-		type_ = cls.HOST_TYPE or cls.TYPE
-		if not host_ or not type_ in host_.elementTypes:
-			host_ = host.select(elementTypeConfigurations=[[type_]], best=False)
-		return host_
-
-	@classmethod
 	@cached(timeout=3600, maxSize=None)
-	def getCapabilities(cls, host_):
+	def getCapabilities(cls):
 		caps = cls.capabilities()
-		host_ = cls.selectCapabilitiesHost(host_)
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
-			host_cap = host_.getElementCapabilities(cls.HOST_TYPE or cls.TYPE)
+			host_cap = Host.getElementCapabilities(cls.HOST_TYPE or cls.TYPE)
 		if cls.DIRECT_ACTIONS:
 			# noinspection PyUnboundLocalVariable
 			for action, params in host_cap["actions"].iteritems():

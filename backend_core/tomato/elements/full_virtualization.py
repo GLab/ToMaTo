@@ -19,11 +19,11 @@ from .. import elements, scheduler
 from .generic import MultiTechVMElement, MultiTechVMInterface, ST_CREATED, ST_PREPARED
 import time
 from ..lib import util #@UnresolvedImport
-from ..lib.constants import TypeName, TechName
+from ..lib.constants import TypeName, TechName, TypeTechTrans
 
 class FullVirtualization(MultiTechVMElement):
 	TYPE = TypeName.FULL_VIRTUALIZATION
-	TECHS = [TechName.KVM, TechName.KVMQM]
+	TECHS = TypeTechTrans.FULL_VIRTUALTIZATION_TECHS
 	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
 		TypeName.FULL_VIRTUALIZATION_INTERFACE: [ST_CREATED, ST_PREPARED],
@@ -43,7 +43,7 @@ class FullVirtualization(MultiTechVMElement):
 class FullVirtualization_Interface(MultiTechVMInterface):
 	TYPE = TypeName.FULL_VIRTUALIZATION_INTERFACE
 	CAP_PARENT = [FullVirtualization.TYPE]
-	TECHS = [TechName.KVM_INTERFACE, TechName.KVMQM_INTERFACE]
+	TECHS = TypeTechTrans.FULL_VIRTUALTIZATION_INTERFACE_TECHS
 
 
 @util.wrap_task
@@ -59,7 +59,3 @@ scheduler.scheduleRepeated(1, syncRexTFV)
 	
 elements.TYPES[FullVirtualization.TYPE] = FullVirtualization
 elements.TYPES[FullVirtualization_Interface.TYPE] = FullVirtualization_Interface
-MultiTechVMElement.TECH_TO_CHILD_TECH.update({
-	TechName.KVM: TechName.KVM_INTERFACE,
-	TechName.KVMQM: TechName.KVMQM_INTERFACE
-})

@@ -191,7 +191,7 @@ class Template(Entity, BaseDocument):
 		return os.path.join(settings.get_template_dir(), PATTERNS[self.tech] % self.name)
 	
 	def modify_kblang(self, val):
-		UserError.check(self.tech == "kvmqm", UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute for %s template: kblang" % (self.tech), data={"tech":self.tech,"attr_name":"kblang","attr_val":val})
+		UserError.check(self.tech == TypeName.FULL_VIRTUALIZATION, UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute for %s template: kblang" % (self.tech), data={"tech":self.tech,"attr_name":"kblang","attr_val":val})
 		self.kblang = val
 
 	def modify_urls(self, val):
