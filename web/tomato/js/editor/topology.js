@@ -11,18 +11,16 @@ var Topology = Class.extend({
 	loadElement: function(el) {
 		var elObj;
 		switch (el.type) {
-			case "kvm":
-			case "kvmqm":
-			case "openvz":
+			case "full":
+			case "container":
 			case "repy":
 				elObj = new VMElement(this, el, this._getCanvas());
 				break;
-			case "kvm_interface":
-			case "kvmqm_interface":
+			case "full_interface":
 			case "repy_interface":
 				elObj = new VMInterfaceElement(this, el, this._getCanvas());
 				break;
-			case "openvz_interface":
+			case "container_interface":
 				elObj = new VMConfigurableInterfaceElement(this, el, this._getCanvas());
 				break;
 			case "external_network":
@@ -347,8 +345,8 @@ var Topology = Class.extend({
 		for (var id in this.elements) {
 			var element = this.elements[id];
 			switch (element.data.type) {
-				case 'openvz':
-				case 'kvmqm':
+				case 'container':
+				case 'full':
 				case 'repy':
 					vmids[id] = element;
 					break;
