@@ -16,6 +16,9 @@ def topology_import(data):
 	elif version == 4:
 		UserError.check('topology' in data, code=UserError.INVALID_VALUE, message="Data lacks field topology")
 		return _topology_import_v4(data['topology'])
+	elif version == 5:
+		UserError.check('topology' in data, code=UserError.INVALID_VALUE, message="Data lacks field topology")
+		return _topology_import_v5(data['topology'])
 	else:
 		raise UserError(code=UserError.INVALID_VALUE, message="Unsupported topology version", data={"version": version})
 
@@ -40,6 +43,18 @@ def _topology_import_v3(top):
 	return _topology_import_v4(top)
 
 def _topology_import_v4(top):
+	type_translator = {
+		"kvmqm": "full",
+		"kvmqm_interface": "full_interface",
+		"openvz": "container",
+		"openvz_interface": "container_interface"
+	}
+	for el in top["elements"]:
+		el["type"] = type_translator.get(el["type"], el["type"])
+
+	return _topology_import_v5(top)
+
+def _topology_import_v5(top):
 	#this uses api stuff, so authorization is checked.
 	top_id = None
 	elementIds = {}
@@ -138,4 +153,4 @@ def topology_export(id): #@ReservedAssignment
 	#topology_info will handle authorization check
 	top_full = topology_info(id, True)
 	top = reduceData(top_full)
-	return {'file_information': {'version': 4}, 'topology': top}
+	return {'file_information': {'version': 5}, 'topology': top}
