@@ -174,7 +174,7 @@ class VMElement(Element):
 		"""
 		return [[self.TYPE] + self.CAP_CHILDREN.keys()]
 
-	def _select_tech(self, techs):
+	def _select_tech(self, _host):
 		return self.type
 
 	def action_prepare(self):
@@ -183,11 +183,12 @@ class VMElement(Element):
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE, "configs": self._get_elementTypeConfigurations()})
 		attrs = self._remoteAttrs
+		type_ = self._select_tech(_host)
 		attrs.update({
-			"template": self.template.name,
+			"template": self.template.name
 		})
 		attrs.update(self._profileAttrs)
-		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, ownerElement=self)
+		self.element = _host.createElement(type_, parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		for iface in self.children:
 			iface._create()
@@ -263,18 +264,17 @@ class MultiTechVMElement(VMElement):
 		return [[k, v] for k, v in TypeTechTrans.TECH_TO_CHILD_TECH.iteritems()]
 
 	def get_tech_attribute(self):
-		return self.element.TYPE if self.element else self.tech
+		return self.element.type if self.element else self.tech
 
-	@property
-	def _remoteAttrs(self, host=None, **kwargs):
-		attrs = super(MultiTechVMElement, None)._remoteAttrs
-		if host:
+	def _select_tech(self, _host):
+		if self.tech:
+			return self.tech
+		else:
 			for tech in self.TECHS:
-				if tech in host.elementTypes:
-					attrs["type"] = tech
-					return attrs
-		attrs["type"] = self.get_tech_attribute()
-		return attrs
+				if tech in _host.elementTypes:
+					return tech
+		raise InternalError(code=InternalError.ASSERTION, message="selected host doesn't match element requirement",
+		                    data={"type": self.TYPE, "host": _host.name})
 
 	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
@@ -336,12 +336,7 @@ class VMInterface(Element):
 class MultiTechVMInterface(VMInterface):
 	TECHS = []
 
-	@property
-	def _remoteAttrs(self, **kwargs):
-		attrs = super(MultiTechVMElement, None)._remoteAttrs
-		if host:
-			attrs["type"] = MultiTechVMElement.TECH_TO_CHILD_TECH[self.parent.get_tech_attribute()]
-		return attrs
+	# fixme: unsure whether tech-type translation needed
 
 	ATTRIBUTES = VMInterface.ATTRIBUTES.copy()
 	ATTRIBUTES.update({

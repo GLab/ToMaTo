@@ -24,6 +24,7 @@ from ..lib.constants import TechName, TypeName, TypeTechTrans
 
 class ContainerVirtualization(MultiTechVMElement):
 	TYPE = TypeName.CONTAINER_VIRTUALIZATION
+	TECHS = TypeTechTrans.CONTAINER_VIRTUALIZATION_TECHS
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
 		TypeName.CONTAINER_VIRTUALIZATION_INTERFACE: [ST_CREATED, ST_PREPARED],
@@ -45,6 +46,7 @@ class ContainerVirtualization(MultiTechVMElement):
 
 class ContainerVirtualization_Interface(MultiTechVMInterface):
 	TYPE = TypeName.CONTAINER_VIRTUALIZATION_INTERFACE
+	TECHS = TypeTechTrans.CONTAINER_VIRTUALIZATION_INTERFACE_TECHS
 	CAP_PARENT = [ContainerVirtualization.TYPE]
 	#TODO: add /24, /64
 

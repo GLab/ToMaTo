@@ -116,7 +116,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		return self.HOST_TYPE or self.type
 
 	@property
-	def _remoteAttrs(self, **kwargs):
+	def _remoteAttrs(self):
 		caps = host.getElementCapabilities(self.remoteType)
 		allowed = caps["attributes"].keys() if caps else []
 		attrs = {}
