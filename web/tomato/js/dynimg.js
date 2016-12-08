@@ -36,7 +36,7 @@ function dynimg(size,objtype,arg1,arg2) {
 	*/
 
 	//templates
-	if (objtype=="openvz" || objtype=="kvmqm" || objtype=="kvm" || objtype=="repy") {
+	if (objtype=="full" || objtype=="container" || objtype=="repy") {
 		var subtype=arg1;
 		var template_name=arg2;
 		
