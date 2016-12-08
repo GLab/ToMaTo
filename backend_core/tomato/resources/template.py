@@ -21,6 +21,7 @@ from .. lib.settings import settings
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 from ..lib.newcmd import aria2
 from ..lib.newcmd.util import fs
+from ..lib.constants import TypeName
 from .. import scheduler
 import os, os.path, shutil, threading
 
@@ -35,10 +36,9 @@ kblang_options = {
 
 
 PATTERNS = {
-	"kvm": "%s.qcow2",
-	"kvmqm": "%s.qcow2",
-	"openvz": "%s.tar.gz",
-	"repy": "%s.repy",
+	TypeName.FULL_VIRTUALIZATION: "%s.qcow2",
+	TypeName.CONTAINER_VIRTUALIZATION: "%s.tar.gz",
+	TypeName.REPY: "%s.repy",
 }
 
 class Template(Entity, BaseDocument):
