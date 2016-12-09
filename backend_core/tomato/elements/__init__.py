@@ -402,7 +402,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
-		"tech": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"tech": Attribute(field=type, label="Tech", readOnly=True, schema=schema.Identifier()),
 		"topology": Attribute(field=topologyId, readOnly=True, schema=schema.Identifier()),
 		"parent": Attribute(field=parentId, readOnly=True, schema=schema.Identifier(null=True)),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),

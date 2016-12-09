@@ -277,7 +277,7 @@ class MultiTechVMElement(VMElement):
 
 	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"tech": StatefulAttribute(get=lambda self: self.get_tech_attribute(), set=modify_tech, writableStates=[ST_CREATED], schema=schema.Identifier())
+		"tech": StatefulAttribute(get=lambda self: self.get_tech_attribute(), label="Tech", set=modify_tech, writableStates=[ST_CREATED], schema=schema.Identifier())
 	})
 
 class VMInterface(Element):
@@ -356,7 +356,7 @@ class MultiTechVMInterface(VMInterface):
 
 	ATTRIBUTES = VMInterface.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"tech": Attribute(get=lambda self: self.get_tech_attribute(), readOnly=True, schema=schema.Identifier()),
+		"tech": Attribute(get=lambda self: self.get_tech_attribute(), label="Tech", readOnly=True, schema=schema.Identifier()),
 	})
 
 
