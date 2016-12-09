@@ -256,7 +256,8 @@ class MultiTechVMElement(VMElement):
 	# fixme: use tech for action_prepare in super
 
 	def modify_tech(self, tech):
-		UserError.check(tech in self.TECHS, UserError.INVALID_VALUE, "tech '%s' not supported for type '%s'" % (tech, self.TYPE), data={"tech": tech, "type": self.TYPE})
+		if tech is not None:
+			UserError.check(tech in self.TECHS, UserError.INVALID_VALUE, "tech '%s' not supported for type '%s'" % (tech, self.TYPE), data={"tech": tech, "type": self.TYPE})
 		self.tech = tech
 
 	def _get_elementTypeConfigurations(self):
