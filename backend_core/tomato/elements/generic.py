@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
-from ..lib.exceptionhandling import print_all
+
 from ..db import *
 from ..generic import *
 from ..elements import Element
@@ -177,7 +177,6 @@ class VMElement(Element):
 	def _select_tech(self, _host):
 		return self.type
 
-	@print_all
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
 		_host = host.select(site=self.site if self.site else self.topology.site, elementTypeConfigurations=self._get_elementTypeConfigurations(), hostPrefs=hPref, sitePrefs=sPref, template=self.template)  # fixme: use tech
@@ -252,8 +251,6 @@ class VMElement(Element):
 class MultiTechVMElement(VMElement):
 	TECHS = []
 	tech = StringField(required=False, default=None)
-
-	# fixme: use tech for action_prepare in super
 
 	def modify_tech(self, tech):
 		if tech is not None:
@@ -341,8 +338,6 @@ class VMInterface(Element):
 
 class MultiTechVMInterface(VMInterface):
 	TECHS = []
-
-	# fixme: type is used when preparing - tech would be needed
 
 	def get_tech_attribute(self):
 		if self.parent:
