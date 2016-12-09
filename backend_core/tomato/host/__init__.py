@@ -24,7 +24,7 @@ from ..generic import *
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
-from ..lib.exceptionhandling import wrap_and_handle_current_exception
+from ..lib.exceptionhandling import wrap_and_handle_current_exception, deprecated
 from ..lib.service import get_backend_users_proxy, get_backend_accounting_proxy
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
@@ -788,22 +788,18 @@ def getElementTypes():
 	global element_caps
 	return element_caps.keys()
 
-
+@deprecated("host.Host.getElementCapabilites")
 def getElementCapabilities(type_):
-	# FIXME: merge capabilities
-	global element_caps
-	return element_caps.get(type_)
+	return Host.getElementCapabilities(type_)
 
 
 def getConnectionTypes():
 	global connection_caps
 	return connection_caps.keys()
 
-
+@deprecated("host.Host.getElementCapabilites")
 def getConnectionCapabilities(type_):
-	# FIXME: merge capabilities
-	global connection_caps
-	return connection_caps.get(type_)
+	return Host.getElementCapabilities(type_)
 
 
 checkingHostsLock = threading.RLock()

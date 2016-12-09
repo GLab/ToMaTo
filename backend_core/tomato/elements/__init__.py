@@ -136,7 +136,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		if self.mainElement:
 			allowed = self.mainElement.getAllowedAttributes().keys()
 		else:
-			caps = host.getElementCapabilities(self.remoteType)
+			caps = host.Host.getElementCapabilities(self.remoteType)
 			allowed = caps["attributes"].keys() if caps else []
 		UserError.check(key in allowed, code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
 		return True
