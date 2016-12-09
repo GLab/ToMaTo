@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
-
+from ..lib.exceptionhandling import print_all
 from ..db import *
 from ..generic import *
 from ..elements import Element
@@ -177,6 +177,7 @@ class VMElement(Element):
 	def _select_tech(self, _host):
 		return self.type
 
+	@print_all
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
 		_host = host.select(site=self.site if self.site else self.topology.site, elementTypeConfigurations=self._get_elementTypeConfigurations(), hostPrefs=hPref, sitePrefs=sPref, template=self.template)  # fixme: use tech
@@ -305,11 +306,15 @@ class VMInterface(Element):
 	def mainElement(self):
 		return self.element
 
+	@property
+	def _create_type(self):
+		return self.TYPE
+
 	def _create(self):
 		parEl = self.parent.element
 		assert parEl
 		attrs = self._remoteAttrs
-		self.element = parEl.createChild(self.TYPE, attrs=attrs, ownerElement=self)
+		self.element = parEl.createChild(self._create_type, attrs=attrs, ownerElement=self)
 		self.save()
 		
 	def _remove(self, recurse=None):
@@ -336,11 +341,26 @@ class VMInterface(Element):
 class MultiTechVMInterface(VMInterface):
 	TECHS = []
 
-	# fixme: unsure whether tech-type translation needed
+	# fixme: type is used when preparing - tech would be needed
+
+	def get_tech_attribute(self):
+		if self.parent:
+			parent_tech = self.parent.get_tech_attribute()
+		else:
+			parent_tech = None
+
+		if parent_tech:
+			return TypeTechTrans.TECH_TO_CHILD_TECH[parent_tech]
+		else:
+			return None
+
+	@property
+	def _create_type(self):
+		return self.get_tech_attribute()
 
 	ATTRIBUTES = VMInterface.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"tech": Attribute(get=lambda self: MultiTechVMElement.TECH_TO_CHILD_TECH[self.parent.get_tech_attribute()], readOnly=True, schema=schema.Identifier()),
+		"tech": Attribute(get=lambda self: self.get_tech_attribute(), readOnly=True, schema=schema.Identifier()),
 	})
 
 
