@@ -142,3 +142,21 @@ def deprecated(alternative_ref_str):
 			return func(*args, **kwargs)
 		return wrapper
 	return decorator
+
+def print_all(func):
+	"""
+	use this decorator during debugging -> it will dump and print all errors
+	:param func:
+	:return:
+	"""
+	def wrapper(*args, **kwargs):
+		from .error import Error
+		try:
+			return func(*args, **kwargs)
+		except Error, e:
+			e.todump = True
+			wrap_and_handle_current_exception()
+		except:
+			wrap_and_handle_current_exception()
+	return wrapper
+
