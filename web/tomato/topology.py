@@ -21,6 +21,8 @@ from django import forms
 from django.http import HttpResponse
 
 import re, time
+
+from lib.constants import StateName
 from .lib import anyjson as json
 
 from tutorial import loadTutorial
@@ -171,7 +173,7 @@ def import_(api, request):
 @wrap_rpc
 def tabbed_console(api, request, id):
 	top = api.topology_info(id, True)
-	top["elements"] = filter(lambda x: x["parent"] is None, top["elements"])
+	top["elements"] = filter(lambda x: x["state"] == StateName.STARTED and x.get("vncpassword", None), top["elements"])
 	top["elements"].sort(key=lambda x: x.get('name', x.get('id', None)))
 	return render(request, "topology/console_tabbed.html", {"topology": top})
 
