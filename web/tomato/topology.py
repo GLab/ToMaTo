@@ -22,7 +22,7 @@ from django.http import HttpResponse
 
 import re, time
 from .lib import anyjson as json
-from .lib.constants import TypeTechTrans
+from .lib.constants import TypeTechTrans, TechName
 
 from tutorial import loadTutorial
 from web_resources import web_resources
@@ -114,7 +114,8 @@ def _display(api, request, info, tutorial_state):
 		'editor': {
 			'size': editor_size
 		},
-		'vm_element_config': TypeTechTrans.TECH_DICT
+		'vm_element_config': TypeTechTrans.TECH_DICT,
+		'tech_names': TechName.ONSCREEN
 	})	
 	return res
 

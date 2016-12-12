@@ -34,6 +34,13 @@ class TechName:
 	LXC = "lxc"
 	LXC_INTERFACE = "lxc_interface"
 
+	ONSCREEN = {
+		OPENVZ: "OpenVZ",
+		KVMQM: "KVMQM",
+		KVM: "KVM",
+		LXC: "LXC"
+	}
+
 class TypeName:
 	FULL_VIRTUALIZATION = "full"
 	FULL_VIRTUALIZATION_INTERFACE = "full_interface"
