@@ -76,7 +76,7 @@ var Component = Class.extend({
 	configWindowSettings: function() {
 		return {
 			order: ["name"],
-			ignore: ["id", "parent", "connection", "host_info", "host", "state", "debug", "type", "children", "topology","info_last_sync","info_next_sync"],
+			ignore: ["id", "parent", "connection", "host_info", "host", "state", "debug", "type", "children", "topology","info_last_sync","info_next_sync", "tech"],
 			unknown: true,
 			special: {}
 		}

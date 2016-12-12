@@ -164,6 +164,12 @@
 				any: "Scripts (Repy)"
 			}
 		},
+		tech_names: {  //fixme: this should be in constants library
+			kvmqm: "KVMQM",
+			kvm: "KVM",
+			lxc: "LXC",
+			openvz: "OpenVZ"
+		},
 		error_message_appendix: 'If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}" style="color: blue;" target="_blank">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" style="color: blue;" target="_help">file a bug report</a>.',
 	onready: function(){
 		{% if tutorial_info.state.enabled %}
