@@ -11,6 +11,12 @@
 
 <style>
 
+	body {
+		overflow:hidden;
+		min-height: 483px;
+		min-width: 760px;
+	}
+
 	li.active a {
 		background-color: #eee !important;
 	}
@@ -56,7 +62,7 @@
 		{% for el in topology.elements %}
 			<div id="console-{{el.id}}" class="tab-pane{% if forloop.first %} in active{% endif %}">
 				{% if el.state == 'started' %}
-					<iframe id="iframe-console-{{el.id}}" src="{% url 'tomato.element.console_novnc' el.id %}" style="width:760px; height:440px; padding:0px; border:0px;"></iframe>
+					<iframe id="iframe-console-{{el.id}}" src="{% url 'tomato.element.console_novnc' el.id %}" style="width:100%; height:100%; padding:0px; border:0px;"></iframe>
 				{% else %}
 					<div class="alert alert-warning text-center" style="margin-top: 100px; margin-left: 20%; margin-right: 20%;">
 						<h4 class="alert-heading">The Element is not started.</h4>
