@@ -1,6 +1,6 @@
 **Dump Manager Overview**
 
-The process of dump management can be modeled in multiple steps:
+The process of dump management can be modelled in multiple, consecutive steps:
 
 * create dump
   * throw error
