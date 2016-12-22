@@ -1,6 +1,7 @@
 from ...lib.service import get_backend_core_proxy, is_reachable
 import backend as fetching_backend
 import host as fetching_host
+import api as fetching_api
 from ...lib.settings import Config
 import time
 from ...lib.error import InternalError, TransportError
@@ -43,4 +44,6 @@ def get_source_by_name(source_name):
 		return fetching_backend.BackendDumpSource(source_name[8:])
 	if source_name.startswith("host:"):
 		return fetching_host.HostDumpSource(source_name[5:])
+	if source_name.startswith("api:"):
+		return fetching_api.ApiDumpSource(source_name[4:])
 	return None
