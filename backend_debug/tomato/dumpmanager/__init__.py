@@ -1,8 +1,11 @@
+"""
+dump manager interface.
+"""
+
 from errordump import ErrorDump
 from errorgroup import get_group, ErrorGroup
 from ..lib.settings import settings, Config
 from ..lib.exceptionhandling import wrap_and_handle_current_exception
-from ..lib import util
 from .. import scheduler
 import fetching
 
@@ -10,6 +13,7 @@ import fetching
 def insert_dump(dump_dict, source):
 	"""
 	insert dumps. afterward, shrink and save.
+	This is saved per step to avoid loss due to crashs.
 	"""
 	group = get_group(
 		dump_dict['group_id'],
@@ -48,6 +52,11 @@ def update_all():
 			wrap_and_handle_current_exception(re_raise=False)
 
 def start():
+	"""
+	start pulling dumps from all backend and hostmanager modules.
+	auto-pushing sources may result in empty results, that's OK.
+	:return:
+	"""
 	scheduler.scheduleMaintenance(settings.get_dumpmanager_config()[Config.DUMPMANAGER_COLLECTION_INTERVAL],
 	                              list_all_dumpsource_names, fetch_from)
 

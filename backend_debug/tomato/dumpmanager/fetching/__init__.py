@@ -1,3 +1,8 @@
+"""
+manage dumpsources
+"""
+
+
 from ...lib.service import get_backend_core_proxy, is_reachable
 import backend as fetching_backend
 import host as fetching_host
@@ -8,6 +13,10 @@ from ...lib.error import InternalError, TransportError
 
 
 def get_all_dumpsources():
+	"""
+	return a list of all dumpsources (except api sources)
+	:return:
+	"""
 	sources = []
 
 	# step one: fetch list of all hosts' names
@@ -38,6 +47,7 @@ def get_all_dumpsources():
 
 def get_source_by_name(source_name):
 	"""
+	create a DumpSource instance from a dump source name.
 	:param str source_name: source name
 	"""
 	if source_name.startswith("backend:"):

@@ -1,12 +1,13 @@
 from dumpsource import DumpSource
-from ...lib.service import get_tomato_inner_proxy, is_reachable, is_self
-from ...lib.settings import settings, Config
-from ...dump import getAll
-from ...lib.error import InternalError, UserError
+from ...lib.error import UserError
 
 ACCEPTED_SOURCES = ("web", "editor")
 
 class ApiDumpSource(DumpSource):
+	"""
+	This is used as dump source when receiving dumps via the backend_api API.
+	It is mainly a stub to be compatible to other dumpmanager functionality.
+	"""
 
 	__slots__ = ("source_name", )
 

@@ -2,6 +2,9 @@ from dumpsource import PullingDumpSource
 from ...lib.remote_info import get_host_info
 
 class HostDumpSource(PullingDumpSource):
+	"""
+	hosts as dump sources.
+	"""
 
 	__slots__ = ("name", )
 
