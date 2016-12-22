@@ -26,8 +26,8 @@ class CapabilitiesTestCase(ProxyHoldingTestCase):
 			if temp['name'] == cls.test_temps[0]['name']:
 				cls.test_temp1_id = temp['id']
 
-		# Create test profile for openvz
-		cls.testprofile_tech = "openvz"
+		# Create test profile for container
+		cls.testprofile_tech = "container"
 		cls.testprofile_name = "normal"
 		cls.testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal',
 								 'preference': 10, 'description': 'Test profile'}
@@ -84,7 +84,7 @@ class CapabilitiesTestCase(ProxyHoldingTestCase):
 		cls.remove_all_hosts()
 
 	def test_capabilities_element_correct_type(self):
-		self.assertDictEqual(self.proxy_holder.backend_api.capabilities_element("openvz"), self.proxy_holder.backend_core.capabilities_element("openvz"))
+		self.assertDictEqual(self.proxy_holder.backend_api.capabilities_element("container"), self.proxy_holder.backend_core.capabilities_element("container"))
 
 	@unittest.skip("Cached Information - Check how to manually update this for testing")
 	def test_capabilities_element_correct_type_but_wrong_host(self):
