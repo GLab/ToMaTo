@@ -16,44 +16,46 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import elements, scheduler
-from .generic import VMElement, VMInterface, ST_CREATED, ST_PREPARED
+from .generic import MultiTechVMElement, MultiTechVMInterface, ST_CREATED, ST_PREPARED
 import time
 from ..lib import util #@UnresolvedImport
-from ..lib.constants import TypeName
+from ..lib.constants import TypeName, TechName, TypeTechTrans
 
-class KVM(VMElement):
-	TYPE = TypeName.KVM
+class FullVirtualization(MultiTechVMElement):
+	TYPE = TypeName.FULL_VIRTUALIZATION
+	TECHS = TypeTechTrans.FULL_VIRTUALTIZATION_TECHS
 	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
-		TypeName.KVM_INTERFACE: [ST_CREATED, ST_PREPARED],
+		TypeName.FULL_VIRTUALIZATION_INTERFACE: [ST_CREATED, ST_PREPARED],
 	}
 	PROFILE_ATTRS = ["ram", "cpus"]
 
 	def init(self, *args, **kwargs):
-		VMElement.init(self, *args, **kwargs)
+		MultiTechVMElement.init(self, *args, **kwargs)
 		if self.template.kblang:
 			self.modify(kblang=self.template.kblang)
 
 	def modify_template(self, tmplName):
-		VMElement.modify_template(self, tmplName)
+		FullVirtualization.modify_template(self, tmplName)
 		if self.template.kblang:
 			self.modify(kblang=self.template.kblang)
 
-class KVM_Interface(VMInterface):
-	TYPE = TypeName.KVM_INTERFACE
-	CAP_PARENT = [KVM.TYPE]
+class FullVirtualization_Interface(MultiTechVMInterface):
+	TYPE = TypeName.FULL_VIRTUALIZATION_INTERFACE
+	CAP_PARENT = [FullVirtualization.TYPE]
+	TECHS = TypeTechTrans.FULL_VIRTUALTIZATION_INTERFACE_TECHS
 
 
 @util.wrap_task
 def syncRexTFV():
-	for e in KVM.objects.filter(nextSync__gt=0.0, nextSync__lte=time.time()):
+	for e in FullVirtualization.objects.filter(nextSync__gt=0.0, nextSync__lte=time.time()):
 		with e:
 			try:
 				e.reload().updateInfo()
-			except KVM.DoesNotExist:
+			except FullVirtualization.DoesNotExist:
 				pass
 		
 scheduler.scheduleRepeated(1, syncRexTFV)
 	
-elements.TYPES[KVM.TYPE] = KVM
-elements.TYPES[KVM_Interface.TYPE] = KVM_Interface
+elements.TYPES[FullVirtualization.TYPE] = FullVirtualization
+elements.TYPES[FullVirtualization_Interface.TYPE] = FullVirtualization_Interface

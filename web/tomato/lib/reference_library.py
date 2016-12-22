@@ -2,18 +2,27 @@ __author__ = 't-gerhard'
 
 from django.core.urlresolvers import reverse
 
-from constants import TypeName
+from constants import TypeName, TechName
 
 def tech_to_label(tech):
-	if tech == TypeName.KVMQM:
+	if tech == TechName.KVMQM:
 		return "KVM/QM"
-	if tech == TypeName.KVM:
+	if tech == TechName.KVM:
 		return "KVM/VirSH"
-	if tech == TypeName.OPENVZ:
+	if tech == TechName.OPENVZ:
 		return "OpenVZ"
-	if tech == TypeName.REPY:
-		return "Repy"
+	if tech == TechName.LXC:
+		return "LXC"
 	return tech
+
+def type_to_label(type_):
+	if type_ == TypeName.FULL_VIRTUALIZATION:
+		return "Full virtualization"
+	if type_ == TypeName.CONTAINER_VIRTUALIZATION:
+		return "Container-based virtualization"
+	if type_ == TypeName.REPY:
+		return "Repy"
+	return Type_
 
 def techs():
 	return [TypeName.KVM, TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]

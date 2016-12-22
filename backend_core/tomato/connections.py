@@ -20,6 +20,7 @@ import time
 from .db import *
 from .generic import *
 from .topology import Topology
+from .host import Host
 from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
 from .lib.cache import cached #@UnresolvedImport
@@ -392,12 +393,10 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	@classmethod
 	@cached(timeout=3600, maxSize=None)
-	def getCapabilities(cls, type_, host_):
+	def getCapabilities(cls, type_):
 		caps = cls.capabilities()
-		if not host_ and (cls.DIRECT_ACTIONS or cls.DIRECT_ATTRS):
-			host_ = select(connectionTypes=[type_], best=False)
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
-			host_cap = host_.getConnectionCapabilities(type_)
+			host_cap = Host.getConnectionCapabilities(type_)
 		if cls.DIRECT_ACTIONS:
 			# noinspection PyUnboundLocalVariable
 			for action, params in host_cap["actions"].iteritems():

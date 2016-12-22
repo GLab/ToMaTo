@@ -30,13 +30,13 @@ function dynimg_imgExists(filename) {
 function dynimg(size,objtype,arg1,arg2) {
 	/*
 	Uses 2 arguments to build a path to an image file for a specific object type. It then checks whether this image file exists. On success, it redirects to this file. If it does not exist, it redirects to a generic image file for this object type.
-	for templates: objtype==openvz|kvmqm|repy  arg1:subtype  arg2:templatename|null  
+	for templates: objtype==full|container|repy  arg1:subtype  arg2:templatename|null
 	for networks:  objtype==network  arg1:kind  arg2:null   
 	for vpns:	   objtype==vpn  arg1:kind  arg2:null
 	*/
 
 	//templates
-	if (objtype=="openvz" || objtype=="kvmqm" || objtype=="kvm" || objtype=="repy") {
+	if (objtype=="full" || objtype=="container" || objtype=="repy") {
 		var subtype=arg1;
 		var template_name=arg2;
 		

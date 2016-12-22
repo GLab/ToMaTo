@@ -18,10 +18,9 @@
 from .topology import Topology
 from .elements import Element
 from .elements.generic import VMElement, VMInterface
-from .elements.openvz import OpenVZ, OpenVZ_Interface
-from .elements.lxc import LXC, LXC_Interface
-from .elements.kvmqm import KVMQM, KVMQM_Interface
-from .elements.kvm import KVM, KVM_Interface
+
+from .elements.container_virtualization import ContainerVirtualization, ContainerVirtualization_Interface
+from .elements.full_virtualization import FullVirtualization, FullVirtualization_Interface
 from .elements.repy import Repy, Repy_Interface
 from .elements.tinc import TincVPN, TincEndpoint
 from .elements.vpncloud import VpnCloud, VpnCloudEndpoint

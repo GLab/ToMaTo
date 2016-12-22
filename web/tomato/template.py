@@ -25,7 +25,7 @@ import base64, re
 from lib import wrap_rpc, serverInfo
 from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons, append_empty_choice
 import datetime
-from lib.reference_library import tech_to_label
+from lib.reference_library import type_to_label
 from lib.constants import TypeName
 
 from tomato.crispy_forms.layout import Layout
@@ -33,7 +33,7 @@ from django.core.urlresolvers import reverse
 
 from lib.error import UserError #@UnresolvedImport
 
-techs = [{"name": t, "label": tech_to_label(t)} for t in [TypeName.KVM, TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]]
+techs = [{"name": t, "label": type_to_label(t)} for t in [TypeName.FULL_VIRTUALIZATION, TypeName.CONTAINER_VIRTUALIZATION, TypeName.REPY]]
 
 techs_dict = dict([(t["name"], t["label"]) for t in techs])
 
@@ -63,7 +63,7 @@ class TemplateForm(BootstrapForm):
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}))
 	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
 	icon = forms.URLField(label="Icon", help_text="URL of a 32x32 icon to use for elements of this template, leave empty to use the default icon", required=False)
-	kblang = forms.CharField(max_length=50,label="Keyboard Layout",widget = forms.widgets.Select(choices=kblang_options), help_text="Only for KVM templates", required=False)
+	kblang = forms.CharField(max_length=50,label="Keyboard Layout",widget = forms.widgets.Select(choices=kblang_options), help_text="Only for full-virtualization templates", required=False)
 	urls = forms.CharField(widget = forms.Textarea, required=True, help_text="URLs that point to the template's image file. Enter one or more URLs; one URL per line.")
 	def __init__(self, *args, **kwargs):
 		super(TemplateForm, self).__init__(*args, **kwargs)
@@ -96,7 +96,7 @@ class AddTemplateForm(TemplateForm):
 		valid = super(AddTemplateForm, self).is_valid()
 		if not valid:
 			return valid
-		if self.cleaned_data['tech'] == 'kvmqm':
+		if self.cleaned_data['tech'] == TypeName.FULL_VIRTUALIZATION:
 			valid = (self.cleaned_data['kblang'] is not None)
 		return valid
 	
@@ -176,7 +176,7 @@ def add(api, request, tech=None):
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common'],
 						'urls': filter(lambda x: x, formData['urls'].splitlines())}
-			if formData['tech'] == TypeName.KVMQM:
+			if formData['tech'] == TypeName.FULL_VIRTUALIZATION:
 				attrs['kblang'] = formData['kblang']
 			res = api.template_create(formData['tech'], formData['name'], attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
@@ -203,7 +203,7 @@ def remove(api, request, res_id=None):
 def edit(api, request, res_id=None):
 	res_inf = api.template_info(res_id)
 	if request.method=='POST':
-		form = EditTemplateForm(res_id, res_inf['tech']== TypeName.KVMQM, request.POST)
+		form = EditTemplateForm(res_id, res_inf['tech']== TypeName.FULL_VIRTUALIZATION, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
 			creation_date = formData['creation_date']
@@ -217,7 +217,7 @@ def edit(api, request, res_id=None):
 						'icon':formData['icon'],
 						'show_as_common':formData['show_as_common'],
 						'urls': filter(lambda x: x, formData['urls'].splitlines())}
-			if res_inf['tech'] == TypeName.KVMQM:
+			if res_inf['tech'] == TypeName.FULL_VIRTUALIZATION:
 				attrs['kblang'] = formData['kblang']
 			api.template_modify(res_id,attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
@@ -229,5 +229,5 @@ def edit(api, request, res_id=None):
 		res_inf['res_id'] = res_id
 		res_inf['creation_date'] = datetime.date.fromtimestamp(float(res_inf['creation_date'] or "0.0"))
 		res_inf['urls'] = "\n".join(res_inf['urls'])
-		form = EditTemplateForm(res_id, (res_inf['tech']==TypeName.KVMQM), res_inf)
+		form = EditTemplateForm(res_id, (res_inf['tech']==TypeName.FULL_VIRTUALIZATION), res_inf)
 		return render(request, "form.html", {'label': res_inf['label'], 'form': form, "heading":"Edit Template Data for '"+str(res_inf['label'])+"' ("+res_inf['tech']+")"})

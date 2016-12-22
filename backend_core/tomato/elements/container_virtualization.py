@@ -17,48 +17,50 @@
 
 from ..generic import Attribute
 from .. import elements, scheduler
-from .generic import ST_CREATED, ST_PREPARED, VMInterface, VMElement
+from .generic import ST_CREATED, ST_PREPARED, MultiTechVMElement, MultiTechVMInterface
 import time
 from ..lib import util #@UnresolvedImport
-from ..lib.constants import TypeName
+from ..lib.constants import TechName, TypeName, TypeTechTrans
 
-class OpenVZ(VMElement):
-	TYPE = TypeName.OPENVZ
+class ContainerVirtualization(MultiTechVMElement):
+	TYPE = TypeName.CONTAINER_VIRTUALIZATION
+	TECHS = TypeTechTrans.CONTAINER_VIRTUALIZATION_TECHS
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
-		TypeName.OPENVZ_INTERFACE: [ST_CREATED, ST_PREPARED],
+		TypeName.CONTAINER_VIRTUALIZATION_INTERFACE: [ST_CREATED, ST_PREPARED],
 	}
 	PROFILE_ATTRS = ["ram", "diskspace", "cpus"]
 	
 	def init(self, *args, **kwargs):
-		VMElement.init(self, *args, **kwargs)
+		MultiTechVMElement.init(self, *args, **kwargs)
 		self.modify_name(self.name)
 	
 	def modify_name(self, value):
 		self.name = value
 		self.modify(hostname=util.filterStr(value, substitute="x"))
 
-	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
+	ATTRIBUTES = MultiTechVMElement.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=VMElement.name, set=modify_name, label="Name")
+		"name": Attribute(field=MultiTechVMElement.name, set=modify_name, label="Name")
 	})
 
-class OpenVZ_Interface(VMInterface):
-	TYPE = TypeName.OPENVZ_INTERFACE
-	CAP_PARENT = [OpenVZ.TYPE]
+class ContainerVirtualization_Interface(MultiTechVMInterface):
+	TYPE = TypeName.CONTAINER_VIRTUALIZATION_INTERFACE
+	TECHS = TypeTechTrans.CONTAINER_VIRTUALIZATION_INTERFACE_TECHS
+	CAP_PARENT = [ContainerVirtualization.TYPE]
 	#TODO: add /24, /64
 
 @util.wrap_task
 def syncRexTFV():
-	for e in OpenVZ.objects.filter(nextSync__gt=0.0, nextSync__lte=time.time()):
+	for e in ContainerVirtualization.objects.filter(nextSync__gt=0.0, nextSync__lte=time.time()):
 		with e:
 			try:
 				e.reload().updateInfo()
-			except OpenVZ.DoesNotExist:
+			except ContainerVirtualization.DoesNotExist:
 				pass
 
 
 scheduler.scheduleRepeated(1, syncRexTFV)
 
-elements.TYPES[OpenVZ.TYPE] = OpenVZ
-elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface
+elements.TYPES[ContainerVirtualization.TYPE] = ContainerVirtualization
+elements.TYPES[ContainerVirtualization_Interface.TYPE] = ContainerVirtualization_Interface

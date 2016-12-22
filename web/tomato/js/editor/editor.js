@@ -355,57 +355,38 @@ var Editor = Class.extend({
 
 		var tab = this.menu.addTab("Devices");
 
-		var group = tab.addGroup("Linux (OpenVZ)");
-		var tmpls = t.templates.getAllowed("openvz");
-		var btns = [];
-		for (var i=0; i<tmpls.length; i++)
-			 btns.push(tmpls[i].menuButton({
-				toggleGroup: toggleGroup,
-				small: true,
-				func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
-		})); 
-		group.addStackedElements(btns);
+		for (var _type in this.options.vm_element_config) {
+			for (var subtype in this.options.devices_config[_type]) {
 
-		var group = tab.addGroup("Linux (KVM)");
-		var tmpls = t.templates.getAllowed("kvmqm", "linux");
-		var btns = [];
-		for (var i=0; i<tmpls.length; i++)
-		 if(tmpls[i].subtype == "linux")
-			  btns.push(tmpls[i].menuButton({
-				toggleGroup: toggleGroup,
-				small: true,
-				func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
-		})); 
-		group.addStackedElements(btns);
+				var group = tab.addGroup(this.options.devices_config[_type][subtype]);
+				var tmpls = null;
 
-		var group = tab.addGroup("Other (KVM)");
-		var tmpls = t.templates.getAllowed("kvmqm");
-		var btns = [];
-		for (var i=0; i<tmpls.length; i++)
-		 if(tmpls[i].subtype != "linux")
-			  btns.push(tmpls[i].menuButton({
-			  	toggleGroup: toggleGroup,
-				small: true,
-			  	func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
-		})); 
-		group.addStackedElements(btns);
+				var is_any = null;
+				if (subtype == "any") {
+					tmpls = t.templates.getAllowed(_type);
+					is_any = true;
+				} else {
+					tmpls = t.templates.getAllowed(_type, subtype);
+					is_any = false;
+				}
 
-		var group = tab.addGroup("Scripts (Repy)");
-		var tmpls = t.templates.getAllowed("repy");
-		var btns = [];
-		for (var i=0; i<tmpls.length; i++)
-		 if(tmpls[i].subtype == "device")
-		  btns.push(tmpls[i].menuButton({
-		  	toggleGroup: toggleGroup,
-		  	small: true,
-		  	func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
-		})); 
-		group.addStackedElements(btns);
+				var btns = [];
+				for (var i=0; i<tmpls.length; i++)
+					if( is_any ? !(tmpls[i].subtype in this.options.devices_config[_type]) : tmpls[i].subtype == subtype)
+					  btns.push(tmpls[i].menuButton({
+						toggleGroup: toggleGroup,
+						small: true,
+						func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+						}));
+				group.addStackedElements(btns);
+
+				}
+		}
 
 		var group = tab.addGroup("Upload own images");
 		group.addStackedElements([
 			Menu.button({
-				label: "KVM image",
+				label: "KVM image  FIXME: own images for certain techs and for types",
 				name: "kvm-custom",
 				icon: "img/kvm32.png",
 				toggle: true,

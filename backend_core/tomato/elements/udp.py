@@ -71,7 +71,7 @@ class UDPEndpoint(Element):
 			self.save()
 
 	def action_prepare(self):
-		_host = host.select(elementTypes=[self.HOST_TYPE])
+		_host = host.select(elementTypeConfigurations=[[self.HOST_TYPE]])
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
 		attrs = self._remoteAttrs
 		attrs.update({

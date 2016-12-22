@@ -36,8 +36,33 @@ var VMElement = IconElement.extend({
 	},
 	configWindowSettings: function() {
 		var config = this._super();
-		config.order = ["name", "site", "profile", "template", "_endpoint", "_custom_icon"];
+		config.order = ["name", "site", "profile", "template", "tech", "_endpoint", "_custom_icon"];
 		config.ignore.push("info_last_sync");
+
+		conf = editor.options.vm_element_config
+		if (this.data.type in conf) {
+			conf = conf[this.data.type];
+
+			choices = {null: "Automatic"};
+			for (var tech in conf) {
+				if (tech != "remove")
+					choices[conf[tech]] = editor.options.tech_names[conf[tech]];
+			}
+
+			console.log(conf);  //fixme: remove statement
+			if (conf.length > 1) {
+				config.ignore.remove("tech");
+				config.special.tech = new ChoiceElement({
+					label: "Tech",
+					name: "tech",
+					choices: choices,
+					value: this.data.tech,
+					disabled: !this.attrEnabled("tech")
+				});
+			} else {
+				config.order.remove("tech");
+			}
+		}
 		
 		var profileInfo = {};
 		var profiles = this.editor.profiles.getAllowed(this.data.type);

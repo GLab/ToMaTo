@@ -30,7 +30,7 @@ def capabilities_element(type, host=None): #@ReservedAssignment
 	if host:
 		host = Host.get(name=host)
 		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
-	return typeClass.getCapabilities(host)
+	return typeClass.getCapabilities()#host)  # fixme: was with param before, but this returned global values anyway
 
 def capabilities_connection(type, host=None): #@ReservedAssignment
 	"""
@@ -42,7 +42,7 @@ def capabilities_connection(type, host=None): #@ReservedAssignment
 	if host:
 		host = Host.get(name=host)
 		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
-	return connections.Connection.getCapabilities(type, host)
+	return connections.Connection.getCapabilities(type)#, host)  # fixme: was with param before, but this returned global values anyway
 
 @cached(timeout=24*3600, autoupdate=True)
 def capabilities():
@@ -50,15 +50,11 @@ def capabilities():
 	:return: an array with ["element"] and ["connection"] as elements which in turn contain all respective capabilities of all hosts
 	"""
 	res = {"element": {}, "connection": {}}
-	host = None
 	for t in elements.TYPES:
 		typeClass = elements.TYPES.get(t)
-		host = typeClass.selectCapabilitiesHost(host)
-		res["element"][t] = typeClass.getCapabilities(host)
+		res["element"][t] = typeClass.getCapabilities()
 	for t in ["bridge", "fixed_bridge"]:
-		if not host or not t in host.connectionTypes:
-			host = select(connectionTypes=[t], best=False)
-		res["connection"][t] = connections.Connection.getCapabilities(t, host)
+		res["connection"][t] = connections.Connection.getCapabilities(t)
 	return res
 
 

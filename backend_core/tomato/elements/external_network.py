@@ -148,7 +148,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 	def action_start(self):
 		hPref, sPref = self.getLocationPrefs()
 		kind = self.parent.network.kind if self.parent and self.parent.samenet else self.parent.kind
-		_host = host.select(elementTypes=[TypeName.EXTERNAL_NETWORK], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
+		_host = host.select(elementTypeConfigurations=[[TypeName.EXTERNAL_NETWORK]], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
 		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
 			data={"type": self.TYPE})
 		if self.parent and self.parent.samenet:

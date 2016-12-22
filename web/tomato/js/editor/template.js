@@ -40,11 +40,11 @@ var Template = Class.extend({
 	labelForCommon: function() {
 		var label = this.label.replace(/[ ]*\(.*\)/, "");
 		switch (this.type) {
-			case "kvmqm":
-				label += " (KVM)";
+			case "full":
+				label += " (Full virt.)";
 				break;
-			case "openvz":
-				label += " (OpenVZ)";
+			case "container":
+				label += " (Container)";
 				break;
 			case "repy":
 				label += " (Repy)";

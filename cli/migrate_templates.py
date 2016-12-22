@@ -115,10 +115,44 @@ def _read_templates_4_0_2(api, include_restricted, template_names):
 			if template_names is None or t['name'] in template_names:
 				for k in ("all_urls", "popularity", "kblang", "checksum", "ready", "size", "id"):
 					del t[k]
+				if t["tech"] == "kvmqm":
+					t["tech"] = "full"
+				elif t["tech"] == "openvz":
+					t["tech"] = "container"
+				results.append(t)
+	return results
+
+def _read_templates_4_1_0(api, include_restricted, template_names):
+	results = []
+	templates = api.template_list()
+	for t in templates:
+		if include_restricted or not t.get('restricted', False):
+			if template_names is None or t['name'] in template_names:
+				for k in ("all_urls", "popularity", "kblang", "checksum", "ready", "size", "id"):
+					del t[k]
 				results.append(t)
 	return results
 
 def _insert_template_4_0_2(api, template, overwrite_on_conflict):
+	try:
+		if template["tech"] == "full":
+			template["tech"] = "kvmqm"
+		elif template["tech"] == "container":
+			template["tech"] = "openvz"
+		t = api.template_create(template['tech'], template['name'], {k: v for k, v in template.iteritems() if k not in ("tech", "name")})
+		templ_id = t['id']
+	except Exception, e:  # something went wrong.
+		if not overwrite_on_conflict:  # if we don't want to overwrite this, abort.
+			raise e
+		try:  # let's see whether this template exists. if yes, just overwrite it. otherwise, abort.
+			templates = api.template_list(template['tech'])
+			for t in templates:
+				if t['name'] == template['name'] and t['tech'] == template['tech']:
+					templ_id = t['id']
+		except:
+			raise e
+
+def _insert_template_4_1_0(api, template, overwrite_on_conflict):
 	try:
 		t = api.template_create(template['tech'], template['name'], {k: v for k, v in template.iteritems() if k not in ("tech", "name")})
 		templ_id = t['id']
@@ -135,20 +169,26 @@ def _insert_template_4_0_2(api, template, overwrite_on_conflict):
 
 
 def read_templates(api, version, include_restricted, template_names):
-	if version not in [[4, 0, 2]]:
+	if version not in [[4, 0, 2], [4, 1, 0]]:
 		print "unsupported source version: %s.%s.%s" % (version[0], version[1], version[2])
 		return []
 
 	elif version[0] == 4:
-		return _read_templates_4_0_2(api, include_restricted, template_names)
+		if version[1] == 0:
+			return _read_templates_4_0_2(api, include_restricted, template_names)
+		else:
+			return _read_templates_4_1_0(api, include_restricted, template_names)
 
 def insert_template(api, version, template, overwrite_on_conflict):
-	if version not in [[4, 0, 2]]:
-		print "unsupported source version: %s.%s.%s" % (version[0], version[1], version[2])
+	if version not in [[4, 0, 2], [4, 1, 0]]:
+		print "unsupported destination version: %s.%s.%s" % (version[0], version[1], version[2])
 		return
 
 	elif version[0] == 4:
-		return _insert_template_4_0_2(api, template, overwrite_on_conflict)
+		if version[1] == 0:
+			return _insert_template_4_0_2(api, template, overwrite_on_conflict)
+		else:
+			return _insert_template_4_1_0(api, template, overwrite_on_conflict)
 
 
 
