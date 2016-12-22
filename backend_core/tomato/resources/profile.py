@@ -20,11 +20,12 @@ from ..db import *
 from ..lib.error import UserError, InternalError
 from ..lib.exceptionhandling import wrap_errors
 
-TECHS = ["kvm","kvmqm", "openvz", "repy"]
+TECHS = ["kvm","kvmqm", "lxc", "openvz", "repy"]
 DEFAULTS = {
 	"kvm": {"ram": 512, "cpus": 1, "diskspace": 10240},
 	"kvmqm": {"ram": 512, "cpus": 1, "diskspace": 10240},
 	"openvz": {"ram": 512, "cpus": 1, "diskspace": 10240},
+	"lxc": {"ram": 512, "cpus": 1, "diskspace": 10240},
 	"repy": {"ram": 50, "cpus": 0.25},
 }
 
