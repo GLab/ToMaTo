@@ -19,6 +19,8 @@ import os, shutil
 from django.db import models
 
 from .. import dump
+from ..generic import *
+from ..db import *
 from ..user import User
 from ..accounting import UsageStatistics
 from ..lib import db, attributes, logging #@UnresolvedImport
@@ -72,12 +74,23 @@ Bridge concept interface:
 """
 
 
-class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
-	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
-	owner = models.ForeignKey(User, related_name='connections')
-	state = models.CharField(max_length=20, validators=[db.nameValidator])
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='connection')
-	attrs = db.JSONField()
+class Connection(LockedStatefulEntity, BaseDocument):
+
+	type = StringField(required=True)
+	owner = ReferenceField(User)
+	ownerId = ReferenceFieldId(owner)
+	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
+	usageStatistics = ReferenceField(UsageStatistics)
+	usageStatisticsId = ReferenceFieldId(usageStatistics)
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
+		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
+		"elements": Attribute(get=lambda obj: [obj.elementFromId, obj.elementToId], readOnly=True,
+							  schema=schema.List(items=schema.Identifier())),
+		}
 	#elements: set of elements.Element
 	
 	CAP_ACTIONS = {}

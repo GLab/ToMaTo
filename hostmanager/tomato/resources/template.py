@@ -17,6 +17,8 @@
 
 from django.db import models
 from .. import resources, config
+from ..db import *
+from ..generic import *
 from ..user import User
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import path #@UnresolvedImport
@@ -33,19 +35,36 @@ PATTERNS = {
 	TypeName.REPY: "%s.repy",
 }
 
-class Template(resources.Resource):
-	owner = models.ForeignKey(User, related_name='templates')
-	tech = models.CharField(max_length=20)
-	name = models.CharField(max_length=50)
-	preference = models.IntegerField(default=0)
-	urls = attributes.attribute("urls", list)
-	checksum = attributes.attribute("checksum", str)
-	size = attributes.attribute("size", long)
-	popularity = attributes.attribute("popularity", float)
-	ready = attributes.attribute("ready", bool)
-	kblang = attributes.attribute("kblang",str,null=False,default="en-us")
+class Template(resources.Resource, Entity):
+	owner = ReferenceField(User)
+	ownerId = ReferenceFieldId(owner)
+	tech = StringField()
+	name = StringField()
+	preference = IntField()
+	urls = ListField()
+	checksum = StringField()
+	size = IntField()
+	popularity = IntField()
+	ready = BooleanField(default=False)
+	kblang = StringField(default="en-us")
 
 	TYPE = "template"
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
+		"name": Attribute(field=name, schema=schema.Identifier()),
+		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
+		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
+		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL()), set=lambda obj, value: obj.modify_urls(value)),
+		"all_urls": Attribute(schema=schema.List(items=schema.URL()), readOnly=True, get=lambda obj: obj.all_urls),
+		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
+		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
+			schema=schema.String()),
+		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True, schema=schema.Number()),
+		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
+		"ready": Attribute(readOnly=True, schema=schema.Bool()),
+	}
 
 	class Meta:
 		db_table = "tomato_template"

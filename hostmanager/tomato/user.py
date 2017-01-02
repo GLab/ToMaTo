@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+from .db import *
 
-class User(models.Model):
-	name = models.CharField(max_length=255, unique=True) #@ReservedAssignment
+class User(BaseDocument):
+	name = StringField(required=True) #@ReservedAssignment
 	# elements: [Element]
 	# connections: [Connection]
 	# templates: [Template]

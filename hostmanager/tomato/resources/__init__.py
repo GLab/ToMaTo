@@ -19,6 +19,8 @@ from django.db import models
 import random
 
 from .. import config
+from ..generic import *
+from ..db import *
 from ..lib import db, attributes, logging #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 
@@ -61,12 +63,13 @@ def take(type_, owner, blacklist=None):
 from ..elements import Element
 from ..connections import Connection
 
-class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
-	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
-	attrs = db.JSONField()
-	
-	class Meta:
-		pass
+class Resource(LockedStatefulEntity, BaseDocument):
+	type = StringField(choices=[(t, t) for t in TYPES]) #@ReservedAssignment
+
+
+	meta = {
+		'allow_inheritance': True,
+	}
 
 	def init(self, attrs=None):
 		if not attrs: attrs = {}
@@ -106,12 +109,21 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 			"attrs": self.attrs.copy(),
 		}
 	
-class ResourceInstance(db.ChangesetMixin, attributes.Mixin, models.Model):
-	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
-	num = models.IntegerField()
-	ownerElement = models.ForeignKey(Element, null=True)
-	ownerConnection = models.ForeignKey(Connection, null=True)
-	attrs = db.JSONField()
+class ResourceInstance(BaseDocument):
+	type = StringField(choices=[(t, t) for t in TYPES]) #@ReservedAssignment
+	num = IntField()
+	ownerElement = ReferenceField(Element)
+	ownerElementId = ReferenceFieldId(ownerElement)
+	ownerConnection = ReferenceField(Connection)
+	ownerConnectionId = ReferenceFieldId(ownerConnection)
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"type": Attribute(field=type, schema=schema.String(options=TYPES)),
+		"num": Attribute(field=num,  schema=schema.Int(minValue=0)),
+		"ownerElement": Attribute(field=ownerElementId, schema=schema.Identifier()),
+		"ownerConnection": Attribute(field=ownerConnectionId, schema=schema.Identifier()),
+	}
 	
 	class Meta:
 		unique_together = (("num", "type"),)
