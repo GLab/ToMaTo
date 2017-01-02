@@ -26,7 +26,7 @@ from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.newcmd import qm, vfat, qemu_img, ipspy
 from ..lib.newcmd.util import net, proc, io
-from ..lib.constants import ActionName, StateName, TypeName
+from ..lib.constants import ActionName, StateName, TechName
 
 DOC="""
 Element type: ``kvmqm``
@@ -175,7 +175,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	
 	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
 
-	TYPE = TypeName.KVMQM
+	TYPE = TechName.KVMQM
 	CAP_ACTIONS = {
 		ActionName.PREPARE: [StateName.CREATED],
 		ActionName.DESTROY: [StateName.PREPARED],
@@ -204,7 +204,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {
-		TypeName.KVMQM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
+		TechName.KVMQM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": None, "usbtablet": True}
@@ -528,7 +528,7 @@ class KVMQM_Interface(elements.Element):
 	used_addresses_attr = Attr("used_addresses", type=list, default=[])
 	used_addresses = used_addresses_attr.attribute()
 	
-	TYPE = TypeName.KVMQM_INTERFACE
+	TYPE = TechName.KVMQM_INTERFACE
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
 	}
