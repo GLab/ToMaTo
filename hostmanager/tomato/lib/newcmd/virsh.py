@@ -1,5 +1,5 @@
 from util import run, CommandError, cmd, proc
-from ..constants import ActionName, StateName, TypeName
+from ..constants import ActionName, StateName, TechName
 from ..error import UserError, InternalError
 import time
 from util import LockMatrix, params, spawnDaemon, wait, net
@@ -44,17 +44,17 @@ class virsh:
 	imagepath = ""
 	original_image = ""
 
-	TYPE = TypeName.KVM
+	TYPE = TechName.KVM
 
 	HYPERVISOR_MAPPING = {
-		TypeName.LXC: "LXC://",
-		TypeName.KVM: "qemu:///session"
+		TechName.LXC: "LXC://",
+		TechName.KVM: "qemu:///session"
 	}
 	DRIVER_MAPPING = {
-		TypeName.KVMQM: "qcow2",
-		TypeName.KVM: "qcow2",
-		TypeName.LXC: "raw",
-		TypeName.OPENVZ: "raw",
+		TechName.KVMQM: "qcow2",
+		TechName.KVM: "qcow2",
+		TechName.LXC: "raw",
+		TechName.OPENVZ: "raw",
 	}
 	CAP_ACTIONS = {
 		ActionName.PREPARE: [StateName.CREATED],
@@ -318,9 +318,9 @@ class virsh:
 		self.root = self.tree.getroot()
 
 		if hda:
-			if type == TypeName.KVM:
+			if type == TechName.KVM:
 				self.root.find("./devices/disk/target[@dev='vda']/../source").set("file",hda)
-			if type == TypeName.LXC:
+			if type == TechName.LXC:
 				self.root.find("./devices/filesystem/target[@dir='/']/../source").set("dir",hda)
 		#if fda:
 		#if hdb:
