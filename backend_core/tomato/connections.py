@@ -135,7 +135,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	@property
 	def _remoteAttrs(self):
-		caps = getConnectionCapabilities(self.remoteType)
+		caps = Host.getConnectionCapabilities(self.remoteType)
 		allowed = caps["attributes"].keys() if caps else []
 		attrs = {}
 		for key, value in self.directData.iteritems():
@@ -152,7 +152,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if self.mainConnection:
 			allowed = self.mainConnection.getAllowedAttributes().keys()
 		else:
-			caps = getConnectionCapabilities(self.remoteType)
+			caps = Host.getConnectionCapabilities(self.remoteType)
 			allowed = caps["attributes"].keys() if caps else []
 		UserError.check(key in allowed, code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
 		return True
@@ -516,7 +516,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		logging.logMessage("info", category="connection", id=con.idStr, info=con.info())
 		return con
 
-from .host import getConnectionCapabilities, select
 from .host.connection import HostConnection
 from .host import HostObject
 

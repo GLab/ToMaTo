@@ -117,7 +117,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 
 	@property
 	def _remoteAttrs(self):
-		caps = host.getElementCapabilities(self.remoteType)
+		caps = Host.getElementCapabilities(self.remoteType)
 		allowed = caps["attributes"].keys() if caps else []
 		attrs = {}
 		for key, value in self.info().iteritems():
@@ -136,7 +136,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		if self.mainElement:
 			allowed = self.mainElement.getAllowedAttributes().keys()
 		else:
-			caps = host.Host.getElementCapabilities(self.remoteType)
+			caps = Host.getElementCapabilities(self.remoteType)
 			allowed = caps["attributes"].keys() if caps else []
 		UserError.check(key in allowed, code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
 		return True
