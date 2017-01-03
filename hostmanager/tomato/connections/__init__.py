@@ -83,13 +83,14 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	usageStatistics = ReferenceField(UsageStatistics)
 	usageStatisticsId = ReferenceFieldId(usageStatistics)
 
+	@property
+	def elements(self):
+		from ..elements import Element
+		return Element.objects(connection=self)
 
-	#elements: set of elements.Element
+		# elements: set of elements.Element
 	meta = {
 		'allow_inheritance': True,
-		'indexes': [
-			'state', 'elements'
-		]
 	}
 
 	CAP_ACTIONS = {}
@@ -337,8 +338,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"elements": Attribute(get=lambda obj: [obj.elementFromId, obj.elementToId], readOnly=True,
-							  schema=schema.List(items=schema.Identifier())),
+		"elements": Attribute(field=elements, schema=schema.List()),
 	}
 
 		

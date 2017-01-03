@@ -21,7 +21,7 @@ from threading import Lock
 
 from ..generic import *
 from ..db import *
-from ..user import User
+from ..user import User # @UnresolvedImport
 from ..connections import Connection
 from ..accounting import UsageStatistics
 from ..lib import db, attributes, logging, cmd  # @UnresolvedImport

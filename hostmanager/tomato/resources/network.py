@@ -20,6 +20,7 @@ from ..db import *
 from ..generic import *
 from .. import resources, firewall, currentUser
 from ..user import User
+from elements.external_network import External_Network
 
 
 class Network(resources.Resource, BaseDocument):
@@ -31,6 +32,10 @@ class Network(resources.Resource, BaseDocument):
 
 	TYPE = "network"
 
+
+	@property
+	def instances(self):
+	    return External_Network.objects(network=self)
 
 	class Meta:
 		db_table = "tomato_network"

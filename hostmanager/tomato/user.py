@@ -17,10 +17,6 @@
 
 from .db import *
 from .generic import *
-from elements import Element
-from connections import Connection
-from .resources.template import Template
-from .resources.network import Network
 
 class User(BaseDocument):
 	name = StringField(required=True) #@ReservedAssignment
@@ -36,16 +32,20 @@ class User(BaseDocument):
 
 	@property
 	def elements(self):
+		from .elements import Element
 		return Element.objects(owner=self)
 
 	@property
 	def connections(self):
+		from .connections import Connection
 		return Connection.objects(owner=self)
 
 	@property
 	def templates(self):
+		from .resources.template import Template
 		return Template.objects(owner=self)
 
 	@property
 	def networks(self):
+		from .resources.network import Network
 		return Network.objects(owner=self)

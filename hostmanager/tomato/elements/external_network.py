@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
+from ..db import *
+from ..generic import *
 from .. import connections, elements, resources
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..resources import network
@@ -54,8 +56,15 @@ Actions: None
 
 
 class External_Network(elements.Element):
-	network_attr = Attr("network", null=True)
-	network = models.ForeignKey(network.Network, null=True, related_name="instances")
+	network = ReferenceField(Network, reverse_delete_rule=DENY)
+	networkId = ReferenceFieldId(network)
+
+	ACTIONS = {
+	}
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"network": Attribute(field=networkId, schema=schema.Identifier()),
+	}
 
 	ST_DEFAULT = "default"
 	TYPE = TypeName.EXTERNAL_NETWORK
@@ -64,8 +73,8 @@ class External_Network(elements.Element):
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
-		"network": network_attr,
-		"timeout": elements.Element.timeout_attr
+		"network": network,
+		"timeout": elements.Element.timeout
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]

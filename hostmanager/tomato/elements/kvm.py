@@ -9,17 +9,13 @@ from ..lib.newcmd import virsh, vfat, qemu_img, ipspy
 from ..lib.newcmd.util import io,  net, proc
 from ..lib.error import UserError, InternalError
 from ..lib.util import joinDicts #@UnresolvedImport
+from . import Element
 
 import time
 import xml.etree.ElementTree as ET
 import random, os, sys, re, shutil
 
-kblang_options = {"en-us": "English (US)",
-					"en-gb": "English (GB)",
-					"de": "German",
-					"fr": "French",
-					"ja": "Japanese"
-					}
+kblang_options = ["en-us","en-gb","de", "fr", "ja"]
 
 DOC="""
 Element type: ``kvm``
@@ -134,29 +130,34 @@ Actions:
 """
 
 class KVM(elements.RexTFVElement,elements.Element):
-	vmid_attr = Attr("vmid", type="int")
-	vmid = vmid_attr.attribute()
-	websocket_port_attr = Attr("websocket_port", type="int")
-	websocket_port = websocket_port_attr.attribute()
-	websocket_pid_attr = Attr("websocket_pid", type="int")
-	websocket_pid = websocket_pid_attr.attribute()
-	vncport_attr = Attr("vncport", type="int")
-	vncport = vncport_attr.attribute()
-	vncpid_attr = Attr("vncpid", type="int")
-	vncpid = vncpid_attr.attribute()
-	vncpassword_attr = Attr("vncpassword", type="str")
-	vncpassword = vncpassword_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[StateName.CREATED, StateName.PREPARED], type="int", minValue=1, maxValue=4, default=1)
-	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[StateName.CREATED, StateName.PREPARED], type="int", minValue=64, maxValue=8192, default=256)
-	ram = ram_attr.attribute()
-	kblang_attr = Attr("kblang", desc="Keyboard language", states=[StateName.CREATED, StateName.PREPARED], type="str", options=kblang_options, default=None, null=True)
-	#["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br", "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"]
-	kblang = kblang_attr.attribute()
-	usbtablet_attr = Attr("usbtablet", desc="USB tablet mouse mode", states=[StateName.CREATED, StateName.PREPARED], type="bool", default=True)
-	usbtablet = usbtablet_attr.attribute()
-	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
-	template = models.ForeignKey(template.Template, null=True)
+
+	vmid = IntField()
+	websocket_port = IntField()
+	websocket_pid = IntField()
+	vncport = IntField()
+	vncpid = IntField()
+	vncpassword =StringField()
+	cpus = IntField(default=1)
+	ram = IntField(default=256)
+	kblang = StringField(default=None, choises=kblang_options)
+	usbtablet = BooleanField(default=True)
+	template = ReferenceField(resources.template.Template)
+	templateId = RefenceFieldId(template)
+
+	Attributes{
+		"vmid": Attribute(field=vmid, schema=schema.Integer()),
+		"websocket_port": Attribute(field=websocket_port, schema=schema.Integer()),
+		"websocket_pid": Attribute(field=websocket_pid, schema=schema.Integer()),
+		"vncport": Attribute(field=vncport, schema=schema.Integer()),
+		"vncpid": Attribute(field=vncpid, schema=schema.Integer()),
+		"vncpassword": Attribute(field=vncpassword, schema=schema.String()),
+		"cpus": Attribute(field=cpus, desc="Number of CPUs", schema=schema.Integer(minValue=1,maxValue=4), default=1),
+		"ram": Attribute(field=ram, desc="RAM", schema=schema.Integer(minValue=64, maxValue=8192), default=256),
+		"kblang": Attribute(field=kblang, desc="Keyboard language", schema=schema.Integer(options=kblang_options), default=None),
+		"usbtablet": Attribute(field=usbtablet, desc="USB tablet mouse mode", schema=schema.Boolean(), default=True)
+		"template": Attribute(field=templateId, desc="Template", schema=schema.Identifier())
+	}
+
 
 	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
 	vir = virsh.virsh(TechName.KVM)
@@ -183,12 +184,12 @@ class KVM(elements.RexTFVElement,elements.Element):
 		ActionName.STOP: StateName.PREPARED,
 	}
 	CAP_ATTRS = {
-		"cpus": cpus_attr,
-		"ram": ram_attr,
-		"kblang": kblang_attr,
-		"usbtablet": usbtablet_attr,
-		"template": template_attr,
-		"timeout": elements.Element.timeout_attr
+		"cpus": cpus,
+		"ram": ram,
+		"kblang": kblang,
+		"usbtablet": usbtablet,
+		"template": template,
+		"timeout": elements.Element.timeout
 	}
 	CAP_CHILDREN = {
 		TechName.KVM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
@@ -198,9 +199,6 @@ class KVM(elements.RexTFVElement,elements.Element):
 	__doc__ = DOC  # @ReservedAssignment
 	DOC = DOC
 
-	class Meta:
-		db_table = "tomato_kvm"
-		app_label = 'tomato'
 
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
@@ -493,6 +491,20 @@ class KVM(elements.RexTFVElement,elements.Element):
 			vfat.create(self._nlxtp_device_filename(), KVM.rextfv_max_size / 1024,
 						nested=True)  # size (last argument) depends on nlxtp_max_size
 
+	ATTRIBUTES = Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"profile": StatefulAttribute(get=lambda self: self.profile.name if self.profile else None, set=modify_profile, writableStates=[StateName.CREATED, StateName.PREPARED]),
+		"template": StatefulAttribute(get=lambda self: self.template.name if self.template else None, set=modify_template, writableStates=[StateName.CREATED]),
+	})
+
+	ACTIONS = Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[StateName.CREATED]),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=StateName.PREPARED),
+		ActionName.PREPARE: StatefulAction(action_prepare, check=Element.checkTopologyTimeout, allowedStates=[StateName.CREATED], stateChange=StateName.PREPARED),
+		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[StateName.PREPARED], stateChange=StateName.CREATED),
+		ActionName.CHANGE_TEMPLATE: StatefulAction(action_change_template, allowedStates=[StateName.CREATED, StateName.PREPARED])
+	})
 
 DOC_IFACE = """
 Element type: ``kvm_interface``
