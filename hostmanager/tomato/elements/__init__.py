@@ -42,15 +42,16 @@ class Element(LockedStatefulEntity, BaseDocument):
 	ownerId = ReferenceFieldId(owner)
 	parent = GenericReferenceField()
 	parentId = ReferenceFieldId(parent)
-	connection = ReferenceField(Connection)
+	connection = ReferenceField(Connection, reverse_delete_rule=NULLIFY)
 	connectionId = ReferenceFieldId(connection)
 	usageStatistics = ReferenceField(UsageStatistics)
 	usageStatisticsId = ReferenceFieldId(usageStatistics)
 	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
 	timeout = FloatField(required=True)
 
-	#attrs = db.JSONField()??
-
+	meta = {
+		'allow_inheritance': True,
+	}
 
 	@property
 	def children(self):
@@ -64,9 +65,6 @@ class Element(LockedStatefulEntity, BaseDocument):
 	CAP_PARENT = []
 	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
-
-	class Meta:
-		pass
 
 	def init(self, parent=None, attrs=None):
 		if not attrs: attrs = {}
@@ -352,6 +350,10 @@ class Element(LockedStatefulEntity, BaseDocument):
 
 	def updateUsage(self, usage, data):
 		pass
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: StatefulAction(fn=remove, check=checkRemove)
+	}
 
 	ATTRIBUTES = {
 		"id": IdAttribute(),

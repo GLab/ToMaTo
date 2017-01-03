@@ -50,27 +50,13 @@ class Template(resources.Resource, Entity):
 
 	TYPE = "template"
 
-	ATTRIBUTES = {
-		"id": IdAttribute(),
-		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
-		"name": Attribute(field=name, schema=schema.Identifier()),
-		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
-		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
-		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL()), set=lambda obj, value: obj.modify_urls(value)),
-		"all_urls": Attribute(schema=schema.List(items=schema.URL()), readOnly=True, get=lambda obj: obj.all_urls),
-		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
-		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
-			schema=schema.String()),
-		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True, schema=schema.Number()),
-		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
-		"ready": Attribute(readOnly=True, schema=schema.Bool()),
+	meta = {
+		'ordering': ['tech', '+preference', 'name'],
+		'indexes': [
+			('tech', 'preference'), ('tech', 'name')
+		]
 	}
 
-	class Meta:
-		db_table = "tomato_template"
-		app_label = 'tomato'
-		unique_together = (("tech", "name", "owner"))
-	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		attrs = args[0]
@@ -148,6 +134,28 @@ class Template(resources.Resource, Entity):
 		info["attrs"]["preference"] = self.preference
 		info["attrs"]["kblang"] = self.kblang
 		return info
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=remove)
+	}
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
+		"name": Attribute(field=name, schema=schema.Identifier()),
+		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
+		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
+		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL()),
+						  set=lambda obj, value: obj.modify_urls(value)),
+		"all_urls": Attribute(schema=schema.List(items=schema.URL()), readOnly=True, get=lambda obj: obj.all_urls),
+		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
+		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
+							schema=schema.String()),
+		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True,
+						  schema=schema.Number()),
+		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
+		"ready": Attribute(readOnly=True, schema=schema.Bool()),
+	}
 
 def get(tech, name):
 	try:

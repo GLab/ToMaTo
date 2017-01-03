@@ -16,17 +16,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
+from ..db import *
+from ..generic import *
 from .. import resources, firewall, currentUser
 from ..user import User
 
 
-class Network(resources.Resource):
-	owner = models.ForeignKey(User, related_name='networks')
-	kind = models.CharField(max_length=50)
-	bridge = models.CharField(max_length=20)
-	preference = models.IntegerField(default=0)
-	
+class Network(resources.Resource, BaseDocument):
+	owner = ReferenceField(User)
+	ownerId = ReferenceFieldId(User)
+	kind = StringField(required=True, unique=True)
+	bridge = StringField()
+	preference = IntField(default=0)
+
 	TYPE = "network"
+
 
 	class Meta:
 		db_table = "tomato_network"
@@ -77,6 +81,24 @@ class Network(resources.Resource):
 		info["attrs"]["bridge"] = self.bridge
 		info["attrs"]["preference"] = self.preference
 		return info
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=remove)
+	}
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
+		"kind": Attribute(field=kind, schema=schema.String()),
+		"bridge": Attribute(field=bridge, schema=schema.String()),
+		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
+	}
+
+	meta = {
+		'ordering': ['-preference', 'kind'],
+		'indexes': [
+			('kind', 'preference')
+		]
+	}
 
 def get(kind):
 	return Network.objects.filter((models.Q(kind=kind)|models.Q(kind__startswith=kind+"/"))&models.Q(owner=currentUser())).order_by("-preference")[0]

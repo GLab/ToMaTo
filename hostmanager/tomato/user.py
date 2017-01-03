@@ -16,6 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .db import *
+from .generic import *
+from elements import Element
+from connections import Connection
+from .resources.template import Template
+from .resources.network import Network
 
 class User(BaseDocument):
 	name = StringField(required=True) #@ReservedAssignment
@@ -23,3 +28,24 @@ class User(BaseDocument):
 	# connections: [Connection]
 	# templates: [Template]
 	# networks: [Network]
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"name": Attribute(field=name, schema=schema.String())
+	}
+
+	@property
+	def elements(self):
+		return Element.objects(owner=self)
+
+	@property
+	def connections(self):
+		return Connection.objects(owner=self)
+
+	@property
+	def templates(self):
+		return Template.objects(owner=self)
+
+	@property
+	def networks(self):
+		return Network.objects(owner=self)

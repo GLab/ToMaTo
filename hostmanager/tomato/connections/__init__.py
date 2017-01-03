@@ -83,24 +83,21 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	usageStatistics = ReferenceField(UsageStatistics)
 	usageStatisticsId = ReferenceFieldId(usageStatistics)
 
-	ATTRIBUTES = {
-		"id": IdAttribute(),
-		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
-		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
-		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"elements": Attribute(get=lambda obj: [obj.elementFromId, obj.elementToId], readOnly=True,
-							  schema=schema.List(items=schema.Identifier())),
-		}
+
 	#elements: set of elements.Element
-	
+	meta = {
+		'allow_inheritance': True,
+		'indexes': [
+			'state', 'elements'
+		]
+	}
+
 	CAP_ACTIONS = {}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {}
 	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
-	
-	class Meta:
-		pass
+
 
 	def init(self, el1, el2, attrs=None):
 		if not attrs: attrs = {}
@@ -330,6 +327,19 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if self.state == StateName.STARTED:
 			self.action_stop()
 		self.remove()
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: StatefulAction(remove, check=checkRemove)
+	}
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
+		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
+		"elements": Attribute(get=lambda obj: [obj.elementFromId, obj.elementToId], readOnly=True,
+							  schema=schema.List(items=schema.Identifier())),
+	}
 
 		
 def get(id_, **kwargs):
