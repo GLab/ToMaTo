@@ -50,7 +50,6 @@ class VMElement(Element):
 	}
 
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout", "template"]
-	DIRECT_ACTIONS_EXCLUDE = [ActionName.START]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 	PROFILE_ATTRS = []
@@ -197,15 +196,18 @@ class VMElement(Element):
 		self.setState(ST_PREPARED, True)
 		
 	def action_destroy(self):
-		if self.state == ST_STARTED:
-			self.action_stop()
 		if isinstance(self.element, HostElement):
 			try:
+				if self.state == ST_STARTED:
+					self.element.action(ActionName.STOP)
 				self.element.action(ActionName.DESTROY)
 			except UserError:
 				if self.element.state != ST_CREATED:
 					raise
+			except:
+				pass
 			for iface in self.children:
+				iface.triggerConnectionStop()
 				iface._remove()
 			self.element.remove()
 			self.element = None
