@@ -107,7 +107,10 @@ class Topology(Entity, BaseDocument):
 							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
 	
 	def action_destroy(self):
-		self.action_stop()
+		try:
+			self.action_stop()
+		except:
+			pass  # destroying may still work...
 		self._compoundAction(action="destroy", stateFilter=lambda state: state=="prepared",
 							 typeOrder=["tinc_vpn", "udp_endpoint", "kvm", "kvmqm", "openvz", "repy"],
 							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
@@ -232,6 +235,8 @@ class Topology(Entity, BaseDocument):
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		if self.id:
 			try:
+				if self.maxState in (StateName.STARTED, StateName.PREPARED):
+					self.action("destroy")
 				for con in self.connections:
 					con._remove()
 				for el in self.elements:
