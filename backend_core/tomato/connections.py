@@ -423,7 +423,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if els == -1:
 			els = self.elements
 		for el in els:
-			if el.type == TypeName.EXTERNAL_NETWORK_ENDPOINT
+			if el.type == TypeName.EXTERNAL_NETWORK_ENDPOINT:
 				return TypeName.FIXED_BRIDGE
 		return TypeName.BRIDGE
 			
