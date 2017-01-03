@@ -1,5 +1,5 @@
 '''
-Created on Nov 20, 2014
+catch errors, wrap them, and forward them to dump manager.
 
 @author: Tim Gerhard
 '''

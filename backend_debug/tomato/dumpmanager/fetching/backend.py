@@ -5,6 +5,9 @@ from ...dump import getAll
 from ...lib.error import InternalError
 
 class BackendDumpSource(PullingDumpSource):
+	"""
+	backend modules as dump source.
+	"""
 
 	__slots__ = ("tomato_module", )
 
