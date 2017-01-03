@@ -24,7 +24,7 @@ from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
-from ..lib.constants import ActionName, StateName, TypeName
+from ..lib.constants import ActionName, StateName, TechName
 
 DHCP_CMDS = ["[ -e /sbin/dhclient ] && /sbin/dhclient -nw %s",
 			 "[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s"]
@@ -173,7 +173,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 
-	TYPE = TypeName.OPENVZ
+	TYPE = TechName.OPENVZ
 	CAP_ACTIONS = {
 		ActionName.PREPARE: [StateName.CREATED],
 		ActionName.DESTROY: [StateName.PREPARED],
@@ -206,7 +206,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {
-		TypeName.OPENVZ_INTERFACE: [StateName.CREATED, StateName.PREPARED],
+		TechName.OPENVZ_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
@@ -698,7 +698,7 @@ class OpenVZ_Interface(elements.Element):
 	used_addresses_attr = Attr("used_addresses", type=list, default=[])
 	used_addresses = used_addresses_attr.attribute()
 
-	TYPE = TypeName.OPENVZ_INTERFACE
+	TYPE = TechName.OPENVZ_INTERFACE
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
 	}

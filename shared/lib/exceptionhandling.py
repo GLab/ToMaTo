@@ -124,3 +124,39 @@ def on_error_continue(errorcls_func=None, errorcode=None, log_exception=True, du
 		func_wrapper.__module__ = func.__module__
 		return func_wrapper
 	return w
+
+
+def deprecated(alternative_ref_str):
+	"""
+	use this decorator to mark deprecated functions
+	:param str alternative_ref_str: alternative function
+	:return:
+	"""
+	def decorator(func):
+		def wrapper(*args, **kwargs):
+			try:
+				from .error import InternalError
+				raise InternalError(code=InternalError.DEPRECATED_CODE, message="calling a deprecated function: %s" % (func.__name__), data={"alternative": alternative_ref_str})
+			except:
+				wrap_and_handle_current_exception(re_raise=False)
+			return func(*args, **kwargs)
+		return wrapper
+	return decorator
+
+def print_all(func):
+	"""
+	use this decorator during debugging -> it will dump and print all errors
+	:param func:
+	:return:
+	"""
+	def wrapper(*args, **kwargs):
+		from .error import Error
+		try:
+			return func(*args, **kwargs)
+		except Error, e:
+			e.todump = True
+			wrap_and_handle_current_exception()
+		except:
+			wrap_and_handle_current_exception()
+	return wrapper
+

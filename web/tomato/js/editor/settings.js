@@ -18,6 +18,7 @@ var settings = {
 	                      }
 	],
 	supported_configwindow_help_pages: ['kvmqm','openvz','connection']
+	//FIXME: update!!!! container/full/repy/connection
 }
 
 var ignoreErrors = false;

@@ -188,6 +188,7 @@ class InternalError(Error):
 	CONFIGURATION_ERROR = "configuration_error"
 	RESOURCE_ERROR = "resource_error"
 	ASSERTION = "assertion"
+	DEPRECATED_CODE = "deprecated_code"
 
 @ErrorType
 class UserError(Error):

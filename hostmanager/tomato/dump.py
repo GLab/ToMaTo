@@ -1,6 +1,6 @@
 from .lib import dump as dump_lib
 from .lib.cmd import hostinfo #@UnresolvedImport
-from .lib.constants import TypeName
+from .lib.constants import TechName
 
 envCmds = {
   "disks": ["df", "-h"],
@@ -13,8 +13,8 @@ envCmds = {
   "dmesg": ["dmesg", "-xT", "-s", "4096"],
   "syslog": ["tail", "/var/log/syslog"],
   "vzctl_log": ["tail", "/var/log/vzctl.log"],  # key may not contain '.' character
-  TypeName.OPENVZ: ["vzlist", "-a"],
-  TypeName.KVMQM: ["qm", "list"],
+  TechName.OPENVZ: ["vzlist", "-a"],
+  TechName.KVMQM: ["qm", "list"],
   "tc": ["tc", "-s", "qdisc", "show"],
   "files": ["find", "/var/lib/tomato/", "-exec", "ls", "-lhd", "{}", ";"],
 }

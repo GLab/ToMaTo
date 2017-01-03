@@ -50,7 +50,7 @@ topology_config = settings.get_topology_settings()
 server_info_res = {
 	'public_key': getCAPublicKey(),
 	'version': getVersionStr(),
-	'api_version': [4, 0, 2],
+	'api_version': [4, 1, 0],
 	'topology_timeout': {
 		'initial': topology_config[Config.TOPOLOGY_TIMEOUT_INITIAL],
 		'maximum': topology_config[Config.TOPOLOGY_TIMEOUT_MAX],

@@ -18,14 +18,14 @@
 from ..generic import *
 from ..db import *
 from ..lib.error import UserError, InternalError
+from ..lib.constants import TypeName
 from ..lib.exceptionhandling import wrap_errors
 
-TECHS = ["kvm","kvmqm", "openvz", "repy"]
+TECHS = [TypeName.FULL_VIRTUALIZATION, TypeName.CONTAINER_VIRTUALIZATION, TypeName.REPY]
 DEFAULTS = {
-	"kvm": {"ram": 512, "cpus": 1, "diskspace": 10240},
-	"kvmqm": {"ram": 512, "cpus": 1, "diskspace": 10240},
-	"openvz": {"ram": 512, "cpus": 1, "diskspace": 10240},
-	"repy": {"ram": 50, "cpus": 0.25},
+	TypeName.FULL_VIRTUALIZATION: {"ram": 512, "cpus": 1, "diskspace": 10240},
+	TypeName.CONTAINER_VIRTUALIZATION: {"ram": 512, "cpus": 1, "diskspace": 10240},
+	TypeName.REPY: {"ram": 50, "cpus": 0.25},
 }
 
 class Profile(Entity, BaseDocument):

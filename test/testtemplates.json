@@ -1,5 +1,5 @@
 [
-  {"tech": "openvz",
+  {"tech": "container",
     "nlXTP_installed": true,
     "description": "",
     "icon": "",
@@ -12,7 +12,7 @@
     "creation_date": 1462881777.857998,
     "name": "ubuntu-14.04_x86"
   },
-  {"tech": "openvz",
+  {"tech": "container",
     "nlXTP_installed": true,
     "description": "",
     "icon": "",
@@ -26,28 +26,14 @@
     "name": "ubuntu-16.04_x86_restricted"
   },
   {
-    "tech": "kvmqm",
-    "name": "tinycore-7.0-kvmqm",
+    "tech": "full",
+    "name": "tinycore-7.0",
     "nlXTP_installed": false,
     "description": "",
     "icon": "",
     "show_as_common": false,
     "restricted": false,
-    "label": "TinyCore 7.0 (x86) KVMQM",
-    "subtype": "linux",
-    "preference": 0,
-    "urls":["http://packages.tomato-lab.org/templates_eseewe7KaiSh9aiD/tinycore-7.0.qcow2"],
-    "creation_date": 1462881777.857998
-  },
-  {
-    "tech": "kvm",
-    "name": "tinycore-7.0-kvm",
-    "nlXTP_installed": false,
-    "description": "",
-    "icon": "",
-    "show_as_common": false,
-    "restricted": false,
-    "label": "TinyCore 7.0 (x86) KVM",
+    "label": "TinyCore 7.0 (x86)",
     "subtype": "linux",
     "preference": 0,
     "urls":["http://packages.tomato-lab.org/templates_eseewe7KaiSh9aiD/tinycore-7.0.qcow2"],

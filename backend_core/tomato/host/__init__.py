@@ -24,10 +24,11 @@ from ..generic import *
 from ..lib import rpc, util, logging, error
 from ..lib.cache import cached
 from ..lib.error import TransportError, InternalError, UserError, Error
-from ..lib.exceptionhandling import wrap_and_handle_current_exception
+from ..lib.exceptionhandling import wrap_and_handle_current_exception, deprecated
 from ..lib.service import get_backend_users_proxy, get_backend_accounting_proxy
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
+from ..lib.constants import TechName, TypeName, TypeTechTrans
 
 
 element_caps = {}
@@ -291,11 +292,26 @@ class Host(Entity, BaseDocument):
 	def _info(self):
 		return self.getProxy().host_info()
 
+	@classmethod
 	def getElementCapabilities(self, type_):
+		#fixme: proper calculation of capabilities
+
+		#fixme: proper calculation of full/container capabilities, not this:
+		if type_ == TypeName.FULL_VIRTUALIZATION:
+			type_ = TechName.KVMQM
+		elif type_ == TypeName.CONTAINER_VIRTUALIZATION:
+			type_ = TechName.OPENVZ
+		elif type_ == TypeName.FULL_VIRTUALIZATION_INTERFACE:
+			type_ = TechName.KVMQM_INTERFACE
+		elif type_ == TypeName.CONTAINER_VIRTUALIZATION_INTERFACE:
+			type_ = TechName.OPENVZ_INTERFACE
+
 		global element_caps
 		return element_caps.get(type_)
 
+	@classmethod
 	def getConnectionCapabilities(self, type_):
+		#fixme: proper calculation of capabilities
 		global connection_caps
 		return connection_caps.get(type_)
 
@@ -404,18 +420,24 @@ class Host(Entity, BaseDocument):
 			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
-			attrs = tpl.info_for_hosts()
-			if not (attrs["tech"], attrs["name"]) in tpls:
-				# create resource
-				self.getProxy().resource_create("template", attrs)
-				logging.logMessage("template create", category="host", name=self.name, template=attrs)
-			else:
-				hTpl = tpls[(attrs["tech"], attrs["name"])]
-				if hTpl["attrs"].get("checksum") != tpl.checksum:
-					self.getProxy().resource_modify(hTpl["id"], attrs)
-					logging.logMessage("template update", category="host", name=self.name, template=attrs)
-				else:
-					avail.append(tpl)
+			type_ = tpl.tech
+			attrs_base = tpl.info_for_hosts()
+			# for multitech element types: inflate
+			for tech in TypeTechTrans.TECH_DICT.get(type_, type_):
+				if tech in self.elementTypes:
+					attrs = attrs_base.copy()
+					attrs["tech"] = tech
+					if not (attrs["tech"], attrs["name"]) in tpls:
+						# create resource
+						self.getProxy().resource_create("template", attrs)
+						logging.logMessage("template create", category="host", name=self.name, template=attrs)
+					else:
+						hTpl = tpls[(attrs["tech"], attrs["name"])]
+						if hTpl["attrs"].get("checksum") != tpl.checksum:
+							self.getProxy().resource_modify(hTpl["id"], attrs)
+							logging.logMessage("template update", category="host", name=self.name, template=attrs)
+						else:
+							avail.append(tpl)
 		for tpl in template.Template.objects():
 			tpl.update_host_state(self, tpl in avail)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
@@ -694,20 +716,27 @@ class HostObject(BaseDocument):
 		return ret
 
 
-def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None, best=True, template=None):
+def select(site=None, elementTypeConfigurations=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None, best=True, template=None):
 	# STEP 1: limit host choices to what is possible
 	if not sitePrefs: sitePrefs = {}
 	if not hostPrefs: hostPrefs = {}
 	if not networkKinds: networkKinds = []
 	if not connectionTypes: connectionTypes = []
-	if not elementTypes: elementTypes = []
+	if not elementTypeConfigurations: elementTypeConfigurations = [[]]
 	all_ = Host.getAll(site=site) if site else Host.getAll()
 	hosts = []
 	for host in all_:
 		if host.problems():
 			continue
-		if elementTypes and set(elementTypes) - set(host.elementTypes):
+
+		fulfillsConfig = False  # accept host if one config is fulfilled
+		for elementTypes in elementTypeConfigurations:
+			if not (set(elementTypes) - set(host.elementTypes)):
+				fulfillsConfig = True
+				break
+		if not fulfillsConfig:
 			continue
+
 		if connectionTypes and set(connectionTypes) - set(host.connectionTypes):
 			continue
 		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
@@ -718,7 +747,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 			return host
 		hosts.append(host)
 	UserError.check(hosts, code=UserError.INVALID_CONFIGURATION, message="No hosts found for requirements", data={
-		'site': site.name if site else None, 'element_types': elementTypes, 'connection_types': connectionTypes, 'network_kinds': networkKinds
+		'site': site.name if site else None, 'element_type_configurations': elementTypeConfigurations, 'connection_types': connectionTypes, 'network_kinds': networkKinds
 	})
 	# any host in hosts can handle the request
 	prefs = dict([(h, 0.0) for h in hosts])
@@ -759,22 +788,18 @@ def getElementTypes():
 	global element_caps
 	return element_caps.keys()
 
-
+@deprecated("host.Host.getElementCapabilites")
 def getElementCapabilities(type_):
-	# FIXME: merge capabilities
-	global element_caps
-	return element_caps.get(type_)
+	return Host.getElementCapabilities(type_)
 
 
 def getConnectionTypes():
 	global connection_caps
 	return connection_caps.keys()
 
-
+@deprecated("host.Host.getElementCapabilites")
 def getConnectionCapabilities(type_):
-	# FIXME: merge capabilities
-	global connection_caps
-	return connection_caps.get(type_)
+	return Host.getElementCapabilities(type_)
 
 
 checkingHostsLock = threading.RLock()

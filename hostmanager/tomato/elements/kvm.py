@@ -1,4 +1,4 @@
-from ..lib.constants import ActionName, StateName, TypeName
+from ..lib.constants import ActionName, StateName, TechName
 from django.db import models #@UnresolvedImport
 from ..resources import template
 from .. import connections, elements, resources, config
@@ -159,9 +159,9 @@ class KVM(elements.RexTFVElement,elements.Element):
 	template = models.ForeignKey(template.Template, null=True)
 
 	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
-	vir = virsh.virsh(TypeName.KVM)
+	vir = virsh.virsh(TechName.KVM)
 
-	TYPE = TypeName.KVM
+	TYPE = TechName.KVM
 	CAP_ACTIONS = {
 		ActionName.PREPARE: [StateName.CREATED],
 		ActionName.DESTROY: [StateName.PREPARED],
@@ -191,7 +191,7 @@ class KVM(elements.RexTFVElement,elements.Element):
 		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {
-		TypeName.KVM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
+		TechName.KVM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": None, "usbtablet": True}
@@ -271,7 +271,7 @@ class KVM(elements.RexTFVElement,elements.Element):
 						 vncport=self.vncport,
 						 vncpassword=self.vncpassword,
 						 keyboard=self.kblang)
-		self.vir.writeInitialConfig(TypeName.KVM, self.vmid)
+		self.vir.writeInitialConfig(TechName.KVM, self.vmid)
 		for interface in self.getChildren():
 			self._addInterface(interface)
 		self.setState(StateName.PREPARED, True)
@@ -536,8 +536,8 @@ class KVM_Interface(elements.Element):
 	used_addresses = used_addresses_attr.attribute()
 
 
-	vir = virsh.virsh(TypeName.KVM)
-	TYPE = TypeName.KVM_INTERFACE
+	vir = virsh.virsh(TechName.KVM)
+	TYPE = TechName.KVM_INTERFACE
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
 	}
