@@ -1,24 +1,47 @@
+"""
+this contains abstract dump source classes.
+"""
 import time
 from ...lib.error import Error, InternalError, TransportError
 from ...lib.exceptionhandling import on_error_continue, wrap_and_handle_current_exception
 from ...db import data
 
 class DumpSource(object):
+	"""
+	A source of dumps.
+	"""
 
 	__slots__ = ()
 
 	def dump_source_name(self):
-		raise NotImplemented()
+		"""
+		used as data in dumps.
+		:return: unique dump source name.
+		:rtype: str
+		"""
+		raise NotImplementedError()
 
 	def get_last_updatetime(self):
+		"""
+		get the last update time for this source.
+		:return:
+		"""
 		return data.get("dumpsource:%s/last_updatetime" % self.dump_source_name(), 0)
 
 	def _set_last_updatetime(self, last_updatetime):
+		"""
+		set the last update time for this source.
+		:param last_updatetime:
+		:return:
+		"""
 		data.set("dumpsource:%s/last_updatetime" % self.dump_source_name(), last_updatetime)
 
 
 
 class PullingDumpSource(DumpSource):
+	"""
+	A DumpSource where the dumpmanager must pull dumps itself.
+	"""
 
 	__slots__ = ()
 
@@ -29,10 +52,15 @@ class PullingDumpSource(DumpSource):
 		:return: a list of dump dicts. Return None if fetching is currently not possible.
 		:rtype: list(dict) or None
 		"""
-		raise NotImplemented()
+		raise NotImplementedError()
 
 	def _clock_offset(self):
-		raise NotImplemented()
+		"""
+		get clock offset.
+		:return: clock offset
+		:rtype: float
+		"""
+		raise NotImplementedError()
 
 	@on_error_continue()
 	def fetch_new_dumps(self, insert_dump_func):
