@@ -50,6 +50,7 @@ class VMElement(Element):
 	}
 
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout", "template"]
+	DIRECT_ACTIONS_EXCLUDE = [ActionName.START]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 	PROFILE_ATTRS = []
@@ -218,6 +219,12 @@ class VMElement(Element):
 		for ch in self.children:
 			ch.triggerConnectionStop()
 
+	def action_start(self):
+		if self.state == ST_CREATED:
+			self.action_prepare()
+		self.element.action(ActionName.START)
+		self.setState(ST_STARTED, True)
+
 	def after_rextfv_upload_use(self):
 		self.set_rextfv_last_started()
 
@@ -243,6 +250,7 @@ class VMElement(Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[ST_CREATED, ST_PREPARED], stateChange=ST_STARTED),
 		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
 		ActionName.PREPARE: StatefulAction(action_prepare, check=Element.checkTopologyTimeout, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
 		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED, ST_STARTED], stateChange=ST_CREATED),
