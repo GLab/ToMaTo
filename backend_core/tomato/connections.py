@@ -24,7 +24,7 @@ from .host import Host
 from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
 from .lib.cache import cached #@UnresolvedImport
-from .lib.constants import ActionName, StateName
+from .lib.constants import ActionName, StateName, TypeName
 from .lib.exceptionhandling import wrap_and_handle_current_exception
 
 REMOVE_ACTION = "(remove)"
@@ -119,7 +119,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	@property
 	def remoteType(self):
-		return self.mainConnection.type if self.mainConnection else "bridge"
+		return self.mainConnection.type if self.mainConnection else TypeName.BRIDGE
 
 	def _adaptAttrs(self, attrs):
 		tmp = {}
@@ -423,9 +423,9 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if els == -1:
 			els = self.elements
 		for el in els:
-			if el.type == "external_network_endpoint":
-				return "fixed_bridge"
-		return "bridge"
+			if el.type == TypeName.EXTERNAL_NETWORK_ENDPOINT
+				return TypeName.FIXED_BRIDGE
+		return TypeName.BRIDGE
 			
 	def fetchInfo(self):
 		mcon = self.mainConnection
