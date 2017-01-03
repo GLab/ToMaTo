@@ -36,9 +36,13 @@ class TechName:
 
 	ONSCREEN = {
 		OPENVZ: "OpenVZ",
+		OPENVZ_INTERFACE: "OpenVZ Interface",
 		KVMQM: "KVMQM",
+		KVMQM_INTERFACE: "KVMQM Interface",
 		KVM: "KVM",
-		LXC: "LXC"
+		KVM_INTERFACE: "KVM Interface",
+		LXC: "LXC",
+		LXC_INTERFACE: "LXC Interface",
 	}
 
 class TypeName:
@@ -63,6 +67,24 @@ class TypeName:
 
 	VPNCLOUD = "vpncloud"
 	VPNCLOUD_ENDPOINT = "vpncloud_endpoint"
+
+	ONSCREEN = {
+		FULL_VIRTUALIZATION: "Full Virtualization",
+		FULL_VIRTUALIZATION_INTERFACE: "Full Virtualization Interface",
+		CONTAINER_VIRTUALIZATION: "Container-Based Virtualization",
+		CONTAINER_VIRTUALIZATION_INTERFACE: "Container-Based Virtualization Interface",
+		REPY: "Repy",
+		REPY_INTERFACE: "Repy Interface",
+		EXTERNAL_NETWORK: "External Network",
+		EXTERNAL_NETWORK_ENDPOINT: "External Network Endpoint",
+		TINC: "Tinc",
+		TINC_VPN: "Tinc VPN",
+		TINC_ENDPOINT: "Tinc Endpoint",
+		UDP_ENDPOINT: "UDP Endpoint",
+		UDP_TUNNEL: "UDP Tunnel",
+		VPNCLOUD: "VPNCloud",
+		VPNCLOUD_ENDPOINT: "VPNCloud Endpoint"
+	}
 
 class TypeTechTrans:  # preferred techs first
 	FULL_VIRTUALTIZATION_TECHS = [TechName.KVM, TechName.KVMQM]
