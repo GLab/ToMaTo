@@ -43,13 +43,6 @@ var createElementMenu = function(obj) {
 						obj.editor.onElementConnectTo(obj);
 					}
 				} : null,
-				"prepareAndStart": (obj.actionEnabled("prepare") && !obj.actionEnabled("start")) ? {
-					name:'Start',
-					icon:'start',
-					callback: function(){
-					    obj.action_prepareAndStart();
-					}
-				} : null,
 				"start": obj.actionEnabled("start") ? {
 					name:'Start',
 					icon:'start',

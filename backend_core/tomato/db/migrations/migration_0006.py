@@ -1,6 +1,8 @@
 from mongoengine import *
-import string, random, crypt, time
-from mongoengine.errors import NotUniqueError
+
+
+
+# resources
 
 class Template(Document):
 	tech = StringField(required=True)
@@ -35,6 +37,11 @@ class Profile(Document):
 
 
 def _mig_resource(obj):
+	"""
+	migrates a template or profile
+	:param obj:
+	:return:
+	"""
 	if obj.tech == "openvz":
 		obj.tech = "container"
 		obj.save()
@@ -42,9 +49,28 @@ def _mig_resource(obj):
 		obj.tech = "full"
 		obj.save()
 
-def migrate():
+def migrate_resources():
 	for t in Template.objects():
 		_mig_resource(t)
 	for p in Profile.objects():
 		_mig_resource(p)
-	#fixme: migrate elements
+
+
+
+
+
+
+
+
+# elements
+
+def migrate_elements():
+	# fixme: migrate elements
+	pass
+
+
+
+
+
+def migrate():
+	migrate_resources()
