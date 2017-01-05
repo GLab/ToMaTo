@@ -38,7 +38,7 @@ def capabilities_connection(type, host=None): #@ReservedAssignment
 	"""
 	return get_backend_core_proxy().capabilities_connection(type, host)
 
-@cached(3600*6)
+@cached(3600*6, autoupdate=True)
 def capabilities():
 	"""
 	:return: an array with ["element"] and ["connection"] as elements which in turn contain all respective capabilities of all hosts
