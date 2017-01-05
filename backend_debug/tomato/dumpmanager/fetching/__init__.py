@@ -4,13 +4,19 @@ manage dumpsources
 
 
 from ...lib.service import get_backend_core_proxy, is_reachable
-import backend as fetching_backend
-import host as fetching_host
-import api as fetching_api
+from ...lib.constants import DumpSourcePrefix
 from ...lib.settings import Config
 import time
 from ...lib.error import InternalError, TransportError
 
+import backend as fetching_backend
+import host as fetching_host
+import api as fetching_api
+DUMPSOURCE_CLASSES = {
+	DumpSourcePrefix.API: fetching_api.ApiDumpSource,
+	DumpSourcePrefix.BACKEND: fetching_backend.BackendDumpSource,
+	DumpSourcePrefix.HOST: fetching_host.HostDumpSource
+}
 
 def get_all_dumpsources():
 	"""
@@ -50,10 +56,7 @@ def get_source_by_name(source_name):
 	create a DumpSource instance from a dump source name.
 	:param str source_name: source name
 	"""
-	if source_name.startswith("backend:"):
-		return fetching_backend.BackendDumpSource(source_name[8:])
-	if source_name.startswith("host:"):
-		return fetching_host.HostDumpSource(source_name[5:])
-	if source_name.startswith("api:"):
-		return fetching_api.ApiDumpSource(source_name[4:])
+	for pref in DumpSourcePrefix.ALL:
+		if source_name.startswith(pref):
+			return DUMPSOURCE_CLASSES[pref](source_name[len(pref):])
 	return None

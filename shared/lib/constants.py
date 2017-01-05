@@ -1,3 +1,10 @@
+
+class DumpSourcePrefix:
+	API = "api:"
+	BACKEND = "backend:"
+	HOST = "host:"
+	ALL = [API, BACKEND, HOST]
+
 class ActionName:
 	START = "start"
 	STOP = "stop"
