@@ -473,7 +473,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		hostB = self.elementTo.host.name
 		siteB = self.elementTo.host.site.name
 
-		if hostA != hostB:
+		if hostA == hostB:
 			distance = ConnectionDistance.INTRA_HOST
 			link_stats = None
 
