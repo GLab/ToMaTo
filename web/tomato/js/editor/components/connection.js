@@ -51,7 +51,7 @@ var Connection = Component.extend({
 		return Raphael.angle(pos1.x, pos1.y, pos2.x, pos2.y);
 	},
 	getHandleColor: function() {
-		if (this.data.link_statistics == null) {
+		if (this.data.link_statistics == null) {  // links that have not been deployed
 			return "#CDCDB3";
 		} else if (this.data.link_statistics.distance == "intra-host") {
 			return "#63dd37";
@@ -59,7 +59,7 @@ var Connection = Component.extend({
 			return "#e8e417";
 		} else if (this.data.link_statistics.distance == "inter-site") {
 			return "#e28706";
-		} else {
+		} else {  // unexpected value
 			return "#474747";
 		}
 	},
