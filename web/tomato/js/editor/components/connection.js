@@ -128,6 +128,10 @@ var Connection = Component.extend({
 			window.location.href = url;
 		}})
 	},
+	showLinkInfo: function() {
+		window.open('../connection/'+this.id+'/link', '_blank', "innerWidth=768,innerheight=700,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+		this.triggerEvent({operation: "console-dialog"});
+	},
 	/*
 	viewCapture: function() {
 		this.action("download_grant", {params: {limitSize: 1024*1024}, callback: function(con, res) {
