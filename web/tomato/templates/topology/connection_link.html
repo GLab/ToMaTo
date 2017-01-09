@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+{% load tomato %}
+
+{% block title %}
+<title>Connection Link - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block page %}
+<h2>{{conn.label|safe}}</h2>
+<table style="margin-bottom:0.5cm; margin-left: 0.5cm; margin-right: 0.5cm;">
+    <tbody>
+        {% if conn.link_statistics %}
+        <tr>
+            <th>Distance:</th>
+            <td>{{conn.link_statistics.distance}}</td>
+        </tr>
+
+        {% endif %}
+
+    </tbody>
+</table>
+{% if conn.link_statistics %}
+{% if conn.link_statistics.statistics %}
+<iframe
+        src="{% url 'tomato.site_map.details_link' conn.link_statistics.siteA conn.link_statistics.siteB %}"
+        style="width:768px; height:545px; border: none;"
+></iframe>
+{% endif %}
+{% else %}
+<p>No statistics available.</p>
+{% endif %}
+{% endblock %}
