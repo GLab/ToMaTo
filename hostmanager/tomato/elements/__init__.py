@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, os.path, abc, time
-from django.db import models
 from threading import Lock
 
 from ..generic import *
@@ -363,12 +362,16 @@ class Element(LockedStatefulEntity, BaseDocument):
 		"connection": Attribute(field=connectionId, readOnly=True, schema=schema.Identifier()),
 		"usageSatistics": Attribute(field=usageStatisticsId, schema=schema.Identifier()),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"timeout": Attribute(field=timeout, schema=schema.Number(null=False)),
+		"timeout": Attribute(field=timeout, schema=schema.Number(null=False))
 	}
 
-class RexTFVElement:
+class RexTFVElement(BaseDocument):
 	lock = Lock()
 	rextfv_max_size = None
+
+	meta = {
+		'allow_inheritance': True
+	}
 
 	@abc.abstractmethod
 	def _nlxtp_path(self, filename):

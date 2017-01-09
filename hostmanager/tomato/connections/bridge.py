@@ -21,7 +21,8 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import tc, net, process, path, fileserver #@UnresolvedImport
 from ..lib.error import UserError
 from ..lib.constants import ActionName,StateName
-
+from ..db import *
+from ..generic import *
 import os
 
 DOC="""
@@ -58,50 +59,50 @@ class Bridge(connections.Connection):
 	ATTRIBUTES = {
 		"bridge": Attribute(field=bridge, schema=schema.String()),
 		
-		"emulation": Attribute(field=emulation, desc="Enable emulation", schema=schema.Bool(), default=True)
+		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
 		
-		"bandwith_to": Attribute(field=bandwidth_to, desc="Bandwidth in kbit/s",
-								 schema=schema.Float(minValue=0, maxValue=1000000), default=10000),
-		"bandwith_from": Attribute(field=bandwidth_from, desc="Bandwidth in kbit/s",
-								   schema=schema.Float(minValue=0, maxValue=1000000), default=10000),
+		"bandwith_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",
+								 schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
+		"bandwith_from": Attribute(field=bandwidth_from, description="Bandwidth in kbit/s",
+								   schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
 		
-		"lossratio_to": Attribute(field=lossratio_to, desc="Loss ratio in kbit/s",
-								  schema=schema.Float(minValue=0, maxValue=1000000), default=10000),
-		"lossratio_from": Attribute(field=lossratio_from, desc="Loss ratio in kbit/s",
-								  schema=schema.Float(minValue=0, maxValue=1000000), default=10000),
+		"lossratio_to": Attribute(field=lossratio_to, description="Loss ratio in kbit/s",
+								  schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
+		"lossratio_from": Attribute(field=lossratio_from, description="Loss ratio in kbit/s",
+								  schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
 		
-		"duplicate_to": Attribute(field=duplicate_to, desc="Duplication ratio in %",
-								  schema=schema.Float(minValue=0.0, maxValue=100.0), default=0.0),
-		"duplicate_from": Attribute(field=duplicate_from, desc="Duplication ratio in %",
-								  schema=schema.Float(minValue=0.0, maxValue=100.0), default=0.0),
+		"duplicate_to": Attribute(field=duplicate_to, description="Duplication ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
+		"duplicate_from": Attribute(field=duplicate_from, description="Duplication ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
 		
-		"corrupt_to": Attribute(field=corrupt_to, desc="Corruption ratio in %",
-								  schema=schema.Float(minValue=0.0, maxValue=100.0), default=0.0),
-		"corrupt_from": Attribute(field=corrupt_from, desc="Corruption ratio in %",
-								  schema=schema.Float(minValue=0.0, maxValue=100.0), default=0.0),
+		"corrupt_to": Attribute(field=corrupt_to, description="Corruption ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
+		"corrupt_from": Attribute(field=corrupt_from, description="Corruption ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
 		
-		"delay_to": Attribute(field=delay_to, desc="Delay in ms",
-								  schema=schema.Float(minValue=0.0), default=0.0),
-		"delay_from": Attribute(field=delay_from, desc="Delay in ms",
-								  schema=schema.Float(minValue=0.0), default=0.0),
+		"delay_to": Attribute(field=delay_to, description="Delay in ms",
+								  schema=schema.Number(minValue=0.0), default=0.0),
+		"delay_from": Attribute(field=delay_from, description="Delay in ms",
+								  schema=schema.Number(minValue=0.0), default=0.0),
 
-		"jitter_to": Attribute(field=jitter_to, desc="Jitter in ms",
-							  schema=schema.Float(minValue=0.0), default=0.0),
-		"jitter_from": Attribute(field=jitter_from, desc="Jitter in ms",
-								schema=schema.Float(minValue=0.0), default=0.0),
+		"jitter_to": Attribute(field=jitter_to, description="Jitter in ms",
+							  schema=schema.Number(minValue=0.0), default=0.0),
+		"jitter_from": Attribute(field=jitter_from, description="Jitter in ms",
+								schema=schema.Number(minValue=0.0), default=0.0),
 
-		"distribution_to": Attribute(field=distribution_to, desc="Distribution",
+		"distribution_to": Attribute(field=distribution_to, description="Distribution",
 									   schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
 									   default="uniform"),
-		"distribution_from": Attribute(field=distribution_from, desc="Distribution",
+		"distribution_from": Attribute(field=distribution_from, description="Distribution",
 								schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
 									   default="uniform"),
 		
-		"capturing": Attribute(field=capturing, desc="Enable packet capturing", schema=schema.Bool(), default=False),
-		"capture_filter": Attribute(field=capture_filter, desc="Packet filter expression", schema=schema.String(), default=""),
-		"capture_port": Attribute(field=capture_port, schema=schema.Integer()),
-		"capture_mode": Attribute(field=capture_mode, desc="Capture mode", schema=schema.String(options=["net", "file"]), default="file"),
-		"capture_pid": Attribute(field=capture_pid, schema=schema.Integer()),
+		"capturing": Attribute(field=capturing, description="Enable packet capturing", schema=schema.Bool(), default=False),
+		"capture_filter": Attribute(field=capture_filter, description="Packet filter expression", schema=schema.String(), default=""),
+		"capture_port": Attribute(field=capture_port, schema=schema.Int()),
+		"capture_mode": Attribute(field=capture_mode, description="Capture mode", schema=schema.String(options=["net", "file"]), default="file"),
+		"capture_pid": Attribute(field=capture_pid, schema=schema.Int()),
 	}
 
 
@@ -149,9 +150,6 @@ class Bridge(connections.Connection):
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
 	
-	class Meta:
-		db_table = "tomato_bridge"
-		app_label = 'tomato'
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE

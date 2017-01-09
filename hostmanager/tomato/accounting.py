@@ -17,8 +17,6 @@
 
 from .db import *
 
-from django.db import models
-from django.core import exceptions
 import traceback
 import time
 from datetime import datetime, timedelta
@@ -140,12 +138,12 @@ class UsageStatistics(BaseDocument):
         try:
             if self.element:
                 return self.element
-        except exceptions.ObjectDoesNotExist:
+        except error.DoesNotExist:
             pass
         try:
             if self.connection:
                 return self.connection
-        except exceptions.ObjectDoesNotExist:
+        except error.DoesNotExist:
             pass
        
     @db.commit_after

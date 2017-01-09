@@ -15,12 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
 from ..db import *
 from ..generic import *
 from .. import connections, elements, resources
 from ..lib.attributes import Attr #@UnresolvedImport
-from ..resources import network
+from ..resources.network import Network
 from ..lib.constants import TypeName
 
 DOC="""
@@ -62,7 +61,6 @@ class External_Network(elements.Element):
 	ACTIONS = {
 	}
 	ATTRIBUTES = {
-		"id": IdAttribute(),
 		"network": Attribute(field=networkId, schema=schema.Identifier()),
 	}
 
@@ -72,19 +70,12 @@ class External_Network(elements.Element):
 		"__remove__": [ST_DEFAULT],
 	}
 	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {
-		"network": network,
-		"timeout": elements.Element.timeout
-	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_BRIDGE]
 	DEFAULT_ATTRS = {}
 	DOC = DOC
-	
-	class Meta:
-		db_table = "tomato_external_network"
-		app_label = 'tomato'
+
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE

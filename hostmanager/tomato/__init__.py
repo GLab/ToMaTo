@@ -17,6 +17,7 @@
 
 import os, sys, thread
 
+
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
 os.environ['TOMATO_MODULE'] = "hostmanager"
@@ -34,7 +35,17 @@ def db_migrate():
 	cmd.handle(app="tomato", verbosity=1)
 
 
+
+
 import config
+
+from lib.settings import settings
+
+
+from mongoengine import connect
+database_settings = settings.get_db_settings()
+database_connnection = connect(database_settings['database'], host=database_settings['host'], port=database_settings['port'])
+database_obj = getattr(database_connnection, database_settings['database'])
 
 	
 import threading, signal

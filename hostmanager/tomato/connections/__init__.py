@@ -16,11 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil
-from django.db import models
 
 from .. import dump
-from ..generic import *
 from ..db import *
+from ..generic import *
 from ..user import User
 from ..accounting import UsageStatistics
 from ..lib import db, attributes, logging #@UnresolvedImport

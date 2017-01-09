@@ -15,17 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
 from ..db import *
 from ..generic import *
 from .. import resources, firewall, currentUser
 from ..user import User
-from elements.external_network import External_Network
 
 
 class Network(resources.Resource, BaseDocument):
 	owner = ReferenceField(User)
-	ownerId = ReferenceFieldId(User)
+	ownerId = ReferenceFieldId(owner)
 	kind = StringField(required=True, unique=True)
 	bridge = StringField()
 	preference = IntField(default=0)
@@ -35,7 +33,8 @@ class Network(resources.Resource, BaseDocument):
 
 	@property
 	def instances(self):
-	    return External_Network.objects(network=self)
+		from ..elements.external_network import External_Network
+		return External_Network.objects(network=self)
 
 	class Meta:
 		db_table = "tomato_network"
