@@ -1,5 +1,6 @@
 from ..db import *
 from ..lib import logging, error, util
+from ..lib.exceptionhandling import wrap_and_handle_current_exception
 from .. import scheduler
 
 from . import HostObject
@@ -95,7 +96,7 @@ class HostConnection(HostObject):
 
 	def synchronize(self):
 		try:
-			if not self.topologyElement and not self.topologyConnection:
+			if (not self.topologyElement and not self.topologyConnection) or (self.host is None):
 				self.remove()
 				return
 			self.updateInfo()
@@ -106,7 +107,7 @@ class HostConnection(HostObject):
 			if err.code != error.UserError.UNSUPPORTED_ATTRIBUTE:
 				raise
 		except:
-			logging.logException(host=self.host.address)
+			wrap_and_handle_current_exception(re_raise=False, data={'host':self.host.address if self.host else None})
 
 HostConnection.register_delete_rule(HostElement, "connection", NULLIFY)
 

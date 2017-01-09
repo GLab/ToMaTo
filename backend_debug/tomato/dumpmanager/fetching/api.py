@@ -1,5 +1,6 @@
 from dumpsource import DumpSource
 from ...lib.error import UserError
+from ...lib.constants import DumpSourcePrefix
 
 ACCEPTED_SOURCES = ("web", "editor")
 
@@ -17,4 +18,4 @@ class ApiDumpSource(DumpSource):
 		self.source_name = source_name
 
 	def dump_source_name(self):
-		return "api:%s" % self.source_name
+		return DumpSourcePrefix.API + self.source_name

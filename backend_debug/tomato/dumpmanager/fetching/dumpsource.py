@@ -6,6 +6,8 @@ from ...lib.error import Error, InternalError, TransportError
 from ...lib.exceptionhandling import on_error_continue, wrap_and_handle_current_exception
 from ...db import data
 
+DB_FORMAT = "dumpsource:%s/last_updatetime"
+
 class DumpSource(object):
 	"""
 	A source of dumps.
@@ -26,7 +28,7 @@ class DumpSource(object):
 		get the last update time for this source.
 		:return:
 		"""
-		return data.get("dumpsource:%s/last_updatetime" % self.dump_source_name(), 0)
+		return data.get(DB_FORMAT % self.dump_source_name(), 0)
 
 	def _set_last_updatetime(self, last_updatetime):
 		"""
@@ -34,7 +36,7 @@ class DumpSource(object):
 		:param last_updatetime:
 		:return:
 		"""
-		data.set("dumpsource:%s/last_updatetime" % self.dump_source_name(), last_updatetime)
+		data.set(DB_FORMAT % self.dump_source_name(), last_updatetime)
 
 
 

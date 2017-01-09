@@ -107,7 +107,10 @@ class Topology(Entity, BaseDocument):
 							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
 	
 	def action_destroy(self):
-		self.action_stop()
+		try:
+			self.action_stop()
+		except:
+			pass  # destroying may still work...
 		self._compoundAction(action="destroy", stateFilter=lambda state: state=="prepared",
 							 typeOrder=["tinc_vpn", "udp_endpoint", "kvm", "kvmqm", "openvz", "repy"],
 							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
@@ -231,11 +234,28 @@ class Topology(Entity, BaseDocument):
 		logging.logMessage("info", category="topology", id=self.idStr, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.idStr)
 		if self.id:
-			for con in self.connections:
-				con._remove()
-			for el in self.elements:
-				el._remove(recurse=recurse)
-			self.delete()
+			try:
+				if self.maxState in (StateName.STARTED, StateName.PREPARED):
+					self.action("destroy")
+				for con in self.connections:
+					con._remove()
+				for el in self.elements:
+					el._remove(recurse=recurse)
+				self.delete()
+			except UserError:
+				raise
+			except:
+				self._disown()
+
+	def _disown(self):
+		"""
+		called when removal failed. Remove all users from topology.
+		a task will regularly try to remove user-less topologies.
+		:return:
+		"""
+		logging.logMessage("disown", category="topology", id=self.idStr, info=self.info())
+		self.permissions = []
+		self.save()
 
 	def modify_site(self, val):
 		if val:
@@ -395,6 +415,16 @@ def timeout_task():
 			wrap_and_handle_current_exception(re_raise=False)
 
 scheduler.scheduleRepeated(600, timeout_task)
+
+@util.wrap_task
+def remove_disowned_topologies():
+	for top in Topology.objects.filter(permissions__size=0):
+		try:
+			top.remove()
+		except:
+			wrap_and_handle_current_exception(re_raise=False)
+
+scheduler.scheduleRepeated(3600*24, remove_disowned_topologies)
 
 import elements
 from .connections import Connection
