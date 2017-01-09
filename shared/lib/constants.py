@@ -1,3 +1,8 @@
+class ConnectionDistance:
+	INTRA_HOST = "intra-host"
+	INTRA_SITE = "intra-site"
+	INTER_SITE = "inter-site"
+
 
 class DumpSourcePrefix:
 	API = "api:"
