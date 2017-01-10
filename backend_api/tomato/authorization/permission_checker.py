@@ -701,6 +701,7 @@ class PermissionChecker(UserInfo):
 		UserError.check(action in (ActionName.START, ActionName.STOP, ActionName.PREPARE, ActionName.DESTROY,
 															 ActionName.UPLOAD_GRANT, ActionName.UPLOAD_USE, ActionName.DOWNLOAD_GRANT,
 															 ActionName.REXTFV_UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_USE, ActionName.REXTFV_DOWNLOAD_GRANT,
+															 ActionName.DOWNLOAD_LOG_GRANT,
 															 ActionName.CHANGE_TEMPLATE),
 										code=UserError.UNSUPPORTED_ACTION, message="Unsupported action", data={"action": action})
 
