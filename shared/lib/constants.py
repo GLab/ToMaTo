@@ -21,6 +21,8 @@ class ActionName:
 	REXTFV_UPLOAD_USE = "rextfv_upload_use"
 	REXTFV_DOWNLOAD_GRANT = "rextfv_download_grant"
 
+	DOWNLOAD_LOG_GRANT = "download_log_grant"
+
 	CHANGE_TEMPLATE = "change_template"
 
 class StateName:
