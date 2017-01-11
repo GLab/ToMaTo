@@ -199,6 +199,16 @@ class KVMQM(elements.Element, elements.RexTFVElement):
 		"rextfv_download_grant": [StateName.PREPARED,StateName.STARTED],
 		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
+
+	CAP_ATTRS = {
+		"cpus": cpus,
+		"ram": ram,
+		"kblang": kblang,
+		"usbtablet": usbtablet,
+		"template": template,
+		"timeout": elements.Element.timeout
+	}
+
 	CAP_NEXT_STATE = {
 		ActionName.PREPARE: StateName.PREPARED,
 		ActionName.DESTROY: StateName.CREATED,
@@ -529,6 +539,12 @@ class KVMQM_Interface(elements.Element):
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
 	}
+
+	CAP_ATTRS = {
+		"name": name,
+		"timeout": elements.Element.timeout
+	}
+
 	CAP_NEXT_STATE = {}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [KVMQM.TYPE]
@@ -536,9 +552,7 @@ class KVMQM_Interface(elements.Element):
 	DOC = DOC_IFACE
 	__doc__ = DOC_IFACE #@ReservedAssignment
 	
-	class Meta:
-		db_table = "tomato_kvm_interface"
-		app_label = 'tomato'
+
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE

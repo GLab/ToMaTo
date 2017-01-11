@@ -69,6 +69,12 @@ class External_Network(elements.Element):
 	CAP_ACTIONS = {
 		"__remove__": [ST_DEFAULT],
 	}
+
+	CAP_ATTRS = {
+		"network": network,
+		"timeout": elements.Element.timeout
+	}
+
 	CAP_NEXT_STATE = {}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]

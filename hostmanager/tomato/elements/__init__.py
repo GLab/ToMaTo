@@ -23,7 +23,7 @@ from ..db import *
 from ..user import User # @UnresolvedImport
 from ..connections import Connection
 from ..accounting import UsageStatistics
-from ..lib import db, attributes, logging, cmd  # @UnresolvedImport
+from ..lib import attributes, logging, cmd  # @UnresolvedImport
 from ..lib.attributes import Attr  # @UnresolvedImport
 from ..lib.decorators import *
 from .. import config, dump, scheduler
@@ -64,6 +64,12 @@ class Element(LockedStatefulEntity, BaseDocument):
 	CAP_PARENT = []
 	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
+
+	TYPE = None
+
+	@property
+	def type(self):
+		return self.TYPE
 
 	def init(self, parent=None, attrs=None):
 		if not attrs: attrs = {}
@@ -508,14 +514,14 @@ class RexTFVElement(BaseDocument):
 
 def get(id_, **kwargs):
 	try:
-		el = Element.objects.get(id=id_, **kwargs)
+		el = Element.objects(id=id_, **kwargs)
 		return el.upcast()
 	except Element.DoesNotExist:
 		return None
 
 
 def getAll(**kwargs):
-	return (el.upcast() for el in Element.objects.filter(**kwargs))
+	return (el.upcast() for el in Element.objects(**kwargs))
 
 
 def create(type_, parent=None, attrs=None):

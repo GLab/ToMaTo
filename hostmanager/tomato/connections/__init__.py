@@ -22,7 +22,7 @@ from ..db import *
 from ..generic import *
 from ..user import User
 from ..accounting import UsageStatistics
-from ..lib import db, attributes, logging #@UnresolvedImport
+from ..lib import attributes, logging #@UnresolvedImport
 from ..lib.constants import StateName
 
 TYPES = {}
@@ -75,11 +75,11 @@ Bridge concept interface:
 
 class Connection(LockedStatefulEntity, BaseDocument):
 
-	type = StringField(required=True)
+	type = StringField(required=True, max_length=20, choices=[(t, t) for t in TYPES.keys()])
 	owner = ReferenceField(User)
 	ownerId = ReferenceFieldId(owner)
-	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
-	usageStatistics = ReferenceField(UsageStatistics)
+	state = StringField(choices=['default', 'created', 'prepared', 'started'], max_length=20, required=True)
+	usageStatistics = ReferenceField(UsageStatistics, null=True)
 	usageStatisticsId = ReferenceFieldId(usageStatistics)
 
 	@property
@@ -87,7 +87,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		from ..elements import Element
 		return Element.objects(connection=self)
 
-		# elements: set of elements.Element
 	meta = {
 		'allow_inheritance': True,
 	}
@@ -343,13 +342,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		
 def get(id_, **kwargs):
 	try:
-		con = Connection.objects.get(id=id_, **kwargs)
+		con = Connection.objects(id=id_, **kwargs)
 		return con.upcast()
 	except Connection.DoesNotExist:
 		return None
 
 def getAll(**kwargs):
-	return (con.upcast() for con in Connection.objects.filter(**kwargs))
+	return (con.upcast() for con in Connection.objects(**kwargs))
 
 def create(el1, el2, type_=None, attrs=None):
 	if not attrs: attrs = {}
