@@ -25,7 +25,7 @@ import base64, re
 from lib import wrap_rpc, serverInfo
 from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons, append_empty_choice
 import datetime
-from lib.reference_library import type_to_label
+from lib.references_web import type_to_label
 from lib.constants import TypeName
 
 from tomato.crispy_forms.layout import Layout

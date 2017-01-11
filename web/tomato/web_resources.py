@@ -10,7 +10,7 @@ settings = get_settings(config_module)
 from django.shortcuts import render
 import time
 from .lib import wrap_rpc
-from .lib.reference_library import techs
+from .lib.references_web import techs
 from .lib.exceptionhandling import wrap_and_handle_current_exception
 
 def web_resources():
