@@ -28,9 +28,9 @@ TYPES = {}
 def give(type_, num, owner):
 	logging.logMessage("instance_return", category="resource", type=type_, num=num, owner=(owner.__class__.__name__.lower(), owner.id))
 	if isinstance(owner, Element):
-		instance = ResourceInstance.objects.get(type=type_, num=num, ownerElement=owner)
+		instance = ResourceInstance.objects(type=type_, num=num, ownerElement=owner)
 	elif isinstance(owner, Connection):
-		instance = ResourceInstance.objects.get(type=type_, num=num, ownerConnection=owner)
+		instance = ResourceInstance.objects(type=type_, num=num, ownerConnection=owner)
 	else:
 		raise InternalError(code=InternalError.INVALID_PARAMETER,
 			message="Owner must either be Element or Connection", data={"owner_type": owner.__class__.__name__})
@@ -46,7 +46,7 @@ def take(type_, owner, blacklist=None):
 		if num in blacklist:
 			continue
 		try:
-			ResourceInstance.objects.get(type=type_, num=num)
+			ResourceInstance.objects(type=type_, num=num)
 			continue
 		except ResourceInstance.DoesNotExist:
 			pass
@@ -144,7 +144,7 @@ class ResourceInstance(BaseDocument):
 
 def get(id_, **kwargs):
 	try:
-		el = Resource.objects.get(id=id_, **kwargs).upcast()
+		el = Resource.objects(id=id_, **kwargs).upcast()
 		if hasattr(el, "owner") and el.owner == currentUser():
 			return el
 		else:

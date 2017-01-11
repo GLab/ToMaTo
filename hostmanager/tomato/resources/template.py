@@ -158,12 +158,12 @@ class Template(resources.Resource, Entity):
 
 def get(tech, name):
 	try:
-		return Template.objects.get(tech=tech, name=name, owner=currentUser())
+		return Template.objects(tech=tech, name=name, owner=currentUser())
 	except:
 		return None
 	
 def getPreferred(tech):
-	tmpls = Template.objects.filter(tech=tech, owner=currentUser()).order_by("-preference")
+	tmpls = Template.objects(tech=tech, owner=currentUser()).order_by("-preference")
 	InternalError.check(tmpls, InternalError.CONFIGURATION_ERROR, "No template registered", data={"tech": tech})
 	return tmpls[0]
 
