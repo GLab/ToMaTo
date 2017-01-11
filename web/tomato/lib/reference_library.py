@@ -1,9 +1,11 @@
-__author__ = 't-gerhard'
-
 from django.core.urlresolvers import reverse
 
 from constants import TypeName, TechName
 
+from .exceptionhandling import deprecated
+from .references import Reference
+
+@deprecated("constants.Tech.ONSCREEN")
 def tech_to_label(tech):
 	if tech == TechName.KVMQM:
 		return "KVM/QM"
@@ -15,6 +17,7 @@ def tech_to_label(tech):
 		return "LXC"
 	return tech
 
+@deprecated("constants.Type.ONSCREEN")
 def type_to_label(type_):
 	if type_ == TypeName.FULL_VIRTUALIZATION:
 		return "Full virtualization"
@@ -22,43 +25,23 @@ def type_to_label(type_):
 		return "Container-based virtualization"
 	if type_ == TypeName.REPY:
 		return "Repy"
-	return Type_
+	return type_
 
+@deprecated('new constant in constants.py')
 def techs():
 	return [TypeName.KVM, TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]
 
-def entity_to_label(entity):
-	if entity == 'topology':
-		return "Topology"
-	if entity == 'host':
-		return "Host"
-	if entity == 'site':
-		return "Site"
-	if entity == 'organization':
-		return "Organization"
-	if entity == 'account':
-		return "User Account"
-	if entity == 'template':
-		return "Template"
-	if entity == 'profile':
-		return "Device Profile"
-
-
-def reference_config():
-	return {
-		'topology': ('id'),
-		'host': ('name'),
-		'site': ('name'),
-		'organization': ('name'),
-		'account': ('name'),
-		'template': ('id'),
-		'profile': ('id')
-	}
-
 def resolve_reference(api, ref):
+	"""
+	use API and a reference to display a link to the respective object in a frontend.
+	:param api:
+	:param resolver: funtion that converts
+	:param ref:
+	:return:
+	"""
 	obj_type, obj_id = (ref[0], ref[1])
 
-	if obj_type == "topology":
+	if obj_type == Reference.TOPOLOGY:
 		ref_link = reverse("tomato.topology.info", kwargs={"id": obj_id})
 		try:
 			topology_info = api.topology_info(obj_id)
@@ -66,11 +49,11 @@ def resolve_reference(api, ref):
 		except:
 			return ref_link, "View Topology [%s]" % obj_id
 
-	if obj_type == "host":
+	if obj_type == Reference.HOST:
 		ref_link = reverse("tomato.admin.host.info", kwargs={"name": obj_id})
 		return ref_link, "View Host '%s'" % obj_id
 
-	if obj_type == "site":
+	if obj_type == Reference.SITE:
 		ref_link = reverse("tomato.admin.site.info", kwargs={"name": obj_id})
 		try:
 			site_info = api.site_info(obj_id)
@@ -78,7 +61,7 @@ def resolve_reference(api, ref):
 		except:
 			return ref_link, "View Site '%s'" % obj_id
 
-	if obj_type == "organization":
+	if obj_type == Reference.ORGANIZATION:
 		ref_link = reverse("tomato.admin.organization.info", kwargs={"name": obj_id})
 		try:
 			organization_info = api.organization_info(obj_id)
@@ -86,7 +69,7 @@ def resolve_reference(api, ref):
 		except:
 			return ref_link, "View Organization '%s'" % obj_id
 
-	if obj_type == "account":
+	if obj_type == Reference.ACCOUNT:
 		ref_link = reverse("tomato.account.info", kwargs={"id": obj_id})
 		try:
 			account_info = api.account_info(obj_id)
@@ -94,7 +77,7 @@ def resolve_reference(api, ref):
 		except:
 			return ref_link, "View User Account '%s'" % obj_id
 
-	if obj_type == "profile":
+	if obj_type == Reference.PROFILE:
 		ref_link = reverse("tomato.profile.info", kwargs={"res_id": obj_id})
 		try:
 			profile_info = api.profile_info(obj_id)
@@ -102,7 +85,7 @@ def resolve_reference(api, ref):
 		except:
 			return ref_link, "View Device Profile '%s'" % obj_id
 
-	if obj_type == "template":
+	if obj_type == Reference.TEMPLATE:
 		ref_link = reverse("tomato.template.info", kwargs={"res_id": obj_id})
 		try:
 			template_info = api.template_info(obj_id)
@@ -110,7 +93,7 @@ def resolve_reference(api, ref):
 		except:
 			return ref_link, "View Template '%s'" % obj_id
 
-	if obj_type == "errorgroup":
+	if obj_type == Reference.ERRORGROUP:
 		ref_link = reverse("tomato.dumpmanager.group_info", kwargs={"group_id": obj_id})
 		try:
 			errorgroup_info = api.errorgroup_info(obj_id)
@@ -119,3 +102,12 @@ def resolve_reference(api, ref):
 			return ref_link, "View Error group '%s'" % obj_id
 
 	return "", "%s %s" % (obj_type, obj_id)
+
+
+@deprecated('Reference.ONSCREEN')
+def entity_to_label(entity):
+	return Reference.ONSCREEN[entity]
+
+@deprecated('Reference.KEYS')
+def reference_config():
+	return Reference.KEYS
