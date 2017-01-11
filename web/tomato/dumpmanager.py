@@ -23,6 +23,7 @@ from django import forms
 from lib import wrap_rpc, AuthError, wrap_json
 from .lib import anyjson as json
 from .lib.handleerror import push_all_dumps
+from .lib.constants import DumpSourcePrefix
 from django.http import HttpResponseRedirect, HttpResponse
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
@@ -71,7 +72,11 @@ def group_list(api, request):
 			if s.startswith('host'):
 				host_count += 1
 			else:
-				e['frontend_mod']['sources'].append(s.replace('backend:', '').replace('api:', ''))
+				for pref in DumpSourcePrefix.ALL:
+					if s.startswith(pref):
+						s = s[len(pref):]
+						break
+				e['frontend_mod']['sources'].append(s)
 		if host_count > 0:
 			e['frontend_mod']['sources'].append('%d hostmanager' % host_count)
 		e['frontend_mod']['sources'] = ", ".join(e['frontend_mod']['sources'])
@@ -100,11 +105,16 @@ def group_info(api, request, group_id):
 	errorgroup = api.errorgroup_info(group_id, include_dumps=True)
 	for errordump in errorgroup['dumps']:
 		errordump['source___link'] = None
-		if errordump['source'].startswith('host:'):
-			errordump['source___link'] = errordump['source'].replace('host:', '')
+		if errordump['source'].startswith(DumpSourcePrefix.HOST):
+			errordump['source___link'] = errordump['source'][len(DumpSourcePrefix.HOST):]
 			errordump['source___displayname'] = errordump['source']
 		else:
-			errordump['source___displayname'] = errordump['source'].replace('backend:', '').replace('api:', '')
+			s = errordump["source"]
+			for pref in DumpSourcePrefix.ALL:
+				if s.startswith(pref):
+					s = s[len(pref):]
+					break
+			errordump['source___displayname'] = s
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	errorgroup['github_url'] = errorgroup.get('_github_url', False)
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup, 'github_enabled': github_enabled()})
@@ -224,14 +234,13 @@ def errorgroup_github(api, request, group_id):
 		backend_web_modules = set()
 		host_names = set()
 		for source in info['dump_contents']['source']:
-			if source.startswith("backend:"):
-				backend_web_modules.add(source[8:])
-			elif source.startswith("api:"):
-				backend_web_modules.add(source[4:])
-			elif source.startswith('host:'):
-				host_names.add(source)
-			else:
-				backend_web_modules.add(source)
+			for pref in DumpSourcePrefix.ALL+[""]:
+				if source.startswith(pref):
+					if pref == DumpSourcePrefix.HOST:
+						host_names.add(source)
+					else:
+						backend_web_modules.add(source[len(pref):])
+					break
 		source_str = ", ".join(backend_web_modules)
 		if len(host_names) > 0:
 			host_str = ('%d Hostmanager%s' % (len(host_names), "s" if len(host_names) > 1 else ""))

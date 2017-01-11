@@ -3,8 +3,12 @@ from ...lib.service import get_tomato_inner_proxy, is_reachable, is_self
 from ...lib.settings import settings, Config
 from ...dump import getAll
 from ...lib.error import InternalError
+from ...lib.constants import DumpSourcePrefix
 
 class BackendDumpSource(PullingDumpSource):
+	"""
+	backend modules as dump source.
+	"""
 
 	__slots__ = ("tomato_module", )
 
@@ -14,7 +18,7 @@ class BackendDumpSource(PullingDumpSource):
 		self.tomato_module = tomato_module
 
 	def dump_source_name(self):
-		return "backend:%s" % self.tomato_module
+		return DumpSourcePrefix.BACKEND + self.tomato_module
 
 	def _fetch_dumps(self, last_updatetime):
 		# no need to fetch if dumps are disabled...

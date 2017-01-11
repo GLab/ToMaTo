@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-from django.core import exceptions
+from .db import *
+
 import traceback
 import time
 from datetime import datetime, timedelta
@@ -95,8 +95,8 @@ class Usage:
     def info(self):
         return {"cputime": self.cputime, "memory": self.memory, "diskspace": self.diskspace, "traffic": self.traffic}
     
-class UsageStatistics(attributes.Mixin, models.Model):
-    begin = models.FloatField() #unix timestamp
+class UsageStatistics(BaseDocument):
+    begin = FloatField() #unix timestamp
     #records: [UsageRecord]
     attrs = db.JSONField()
     
@@ -138,12 +138,12 @@ class UsageStatistics(attributes.Mixin, models.Model):
         try:
             if self.element:
                 return self.element
-        except exceptions.ObjectDoesNotExist:
+        except error.DoesNotExist:
             pass
         try:
             if self.connection:
                 return self.connection
-        except exceptions.ObjectDoesNotExist:
+        except error.DoesNotExist:
             pass
        
     @db.commit_after
@@ -186,17 +186,17 @@ class UsageStatistics(attributes.Mixin, models.Model):
             for r in self.getRecords(type_).order_by("-begin")[KEEP_RECORDS[type_]:]:
                 r.delete()
     
-class UsageRecord(models.Model):
-    statistics = models.ForeignKey(UsageStatistics, related_name="records")
-    type = models.CharField(max_length=10, choices=[(t, t) for t in TYPES]) #@ReservedAssignment
-    begin = models.FloatField() #unix timestamp
-    end = models.FloatField() #unix timestamp
-    measurements = models.IntegerField()
+class UsageRecord(BaseDocument):
+    statistics = ReferenceField(UsageStatistics, db_field="records")
+    type = StringField(choices=[(t, t) for t in TYPES], required=True) #@ReservedAssignment
+    begin = FloatField() #unix timestamp
+    end = FloatField() #unix timestamp
+    measurements = IntField()
     #using fields to save space
-    memory = models.FloatField() #unit: bytes
-    diskspace = models.FloatField() #unit: bytes
-    traffic = models.FloatField() #unit: bytes
-    cputime = models.FloatField() #unit: cpu seconds
+    memory = FloatField() #unit: bytes
+    diskspace = FloatField() #unit: bytes
+    traffic = FloatField() #unit: bytes
+    cputime = FloatField() #unit: cpu seconds
     
     class Meta:
         pass

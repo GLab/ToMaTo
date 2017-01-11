@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os.path, sys
-from django.db import models
+from ..generic import *
+from ..db import *
 from .. import connections, elements, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -24,7 +25,8 @@ from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
-from ..lib.constants import ActionName, StateName, TypeName
+from ..lib.constants import ActionName, StateName, TechName
+
 
 DHCP_CMDS = ["[ -e /sbin/dhclient ] && /sbin/dhclient -nw %s",
 			 "[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s"]
@@ -144,36 +146,42 @@ Actions:
 """
 
 class OpenVZ(elements.RexTFVElement,elements.Element):
-	vmid_attr = Attr("vmid", type="int")
-	vmid = vmid_attr.attribute()
-	websocket_port_attr = Attr("websocket_port", type="int")
-	websocket_port = websocket_port_attr.attribute()
-	websocket_pid_attr = Attr("websocket_pid", type="int")
-	websocket_pid = websocket_pid_attr.attribute()
-	vncport_attr = Attr("vncport", type="int")
-	vncport = vncport_attr.attribute()
-	vncpid_attr = Attr("vncpid", type="int")
-	vncpid = vncpid_attr.attribute()
-	vncpassword_attr = Attr("vncpassword", type="str")
-	vncpassword = vncpassword_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", type="int", minValue=64, maxValue=4096, default=256)
-	ram = ram_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", type="float", minValue=0.1, maxValue=4.0, default=1.0)
-	cpus = cpus_attr.attribute()
-	diskspace_attr = Attr("diskspace", desc="Disk space", unit="MB", type="int", minValue=512, maxValue=102400, default=10240)
-	diskspace = diskspace_attr.attribute()
-	rootpassword_attr = Attr("rootpassword", desc="Root password", type="str")
-	rootpassword = rootpassword_attr.attribute()
-	hostname_attr = Attr("hostname", desc="Hostname", type="str")
-	hostname = hostname_attr.attribute()
-	gateway4_attr = Attr("gateway4", desc="IPv4 gateway", type="str")
-	gateway4 = gateway4_attr.attribute()	
-	gateway6_attr = Attr("gateway6", desc="IPv6 gateway", type="str")
-	gateway6 = gateway6_attr.attribute()		
-	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
-	template = models.ForeignKey(template.Template, null=True)
 
-	TYPE = TypeName.OPENVZ
+	vmid = IntField()
+	websocket_port = IntField()
+	websocket_pid = IntField()
+	vncport = IntField()
+	vncpid = IntField()
+	vncpassword =StringField()
+	cpus = IntField(default=1)
+	ram = IntField(default=256)
+	diskspace = IntField(default=10240)
+	rootpassword = StringField()
+	hostname = StringField()
+	gateway4 = StringField()
+	gateway6 = StringField()
+	usbtablet = BooleanField(default=True)
+	template = ReferenceField(template.Template)
+	templateId = ReferenceFieldId(template)
+
+
+	ATTRIBUTES = {
+		"vmid": Attribute(field=vmid, schema=schema.Int()),
+		"websocket_port": Attribute(field=websocket_port, schema=schema.Int()),
+		"websocket_pid": Attribute(field=websocket_pid, schema=schema.Int()),
+		"vncport": Attribute(field=vncport, schema=schema.Int()),
+		"vncpid": Attribute(field=vncpid, schema=schema.Int()),
+		"vncpassword": Attribute(field=vncpassword, schema=schema.String()),
+		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
+		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
+		"diskspace": Attribute(field=diskspace, description="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),
+		"rootpassword": Attribute(field=rootpassword, description="Root password", schema=schema.String()),
+		"gateway4": Attribute(field=gateway4, description="IPv4 gateway", schema=schema.String()),
+		"gateway6": Attribute(field=gateway4, description="IPv6 gateway", schema=schema.String()),
+		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier())
+	}
+
+	TYPE = TechName.OPENVZ
 	CAP_ACTIONS = {
 		ActionName.PREPARE: [StateName.CREATED],
 		ActionName.DESTROY: [StateName.PREPARED],
@@ -193,29 +201,15 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		ActionName.DESTROY: StateName.CREATED,
 		ActionName.START: StateName.STARTED,
 		ActionName.STOP: StateName.PREPARED,
-	}	
-	CAP_ATTRS = {
-		"cpus": cpus_attr,
-		"ram": ram_attr,
-		"diskspace": diskspace_attr,
-		"rootpassword": rootpassword_attr,
-		"hostname": hostname_attr,
-		"gateway4": gateway4_attr,
-		"gateway6": gateway6_attr,
-		"template": template_attr,
-		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {
-		TypeName.OPENVZ_INTERFACE: [StateName.CREATED, StateName.PREPARED],
+		TechName.OPENVZ_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
-	
-	class Meta:
-		db_table = "tomato_openvz"
-		app_label = 'tomato'
+
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
@@ -683,33 +677,30 @@ Actions: None
 """
 
 class OpenVZ_Interface(elements.Element):
-	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[StateName.CREATED])
-	name = name_attr.attribute()
-	ip4address_attr = Attr("ip4address", desc="IPv4 address", type="str")
-	ip4address = ip4address_attr.attribute()	
-	ip6address_attr = Attr("ip6address", desc="IPv6 address", type="str")
-	ip6address = ip6address_attr.attribute()		
-	use_dhcp_attr = Attr("use_dhcp", desc="Use DHCP", type="bool", default=False)
-	use_dhcp = use_dhcp_attr.attribute()		
-	mac_attr = Attr("mac", desc="MAC Address", type="str")
-	mac = mac_attr.attribute()
-	ipspy_pid_attr = Attr("ipspy_pid", type="int")
-	ipspy_pid = ipspy_pid_attr.attribute()
-	used_addresses_attr = Attr("used_addresses", type=list, default=[])
-	used_addresses = used_addresses_attr.attribute()
+	name = StringField(regex="^eth[0-9]+$")
+	ip4address = StringField()
+	ip6address = StringField()
+	use_dhcp = BooleanField(default=False)
+	mac = StringField()
+	ipspy_pid = IntField()
+	used_addresses = ListField(default=[])
 
-	TYPE = TypeName.OPENVZ_INTERFACE
+	Attributes = {
+		"name": Attribute(field=name, description="Name", schema = schema.String(regex="^eth[0-9]+$")),
+		"ip4address": Attribute(field=ip4address, description="IPv4 address", schema=schema.String()),
+		"ip6address": Attribute(field=ip6address, description="IPv6	address", schema=schema.String()),
+		"use_dhcp": Attribute(field=use_dhcp, description="Use DHCP", schema=schema.Bool(), default=False),
+		"mac": Attribute(field=mac, description="MAC Address", schema=schema.String()),
+		"ipspy_pid": Attribute(field=ipspy_pid, schema=schema.Int()),
+		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[]),
+	}
+
+
+	TYPE = TechName.OPENVZ_INTERFACE
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
 	}
-	CAP_NEXT_STATE = {}	
-	CAP_ATTRS = {
-		"name": name_attr,
-		"ip4address": ip4address_attr,
-		"ip6address": ip6address_attr,
-		"use_dhcp": use_dhcp_attr,
-		"timeout": elements.Element.timeout_attr
-	}
+	CAP_NEXT_STATE = {}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [OpenVZ.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]

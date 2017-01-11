@@ -49,7 +49,6 @@ var VMElement = IconElement.extend({
 					choices[conf[tech]] = editor.options.tech_names[conf[tech]];
 			}
 
-			console.log(conf);  //fixme: remove statement
 			if (conf.length > 1) {
 				config.ignore.remove("tech");
 				config.special.tech = new ChoiceElement({

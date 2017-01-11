@@ -1,5 +1,6 @@
 from ..db import *
 from ..lib import logging, error, util
+from ..lib.exceptionhandling import wrap_and_handle_current_exception
 from ..lib.settings import settings
 from .. import scheduler
 import time
@@ -121,7 +122,7 @@ class HostElement(HostObject):
 
 	def synchronize(self):
 		try:
-			if not self.topologyElement and not self.topologyConnection:
+			if (not self.topologyElement and not self.topologyConnection) or (self.host is None):
 				self.remove()
 				return
 			self.modify(timeout=time.time() + settings.get_host_connections_settings()['component-timeout'])
@@ -132,7 +133,7 @@ class HostElement(HostObject):
 			if err.code != error.UserError.UNSUPPORTED_ATTRIBUTE:
 				raise
 		except:
-			logging.logException(host=self.host.address)
+			wrap_and_handle_current_exception(re_raise=False, data={'host': self.host.address if self.host else None})
 
 
 def list():

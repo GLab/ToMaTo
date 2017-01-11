@@ -51,8 +51,8 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	def setUp(self):
 		self.remove_all_profiles()
 
-		#Create test profile for openvz
-		self.testprofile_tech = "openvz"
+		#Create test profile for container
+		self.testprofile_tech = "container"
 		self.testprofile_name = "normal"
 		self.testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
@@ -105,7 +105,7 @@ class ProfileTestCase(ProxyHoldingTestCase):
 
 	#Create a new correct profile
 	def test_profile_create(self):
-		profile_tech = "kvmqm"
+		profile_tech = "full"
 		profile_name = "normal"
 		profile_args = {'diskspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
@@ -121,7 +121,7 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	#Create a new correct profile without the user permission to do so
 	def test_profile_create_no_permission(self):
 		#Valid profile
-		profile_tech = "kvmqm"
+		profile_tech = "full"
 		profile_name = "normal"
 		profile_args = {'diskspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
@@ -141,7 +141,7 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	#Create a new profile which already exists (same technology and name)
 	def test_profile_create_already_existing(self):
 		#Valid profile
-		profile_tech = "kvmqm"
+		profile_tech = "full"
 		profile_name = "normal"
 		profile_args = {'diskspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
@@ -155,7 +155,7 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	#Create a new profile with non existing attribute
 	def test_profile_create_with_incorrect_attributes(self):
 		#Valid profile
-		profile_tech = "kvmqm"
+		profile_tech = "full"
 		profile_name = "normal"
 		profile_args = {'disksspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'description': 'Test profile', 'preference': 10}
 

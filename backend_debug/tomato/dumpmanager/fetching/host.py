@@ -1,7 +1,11 @@
 from dumpsource import PullingDumpSource
 from ...lib.remote_info import get_host_info
+from ...lib.constants import DumpSourcePrefix
 
 class HostDumpSource(PullingDumpSource):
+	"""
+	hosts as dump sources.
+	"""
 
 	__slots__ = ("name", )
 
@@ -9,7 +13,7 @@ class HostDumpSource(PullingDumpSource):
 		self.name = name
 
 	def dump_source_name(self):
-		return "host:%s" % self.name
+		return DumpSourcePrefix.HOST + self.name
 
 	def _fetch_dumps(self, last_updatetime):
 		host = get_host_info(self.name)

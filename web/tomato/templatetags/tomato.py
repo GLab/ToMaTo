@@ -11,6 +11,10 @@ from ..lib.settings import get_settings
 from .. import settings as config_module
 settings = get_settings(config_module)
 
+from ..lib.constants import TypeName, TechName
+ONSCREEN_TYPESTECHS = TypeName.ONSCREEN
+ONSCREEN_TYPESTECHS.update(TechName.ONSCREEN)
+
 register = template.Library()
 
 @register.filter
@@ -57,6 +61,10 @@ def absolute(value):
 	if value<0:
 		return -value
 	return value
+
+@register.filter
+def typetech_onscreen(value):
+	return sorted([ONSCREEN_TYPESTECHS.get(v, v) for v in value])
 	
 @register.filter
 def mult(value, arg):

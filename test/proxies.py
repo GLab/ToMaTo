@@ -203,7 +203,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	@classmethod
 	def add_profiles(cls):
 		for temp in cls.test_temps:
-			# Create test profile for openvz
+			# Create test profile for container
 			testprofile_tech = temp['tech']
 			restricted = False
 			if(temp['restricted'] == True):

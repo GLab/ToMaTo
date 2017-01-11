@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, hashlib, base64
+from ..db import *
+from ..generic import *
 from .. import connections, elements, config
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -28,14 +30,19 @@ DOC="""
 """
 
 class VpnCloud(elements.Element):
-	port_attr = Attr("port", type="int")
-	port = port_attr.attribute()
-	pid_attr = Attr("pid", type="int", null=True)
-	pid = pid_attr.attribute()
-	network_id_attr = Attr("network_id", type="int")
-	network_id = network_id_attr.attribute()
-	peers_attr = Attr("peers", desc="Peers", states=[StateName.CREATED], default=[])
-	peers = peers_attr.attribute()
+	port = IntField()
+	pid = IntField(null=True)
+	network_id = IntField()
+	peers = ListField(default=[])
+
+	ATTRIBUTES = {
+		"port": Attribute(field=port, schema=schema.Int()),
+		"pid": Attribute(field=pid, schema=schema.Int()),
+		"network_id": Attribute(field=network_id, schema=schema.Int()),
+		"peers": Attribute(field=peers, description="Peers", schema=schema.List(), default=[])
+	}
+
+
 
 	TYPE = TypeName.VPNCLOUD
 	CAP_ACTIONS = {
@@ -46,10 +53,6 @@ class VpnCloud(elements.Element):
 	CAP_NEXT_STATE = {
 		ActionName.START: StateName.STARTED,
 		ActionName.STOP: StateName.CREATED,
-	}	
-	CAP_ATTRS = {
-		"network_id": network_id_attr,
-		"peers": peers_attr,
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -57,11 +60,7 @@ class VpnCloud(elements.Element):
 	DEFAULT_ATTRS = {}
 	DOC = DOC
 	__doc__ = DOC
-	
-	class Meta:
-		db_table = "tomato_vpncloud"
-		app_label = 'tomato'
-	
+
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		self.state = StateName.CREATED

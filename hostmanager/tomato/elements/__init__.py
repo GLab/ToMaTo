@@ -16,10 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, os.path, abc, time
-from django.db import models
 from threading import Lock
 
-from ..user import User
+from ..generic import *
+from ..db import *
+from ..user import User # @UnresolvedImport
 from ..connections import Connection
 from ..accounting import UsageStatistics
 from ..lib import db, attributes, logging, cmd  # @UnresolvedImport
@@ -33,29 +34,36 @@ TYPES = {}
 REMOVE_ACTION = "(remove)"
 
 
-class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
-	type = models.CharField(max_length=20, validators=[db.nameValidator],
-		choices=[(t, t) for t in TYPES.keys()])  # @ReservedAssignment
-	owner = models.ForeignKey(User, related_name='elements')
-	parent = models.ForeignKey('self', null=True, related_name='children')
-	connection = models.ForeignKey(Connection, null=True, related_name='elements')
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='element')
-	state = models.CharField(max_length=20, validators=[db.nameValidator])
-	timeout = models.FloatField()
-	timeout_attr = Attr("timeout", desc="Timeout", states=[], type="float", null=False)
-	attrs = db.JSONField()
+class Element(LockedStatefulEntity, BaseDocument):
+
+	type = StringField(required=True)  # @ReservedAssignment
+	owner = ReferenceField(User)
+	ownerId = ReferenceFieldId(owner)
+	parent = GenericReferenceField()
+	parentId = ReferenceFieldId(parent)
+	connection = ReferenceField(Connection, reverse_delete_rule=NULLIFY)
+	connectionId = ReferenceFieldId(connection)
+	usageStatistics = ReferenceField(UsageStatistics)
+	usageStatisticsId = ReferenceFieldId(usageStatistics)
+	state = StringField(choices=['default', 'created', 'prepared', 'started'], required=True)
+	timeout = FloatField(required=True)
+
+	meta = {
+		'allow_inheritance': True,
+	}
+
+	@property
+	def children(self):
+		return Element.objects(parent=self) if self.id else []
 
 	DOC = ""
 	CAP_ACTIONS = {}
 	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {"timeout": timeout_attr}
+	CAP_ATTRS = {"timeout": timeout}
 	CAP_CHILDREN = {}
 	CAP_PARENT = []
 	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
-
-	class Meta:
-		pass
 
 	def init(self, parent=None, attrs=None):
 		if not attrs: attrs = {}
@@ -342,10 +350,28 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 	def updateUsage(self, usage, data):
 		pass
 
+	ACTIONS = {
+		Entity.REMOVE_ACTION: StatefulAction(fn=remove, check=checkRemove)
+	}
 
-class RexTFVElement:
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
+		"parent": Attribute(field=parentId, readOnly=True, schema=schema.Identifier()),
+		"connection": Attribute(field=connectionId, readOnly=True, schema=schema.Identifier()),
+		"usageSatistics": Attribute(field=usageStatisticsId, schema=schema.Identifier()),
+		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
+		"timeout": Attribute(field=timeout, schema=schema.Number(null=False))
+	}
+
+class RexTFVElement(BaseDocument):
 	lock = Lock()
 	rextfv_max_size = None
+
+	meta = {
+		'allow_inheritance': True
+	}
 
 	@abc.abstractmethod
 	def _nlxtp_path(self, filename):
@@ -476,6 +502,8 @@ class RexTFVElement:
 		res['attrs']['rextfv_max_size'] = self.rextfv_max_size
 		res['attrs']['rextfv_supported'] = True
 		return res
+
+
 
 
 def get(id_, **kwargs):

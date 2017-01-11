@@ -386,22 +386,22 @@ var Editor = Class.extend({
 		var group = tab.addGroup("Upload own images");
 		group.addStackedElements([
 			Menu.button({
-				label: "KVM image  FIXME: own images for certain techs and for types",
+				label: "Full Virtualization Image",
 				name: "kvm-custom",
-				icon: "img/kvm32.png",
+				icon: "img/full32.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
-				func: this.createPositionElementFunc(this.createUploadFunc("kvmqm"))
+				func: this.createPositionElementFunc(this.createUploadFunc("full"))
 			}),
 			Menu.button({
-				label: "OpenVZ image",
+				label: "Container-Based Virtualization Image",
 				name: "openvz-custom",
-				icon: "img/openvz32.png",
+				icon: "img/container32.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
-				func: this.createPositionElementFunc(this.createUploadFunc("openvz"))
+				func: this.createPositionElementFunc(this.createUploadFunc("container"))
 			}),
 			Menu.button({
 				label: "Repy script",

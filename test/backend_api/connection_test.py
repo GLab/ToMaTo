@@ -359,41 +359,51 @@ class FullTechnologyTestCase(ProxyHoldingTestCase):
 		Create two elements and a connection between them for each template to test all technologies
 		"""
 		for temp in self.test_temps:
-			testelement_attrs = {
-				"profile": self.default_profile_name,
-				"name": temp['label'],
-				"template": temp['name']
-			}
 
-			#Creat two elements of the same technology
-			testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																	   type=temp['tech'],
-																	   attrs=testelement_attrs)
-			testelement2 = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																		type=temp['tech'],
-																		attrs=testelement_attrs)
+			tech_attrs = {
+				"full": ["kvm", "kvmqm"],
+				"container": ["lxc", "openvz"],
+				"repy": [None]  # None: dont set tech attribute
+			}[temp["tech"]]
 
-			#Interface for element1
-			testelement_id = testelement['id']
-			testelement_interface = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																				  type="%s_interface" % temp['tech'],
-																				  parent=testelement_id)
-			testelement_interface_id = testelement_interface["id"]
+			for tech in tech_attrs:
+				testelement_attrs = {
+					"profile": self.default_profile_name,
+					"name": temp['label'],
+					"template": temp['name']
+				}
+				if tech is not None:
+					testelement_attrs["tech"] = tech
+
+				#Creat two elements of the same technology
+				testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																		   type=temp['tech'],
+																		   attrs=testelement_attrs)
+				testelement2 = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																			type=temp['tech'],
+																			attrs=testelement_attrs)
+
+				#Interface for element1
+				testelement_id = testelement['id']
+				testelement_interface = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																					  type="%s_interface" % temp['tech'],
+																					  parent=testelement_id)
+				testelement_interface_id = testelement_interface["id"]
 
 
 
-			#Interface for element2
-			testelement2_id = testelement2['id']
-			testelement2_interface = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																				   type="%s_interface" % temp['tech'],
-																				   parent=testelement2_id)
-			testelement2_interface_id = testelement2_interface["id"]
+				#Interface for element2
+				testelement2_id = testelement2['id']
+				testelement2_interface = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
+																					   type="%s_interface" % temp['tech'],
+																					   parent=testelement2_id)
+				testelement2_interface_id = testelement2_interface["id"]
 
 
-			#Create a connection between element1 and element2 by using the created interfaces
-			testconnection2 = self.proxy_holder.backend_api.connection_create(testelement_interface_id,
-																			  testelement2_interface_id)
+				#Create a connection between element1 and element2 by using the created interfaces
+				testconnection2 = self.proxy_holder.backend_api.connection_create(testelement_interface_id,
+																				  testelement2_interface_id)
 
-			self.assertIsNotNone(testconnection2)
+				self.assertIsNotNone(testconnection2)
 
-		self.proxy_holder.backend_api.topology_action(self.testtopology_id, "start")
+			self.proxy_holder.backend_api.topology_action(self.testtopology_id, "start")

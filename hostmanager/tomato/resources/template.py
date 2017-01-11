@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
 from .. import resources, config
+from ..db import *
+from ..generic import *
 from ..user import User
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import path #@UnresolvedImport
@@ -24,35 +25,37 @@ from ..lib.newcmd import aria2
 from ..lib.newcmd.util import fs
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, threading
-from ..lib.constants import TypeName
+from ..lib.constants import TypeName,TechName
 
 PATTERNS = {
 	TypeName.KVMQM: "%s.qcow2",
 	TypeName.KVM: "%s.qcow2",
 	TypeName.OPENVZ: "%s.tar.gz",
 	TypeName.LXC: "%s.tar.gz",
-	TypeName.REPY: "%s.repy",
 }
 
-class Template(resources.Resource):
-	owner = models.ForeignKey(User, related_name='templates')
-	tech = models.CharField(max_length=20)
-	name = models.CharField(max_length=50)
-	preference = models.IntegerField(default=0)
-	urls = attributes.attribute("urls", list)
-	checksum = attributes.attribute("checksum", str)
-	size = attributes.attribute("size", long)
-	popularity = attributes.attribute("popularity", float)
-	ready = attributes.attribute("ready", bool)
-	kblang = attributes.attribute("kblang",str,null=False,default="en-us")
+class Template(resources.Resource, Entity):
+	owner = ReferenceField(User)
+	ownerId = ReferenceFieldId(owner)
+	tech = StringField()
+	name = StringField()
+	preference = IntField()
+	urls = ListField()
+	checksum = StringField()
+	size = IntField()
+	popularity = IntField()
+	ready = BooleanField(default=False)
+	kblang = StringField(default="en-us")
 
 	TYPE = "template"
 
-	class Meta:
-		db_table = "tomato_template"
-		app_label = 'tomato'
-		unique_together = (("tech", "name", "owner"))
-	
+	meta = {
+		'ordering': ['tech', '+preference', 'name'],
+		'indexes': [
+			('tech', 'preference'), ('tech', 'name')
+		]
+	}
+
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		attrs = args[0]
@@ -64,11 +67,11 @@ class Template(resources.Resource):
 		resources.Resource.init(self, *args, **kwargs)
 
 	def fetch(self, detached=False):
-		if self.ready is True:
+		path = self.getPath()
+		if self.ready and os.path.exists(path):
 			return
 		if detached:
 			return threading.Thread(target=self.fetch).start()
-		path = self.getPath()
 		aria2.download(self.urls, path)
 		self.ready = True
 		self.save()
@@ -130,6 +133,28 @@ class Template(resources.Resource):
 		info["attrs"]["preference"] = self.preference
 		info["attrs"]["kblang"] = self.kblang
 		return info
+
+	ACTIONS = {
+		Entity.REMOVE_ACTION: Action(fn=remove)
+	}
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
+		"name": Attribute(field=name, schema=schema.Identifier()),
+		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
+		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
+		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL()),
+						  set=lambda obj, value: obj.modify_urls(value)),
+		"all_urls": Attribute(schema=schema.List(items=schema.URL()), readOnly=True, get=lambda obj: obj.all_urls),
+		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
+		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
+							schema=schema.String()),
+		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True,
+						  schema=schema.Number()),
+		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
+		"ready": Attribute(readOnly=True, schema=schema.Bool()),
+	}
 
 def get(tech, name):
 	try:
