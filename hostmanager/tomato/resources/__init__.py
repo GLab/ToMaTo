@@ -20,7 +20,7 @@ import random
 from .. import config
 from ..generic import *
 from ..db import *
-from ..lib import db, attributes, logging #@UnresolvedImport
+from ..lib import attributes, logging #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 
 TYPES = {}

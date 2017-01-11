@@ -109,6 +109,13 @@ class Tinc(elements.Element):
 		ActionName.STOP: [StateName.STARTED],
 		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
+
+	CAP_ATTRS = {
+		"mode": mode,
+		"peers": peers,
+		"timeout": elements.Element.timeout
+	}
+
 	CAP_NEXT_STATE = {
 		ActionName.START: StateName.STARTED,
 		ActionName.STOP: StateName.CREATED,

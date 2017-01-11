@@ -155,6 +155,15 @@ class Repy(elements.Element):
         "download_log_grant": [StateName.PREPARED, StateName.STARTED],
 		elements.REMOVE_ACTION: [StateName.PREPARED],
 	}
+
+	CAP_ATTRS = {
+		"template": template,
+		"args": args,
+		"cpus": cpus,
+		"ram": ram,
+		"bandwidth": bandwidth,
+		"timeout": elements.Element.timeout
+	}
 	CAP_NEXT_STATE = {
 		ActionName.START: StateName.STARTED,
 		ActionName.STOP: StateName.PREPARED,
@@ -388,6 +397,10 @@ class Repy_Interface(elements.Element):
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.PREPARED]
 	}
+	CAP_ATTRS = {
+		"timeout": elements.Element.timeout
+	}
+
 	CAP_NEXT_STATE = {}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [Repy.TYPE]

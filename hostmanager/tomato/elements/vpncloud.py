@@ -50,6 +50,12 @@ class VpnCloud(elements.Element):
 		ActionName.STOP: [StateName.STARTED],
 		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
+
+	CAP_ATTRS = {
+		"network_id": network_id,
+		"peers": peers,
+	}
+
 	CAP_NEXT_STATE = {
 		ActionName.START: StateName.STARTED,
 		ActionName.STOP: StateName.CREATED,

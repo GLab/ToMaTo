@@ -88,6 +88,12 @@ class UDP_Tunnel(elements.Element):
 		ActionName.STOP: [StateName.STARTED],
 		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
+
+	CAP_ATTRS = {
+		"connect": connection,
+		"timeout": elements.Element.timeout
+	}
+
 	CAP_NEXT_STATE = {
 		ActionName.START: StateName.STARTED,
 		ActionName.STOP: StateName.CREATED,

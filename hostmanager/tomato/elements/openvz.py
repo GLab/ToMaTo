@@ -196,6 +196,19 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		"execute": [StateName.STARTED],
 		elements.REMOVE_ACTION: [StateName.CREATED],
 	}
+
+	CAP_ATTRS = {
+		"cpus": cpus,
+		"ram": ram,
+		"diskspace": diskspace,
+		"rootpassword": rootpassword,
+		"hostname": hostname,
+		"gateway4": gateway4,
+		"gateway6": gateway6,
+		"template": template,
+		"timeout": elements.Element.timeout
+	}
+
 	CAP_NEXT_STATE = {
 		ActionName.PREPARE: StateName.PREPARED,
 		ActionName.DESTROY: StateName.CREATED,
@@ -700,6 +713,15 @@ class OpenVZ_Interface(elements.Element):
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
 	}
+
+	CAP_ATTRS = {
+		"name": name,
+		"ip4address": ip4address,
+		"ip6address": ip6address,
+		"use_dhcp": use_dhcp,
+		"timeout": elements.Element.timeout
+	}
+
 	CAP_NEXT_STATE = {}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [OpenVZ.TYPE]
