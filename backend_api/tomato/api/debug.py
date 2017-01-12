@@ -75,7 +75,7 @@ def debug_execute_task(tomato_module, task_id):
 	else:
 		get_tomato_inner_proxy(tomato_module).debug_execute_task(task_id)
 
-def debug_throw_error(tomato_module=None):
+def debug_throw_error(tomato_module=None, data=None):
 	"""
 	throw an error that is then dumped.
 	:return:
@@ -87,8 +87,8 @@ def debug_throw_error(tomato_module=None):
 	UserError.check(tomato_module in Config.TOMATO_BACKEND_MODULES, code=UserError.INVALID_VALUE, message="bad tomato module", data={"tomato_module": tomato_module})
 	if is_self(tomato_module):
 		try:
-			InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True)
+			InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True, data=data)
 		except:
 			wrap_and_handle_current_exception(re_raise=True)
 	else:
-		get_tomato_inner_proxy(tomato_module).debug_throw_error()
+		get_tomato_inner_proxy(tomato_module).debug_throw_error(data=data)
