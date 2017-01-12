@@ -32,3 +32,4 @@ from resources.template import Template #@UnusedImport
 from resources.network import Network #@UnusedImport
 from accounting import UsageStatistics, UsageRecord #@UnusedImport
 from user import User #@UnusedImport
+from .db import DataEntry

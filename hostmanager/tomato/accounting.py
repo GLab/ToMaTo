@@ -16,12 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .db import *
+from .generic import *
 
 import traceback
 import time
 from datetime import datetime, timedelta
 
-from lib import db, attributes, logging #@UnresolvedImport
+from lib import attributes, logging #@UnresolvedImport
 from lib.decorators import *
 from . import scheduler
 
@@ -98,7 +99,21 @@ class Usage:
 class UsageStatistics(BaseDocument):
     begin = FloatField() #unix timestamp
     #records: [UsageRecord]
-    attrs = db.JSONField()
+
+
+    ATTRIBUTES = {
+        "id": IdAttribute(),
+        "begin": Attribute(field=begin, schema=schema.Number())
+    }
+
+    @property
+    def records(self):
+        return UsageRecord.objects(begin=self)
+
+    @property
+    def element(self):
+        from elements import Element
+        return Element.objects(usageStatistics=self)
     
     class Meta:
         pass
@@ -145,8 +160,7 @@ class UsageStatistics(BaseDocument):
                 return self.connection
         except error.DoesNotExist:
             pass
-       
-    @db.commit_after
+
     def update(self):
         usage = Usage()
         begin = time.time()
@@ -198,8 +212,8 @@ class UsageRecord(BaseDocument):
     traffic = FloatField() #unit: bytes
     cputime = FloatField() #unit: cpu seconds
     
-    class Meta:
-        pass
+    meta = {"allow_inheritance": True}
+
 
     def init(self, statistics, type, begin, end, measurements, usage): #@ReservedAssignment
         self.statistics = statistics
