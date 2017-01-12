@@ -37,7 +37,7 @@ def resolve_reference(api, ref):
 	:param api:
 	:param resolver: funtion that converts
 	:param ref:
-	:return:
+	:return: tuple: link url, link text
 	"""
 	obj_type, obj_id = (ref[0], ref[1])
 
