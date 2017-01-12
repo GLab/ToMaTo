@@ -7,29 +7,24 @@ from .references import Reference
 
 @deprecated("constants.Tech.ONSCREEN")
 def tech_to_label(tech):
-	if tech == TechName.KVMQM:
-		return "KVM/QM"
-	if tech == TechName.KVM:
-		return "KVM/VirSH"
-	if tech == TechName.OPENVZ:
-		return "OpenVZ"
-	if tech == TechName.LXC:
-		return "LXC"
-	return tech
+	return TechName.ONSCREEN.get(tech, tech)
 
 @deprecated("constants.Type.ONSCREEN")
 def type_to_label(type_):
-	if type_ == TypeName.FULL_VIRTUALIZATION:
-		return "Full virtualization"
-	if type_ == TypeName.CONTAINER_VIRTUALIZATION:
-		return "Container-based virtualization"
-	if type_ == TypeName.REPY:
-		return "Repy"
-	return type_
+	return TypeName.ONSCREEN.get(type_, type_)
 
 @deprecated('new constant in constants.py')
 def techs():
 	return [TypeName.KVM, TypeName.KVMQM, TypeName.OPENVZ, TypeName.REPY]
+
+@deprecated('Reference.ONSCREEN')
+def entity_to_label(entity):
+	return Reference.ONSCREEN[entity]
+
+@deprecated('Reference.KEYS')
+def reference_config():
+	return Reference.KEYS
+
 
 def resolve_reference(api, ref):
 	"""
@@ -81,7 +76,7 @@ def resolve_reference(api, ref):
 		ref_link = reverse("tomato.profile.info", kwargs={"res_id": obj_id})
 		try:
 			profile_info = api.profile_info(obj_id)
-			return ref_link, "View %s Device Profile '%s'" % (tech_to_label(profile_info['tech']), profile_info['label'])
+			return ref_link, "View %s Device Profile '%s'" % (TypeName.ONSCREEN.get(profile_info['tech'],profile_info['tech']), profile_info['label'])
 		except:
 			return ref_link, "View Device Profile '%s'" % obj_id
 
@@ -89,7 +84,7 @@ def resolve_reference(api, ref):
 		ref_link = reverse("tomato.template.info", kwargs={"res_id": obj_id})
 		try:
 			template_info = api.template_info(obj_id)
-			return ref_link, "View %s Template '%s'" % (tech_to_label(template_info['tech']), template_info['label'])
+			return ref_link, "View %s Template '%s'" % (TypeName.ONSCREEN.get(template_info['tech'],template_info['tech']), template_info['label'])
 		except:
 			return ref_link, "View Template '%s'" % obj_id
 
@@ -102,12 +97,3 @@ def resolve_reference(api, ref):
 			return ref_link, "View Error group '%s'" % obj_id
 
 	return "", "%s %s" % (obj_type, obj_id)
-
-
-@deprecated('Reference.ONSCREEN')
-def entity_to_label(entity):
-	return Reference.ONSCREEN[entity]
-
-@deprecated('Reference.KEYS')
-def reference_config():
-	return Reference.KEYS
