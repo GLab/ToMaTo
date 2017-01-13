@@ -181,6 +181,16 @@ def tabbed_console(api, request, id):
 	return render(request, "topology/console_tabbed.html", {"topology": top})
 
 @wrap_rpc
+def connection_stats(api, request, id):
+	conn = api.connection_info(id)
+	elemA_if = api.element_info(conn["elements"][0])
+	elemB_if = api.element_info(conn["elements"][1])
+	elemA = api.element_info(elemA_if["parent"])
+	elemB = api.element_info(elemB_if["parent"])
+	conn["label"] = "%s.%s &lrarr; %s.%s" % (elemA["name"], elemA_if["name"], elemB["name"], elemB_if["name"])
+	return render(request, "topology/connection_link.html", {"conn": conn})
+
+@wrap_rpc
 def export(api, request, id):
 	if not api.user:
 		raise AuthError()

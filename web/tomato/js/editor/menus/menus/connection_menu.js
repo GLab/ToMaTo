@@ -12,6 +12,13 @@ var createConnectionMenu = function(obj) {
 					obj.showUsage();
 				}
 			},
+			"link": {
+				name:"Link statistics",
+				icon:"info",
+				callback: function(){
+					obj.showLinkInfo();
+				}
+			},
 			"sep1": "---",
 			/*
 			"cloudshark_capture": obj.captureDownloadable() ? {

@@ -191,6 +191,8 @@ def map_kml(api, request):
 
 @wrap_rpc
 def details_link(api, request, src, dst):
+	if src==dst:
+		return details_site(request, src)
 	return render(request, "map/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['label'] + " <-> " + api.site_info(dst)['label'],'user':api.user});
 
 @wrap_rpc
