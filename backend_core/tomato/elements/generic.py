@@ -26,6 +26,7 @@ from .. import elements, host
 from ..lib.error import UserError, InternalError
 import time
 from ..lib.constants import StateName, ActionName, TypeTechTrans
+from ..lib.references import Reference
 
 ST_CREATED = StateName.CREATED
 ST_PREPARED = StateName.PREPARED
@@ -285,7 +286,7 @@ class MultiTechVMElement(VMElement):
 				if tech in _host.elementTypes:
 					return tech
 		raise InternalError(code=InternalError.ASSERTION, message="selected host doesn't match element requirement",
-		                    data={"type": self.TYPE, "host": _host.name})
+		                    data={"type": self.TYPE, "host": _host.name, "ref": Reference.host(_host.name)})
 
 	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
 	ATTRIBUTES.update({

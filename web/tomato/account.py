@@ -34,7 +34,7 @@ from lib import wrap_rpc, getapi, AuthError, serverInfo, wrap_json, userflags
 
 from lib.error import UserError #@UnresolvedImport
 
-from lib.reference_library import resolve_reference, reference_config, entity_to_label
+from lib.references_web import resolve_reference, reference_config, entity_to_label
 
 from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout

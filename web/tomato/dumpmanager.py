@@ -24,6 +24,7 @@ from lib import wrap_rpc, AuthError, wrap_json
 from .lib import anyjson as json
 from .lib.handleerror import push_all_dumps
 from .lib.constants import DumpSourcePrefix
+from .lib.references_web import resolve_reference
 from django.http import HttpResponseRedirect, HttpResponse
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
@@ -115,6 +116,8 @@ def group_info(api, request, group_id):
 					s = s[len(pref):]
 					break
 			errordump['source___displayname'] = s
+		if "ref" in errordump["description"]["data"]:
+			errordump["ref___link"], errordump["ref___text"] = resolve_reference(api, errordump["description"]["data"]["ref"])
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	errorgroup['github_url'] = errorgroup.get('_github_url', False)
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup, 'github_enabled': github_enabled()})

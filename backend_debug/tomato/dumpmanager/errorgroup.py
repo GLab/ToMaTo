@@ -5,7 +5,7 @@ from ..lib.error import UserError
 from ..lib.exceptionhandling import wrap_and_handle_current_exception
 from ..lib.service import get_backend_users_proxy
 from ..lib.userflags import Flags
-from ..lib import util
+from ..lib.references import Reference
 
 class ErrorGroup(BaseDocument):
 	"""
@@ -190,7 +190,7 @@ class ErrorGroup(BaseDocument):
 						"Description: %s",
 						"It has first been observed on %s.")) % (
 										grp.description, dump_source_name),
-					ref=["errorgroup", grp.groupId],
+					ref=Reference.errorgroup(grp.groupId),
 					subject_group="new_errorgroup",
 					flag_filter=Flags.ErrorNotify
 				)

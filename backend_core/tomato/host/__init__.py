@@ -29,6 +29,7 @@ from ..lib.service import get_backend_users_proxy, get_backend_accounting_proxy
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
 from ..lib.constants import TechName, TypeName, TypeTechTrans
+from ..lib.references import Reference
 
 
 element_caps = {}
@@ -598,7 +599,7 @@ class Host(Entity, BaseDocument):
 				self.sendMessageToHostManagers(
 					title="Host %s: Problems resolved" % self,
 					message="Problems on host %s have been resolved." % self,
-					ref=['host', self.name],
+					ref=Reference.host(self.name),
 					subject_group="host failure"
 				)
 			self.problemAge = 0
@@ -609,7 +610,7 @@ class Host(Entity, BaseDocument):
 				self.sendMessageToHostManagers(
 					title="Host %s: Problems" % self,
 					message="Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)),
-					ref=['host', self.name],
+					ref=Reference.host(self.name),
 					subject_group="host failure"
 				)
 			if self.problemAge < time.time() - 6 * 60 * 60:
@@ -621,7 +622,7 @@ class Host(Entity, BaseDocument):
 					self.sendMessageToHostManagers(
 						title="Host %s: Problems persist" % self,
 						message="Host %s has the following problems since %s:\n\n%s" % (self, duration, ", ".join(problems)),
-						ref=['host', self.name],
+						ref=Reference.host(self.name),
 						subject_group="host failure"
 					)
 		self.save_if_exists()
