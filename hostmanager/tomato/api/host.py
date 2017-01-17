@@ -244,17 +244,14 @@ def host_capabilities():
 	"""
 	element_types = {}
 	for type_, class_ in elements.TYPES.iteritems():
-		caps = {}
-		for cap in ["actions", "next_state", "children", "parent", "con_concepts"]:
-			caps[cap] = getattr(class_, "CAP_"+cap.upper())
-		caps["attrs"] = class_.cap_attrs()
+		caps = class_.capabilities()
+		for cap in ["children", "parent", "con_concepts"]:
+			caps[cap] = getattr(class_, "CAP_" + cap.upper())
 		element_types[type_] = caps
 	connection_types = {}
 	for type_, class_ in connections.TYPES.iteritems():
-		caps = {}
-		for cap in ["actions", "next_state", "con_concepts"]:
-			caps[cap] = getattr(class_, "CAP_"+cap.upper())
-		caps["attrs"] = class_.cap_attrs()
+		caps = class_.capabilities()
+		caps["con_concepts"] = class_.CAP_CON_CONCEPTS
 		connection_types[type_] = caps
 	return xml_rpc_sanitize({
 		"elements": element_types,
