@@ -27,6 +27,7 @@ from .lib.remote_info import get_user_info
 from .lib.service import get_backend_users_proxy
 from .lib.constants import StateName, ActionName
 from .lib.exceptionhandling import wrap_and_handle_current_exception
+from .lib.references import Reference
 
 class TimeoutStep:
 	INITIAL = 0
@@ -287,7 +288,7 @@ class Topology(Entity, BaseDocument):
 		user_api = get_backend_users_proxy()
 		for permission in self.permissions:
 			if Role.leq(role, permission.role):
-				user_api.send_message(permission.user, subject, message, fromUser, ref=['topology', self.idStr])
+				user_api.send_message(permission.user, subject, message, fromUser, ref=Reference.topology(self.idStr))
 
 	@property
 	def maxState(self):

@@ -28,12 +28,12 @@ def debug_debug_internal_api_call(_command, args=None, kwargs=None, profile=True
 def debug_execute_task(task_id):
 	return scheduler.executeTask(task_id, force=True)
 
-def debug_throw_error():
+def debug_throw_error(data=None):
 	"""
 	throw an error that is then dumped.
 	:return:
 	"""
 	try:
-		InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True)
+		InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True, data=data)
 	except:
 		wrap_and_handle_current_exception(re_raise=True)

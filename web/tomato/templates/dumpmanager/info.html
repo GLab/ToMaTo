@@ -125,7 +125,10 @@ function openGithub(group_id) {
         <td>{{errordump.timestamp|todate}}</td>
 		<td>
 			<form style="margin:0px;padding:0px;" method="post">
-				<button type="button" class="btn btn-info" onclick="showDump('{{errorgroup.group_id}}', '{{errordump.source}}','{{errordump.dump_id}}',true); return false" style="cursor:pointer;"}">&nbsp;<span class="glyphicon glyphicon-info-sign"></span>&nbsp;</button>
+				{% if errordump.ref___link %}
+					<button type="submit" class="btn btn-info" formaction="{{errordump.ref___link}}" style="cursor:pointer;">&nbsp;<span class="glyphicon glyphicon-arrow-right"></span>&nbsp;</button>
+				{% endif %}
+				<button type="button" class="btn btn-info" onclick="showDump('{{errorgroup.group_id}}', '{{errordump.source}}','{{errordump.dump_id}}',true); return false" style="cursor:pointer;">&nbsp;<span class="glyphicon glyphicon-info-sign"></span>&nbsp;</button>
 			</form>
 		</td>
 	</tr>
