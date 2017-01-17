@@ -295,10 +295,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			
 	def getElements(self):
 		return [el.upcast() for el in self.elements.all()]
-			
-	@classmethod	
+
+	@classmethod
 	def cap_attrs(cls):
-		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
+		return dict([(key, value) for (key, value) in cls.CAP_ATTRS.iteritems()])
+
+
+
 					
 	def info(self):
 		els = [el.id for el in self.elements.all()]

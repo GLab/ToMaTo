@@ -56,10 +56,21 @@ class Element(LockedStatefulEntity, BaseDocument):
 	def children(self):
 		return Element.objects(parent=self) if self.id else []
 
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
+		"parent": Attribute(field=parentId, readOnly=True, schema=schema.Identifier()),
+		"connection": Attribute(field=connectionId, readOnly=True, schema=schema.Identifier()),
+		"usageSatistics": Attribute(field=usageStatisticsId, schema=schema.Identifier()),
+		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
+		"timeout": Attribute(field=timeout, schema=schema.Number(null=False))
+	}
+
+
 	DOC = ""
 	CAP_ACTIONS = {}
 	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {"timeout": timeout}
 	CAP_CHILDREN = {}
 	CAP_PARENT = []
 	CAP_CON_CONCEPTS = []
@@ -337,7 +348,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 
 	@classmethod
 	def cap_attrs(cls):
-		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
+		return dict([(key, value) for (key, value) in cls.CAP_ATTRS.iteritems()])
 
 	def info(self):
 		res = {
@@ -353,23 +364,16 @@ class Element(LockedStatefulEntity, BaseDocument):
 		res['attrs']['rextfv_supported'] = False
 		return res
 
+	ACTIONS = {
+		Entity.REMOVE_ACTION: StatefulAction(remove, check=checkRemove)
+	}
+
 	def updateUsage(self, usage, data):
 		pass
 
-	ACTIONS = {
-		Entity.REMOVE_ACTION: StatefulAction(fn=remove, check=checkRemove)
-	}
 
-	ATTRIBUTES = {
-		"id": IdAttribute(),
-		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
-		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
-		"parent": Attribute(field=parentId, readOnly=True, schema=schema.Identifier()),
-		"connection": Attribute(field=connectionId, readOnly=True, schema=schema.Identifier()),
-		"usageSatistics": Attribute(field=usageStatisticsId, schema=schema.Identifier()),
-		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"timeout": Attribute(field=timeout, schema=schema.Number(null=False))
-	}
+
+
 
 class RexTFVElement(BaseDocument):
 	lock = Lock()

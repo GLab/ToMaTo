@@ -93,33 +93,19 @@ class Tinc(elements.Element):
 	pubkey = StringField()
 	peers = ListField(default=[])
 
-	ATTRIBUTES = {
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"port": Attribute(field=port, schema=schema.Int()),
 		"path": Attribute(field=path, schema=schema.String()),
 		"mode": Attribute(field=mode, schema=schema.String(options=["hub", "switch"]), default="switch"),
 		"privkey": Attribute(field=privkey, description="Private key", schema=schema.String()),
 		"pubkey": Attribute(field=pubkey, description="Public key",  schema=schema.String()),
 		"peers": Attribute(field=peers, description="Peers", default=[])
-	}
+	})
+
 
 
 	TYPE = TypeName.TINC
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
-
-	CAP_ATTRS = {
-		"mode": mode,
-		"peers": peers,
-		"timeout": elements.Element.timeout
-	}
-
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}
 
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -248,7 +234,19 @@ class Tinc(elements.Element):
 			if not trafficA is None and not trafficB is None:
 				traffic = trafficA + trafficB
 				usage.updateContinuous("traffic", traffic, data)
-			
+
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+	})
+
+
 if not config.MAINTENANCE:
 	tincVersion = cmd.getDpkgVersion("tinc")
 	if [1, 0] <= tincVersion <= [2, 0]:

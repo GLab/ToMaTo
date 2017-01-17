@@ -58,11 +58,14 @@ class External_Network(elements.Element):
 	network = ReferenceField(Network, reverse_delete_rule=DENY)
 	networkId = ReferenceFieldId(network)
 
-	ACTIONS = {
-	}
-	ATTRIBUTES = {
+
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"network": Attribute(field=networkId, schema=schema.Identifier()),
-	}
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
 
 	ST_DEFAULT = "default"
 	TYPE = TypeName.EXTERNAL_NETWORK
@@ -70,10 +73,6 @@ class External_Network(elements.Element):
 		"__remove__": [ST_DEFAULT],
 	}
 
-	CAP_ATTRS = {
-		"network": network,
-		"timeout": elements.Element.timeout
-	}
 
 	CAP_NEXT_STATE = {}
 	CAP_CHILDREN = {}

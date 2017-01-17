@@ -21,7 +21,7 @@ from .. import resources, firewall, currentUser
 from ..user import User
 
 
-class Network(resources.Resource, BaseDocument):
+class Network(resources.Resource):
 	owner = ReferenceField(User)
 	ownerId = ReferenceFieldId(owner)
 	kind = StringField(required=True, unique=True)
@@ -36,11 +36,7 @@ class Network(resources.Resource, BaseDocument):
 		from ..elements.external_network import External_Network
 		return External_Network.objects(network=self)
 
-	class Meta:
-		db_table = "tomato_network"
-		app_label = 'tomato'
-		unique_together = (("bridge", "owner"))
-	
+
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		resources.Resource.init(self, *args, **kwargs)
@@ -86,16 +82,18 @@ class Network(resources.Resource, BaseDocument):
 		info["attrs"]["preference"] = self.preference
 		return info
 
-	ACTIONS = {
+	ACTIONS = resources.Resource.ACTIONS.copy()
+	ACTIONS.update({
 		Entity.REMOVE_ACTION: Action(fn=remove)
-	}
-	ATTRIBUTES = {
-		"id": IdAttribute(),
+	})
+
+	ATTRIBUTES = resources.Resource.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
 		"kind": Attribute(field=kind, schema=schema.String()),
 		"bridge": Attribute(field=bridge, schema=schema.String()),
 		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
-	}
+	})
 
 	meta = {
 		'ordering': ['-preference', 'kind'],

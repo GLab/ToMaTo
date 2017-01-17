@@ -56,9 +56,8 @@ class Bridge(connections.Connection):
 	capture_mode = StringField(choices=["net", "file"], default="file")
 	capture_pid = IntField()
 
-	ATTRIBUTES = {
-		"bridge": Attribute(field=bridge, schema=schema.String()),
-		
+	ATTRIBUTES = connections.Connection.ATTRIBUTES.copy()
+	ATTRIBUTES_EMUL = {
 		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
 		
 		"bandwith_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",
@@ -97,54 +96,21 @@ class Bridge(connections.Connection):
 		"distribution_from": Attribute(field=distribution_from, description="Distribution",
 								schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
 									   default="uniform"),
-		
-		"capturing": Attribute(field=capturing, description="Enable packet capturing", schema=schema.Bool(), default=False),
-		"capture_filter": Attribute(field=capture_filter, description="Packet filter expression", schema=schema.String(), default=""),
-		"capture_port": Attribute(field=capture_port, schema=schema.Int()),
-		"capture_mode": Attribute(field=capture_mode, description="Capture mode", schema=schema.String(options=["net", "file"]), default="file"),
-		"capture_pid": Attribute(field=capture_pid, schema=schema.Int()),
+	}
+
+	ATTRIBUTES_CAPTURE = {
+		"capturing": Attribute(field=capturing, description="Enable packet capturing", schema=schema.Bool(),
+							   default=False),
+		"capture_filter": Attribute(field=capture_filter, description="Packet filter expression",
+									schema=schema.String(), default=""),
+		"capture_mode": Attribute(field=capture_mode, description="Capture mode",
+								  schema=schema.String(options=["net", "file"]), default="file"),
+
 	}
 
 
 
 	TYPE = "bridge"
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		connections.REMOVE_ACTION: [StateName.CREATED, StateName.STARTED],
-	}
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}
-	CAP_ACTIONS_EMUL = {
-	}
-	CAP_ACTIONS_CAPTURE = {
-		"download_grant": [StateName.CREATED, StateName.STARTED],
-	}
-	CAP_ATTRS = {}
-	CAP_ATTRS_EMUL = {
-		"emulation": emulation,
-		"delay_to": delay_to,
-		"delay_from": delay_from,
-		"jitter_to": jitter_to,
-		"jitter_from": jitter_from,
-		"distribution_to": distribution_to,
-		"distribution_from": distribution_from,
-		"bandwidth_to": bandwidth_to,
-		"bandwidth_from": bandwidth_from,
-		"lossratio_to": lossratio_to,
-		"lossratio_from": lossratio_from,
-		"duplicate_to": duplicate_to,
-		"duplicate_from": duplicate_from,
-		"corrupt_to": corrupt_to,
-		"corrupt_from": corrupt_from,
-	}
-	CAP_ATTRS_CAPTURE = {
-		"capturing": capturing,
-		"capture_filter": capture_filter,
-		"capture_mode": capture_mode,
-	}
 	DEFAULT_ATTRS = {"bandwidth_to": 10000, "bandwidth_from": 10000}
 	CAP_CON_CONCEPTS = [(connections.CONCEPT_INTERFACE, connections.CONCEPT_INTERFACE)]
 	DOC = DOC
@@ -386,6 +352,22 @@ class Bridge(connections.Connection):
 			usage.memory = process.memory(self.capture_pid)
 		usage.diskspace = path.diskspace(self.dataPath())
 
+	ACTIONS = connections.Connection.ACTIONS.copy()
+	ACTIONS.update({
+		connections.REMOVE_ACTION: StatefulAction(connections.Connection.remove, check=connections.Connection.checkRemove,
+											 allowedStates=[StateName.CREATED, StateName.STARTED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+
+	})
+	ACTIONS_EMUL = {}
+	ACTIONS_CAPTURE = {
+		ActionName.DOWNLOAD_GRANT: StatefulAction(action_download_grant,
+												  allowedStates=[StateName.CREATED, StateName.STARTED]),
+	}
+
 if not config.MAINTENANCE:
 	bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
 	iprouteVersion = cmd.getDpkgVersion("iproute")
@@ -397,13 +379,13 @@ if not config.MAINTENANCE:
 		print "Warning: Bridge not supported on bridge-utils version %s" % bridgeUtilsVersion
 	
 	if iprouteVersion:
-		Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_EMUL)
-		Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_EMUL)
+		Bridge.ATTRIBUTES.update(Bridge.ATTRIBUTES_EMUL)
+		Bridge.CAP_ACTIONS.update(Bridge.ACTIONS_EMUL)
 	else:
 		print "Warning: Bridge link emulation needs iproute, disabled"
 	
 	if tcpdumpVersion:
-		Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_CAPTURE)
-		Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_CAPTURE)
+		Bridge.ATTRIBUTES.update(Bridge.ATTRIBUTES_CAPTURE)
+		Bridge.ACTIONS.update(Bridge.ACTIONS_CAPTURE)
 	else:
 		print "Warning: Bridge packet capturing needs tcpdump, disabled"

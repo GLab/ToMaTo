@@ -62,12 +62,19 @@ def take(type_, owner, blacklist=None):
 from ..elements import Element
 from ..connections import Connection
 
-class Resource(LockedStatefulEntity, BaseDocument):
-	type = StringField(choices=[(t, t) for t in TYPES]) #@ReservedAssignment
-
+class Resource(Entity, BaseDocument):
+	type = StringField(choices=[(t, t) for t in TYPES], max_length=20) #@ReservedAssignment
+	attrs = DictField()
 
 	meta = {
+		'auto_create_index': False,
 		'allow_inheritance': True,
+	}
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"type": Attribute(field=type, schema=schema.String(options=[(t, t) for t in TYPES],maxLength=20)),
+		"attrs": Attribute(field=attrs, schema=schema.StringMap())
 	}
 
 	def init(self, attrs=None):
@@ -103,7 +110,7 @@ class Resource(LockedStatefulEntity, BaseDocument):
 	
 	def info(self):
 		return {
-			"id": self.id,
+			"id": str(self.id),
 			"type": self.type,
 			"attrs": self.attrs.copy(),
 		}
@@ -116,6 +123,7 @@ class ResourceInstance(BaseDocument):
 	ownerConnection = ReferenceField(Connection)
 	ownerConnectionId = ReferenceFieldId(ownerConnection)
 
+	ACTIONS = {}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"type": Attribute(field=type, schema=schema.String(options=TYPES)),
@@ -123,9 +131,6 @@ class ResourceInstance(BaseDocument):
 		"ownerElement": Attribute(field=ownerElementId, schema=schema.Identifier()),
 		"ownerConnection": Attribute(field=ownerConnectionId, schema=schema.Identifier()),
 	}
-	
-	class Meta:
-		unique_together = (("num", "type"),)
 
 	def init(self, type, num, owner, attrs=None): #@ReservedAssignment
 		if not attrs: attrs = {}
@@ -144,7 +149,7 @@ class ResourceInstance(BaseDocument):
 
 def get(id_, **kwargs):
 	try:
-		el = Resource.objects(id=id_, **kwargs).upcast()
+		el = Resource.objects.get(id=id_, **kwargs).upcast()
 		if hasattr(el, "owner") and el.owner == currentUser():
 			return el
 		else:

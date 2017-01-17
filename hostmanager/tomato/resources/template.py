@@ -34,7 +34,7 @@ PATTERNS = {
 	TypeName.REPY: "%s.repy",
 }
 
-class Template(resources.Resource, Entity):
+class Template(resources.Resource):
 	owner = ReferenceField(User)
 	ownerId = ReferenceFieldId(owner)
 	tech = StringField()
@@ -52,8 +52,8 @@ class Template(resources.Resource, Entity):
 	meta = {
 		'ordering': ['tech', '+preference', 'name'],
 		'indexes': [
-			('tech', 'preference'), ('tech', 'name')
-		]
+			('tech', 'preference'), ('tech', 'name'), ('tech', 'name', 'owner')
+		],
 	}
 
 	def init(self, *args, **kwargs):
@@ -64,7 +64,8 @@ class Template(resources.Resource, Entity):
 		self.modify_tech(attrs["tech"])
 		self.modify_name(attrs["name"])
 		self.ready = False
-		resources.Resource.init(self, *args, **kwargs)
+		self.save()
+		self.modify(attrs)
 
 	def fetch(self, detached=False):
 		path = self.getPath()
@@ -134,12 +135,13 @@ class Template(resources.Resource, Entity):
 		info["attrs"]["kblang"] = self.kblang
 		return info
 
-	ACTIONS = {
+	ACTIONS = resources.Resource.ACTIONS.copy()
+	ACTIONS.update({
 		Entity.REMOVE_ACTION: Action(fn=remove)
-	}
+	})
 
-	ATTRIBUTES = {
-		"id": IdAttribute(),
+	ATTRIBUTES = resources.Resource.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
 		"name": Attribute(field=name, schema=schema.Identifier()),
 		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
@@ -154,11 +156,11 @@ class Template(resources.Resource, Entity):
 						  schema=schema.Number()),
 		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
 		"ready": Attribute(readOnly=True, schema=schema.Bool()),
-	}
+	})
 
 def get(tech, name):
 	try:
-		return Template.objects(tech=tech, name=name, owner=currentUser())
+		return Template.objects.get(tech=tech, name=name, owner=currentUser())
 	except:
 		return None
 	

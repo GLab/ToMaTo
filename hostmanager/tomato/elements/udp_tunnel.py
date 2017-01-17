@@ -82,22 +82,10 @@ class UDP_Tunnel(elements.Element):
 	}
 
 
+
+
 	TYPE = TypeName.UDP_TUNNEL
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
 
-	CAP_ATTRS = {
-		"connect": connection,
-		"timeout": elements.Element.timeout
-	}
-
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}
 
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -179,6 +167,17 @@ class UDP_Tunnel(elements.Element):
 		except: #Tunnel just quit
 			traffic = 0
 		usage.updateContinuous("traffic", traffic, data)
+
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+	})
 
 if not config.MAINTENANCE:
 	socatVersion = cmd.getDpkgVersion("socat")

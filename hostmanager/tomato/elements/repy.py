@@ -131,7 +131,8 @@ class Repy(elements.Element):
 	template = ReferenceField(template.Template, null=True)
 	templateId = ReferenceFieldId(template)
 
-	ATTRIBUTES = {
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"pid": Attribute(field=pid, schema=schema.Int()),
 		"websocket_port": Attribute(field=websocket_port, schema=schema.Int()),
 		"websocket_pid": Attribute(field=websocket_pid, schema=schema.Int()),
@@ -143,31 +144,11 @@ class Repy(elements.Element):
 		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"bandwidth": Attribute(field=bandwidth, description="Bandwidth in bytes/s", schema=schema.Int(minValue=1024, maxValue=10000000000), default=1000000),
 		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier())
-	}
+	})
 
 	TYPE = TypeName.REPY
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.PREPARED],
-		ActionName.STOP: [StateName.STARTED],
-		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
-		ActionName.UPLOAD_USE: [StateName.PREPARED],
-		"download_grant": [StateName.PREPARED],
-        "download_log_grant": [StateName.PREPARED, StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.PREPARED],
-	}
 
-	CAP_ATTRS = {
-		"template": template,
-		"args": args,
-		"cpus": cpus,
-		"ram": ram,
-		"bandwidth": bandwidth,
-		"timeout": elements.Element.timeout
-	}
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.PREPARED,
-	}
+
 	CAP_CHILDREN = {
 		TypeName.REPY_INTERFACE: [StateName.PREPARED],
 	}
@@ -352,6 +333,20 @@ class Repy(elements.Element):
 				cputime += process.cputime(self.vncpid)
 			usage.updateContinuous("cputime", cputime, data)
 
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.PREPARED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.PREPARED),
+		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=StateName.PREPARED),
+		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=StateName.PREPARED),
+		"download_grant": StatefulAction(action_download_grant, allowedStates=StateName.PREPARED),
+		"download_log_grant": StatefulAction(action_download_log_grant,
+												allowedStates=[StateName.PREPARED, StateName.STARTED]),
+	})
 Repy.__doc__ = DOC
 
 DOC_IFACE="""
@@ -386,12 +381,18 @@ class Repy_Interface(elements.Element):
 	ipspy_pid = IntField()
 	used_addresses = ListField(default=[])
 
-	Attributes = {
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$")),
 		"ipspy_pid": Attribute(field=ipspy_pid, schema=schema.Int()),
 		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[])
-	}
+	})
 
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+	})
 
 	TYPE = TypeName.REPY_INTERFACE
 	CAP_ACTIONS = {
