@@ -210,7 +210,8 @@ class Host(Entity, BaseDocument):
 			self.hostNetworks = self.getProxy().host_networks()
 		except:
 			self.hostNetworks = []
-		caps = self._convertCapabilities(self.getProxy().host_capabilities())
+		hostCapabilities = self.getProxy().host_capabilities()
+		caps = self._convertCapabilities(hostCapabilities)
 		self.elementTypes = caps["elements"].keys()
 		global element_caps
 		for k, v in caps["elements"].iteritems():
@@ -238,7 +239,7 @@ class Host(Entity, BaseDocument):
 		def convertActions(actions, next_state):
 			res = {}
 			for action, states in actions.items():
-				res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state.get(action)).info()
+				res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state).info()
 			return res
 		def convertAttributes(attrs):
 			res = {}
@@ -270,8 +271,8 @@ class Host(Entity, BaseDocument):
 		elems = {}
 		for name, info in caps['elements'].items():
 			elems[name] = {
-				"actions": convertActions(info.get('actions'), info.get('next_state')),
-				"attributes": convertAttributes(info.get('attrs')),
+				"actions": convertActions(info.get('actions'), info.get('state_change')),
+				"attributes": convertAttributes(info.get('attributes')),
 				"children": {n: {"allowed_states": states} for n, states in info.get('children').items()},
 				"parent": info.get('parent'),
 				"connectability": [{"concept": n, "allowed_states": None} for n in info.get('con_concepts')]
@@ -279,8 +280,8 @@ class Host(Entity, BaseDocument):
 		cons = {}
 		for name, info in caps['connections'].items():
 			cons[name] = {
-				"actions": convertActions(info.get('actions'), info.get('next_state')),
-				"attributes": convertAttributes(info.get('attrs')),
+				"actions": convertActions(info.get('actions'), info.get('state_change')),
+				"attributes": convertAttributes(info.get('attributes')),
 				"connectability": [{"concept_from": names[0], "concept_to": names[1]} for names in info.get('con_concepts')]
 			}
 		return {
