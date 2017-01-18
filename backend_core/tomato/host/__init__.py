@@ -417,10 +417,10 @@ class Host(Entity, BaseDocument):
 					logging.logMessage("network update", category="host", name=self.name, network=attrs)
 		tpls = {}
 		for tpl in self.getProxy().resource_list("template"):
-			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
+			tpls[(tpl["attrs"]["type"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
-			type_ = tpl.tech
+			type_ = tpl.type
 			attrs_base = tpl.info_for_hosts()
 			# for multitech element types: inflate
 			for tech in TypeTechTrans.TECH_DICT.get(type_, type_):

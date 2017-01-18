@@ -30,8 +30,8 @@ DEFAULTS = {
 }
 
 class Profile(Entity, BaseDocument):
-	tech = StringField(required=True)
-	name = StringField(required=True, unique_with='tech')
+	type = StringField(required=True)
+	name = StringField(required=True, unique_with='type')
 	preference = IntField(default=0, required=True)
 	label = StringField()
 	description = StringField()
@@ -40,9 +40,9 @@ class Profile(Entity, BaseDocument):
 	cpus = FloatField(min_value=0)
 	diskspace = IntField(min_value=0)
 	meta = {
-		'ordering': ['tech', '+preference', 'name'],
+		'ordering': ['type', '+preference', 'name'],
 		'indexes': [
-			('tech', 'preference'), ('tech', 'name')
+			('type', 'preference'), ('type', 'name')
 		]
 	}
 
@@ -56,7 +56,7 @@ class Profile(Entity, BaseDocument):
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"name": Attribute(field=name, schema=schema.Identifier()),
-		"tech": Attribute(field=tech, schema=schema.String(options=TECHS)),
+		"type": Attribute(field=type, schema=schema.String(options=TECHS)),
 		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
 		"label": Attribute(field=label, schema=schema.String()),
 		"description": Attribute(field=description, schema=schema.String()),
@@ -67,30 +67,30 @@ class Profile(Entity, BaseDocument):
 	}
 
 	def init(self, **attrs):
-		for attr in ["name", "tech"]:
+		for attr in ["name", "type"]:
 			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Profile needs attribute",
 				data={"attribute": attr})
 		Entity.init(self, **attrs)
 
 	@classmethod
-	def get(cls, tech, name):
+	def get(cls, type, name):
 		try:
-			return Profile.objects.get(tech=tech, name=name)
+			return Profile.objects.get(type=type, name=name)
 		except:
 			return None
 
 	@classmethod
-	def getPreferred(cls, tech):
-		prfls = Profile.objects.filter(tech=tech).order_by("-preference")
-		InternalError.check(prfls, code=InternalError.CONFIGURATION_ERROR, message="No profile for this type registered", data={"tech": tech})
+	def getPreferred(cls, type):
+		prfls = Profile.objects.filter(type=type).order_by("-preference")
+		InternalError.check(prfls, code=InternalError.CONFIGURATION_ERROR, message="No profile for this type registered", data={"type": type})
 		return prfls[0]
 
 	@classmethod
 	def create(cls, **attrs):
-		prfls = Profile.objects.filter(name=attrs["name"], tech=attrs["tech"])
+		prfls = Profile.objects.filter(name=attrs["name"], type=attrs["type"])
 		UserError.check(not prfls, code=UserError.ALREADY_EXISTS,
-						message="There exists already a profile for this technology with a similar name",
-						data={"name":attrs["name"],"tech":attrs["tech"]})
+						message="There exists already a profile for this technology type with a similar name",
+						data={"name":attrs["name"],"type":attrs["type"]})
 		obj = cls()
 		obj.init(**attrs)
 		obj.save()
