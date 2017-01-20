@@ -116,7 +116,7 @@ def group_info(api, request, group_id):
 					s = s[len(pref):]
 					break
 			errordump['source___displayname'] = s
-		if "ref" in errordump["description"]["data"]:
+		if "ref" in errordump["description"].get("data", {}):
 			errordump["ref___link"], errordump["ref___text"] = resolve_reference(api, errordump["description"]["data"]["ref"])
 	errorgroup['dumps'].sort(key=lambda d: d['timestamp'])
 	errorgroup['github_url'] = errorgroup.get('_github_url', False)
