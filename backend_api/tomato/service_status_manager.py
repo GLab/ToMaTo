@@ -3,7 +3,7 @@ from .lib.error import UserError
 from .lib.userflags import Flags
 from .lib.service import is_reachable, get_tomato_inner_proxy, is_self, get_backend_users_proxy
 from . import scheduler
-from threading import RLock
+from threading import RLock, Thread
 
 class ModuleStatus(object):
 	__slots__ = ("tomato_module", "lock",
@@ -19,9 +19,9 @@ class ModuleStatus(object):
 	def send_problem_report(self, problem, resolved=False):
 		title = "Backend Problems: %s" % self.tomato_module
 		if resolved:
-			message = "A problem on %s has been resolved: %s" % problem
+			message = "A problem on %s has been resolved: %s" % (self.tomato_module, problem)
 		else:
-			message = "A problem on %s has been detected: %s" % problem
+			message = "A problem on %s has been detected: %s" % (self.tomato_module, problem)
 		get_backend_users_proxy().broadcast_message_multifilter(title=title, message=message, ref=None, subject_group="backend failure",
 																			filters = [
 																				(None, Flags.GlobalHostManager),
@@ -91,5 +91,11 @@ def get_all_stats():
 
 def checkModule(tomato_module):
 	_get_module(tomato_module).check()
-for tomato_module in Config.TOMATO_BACKEND_MODULES:
-	scheduler.scheduleRepeated(5*60, checkModule, tomato_module)
+
+def schedule_maintenance():
+	import time
+	time.sleep(30)
+	for tomato_module in Config.TOMATO_BACKEND_MODULES:
+		is_not_accounting = tomato_module!=Config.TOMATO_MODULE_BACKEND_ACCOUNTING
+		scheduler.scheduleRepeated(5*60, checkModule, tomato_module, immediate=is_not_accounting, random_offset=is_not_accounting)
+Thread(target=schedule_maintenance).start()
