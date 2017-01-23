@@ -26,6 +26,7 @@ from ..lib import db, attributes, logging, cmd  # @UnresolvedImport
 from ..lib.attributes import Attr  # @UnresolvedImport
 from ..lib.decorators import *
 from .. import config, dump, scheduler
+from ..lib.cmd.archive import extract
 from ..lib.cmd import path  # @UnresolvedImport
 from ..lib.constants import StateName
 
@@ -396,7 +397,7 @@ class RexTFVElement:
 					self._clear_nlxtp_contents__already_mounted()
 				if not os.path.exists(self._nlxtp_path("")):
 					os.makedirs(self._nlxtp_path(""))
-				path.extractArchive(filename, self._nlxtp_path(""), ["--no-same-owner"])
+				extract(filename, self._nlxtp_path(""), True)
 			finally:
 				self._nlxtp_close()
 

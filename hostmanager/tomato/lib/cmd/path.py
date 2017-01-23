@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from . import run, CommandError
+from ..exceptionhandling import deprecated
 import os, shutil
 
 def exists(path):
@@ -44,9 +45,12 @@ def remove(path, recursive=False):
 		shutil.rmtree(path)
 	else:
 		os.remove(path)
-	
+
+@deprecated("archive.extract()")
 def extractArchive(src, dst, opts=[]):
-	out = run(["tar", "-v", "-axf", src] + opts + ["-C", dst])
+	print "note: opts not supported anymore."
+	from .archive import TarArchive
+	TarArchive.extract(src, dst)
 
 def diskspace(path):
 	if not exists(path):
