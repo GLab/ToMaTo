@@ -64,17 +64,25 @@ class Template(resources.Resource):
 		self.modify_tech(attrs["tech"])
 		self.modify_name(attrs["name"])
 		self.ready = False
-		self.save()
-		self.modify(attrs)
+		resources.Resource.init(self, *args, **kwargs)
 
 	def fetch(self, detached=False):
+		print "Fetching template"
 		path = self.getPath()
+		print path
 		if self.ready and os.path.exists(path):
+			print "Bin ready"
 			return
 		if detached:
+			print "Aktiviere es detached"
 			return threading.Thread(target=self.fetch).start()
+		print "Starting download"
+		print self.urls
 		aria2.download(self.urls, path)
+		print "Finished downloading"
 		self.ready = True
+		print self.ready
+		print "Saving"
 		self.save()
 
 	def upcast(self):
@@ -117,7 +125,7 @@ class Template(resources.Resource):
 
 	def modify(self, attrs):
 		res = resources.Resource.modify(self, attrs)
-		#self.fetch(detached=True)
+		#self.fetch(detached=False)
 		return res
 
 	def remove(self):
@@ -133,30 +141,15 @@ class Template(resources.Resource):
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
 		info["attrs"]["kblang"] = self.kblang
+		info["attrs"]["urls"] = self.urls
+		info["attrs"]["checksum"] = self.checksum
+		info["attrs"]["size"] = self.size
+		info["attrs"]["popularity"] = self.popularity
+		info["attrs"]["ready"] = self.ready
+		info["attrs"]["kblang"] = self.kblang
 		return info
 
-	ACTIONS = resources.Resource.ACTIONS.copy()
-	ACTIONS.update({
-		Entity.REMOVE_ACTION: Action(fn=remove)
-	})
 
-	ATTRIBUTES = resources.Resource.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
-		"name": Attribute(field=name, schema=schema.Identifier()),
-		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
-		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
-		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL()),
-						  set=lambda obj, value: obj.modify_urls(value)),
-		"all_urls": Attribute(schema=schema.List(items=schema.URL()), readOnly=True, get=lambda obj: obj.all_urls),
-		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
-		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
-							schema=schema.String()),
-		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True,
-						  schema=schema.Number()),
-		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
-		"ready": Attribute(readOnly=True, schema=schema.Bool()),
-	})
 
 def get(tech, name):
 	try:

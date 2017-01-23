@@ -131,20 +131,14 @@ class Repy(elements.Element):
 	template = ReferenceField(template.Template, null=True)
 	templateId = ReferenceFieldId(template)
 
-	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"pid": Attribute(field=pid, schema=schema.Int()),
-		"websocket_port": Attribute(field=websocket_port, schema=schema.Int()),
-		"websocket_pid": Attribute(field=websocket_pid, schema=schema.Int()),
-		"vncport": Attribute(field=vncport, schema=schema.Int()),
-		"vncpid": Attribute(field=vncpid, schema=schema.Int()),
-		"vncpassword": Attribute(field=vncpassword, schema=schema.String()),
+	ATTRIBUTES = {
 		"args": Attribute(field=args, description="Arguments", schema = schema.List(), default=[]),
 		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"bandwidth": Attribute(field=bandwidth, description="Bandwidth in bytes/s", schema=schema.Int(minValue=1024, maxValue=10000000000), default=1000000),
-		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier())
-	})
+		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier()),
+		"timeout": elements.Element.ATTRIBUTES["timeout"],
+	}
 
 	TYPE = TypeName.REPY
 
@@ -341,9 +335,9 @@ class Repy(elements.Element):
 										 stateChange=StateName.STARTED),
 		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
 										stateChange=StateName.PREPARED),
-		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=StateName.PREPARED),
-		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=StateName.PREPARED),
-		"download_grant": StatefulAction(action_download_grant, allowedStates=StateName.PREPARED),
+		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=[StateName.PREPARED]),
+		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=[StateName.PREPARED]),
+		"download_grant": StatefulAction(action_download_grant, allowedStates=[StateName.PREPARED]),
 		"download_log_grant": StatefulAction(action_download_log_grant,
 												allowedStates=[StateName.PREPARED, StateName.STARTED]),
 	})

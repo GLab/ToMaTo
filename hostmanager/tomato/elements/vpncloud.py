@@ -36,8 +36,6 @@ class VpnCloud(elements.Element):
 	peers = ListField(default=[])
 
 	ATTRIBUTES = {
-		"port": Attribute(field=port, schema=schema.Int()),
-		"pid": Attribute(field=pid, schema=schema.Int()),
 		"network_id": Attribute(field=network_id, schema=schema.Int()),
 		"peers": Attribute(field=peers, description="Peers", schema=schema.List(), default=[])
 	}

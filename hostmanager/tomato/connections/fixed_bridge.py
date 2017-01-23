@@ -36,7 +36,7 @@ class Fixed_Bridge(connections.Connection):
 	ACTIONS = connections.Connection.ACTIONS.copy()
 	ACTIONS.update({
 		connections.REMOVE_ACTION: StatefulAction(connections.Connection.remove, check=connections.Connection.checkRemove,
-											 allowedStates=ST_DEFAULT),
+											 allowedStates=[ST_DEFAULT]),
 	})
 
 	CAP_ACTIONS = {

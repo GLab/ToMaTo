@@ -82,19 +82,6 @@ class Network(resources.Resource):
 		info["attrs"]["preference"] = self.preference
 		return info
 
-	ACTIONS = resources.Resource.ACTIONS.copy()
-	ACTIONS.update({
-		Entity.REMOVE_ACTION: Action(fn=remove)
-	})
-
-	ATTRIBUTES = resources.Resource.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
-		"kind": Attribute(field=kind, schema=schema.String()),
-		"bridge": Attribute(field=bridge, schema=schema.String()),
-		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
-	})
-
 	meta = {
 		'ordering': ['-preference', 'kind'],
 		'indexes': [

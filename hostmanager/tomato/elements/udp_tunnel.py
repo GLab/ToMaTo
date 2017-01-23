@@ -76,9 +76,8 @@ class UDP_Tunnel(elements.Element):
 	connection = StringField(null=True, default=None)
 
 	ATTRIBUTES = {
-		"pid": Attribute(field=pid, schema=schema.Int()),
-		"port": Attribute(field=port, schema=schema.Int(minValue=0)),
-		"connection": Attribute(field=connection, schema=schema.String(), default=None)
+		"connection": Attribute(field=connection, schema=schema.String(), default=None),
+		"timeout": elements.Element.ATTRIBUTES["timeout"],
 	}
 
 

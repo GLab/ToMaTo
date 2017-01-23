@@ -71,12 +71,6 @@ class Resource(Entity, BaseDocument):
 		'allow_inheritance': True,
 	}
 
-	ATTRIBUTES = {
-		"id": IdAttribute(),
-		"type": Attribute(field=type, schema=schema.String(options=[(t, t) for t in TYPES],maxLength=20)),
-		"attrs": Attribute(field=attrs, schema=schema.StringMap())
-	}
-
 	def init(self, attrs=None):
 		if not attrs: attrs = {}
 		self.attrs = {}
@@ -91,21 +85,21 @@ class Resource(Entity, BaseDocument):
 		except:
 			import traceback
 			traceback.print_exc()
-		raise InternalError(message="Failed to cast resource", code=InternalError.UPCAST, data={"id": self.id, "type": self.type})
+		raise InternalError(message="Failed to cast resource", code=InternalError.UPCAST, data={"id": str(self.id), "type": self.type})
 
 	def modify(self, attrs):
-		logging.logMessage("modify", category="resource", type=self.type, id=self.id, attrs=attrs)
+		logging.logMessage("modify", category="resource", type=self.type, id=str(self.id), attrs=attrs)
 		for key, value in attrs.iteritems():
 			if hasattr(self, "modify_%s" % key):
 				getattr(self, "modify_%s" % key)(value)
 			else:
 				self.attrs[key] = value
-		logging.logMessage("info", category="resource", type=self.type, id=self.id, info=self.info())
+		logging.logMessage("info", category="resource", type=self.type, id=str(self.id), info=self.info())
 		self.save()
 	
 	def remove(self):
-		logging.logMessage("info", category="resource", type=self.type, id=self.id, info=self.info())
-		logging.logMessage("remove", category="resource", type=self.type, id=self.id)
+		logging.logMessage("info", category="resource", type=self.type, id=str(self.id), info=self.info())
+		logging.logMessage("remove", category="resource", type=self.type, id=str(self.id))
 		self.delete()	
 	
 	def info(self):
@@ -164,11 +158,18 @@ def getAll(**kwargs):
 def create(type_, attrs=None):
 	if not attrs: attrs = {}
 	UserError.check(type_ in TYPES, UserError.UNSUPPORTED_TYPE, "Unknown resource type", data={"type": type_})
+	print "Creating resource with attrs"
+	print type_
+	print attrs
 	res = TYPES[type_](owner=currentUser())
+	print res.attrs
+	print res.info()
+	print "Resource init"
 	res.init(attrs)
+	print "Gedoens"
 	res.save()
-	logging.logMessage("create", category="resource", type=res.type, id=res.id, attrs=attrs)
-	logging.logMessage("info", category="resource", type=res.type, id=res.id, info=res.info())
+	logging.logMessage("create", category="resource", type=res.type, id=str(res.id), attrs=attrs)
+	logging.logMessage("info", category="resource", type=res.type, id=str(res.id), info=res.info())
 	return res
 
 from .. import currentUser

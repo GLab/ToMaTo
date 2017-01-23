@@ -461,20 +461,14 @@ class KVMQM(elements.Element, elements.RexTFVElement):
 		usage.diskspace = io.getSize(self._imagePathDir())
 
 
-	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"vmid": Attribute(field=vmid, schema=schema.Int()),
-		"websocket_port": Attribute(field=websocket_port, schema=schema.Int()),
-		"websocket_pid": Attribute(field=websocket_pid, schema=schema.Int()),
-		"vncport": Attribute(field=vncport, schema=schema.Int()),
-		"vncpid": Attribute(field=vncpid, schema=schema.Int()),
-		"vncpassword": Attribute(field=vncpassword, schema=schema.String()),
+	ATTRIBUTES = {
 		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"kblang": Attribute(field=kblang, description="Keyboard language", schema=schema.Int(options=kblang_options), default=None),
 		"usbtablet": Attribute(field=usbtablet, description="USB tablet mouse mode", schema=schema.Bool(), default=True),
-		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier())
-	})
+		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier()),
+		"timeout": elements.Element.ATTRIBUTES["timeout"],
+	}
 
 	ACTIONS = elements.Element.ACTIONS.copy()
 	ACTIONS.update({
@@ -485,11 +479,11 @@ class KVMQM(elements.Element, elements.RexTFVElement):
 										   allowedStates=[StateName.CREATED], stateChange=StateName.PREPARED),
 		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[StateName.PREPARED, StateName.STARTED],
 										   stateChange=StateName.CREATED),
-		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=StateName.PREPARED),
-		ActionName.REXTFV_UPLOAD_GRANT: StatefulAction(action_rextfv_upload_grant, allowedStates=StateName.PREPARED),
-		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=StateName.PREPARED),
-		ActionName.REXTFV_UPLOAD_USE: StatefulAction(action_rextfv_upload_use, allowedStates=StateName.PREPARED),
-		"download_grant": StatefulAction(action_download_grant, allowedStates=StateName.PREPARED),
+		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=[StateName.PREPARED]),
+		ActionName.REXTFV_UPLOAD_GRANT: StatefulAction(action_rextfv_upload_grant, allowedStates=[StateName.PREPARED]),
+		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=[StateName.PREPARED]),
+		ActionName.REXTFV_UPLOAD_USE: StatefulAction(action_rextfv_upload_use, allowedStates=[StateName.PREPARED]),
+		"download_grant": StatefulAction(action_download_grant, allowedStates=[StateName.PREPARED]),
 		"rextfv_download_grant": StatefulAction(action_rextfv_download_grant, allowedStates=[StateName.PREPARED, StateName.STARTED]),
 	})
 

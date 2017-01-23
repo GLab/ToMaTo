@@ -242,6 +242,7 @@ def host_capabilities():
 	  dicts (``{}``) as values.
 
 	"""
+
 	element_types = {}
 	for type_, class_ in elements.TYPES.iteritems():
 		caps = class_.capabilities()

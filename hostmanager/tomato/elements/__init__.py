@@ -304,7 +304,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		return self.parent.upcast() if self.parent else None
 
 	def getChildren(self):
-		return [el.upcast() for el in self.children.all()]
+		return [el.upcast() for el in self.children]
 
 	def getConnection(self):
 		return self.connection.upcast() if self.connection else None
@@ -357,7 +357,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 			"parent": self.parent.id if self.hasParent() else None,
 			"state": self.state,
 			"timeout": self.timeout,
-			"attrs": self.attrs.copy(),
+			"attrs": Entity.info(self),
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
 		}
