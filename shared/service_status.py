@@ -31,7 +31,7 @@ def problems():
 	res = []
 
 	mem_stats = psutil.virtual_memory()
-	free_mem_percent = float(mem_stats.available) / float(mem_stats.total)
+	free_mem_percent = 1-mem_stats.percent
 	if free_mem_percent < 0.06:
 		res.append("memory usage is critical")
 
