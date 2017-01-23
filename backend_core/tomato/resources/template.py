@@ -77,16 +77,27 @@ class Template(Entity, BaseDocument):
 
 	def update_host_state(self, host, ready):
 		if not "templateserver_port" in host.hostInfo:
+			print "old hostmanager"
 			return  # old hostmanager
 		if not self.checksum:
+			print "no checksum"
 			return
+
 		_, checksum = self.checksum.split(":")
 		url = ("http://%s:%d/" + PATTERNS[self.tech]) % (host.address, host.hostInfo["templateserver_port"], checksum)
+		print "now checking"
 		if url in self.host_urls:
+			print "url in host_urls?"
+			print url
+			print "removing this url"
 			self.host_urls.remove(url)
 		if host.name in self.hosts:
+			print "remove name from host list of template?"
+			print host.name
 			self.hosts.remove(host.name)
 		if ready:
+			print "I'm ready on this host"
+			print host.name
 			self.hosts.append(host.name)
 			self.host_urls.append(url)
 		self.save()

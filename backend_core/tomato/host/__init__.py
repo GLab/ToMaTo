@@ -240,7 +240,10 @@ class Host(Entity, BaseDocument):
 		def convertActions(actions, next_state):
 			res = {}
 			for action, states in actions.items():
-				res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state).info()
+				if type(states) == type(dict()):
+					res[action] = StatefulAction(None, allowedStates=states['allowed_states'], stateChange=states['state_change']).info()
+				else:
+					res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state.get(action)).info()
 			return res
 		def convertAttributes(attrs):
 			res = {}
@@ -271,19 +274,27 @@ class Host(Entity, BaseDocument):
 			return res
 		elems = {}
 		for name, info in caps['elements'].items():
+			attributes = info.get('attrs')
+			if not attributes and attributes != {}:
+				attributes = info.get('attributes')
 			elems[name] = {
-				"actions": convertActions(info.get('actions'), info.get('state_change')),
-				"attributes": convertAttributes(info.get('attributes')),
+				"actions": convertActions(info.get('actions'), info.get('next_state')),
+				"attributes": convertAttributes(attributes),
 				"children": {n: {"allowed_states": states} for n, states in info.get('children').items()},
 				"parent": info.get('parent'),
 				"connectability": [{"concept": n, "allowed_states": None} for n in info.get('con_concepts')]
 			}
 		cons = {}
+
 		for name, info in caps['connections'].items():
+			attributes = info.get('attrs')
+			if not attributes and attributes != {}:
+				attributes = info.get('attributes')
 			cons[name] = {
-				"actions": convertActions(info.get('actions'), info.get('state_change')),
-				"attributes": convertAttributes(info.get('attributes')),
-				"connectability": [{"concept_from": names[0], "concept_to": names[1]} for names in info.get('con_concepts')]
+				"actions": convertActions(info.get('actions'), info.get('next_state')),
+				"attributes": convertAttributes(attributes),
+				"connectability": [{"concept_from": names[0], "concept_to": names[1]} for names in
+								   info.get('con_concepts')]
 			}
 		return {
 			"elements": elems,
@@ -431,16 +442,28 @@ class Host(Entity, BaseDocument):
 					attrs["tech"] = tech
 					if not (attrs["tech"], attrs["name"]) in tpls:
 						# create resource
+						print "Creating resource on host"
 						self.getProxy().resource_create("template", attrs)
+
 						logging.logMessage("template create", category="host", name=self.name, template=attrs)
 					else:
+						print "Already created template on host"
+						print "tpl:"
+						print tpl.checksum
 						hTpl = tpls[(attrs["tech"], attrs["name"])]
+						print "hTpl"
+						print hTpl
 						if hTpl["attrs"].get("checksum") != tpl.checksum:
 							self.getProxy().resource_modify(hTpl["id"], attrs)
+							print "Updating template because checksum is not synced"
 							logging.logMessage("template update", category="host", name=self.name, template=attrs)
 						else:
+							print "i would say template is available"
 							avail.append(tpl)
 		for tpl in template.Template.objects():
+			print "Updating list and state of template"
+			print tpl.name
+			print tpl.isReady()
 			tpl.update_host_state(self, tpl in avail)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()
@@ -744,6 +767,7 @@ def select(site=None, elementTypeConfigurations=None, connectionTypes=None, netw
 		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
 			continue
 		if template and host.name not in template.hosts:
+			print "I hate templates"
 			continue
 		if not best:
 			return host
