@@ -109,14 +109,14 @@ class TestTopology:
 
 	template = None
 	site = None
-	tech = None
+	type_ = None
 	api = None
 
-	def __init__(self, api, tech, template, site, *args, **kwargs):
+	def __init__(self, api, type_, template, site, *args, **kwargs):
 		self.template = template
 		self.api = api
 		self.site = site
-		self.tech = tech
+		self.type_ = type_
 
 	# Topology to be used to query
 	def _topology_json(self):
@@ -138,7 +138,7 @@ class TestTopology:
 			"parent": 2,
 			"id": 12
 		}, {
-			"type": self.tech + "_interface",
+			"type": self.type_ + "_interface",
 			"attrs": {
 				"use_dhcp": True,
 			},
@@ -158,7 +158,7 @@ class TestTopology:
 			"parent": None,
 			"id": 2
 		}, {
-			"type": self.tech,
+			"type": self.type_,
 			"attrs": {
 				"profile": "normal",
 				"_pos": {
@@ -475,8 +475,8 @@ class QueryArchive(GetPacketArchive):
 		if ident == "aptget":
 			return self._interpret_result_aptget(lines_string)
 
-	def getTemplateDetails(self, api, tech, template, site):
-		custominfo = self.uploadAndRun(TestTopology(api, tech, template, site))
+	def getTemplateDetails(self, api, type_, template, site):
+		custominfo = self.uploadAndRun(TestTopology(api, type_, template, site))
 		custominfo_splitted = custominfo.split(".", 2)
 		ident = custominfo_splitted[0]
 		os_id = custominfo_splitted[1]
@@ -520,7 +520,7 @@ class PacketArchive(GetPacketArchive):
 
 
 # packetlist: list of packets: ['firefox','python-django']   - if empty, this will create an upgrade archive
-# template_configs: list of template configs: [{'tech','site','template','packets':[]}]
+# template_configs: list of template configs: [{'type','site','template','packets':[]}]
 def create_archive(api, template_configs, targetfilename):
 	# get os configs for all templates
 	parch = PacketArchive(targetfilename)
@@ -532,7 +532,7 @@ def create_archive(api, template_configs, targetfilename):
 			qarch.setUpgrade(False)
 			qarch.addToInstall(pac)
 		qarch.createArchive()
-		conf = qarch.getTemplateDetails(api, templ['tech'], templ['template'], templ['site'])
+		conf = qarch.getTemplateDetails(api, templ['type'], templ['template'], templ['site'])
 		parch.addOS(conf)
 	filename = parch.createArchive()
 	return filename
@@ -581,7 +581,7 @@ def parseArgs():
 	parser.add_argument("--no-keyring", action="store_true", default=False, help="ignore password stored in keyring")
 	parser.add_argument("--target", "-t", help="the output filename.", required=True)
 	parser.add_argument("--packetconfig", "-c",
-	                    help='The archive configuration. This should point to a JSON file of the form [{tech:"string",site:"string",template:"string",packages:["string"]}]. Each entry must refer to a different operating system.',
+	                    help='The archive configuration. This should point to a JSON file of the form [{type:"string",site:"string",template:"string",packages:["string"]}]. Each entry must refer to a different operating system.',
 	                    required=True)
 	parser.add_argument("--verbose", "-v", help="verbose output", action="store_true", default=False)
 	options = parser.parse_args()
