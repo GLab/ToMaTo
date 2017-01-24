@@ -21,7 +21,6 @@ from django.db import models
 from ..lib.cmd import archive
 from .. import connections, elements, config
 from ..resources import template
-from ..lib.cmd.archive import extract
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
@@ -357,7 +356,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		imgPath = self._imagePath()
 		path.remove(imgPath, recursive=True)
 		path.createDir(imgPath)
-		extract(path_, imgPath)
+		archive.extract(path_, imgPath)
 
 	def _checkImage(self, path_):
 		res = cmd.run(["tar", "-tzvf", path_, "./sbin/init"])
