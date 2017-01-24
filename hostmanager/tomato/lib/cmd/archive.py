@@ -12,6 +12,7 @@ from ..error import UserError, InternalError
 
 class ArchiveTypes:
 	TAR = "tar"
+	TARGZ = "tar"
 	ZIP = "zip"
 	RAR = "rar"
 	SEVENZIP = "7z"
@@ -28,8 +29,8 @@ class TarArchive:
 		run(["tar", "-axf", src] + ([] if preserve_permissions else ["--no-same-owner"]) + ["-C", dst])
 
 	@staticmethod
-	def pack(src, dst, t):
-		run(["tar", "-acf", dst, src])
+	def pack(src, dst, preserve_permissions, t):
+		run(["tar", "--numeric-owner", "-acf", dst, "-C", src, "."])
 
 
 class ZipFile:
@@ -43,7 +44,7 @@ class ZipFile:
 		run(["unzip"] + (["-XK"] if preserve_permissions else []) + [src, "-d", dst])
 
 	@staticmethod
-	def pack(src, dst, t):
+	def pack(src, dst, preserve_permissions, t):
 		run(("zip", dst, src))
 
 class RarFile:  # fixme: implement
@@ -57,7 +58,7 @@ class RarFile:  # fixme: implement
 		pass
 
 	@staticmethod
-	def pack(src, dst, t):
+	def pack(src, dst, preserve_permissions, t):
 		pass
 
 class SevenZipFile:  # fixme: implement
@@ -71,7 +72,7 @@ class SevenZipFile:  # fixme: implement
 		pass
 
 	@staticmethod
-	def pack(src, dst, t):
+	def pack(src, dst, preserve_permissions, t):
 		pass
 
 
@@ -135,7 +136,7 @@ def extract(src, dst, preserve_permissions=False):
 	type_ = list(t for t in TYPES_EXTRACT[mt] if t.SUPPORT_EXTRACT)[0]
 	return type_.extract(src, dst, preserve_permissions)
 
-def pack(src, dst, t=ArchiveTypes.TARGZ):
+def pack(src, dst, preserve_permissions, t=ArchiveTypes.TARGZ):
 	"""
 	create an archive
 	:param str src: directory or file to pack
@@ -146,4 +147,4 @@ def pack(src, dst, t=ArchiveTypes.TARGZ):
 	UserError.check(t in TYPES_PACK, code=UserError.UNSUPPORTED_TYPE, message="archive format not supported",
 	                data={"t": t})
 	type_ = list(t for t in TYPES_PACK[mt] if t.SUPPORT_EXTRACT)[0]
-	return type_.pack(src, dst)
+	return type_.pack(src, dst, preserve_permissions, t)

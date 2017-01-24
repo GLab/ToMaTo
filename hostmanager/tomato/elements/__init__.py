@@ -19,6 +19,7 @@ import os, shutil, os.path, abc, time
 from django.db import models
 from threading import Lock
 
+from ..lib.cmd import archive
 from ..user import User
 from ..connections import Connection
 from ..accounting import UsageStatistics
@@ -414,7 +415,7 @@ class RexTFVElement:
 				tar_success = False
 				while tries_left > 0:
 					try:
-						cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
+						archive.pack(self._nlxtp_path(""), filename, True, archive.ArchiveTypes.TARGZ)
 						tar_success = True
 						break
 					except:

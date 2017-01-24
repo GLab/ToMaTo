@@ -17,6 +17,8 @@
 
 import os.path, sys
 from django.db import models
+
+from ..lib.cmd import archive
 from .. import connections, elements, config
 from ..resources import template
 from ..lib.cmd.archive import extract
@@ -542,7 +544,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
 			os.remove(self.dataPath("download.tar.gz"))
-		cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
+		archive.pack(self._imagePath(), self.dataPath("download.tar.gz", True, archive.ArchiveTypes.TARGZ))
 		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 	
 	def action_rextfv_download_grant(self):
