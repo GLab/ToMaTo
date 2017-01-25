@@ -33,8 +33,8 @@
 		<td>{{template.label}}</td>
 	</tr>
 	<tr>
-		<th>Tech:</th>
-		<td><img src="/img/{{template.tech}}16.png" /> {{template.tech|tech_to_label}} <small>({{template.tech}})</small></td>
+		<th>type:</th>
+		<td><img src="/img/{{template.type}}16.png" /> {{template.type|type_to_label}} <small>({{template.type}})</small></td>
 	</tr>
 	<tr>
 		<th>Subtype:</th>
@@ -67,7 +67,7 @@
 		{% if template.nlXTP_installed %}
 			<img src="/img/tick.png"/> yes
 		{% else %}
-			{% if template.tech != 'repy' %}<img src="/img/warning16.png"/>{% endif %} no
+			{% if template.type != 'repy' %}<img src="/img/warning16.png"/>{% endif %} no
 		{% endif %}
 		</td>
 	</tr>	
@@ -87,15 +87,15 @@
 		{% if template.icon %}
 			<img src="{{template.icon}}" />
 		{% else %}
-			<img id="template_icon" src="/img/{{template.tech}}32.png" />
+			<img id="template_icon" src="/img/{{template.type}}32.png" />
 			<script language="JavaScript">
-				var template_iconurl = dynimg(32,"{{template.tech}}","{{template.subtype}}","{{template.name}}");
+				var template_iconurl = dynimg(32,"{{template.type}}","{{template.subtype}}","{{template.name}}");
 				$("#template_icon").attr("src",template_iconurl);
 			</script>
 		{% endif %}
 		</td>
 	</tr>
-	{% if template.tech == 'kvmqm' %}
+	{% if template.type == 'kvmqm' %}
 	<tr>
 		<th>Default Keyboard Layout</th>
         <td>{{template.kblang}}</td>

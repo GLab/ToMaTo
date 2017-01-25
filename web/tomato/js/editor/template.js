@@ -2,7 +2,7 @@
 var Template = Class.extend({
 	init: function(options) {
 		this.classoptions = options;
-		this.type = options.tech;
+		this.type = options.type;
 		this.subtype = options.subtype;
 		this.name = options.name;
 		this.label = options.label || options.name;
