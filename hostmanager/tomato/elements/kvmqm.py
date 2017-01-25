@@ -189,9 +189,11 @@ class KVMQM(elements.Element, elements.RexTFVElement):
 	__doc__ = DOC #@ReservedAssignment
 	DOC = DOC
 
+	@property
+	def type(self):
+		return self.TYPE
 
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
@@ -460,23 +462,21 @@ class KVMQM(elements.Element, elements.RexTFVElement):
 			usage.updateContinuous("cputime", cputime, data)
 		usage.diskspace = io.getSize(self._imagePathDir())
 
-
-	ATTRIBUTES = {
-		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"kblang": Attribute(field=kblang, description="Keyboard language", schema=schema.Int(options=kblang_options), default=None),
 		"usbtablet": Attribute(field=usbtablet, description="USB tablet mouse mode", schema=schema.Bool(), default=True),
-		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier()),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
-	}
+		"template": Attribute(field=templateId, description="Template", set=modify_template, schema=schema.Identifier()),
+	})
 
 	ACTIONS = elements.Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove, allowedStates=[StateName.CREATED]),
 		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED, StateName.PREPARED], stateChange=StateName.STARTED),
 		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED], stateChange=StateName.PREPARED),
-		ActionName.PREPARE: StatefulAction(action_prepare,
-										   allowedStates=[StateName.CREATED], stateChange=StateName.PREPARED),
+		ActionName.PREPARE: StatefulAction(action_prepare, allowedStates=[StateName.CREATED], stateChange=StateName.PREPARED),
 		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[StateName.PREPARED, StateName.STARTED],
 										   stateChange=StateName.CREATED),
 		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=[StateName.PREPARED]),

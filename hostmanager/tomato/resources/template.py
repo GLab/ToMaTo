@@ -67,22 +67,13 @@ class Template(resources.Resource):
 		resources.Resource.init(self, *args, **kwargs)
 
 	def fetch(self, detached=False):
-		print "Fetching template"
 		path = self.getPath()
-		print path
 		if self.ready and os.path.exists(path):
-			print "Bin ready"
 			return
 		if detached:
-			print "Aktiviere es detached"
 			return threading.Thread(target=self.fetch).start()
-		print "Starting download"
-		print self.urls
 		aria2.download(self.urls, path)
-		print "Finished downloading"
 		self.ready = True
-		print self.ready
-		print "Saving"
 		self.save()
 
 	def upcast(self):

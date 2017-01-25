@@ -131,14 +131,14 @@ class Repy(elements.Element):
 	template = ReferenceField(template.Template, null=True)
 	templateId = ReferenceFieldId(template)
 
-	ATTRIBUTES = {
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"args": Attribute(field=args, description="Arguments", schema = schema.List(), default=[]),
 		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"bandwidth": Attribute(field=bandwidth, description="Bandwidth in bytes/s", schema=schema.Int(minValue=1024, maxValue=10000000000), default=1000000),
 		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier()),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
-	}
+	})
 
 	TYPE = TypeName.REPY
 

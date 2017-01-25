@@ -75,10 +75,10 @@ class UDP_Tunnel(elements.Element):
 	port = IntField()
 	connection = StringField(null=True, default=None)
 
-	ATTRIBUTES = {
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"connection": Attribute(field=connection, schema=schema.String(), default=None),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
-	}
+	})
 
 
 

@@ -98,22 +98,34 @@ class Usage:
     
 class UsageStatistics(BaseDocument):
     begin = FloatField() #unix timestamp
-    #records: [UsageRecord]
+    attrs = DictField()
 
 
     ATTRIBUTES = {
         "id": IdAttribute(),
-        "begin": Attribute(field=begin, schema=schema.Number())
+        "begin": Attribute(field=begin, schema=schema.Number()),
+        "element":  Attribute(get=lambda self: self.element.id if self.element else None),
+        "connection":  Attribute(get=lambda self: self.connection.id if self.element else None)
+    }
+
+    meta = {
+		'auto_create_index': False,
+        'indexes': ['id']
     }
 
     @property
     def records(self):
-        return UsageRecord.objects(begin=self)
+        return UsageRecord.objects(statistics=self)
 
     @property
     def element(self):
         from elements import Element
-        return Element.objects(usageStatistics=self)
+        return Element.objects.get(usageStatistics=self)
+
+    @property
+    def connection(self):
+        from connections import Connection
+        return Connection.objects.get(usageStatistics=self)
     
     class Meta:
         pass
@@ -134,7 +146,7 @@ class UsageStatistics(BaseDocument):
         
        
     def getRecords(self, type_, after=None, before=None):
-        all_ = self.records.filter(type=type_)
+        all_ = UsageRecord.objects(statistics=self, type=type_)
         if after:
             all_ = all_.filter(end__gte=after)
         if before:
@@ -145,20 +157,19 @@ class UsageStatistics(BaseDocument):
         record = UsageRecord()
         record.init(self, type_, begin, end, measurements, usage)
         record.save()
-        self.records.add(record)
         obj = self._object()
-        logging.logMessage("record", category="accounting", type=type_, begin=begin, end=end, measurements=measurements, object=(obj.__class__.__name__.lower(), obj.id), usage=usage.info())
+        logging.logMessage("record", category="accounting", type=type_, begin=begin, end=end, measurements=measurements, object=(obj.__class__.__name__.lower(), str(obj.id)), usage=usage.info())
        
     def _object(self):
         try:
             if self.element:
                 return self.element
-        except error.DoesNotExist:
+        except DoesNotExist:
             pass
         try:
             if self.connection:
                 return self.connection
-        except error.DoesNotExist:
+        except DoesNotExist:
             pass
 
     def update(self):
@@ -188,9 +199,11 @@ class UsageStatistics(BaseDocument):
                 begin = self.begin
             if self.begin > end:
                 break
-            if self.records.filter(type=type_, begin=begin, end=end).exists():
+            try:
+                UsageRecord.objects(statistics=self, type=type_, begin=begin, end=end)
+            except UsageRecord.DoesNotExist:
                 break
-            records = self.records.filter(type=lastType, begin__gte=begin, end__lte=end)
+            records = UsageRecord.objects(statistics=self, type=lastType, begin__gte=begin, end__lte=end)
             usage, coverage = _combine(begin, end, records)
             self.createRecord(type_, begin, end, coverage, usage)
             lastType = type_
@@ -201,7 +214,7 @@ class UsageStatistics(BaseDocument):
                 r.delete()
     
 class UsageRecord(BaseDocument):
-    statistics = ReferenceField(UsageStatistics, db_field="records")
+    statistics = ReferenceField(UsageStatistics)
     type = StringField(choices=[(t, t) for t in TYPES], required=True) #@ReservedAssignment
     begin = FloatField() #unix timestamp
     end = FloatField() #unix timestamp

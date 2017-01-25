@@ -145,7 +145,7 @@ Actions:
 		same as download_grant, but only for the nlXTP folder
 """
 
-class OpenVZ(elements.RexTFVElement,elements.Element):
+class OpenVZ(elements.Element, elements.RexTFVElement):
 
 	vmid = IntField()
 	websocket_port = IntField()
@@ -164,17 +164,6 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	template = ReferenceField(template.Template)
 	templateId = ReferenceFieldId(template)
 
-	ATTRIBUTES = {
-		"hostname": Attribute(field=hostname, schema=schema.String(), description="hostname"),
-		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
-		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
-		"diskspace": Attribute(field=diskspace, description="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),
-		"rootpassword": Attribute(field=rootpassword, description="Root password", schema=schema.String()),
-		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier()),
-		"gateway4": Attribute(field=gateway4, description="IPv4 gateway", schema=schema.String()),
-		"gateway6": Attribute(field=gateway4, description="IPv6 gateway", schema=schema.String()),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
-	}
 
 	TYPE = TechName.OPENVZ
 
@@ -183,23 +172,31 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		TechName.OPENVZ_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
-	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
+	DEFAULT_ATTRIBUTES = {"ram": 256, "diskspace": 10240}
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
 
-	
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
+		self.save()
 		#template: None, default template
 	
 	def _imagePath(self):
 		return "/var/lib/vz/private/%d" % self.vmid
+
+	def modify_template(self, tmplName):
+		temp= template.Template.objects(self.TYPE, tmplName)
+		UserError.check(temp, code=UserError.INVALID_VALUE, message="No such template", data={"value": tmplName})
+		self.template = temp
 
 	# 9: locked
 	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
@@ -407,6 +404,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 
 	def action_prepare(self):
 		self._checkState()
+
 		templ = self._template()
 		templ.fetch()
 		tplPath = templ.getPath()
@@ -599,6 +597,20 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		diskspace = self._diskspace()
 		if diskspace:
 			usage.diskspace = diskspace
+
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"hostname": Attribute(field=hostname, set=modify_hostname, schema=schema.String(), label="hostname"),
+		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
+		"ram": Attribute(field=ram, label="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
+		"diskspace": Attribute(field=diskspace, label="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),
+		"rootpassword": Attribute(field=rootpassword, label="Root password", schema=schema.String()),
+		"template": Attribute(get=lambda self: self.template.name if self.template else None, set=modify_template, label="Template"),
+		"gateway4": Attribute(field=gateway4, label="IPv4 gateway", schema=schema.String()),
+		"gateway6": Attribute(field=gateway4, label="IPv6 gateway", schema=schema.String()),
+		"timeout": elements.Element.ATTRIBUTES["timeout"],
+	})
 
 	ACTIONS = elements.Element.ACTIONS.copy()
 	ACTIONS.update({

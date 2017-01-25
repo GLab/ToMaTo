@@ -46,14 +46,14 @@ def take(type_, owner, blacklist=None):
 		if num in blacklist:
 			continue
 		try:
-			ResourceInstance.objects(type=type_, num=num)
+			ResourceInstance.objects.get(type=type_, num=num)
 			continue
 		except ResourceInstance.DoesNotExist:
 			pass
 		try:
 			instance = ResourceInstance()
 			instance.init(type_, num, owner)
-			logging.logMessage("instance_take", category="resource", type=type_, num=num, owner=(owner.__class__.__name__.lower(), owner.id))
+			logging.logMessage("instance_take", category="resource", type=type_, num=num, owner=(owner.__class__.__name__.lower(), str(owner.id)))
 			return num
 		except:
 			pass
@@ -116,6 +116,7 @@ class ResourceInstance(BaseDocument):
 	ownerElementId = ReferenceFieldId(ownerElement)
 	ownerConnection = ReferenceField(Connection)
 	ownerConnectionId = ReferenceFieldId(ownerConnection)
+	attrs = DictField()
 
 	ACTIONS = {}
 	ATTRIBUTES = {
@@ -158,15 +159,8 @@ def getAll(**kwargs):
 def create(type_, attrs=None):
 	if not attrs: attrs = {}
 	UserError.check(type_ in TYPES, UserError.UNSUPPORTED_TYPE, "Unknown resource type", data={"type": type_})
-	print "Creating resource with attrs"
-	print type_
-	print attrs
 	res = TYPES[type_](owner=currentUser())
-	print res.attrs
-	print res.info()
-	print "Resource init"
 	res.init(attrs)
-	print "Gedoens"
 	res.save()
 	logging.logMessage("create", category="resource", type=res.type, id=str(res.id), attrs=attrs)
 	logging.logMessage("info", category="resource", type=res.type, id=str(res.id), info=res.info())

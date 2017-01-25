@@ -96,7 +96,7 @@ def element_modify(id, attrs):  # @ReservedAssignment
 	  and state.
 	"""
 	el = _getElement(str(id))
-	el.modify(attrs)
+	el.modify(**attrs)
 	return el.info()
 
 

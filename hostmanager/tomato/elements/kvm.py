@@ -12,6 +12,7 @@ from . import Element
 from ..generic import *
 from ..db import *
 
+
 import time
 import xml.etree.ElementTree as ET
 import random, os, sys, re, shutil
@@ -130,7 +131,7 @@ Actions:
 		same as download_grant, but only for the nlXTP folder
 """
 
-class KVM(elements.RexTFVElement,elements.Element):
+class KVM(elements.Element, elements.RexTFVElement):
 
 	vmid = IntField()
 	websocket_port = IntField()
@@ -161,8 +162,11 @@ class KVM(elements.RexTFVElement,elements.Element):
 	DOC = DOC
 
 
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
@@ -452,14 +456,14 @@ class KVM(elements.RexTFVElement,elements.Element):
 			vfat.create(self._nlxtp_device_filename(), KVM.rextfv_max_size / 1024,
 						nested=True)  # size (last argument) depends on nlxtp_max_size
 
-	ATTRIBUTES = {
-		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"kblang": Attribute(field=kblang, description="Keyboard language", schema=schema.Int(options=kblang_options), default=None),
 		"usbtablet": Attribute(field=usbtablet, description="USB tablet mouse mode", schema=schema.Bool(), default=True),
-		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier()),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
-	}
+		"template": Attribute(field=templateId, description="Template", set=modify_template, schema=schema.Identifier()),
+	})
 
 	CAP_CHILDREN = {
 		TechName.KVM_INTERFACE: [StateName.CREATED, StateName.PREPARED],

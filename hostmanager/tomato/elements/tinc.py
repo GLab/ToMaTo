@@ -93,11 +93,11 @@ class Tinc(elements.Element):
 	pubkey = StringField()
 	peers = ListField(default=[])
 
-	ATTRIBUTES = {
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"mode": Attribute(field=mode, schema=schema.String(options=["hub", "switch"]), default="switch"),
 		"peers": Attribute(field=peers, description="Peers", default=[]),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
-	}
+	})
 
 
 

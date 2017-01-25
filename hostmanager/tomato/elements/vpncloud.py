@@ -35,10 +35,11 @@ class VpnCloud(elements.Element):
 	network_id = IntField()
 	peers = ListField(default=[])
 
-	ATTRIBUTES = {
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"network_id": Attribute(field=network_id, schema=schema.Int()),
 		"peers": Attribute(field=peers, description="Peers", schema=schema.List(), default=[])
-	}
+	})
 
 
 

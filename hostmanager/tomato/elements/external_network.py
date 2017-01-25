@@ -103,7 +103,6 @@ class External_Network(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["network"] = self.network.kind if self.network else None
 		return info
 
 	def bridgeName(self):
