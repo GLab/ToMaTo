@@ -9,28 +9,28 @@ def _getProfile(id_):
 	return res
 
 
-def profile_list(tech_type=None):
+def profile_list(type=None):
 	"""
 	Retrieves information about all resources.
 
-	Parameter *tech_type*:
-	  If *tech_type* is set, only resources with a matching tech will be returned.
+	Parameter *type*:
+	  If *type* is set, only resources with a matching tech will be returned.
 
 	Return value:
 	  A list with information entries of all matching profiles. Each list
 	  entry contains exactly the same information as returned by
 	  :py:func:`profile_info`. If no resource matches, the list is empty.
 	"""
-	res = Profile.objects(tech_type=tech_type) if tech_type else Profile.objects()
+	res = Profile.objects(type=type) if type else Profile.objects()
 	return [r.info() for r in res]
 
 
-def profile_create(tech_type, name, attrs=None):
+def profile_create(type, name, attrs=None):
 	"""
 	Creates a profile of given tech and name, configuring it with the given attributes.
 
-	Parameter *tech_type*:
-	  The parameter *tech_type* must be a string identifying one of the supported
+	Parameter *type*:
+	  The parameter *type* must be a string identifying one of the supported
 	  profile techs.
 
 	Parameter *name*:
@@ -47,7 +47,7 @@ def profile_create(tech_type, name, attrs=None):
 	"""
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
-	attrs.update(name=name, tech_type=tech_type)
+	attrs.update(name=name, type=type)
 	res = Profile.create(**attrs)
 	return res.info()
 
@@ -99,13 +99,13 @@ def profile_remove(id):
 
 
 @wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
-def profile_id(tech_type, name):
+def profile_id(type, name):
 	"""
-	Translate tech_type and name to a profile id
+	Translate type and name to a profile id
 
-	Parameter *tech_type*:
-	  The parameter *tech_type* must be a string identifying one of the supported
-	  profile tech_types.
+	Parameter *type*:
+	  The parameter *type* must be a string identifying one of the supported
+	  profile types.
 
 	Parameter *name*:
 	  The parameter *name* must be a string containing the name of the existing profile.
@@ -118,7 +118,7 @@ def profile_id(tech_type, name):
 	  exist* is raised.
 
 	"""
-	return str(Profile.objects.get(tech_type=tech_type, name=name).id)
+	return str(Profile.objects.get(type=type, name=name).id)
 
 def profile_info(id):
 	"""

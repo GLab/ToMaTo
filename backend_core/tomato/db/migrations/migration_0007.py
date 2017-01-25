@@ -54,22 +54,5 @@ def migrate_resources():
 	for p in Profile.objects():
 		_mig_resource(p)
 
-
-
-
-
-
-
-
-# elements
-
-def migrate_elements():
-	# fixme: migrate elements
-	pass
-
-
-
-
-
 def migrate():
 	migrate_resources()

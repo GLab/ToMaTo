@@ -10,29 +10,29 @@ def _getTemplate(id_):
 
 
 
-def template_list(tech_type=None):
+def template_list(type=None):
 	"""
 	Retrieves information about all resources.
 
-	Parameter *tech_type*:
-	  If *tech_type* is set, only resources with a matching tech_type will be returned.
+	Parameter *type*:
+	  If *type* is set, only resources with a matching type will be returned.
 
 	Return value:
 	  A list with information entries of all matching templates. Each list
 	  entry contains exactly the same information as returned by
 	  :py:func:`template_info`. If no resource matches, the list is empty.
 	"""
-	res = Template.objects(tech_type=tech_type) if tech_type else Template.objects()
+	res = Template.objects(type=type) if type else Template.objects()
 	return [r.info() for r in res]
 
 
-def template_create(tech_type, name, attrs=None):
+def template_create(type, name, attrs=None):
 	"""
 	Creates a template of given tech and name, configuring it with the given attributes.
 
-	Parameter *tech_type*:
-	  The parameter *tech_type* must be a string identifying one of the supported
-	  template tech_types.
+	Parameter *type*:
+	  The parameter *type* must be a string identifying one of the supported
+	  template types.
 
 	Parameter *name*:
 	  The parameter *name* must be a string giving a name for the template.
@@ -48,7 +48,7 @@ def template_create(tech_type, name, attrs=None):
 	"""
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
-	attrs.update(name=name, tech_type=tech_type)
+	attrs.update(name=name, type=type)
 	res = Template.create(**attrs)
 	return res.info()
 
@@ -99,11 +99,11 @@ def template_remove(id):
 	return {}
 
 @wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
-def template_id(tech_type, name):
+def template_id(type, name):
 	"""
-	translate tech_type and name to a template id
+	translate type and name to a template id
 	"""
-	return str(Template.objects.get(tech_type=tech_type, name=name).id)
+	return str(Template.objects.get(type=type, name=name).id)
 
 @wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def template_info(id): #@ReservedAssignment
