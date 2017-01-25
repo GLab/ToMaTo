@@ -1,7 +1,10 @@
 var CommandTextElement = TextElement.extend({
 	init: function(options){
 		this._super(options);
-		this.repy_doc = options.repy_doc
-		this.element.append($('<pre>'+this.repy_doc+'</pre>'))
+		this.args_doc = options.args_doc;
+		if (this.args_doc) {
+			this.textfield.addClass("command-doc");
+			this.element.append($('<pre class="command-doc">'+this.args_doc+'</pre>'));
+		}
 	}
 });

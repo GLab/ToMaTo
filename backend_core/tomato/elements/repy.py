@@ -35,8 +35,10 @@ class Repy(VMElement):
 		if self.state == ST_CREATED:
 			if self.template is not None:
 				return self.template.args_doc
+			else:
+				return None
 		else:
-			return self.template.args_doc  # fixme: use hostmanager element info as source
+			return self.element.info()["args_doc"]
 
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
