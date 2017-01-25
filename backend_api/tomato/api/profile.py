@@ -1,28 +1,28 @@
 from api_helpers import getCurrentUserInfo, checkauth
 from ..lib.remote_info import get_profile_info, get_profile_list, ProfileInfo
 
-def profile_list(tech=None):
+def profile_list(type=None):
 	"""
 	Retrieves information about all resources.
 
-	Parameter *tech*:
-	  If *tech* is set, only resources with a matching tech will be returned.
+	Parameter *type*:
+	  If *type* is set, only resources with a matching type will be returned.
 
 	Return value:
 	  A list with information entries of all matching profiles. Each list
 	  entry contains exactly the same information as returned by
 	  :py:func:`profile_info`. If no resource matches, the list is empty.
 	"""
-	return get_profile_list(tech)
+	return get_profile_list(type)
 
 
-def profile_create(tech, name, attrs=None):
+def profile_create(type, name, attrs=None):
 	"""
-	Creates a profile of given tech and name, configuring it with the given attributes.
+	Creates a profile of given type and name, configuring it with the given attributes.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  profile techs.
+	Parameter *type*:
+	  The parameter *type* must be a string identifying one of the supported
+	  profile type.
 
 	Parameter *name*:
 	  The parameter *name* must be a string giving a name for the profile.
@@ -37,7 +37,7 @@ def profile_create(tech, name, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_user_resources()
-	return ProfileInfo.create(tech, name, attrs)
+	return ProfileInfo.create(type, name, attrs)
 
 
 def profile_modify(id, attrs):

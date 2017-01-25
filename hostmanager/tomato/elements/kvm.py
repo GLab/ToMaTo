@@ -234,10 +234,10 @@ class KVM(elements.Element, elements.RexTFVElement):
 						 vncport=self.vncport,
 						 vncpassword=self.vncpassword,
 						 keyboard=self.kblang)
-		self.vir.writeInitialConfig(TechName.KVM, self.vmid)
+		self.vir.writeInitialConfig(TypeName.KVM, self.vmid)
+		self.setState(StateName.PREPARED, True)
 		for interface in self.getChildren():
 			self._addInterface(interface)
-		self.setState(StateName.PREPARED, True)
 		#self._configure()
 		# add all interfaces
 
@@ -257,11 +257,11 @@ class KVM(elements.Element, elements.RexTFVElement):
 		return self
 
 	def _addInterface(self, interface):
-		assert self.state == StateName.CREATED or self.state == StateName.PREPARED
+		assert self.state != StateName.CREATED
 		self.vir.addNic(self.vmid, interface.num)
 
 	def _removeInterface(self, interface):
-		assert self.state == StateName.CREATED or self.state == StateName.PREPARED
+		assert self.state != StateName.CREATED
 		try:
 			self.vir.delNic(self.vmid, interface.num)
 		except InternalError as err:
