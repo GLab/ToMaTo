@@ -63,7 +63,7 @@ class Template(Entity, BaseDocument):
 	showAsCommon = BooleanField(db_field='show_as_common')
 	creationDate = FloatField(db_field='creation_date', required=False)
 	hosts = ListField(StringField())
-	repy_doc = StringField(db_field="repy_doc", default=None)
+	args_doc = StringField(db_field="args_doc", default=None)
 	icon = StringField()
 	meta = {
 		'ordering': ['type', '+preference', 'name'],
@@ -140,7 +140,7 @@ class Template(Entity, BaseDocument):
 		"icon": Attribute(field=icon),
 		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True, schema=schema.Number()),
 		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
-		"repy_doc": Attribute(readOnly=True, field=repy_doc),
+		"args_doc": Attribute(readOnly=True, field=args_doc),
 		"ready": Attribute(readOnly=True, get=getReadyInfo, schema=schema.StringMap(items={
 				'backend': schema.Bool(),
 				'hosts': schema.StringMap(items={
@@ -179,7 +179,7 @@ class Template(Entity, BaseDocument):
 	def _update_repy_doc(self):
 		self.repy_doc = None
 		if self.type == TypeName.REPY:
-			read_repy_doc(self.getPath())
+			self.args_doc = read_repy_doc(self.getPath())
 
 
 	def fetch(self, detached=False):

@@ -147,8 +147,8 @@
 	</tr>
 	{% if template.type == 'repy' %}
 	<tr>
-		<th>Repy Documentation</th>
-		<td>{% if template.repy_doc %}<pre style="border: 0px; background: transparent;">{{template.repy_doc}}</pre>{% else %}None{% endif %}</td>
+		<th>Documentation</th>
+		<td>{% if template.args_doc %}<pre style="border: 0px; background: transparent;">{{template.args_doc}}</pre>{% else %}None{% endif %}</td>
 	</tr>
 	{% endif %}
 </table>

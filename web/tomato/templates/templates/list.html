@@ -91,7 +91,7 @@
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
 
-			{% if templ.repy_doc and templ.type == 'repy' %}
+			{% if templ.args_doc %}
 				<img src="/img/doc.png" />
 			{% else %}
 		    	<img src="/img/invisible16.png" />
@@ -115,7 +115,7 @@
 		    	<img src="/img/invisible16.png" />
 			{% endif %}
 
-			{% if templ.description or templ.show_as_common or not templ.nlXTP_installed and templ.type != 'repy' or templ.restricted or templ.repy_doc %}
+			{% if templ.description or templ.show_as_common or not templ.nlXTP_installed and templ.type != 'repy' or templ.restricted or templ.args_doc %}
 				<div class="hiddenbox"><table>
 				{% if templ.description %}
 					<tr>
@@ -124,10 +124,10 @@
 					</tr>
 				{%endif%}
 
-				{% if templ.repy_doc and templ.type == 'repy' %}
+				{% if templ.args_doc %}
 					<tr>
 						<td><img src="/img/doc.png" /></td>
-						<td><pre style="border: 0px; background: transparent;">{{ templ.repy_doc}}</pre></td>
+						<td><pre style="border: 0px; background: transparent;">{{ templ.args_doc}}</pre></td>
 					</tr>
 				{% endif %}
 

@@ -30,6 +30,13 @@ class Repy(VMElement):
 	PROFILE_ATTRS = ["ram", "cpus", "bandwidth"]
 	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy"]
 
+	@property
+	def args_doc(self):
+		if self.state == ST_CREATED:
+			return self.template.args_doc
+		else:
+			return self.template.args_doc  # fixme: use hostmanager element info as source
+
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
 		_host = host.select(site=self.site, elementTypeConfigurations=[[self.TYPE]+self.CAP_CHILDREN.keys()], hostPrefs=hPref, sitePrefs=sPref, template=self.template)
@@ -57,6 +64,11 @@ class Repy(VMElement):
 	ACTIONS.update({
 		ActionName.PREPARE: StatefulAction(action_prepare, check=VMElement.checkTopologyTimeout, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
 		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+	})
+
+	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"args_doc": Attribute(readOnly=True, get=lambda self: self.args_doc)
 	})
 	
 class Repy_Interface(VMInterface):
