@@ -442,28 +442,17 @@ class Host(Entity, BaseDocument):
 					attrs["tech"] = tech
 					if not (attrs["tech"], attrs["name"]) in tpls:
 						# create resource
-						print "Creating resource on host"
 						self.getProxy().resource_create("template", attrs)
 
 						logging.logMessage("template create", category="host", name=self.name, template=attrs)
 					else:
-						print "Already created template on host"
-						print "tpl:"
-						print tpl.checksum
 						hTpl = tpls[(attrs["tech"], attrs["name"])]
-						print "hTpl"
-						print hTpl
 						if hTpl["attrs"].get("checksum") != tpl.checksum:
 							self.getProxy().resource_modify(hTpl["id"], attrs)
-							print "Updating template because checksum is not synced"
 							logging.logMessage("template update", category="host", name=self.name, template=attrs)
 						else:
-							print "i would say template is available"
 							avail.append(tpl)
 		for tpl in template.Template.objects():
-			print "Updating list and state of template"
-			print tpl.name
-			print tpl.isReady()
 			tpl.update_host_state(self, tpl in avail)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()
@@ -709,7 +698,7 @@ class HostObject(BaseDocument):
 	:type topologyConnection: connection.Connection
 	"""
 	host = ReferenceField(Host, required=True, reverse_delete_rule=CASCADE)
-	num = IntField(unique_with='host', required=True)
+	num = StringField(unique_with='host', required=True)
 	topologyElement = ReferenceField('Element', db_field='topology_element') #reverse_delete_rule=NULLIFY defined at bottom of element/__init__.py
 	topologyConnection = ReferenceField('Connection', db_field='topology_connection')  #reverse_delete_rule=NULLIFY defined at bottom of connections.py
 	state = StringField(required=True)
@@ -767,7 +756,6 @@ def select(site=None, elementTypeConfigurations=None, connectionTypes=None, netw
 		if networkKinds and set(networkKinds) - set(host.getNetworkKinds()):
 			continue
 		if template and host.name not in template.hosts:
-			print "I hate templates"
 			continue
 		if not best:
 			return host

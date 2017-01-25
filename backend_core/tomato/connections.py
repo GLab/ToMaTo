@@ -94,7 +94,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	CUSTOM_ATTRS = {}
 	
 	DEFAULT_ATTRS = {"emulation": True, "bandwidth_to": 10000, "bandwidth_from": 10000}
-	
+
 	DOC=""
 
 	# noinspection PyMethodOverriding
