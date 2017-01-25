@@ -1,6 +1,6 @@
 var Profile = Class.extend({
 	init: function(options) {
-		this.type = options.tech;
+		this.type = options.type;
 		this.name = options.name;
 		this.label = options.label || options.name;
 		this.restricted = options.restricted;
