@@ -33,7 +33,8 @@ class Repy(VMElement):
 	@property
 	def args_doc(self):
 		if self.state == ST_CREATED:
-			return self.template.args_doc
+			if self.template is not None:
+				return self.template.args_doc
 		else:
 			return self.template.args_doc  # fixme: use hostmanager element info as source
 
