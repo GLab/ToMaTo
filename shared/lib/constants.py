@@ -85,6 +85,7 @@ class TypeName:
 	BRIDGE = "bridge"
 	FIXED_BRIDGE = "fixed_bridge"
 
+	VMELEMENT_TYPES = [FULL_VIRTUALIZATION, CONTAINER_VIRTUALIZATION, REPY]
 	ONSCREEN = {
 		FULL_VIRTUALIZATION: "full virtualization",
 		FULL_VIRTUALIZATION_INTERFACE: "full virtualization interface",
