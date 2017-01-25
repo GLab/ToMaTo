@@ -21,7 +21,8 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import tc, net, process, path, fileserver #@UnresolvedImport
 from ..lib.error import UserError
 from ..lib.constants import ActionName,StateName
-
+from ..db import *
+from ..generic import *
 import os
 
 DOC="""
@@ -29,105 +30,92 @@ DOC="""
 	"""
 
 class Bridge(connections.Connection):
-	bridge_attr = Attr("bridge", type="str")
-	bridge = bridge_attr.attribute()
-	
-	emulation_attr = Attr("emulation", desc="Enable emulation", type="bool", default=True)
-	emulation = emulation_attr.attribute()
 
-	bandwidth_to_attr = Attr("bandwidth_to", desc="Bandwidth", unit="kbit/s", type="float", minValue=0, maxValue=1000000, default=10000)
-	bandwidth_to = bandwidth_to_attr.attribute()
-	bandwidth_from_attr = Attr("bandwidth_from", desc="Bandwidth", unit="kbit/s", type="float", minValue=0, maxValue=1000000, default=10000)
-	bandwidth_from = bandwidth_from_attr.attribute()
+	bridge = StringField()
 
-	lossratio_to_attr = Attr("lossratio_to", desc="Loss ratio", unit="%", type="float", minValue=0.0, maxValue=100.0, default=0.0)
-	lossratio_to = lossratio_to_attr.attribute()
-	lossratio_from_attr = Attr("lossratio_from", desc="Loss ratio", unit="%", type="float", minValue=0.0, maxValue=100.0, default=0.0)
-	lossratio_from = lossratio_from_attr.attribute()
-	
-	duplicate_to_attr = Attr("duplicate_to", desc="Duplication ratio", unit="%", type="float", minValue=0.0, maxValue=100.0, default=0.0)
-	duplicate_to = duplicate_to_attr.attribute()
-	duplicate_from_attr = Attr("duplicate_from", desc="Duplication ratio", unit="%", type="float", minValue=0.0, maxValue=100.0, default=0.0)
-	duplicate_from = duplicate_from_attr.attribute()
+	emulation = BooleanField(default=True)
 
-	corrupt_to_attr = Attr("corrupt_to", desc="Corruption ratio", unit="%", type="float", minValue=0.0, maxValue=100.0, default=0.0)
-	corrupt_to = corrupt_to_attr.attribute()
-	corrupt_from_attr = Attr("corrupt_from", desc="Corruption ratio", unit="%", type="float", minValue=0.0, maxValue=100.0, default=0.0)
-	corrupt_from = corrupt_from_attr.attribute()
+	bandwidth_to = FloatField(default=10000, min_value=0, max_value=1000000)
+	bandwidth_from = FloatField(default=10000, min_value=0, max_value=1000000)
+	lossratio_to = FloatField(default=0.0, min_value=0, max_value=100)
+	lossratio_from =FloatField(default=0.0, min_value=0, max_value=100)
+	duplicate_to = FloatField(default=0.0, min_value=0, max_value=100)
+	duplicate_from = FloatField(default=0.0, min_value=0, max_value=100)
+	corrupt_to = FloatField(default=0.0, min_value=0, max_value=100)
+	corrupt_from = FloatField(default=0.0, min_value=0, max_value=100)
+	delay_to = FloatField(default=0.0, min_value=0)
+	delay_from = FloatField(default=0.0, min_value=0)
+	jitter_to = FloatField(default=0.0, min_value=0)
+	jitter_from = FloatField(default=0.0, min_value=0)
+	distribution_to = StringField(choices = ["uniform", "normal", "pareto", "paretonormal"], default="uniform")
+	distribution_from = StringField(choices = ["uniform", "normal", "pareto", "paretonormal"], default="uniform")
 
-	delay_to_attr = Attr("delay_to", desc="Delay", unit="ms", type="float", minValue=0.0, default=0.0)
-	delay_to = delay_to_attr.attribute()
-	delay_from_attr = Attr("delay_from", desc="Delay", unit="ms", type="float", minValue=0.0, default=0.0)
-	delay_from = delay_from_attr.attribute()
+	capturing = BooleanField(default=False)
+	capture_filter = StringField(default="")
+	capture_port = IntField()
+	capture_mode = StringField(choices=["net", "file"], default="file")
+	capture_pid = IntField()
 
-	jitter_to_attr = Attr("jitter_to", desc="Jitter", unit="ms", type="float", minValue=0.0, default=0.0)
-	jitter_to = jitter_to_attr.attribute()
-	jitter_from_attr = Attr("jitter_from", desc="Jitter", unit="ms", type="float", minValue=0.0, default=0.0)
-	jitter_from = jitter_from_attr.attribute()
+	ATTRIBUTES = connections.Connection.ATTRIBUTES.copy()
+	ATTRIBUTES_EMUL = {
+		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
+		
+		"bandwith_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",
+								 schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
+		"bandwith_from": Attribute(field=bandwidth_from, description="Bandwidth in kbit/s",
+								   schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
+		
+		"lossratio_to": Attribute(field=lossratio_to, description="Loss ratio in kbit/s",
+								  schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
+		"lossratio_from": Attribute(field=lossratio_from, description="Loss ratio in kbit/s",
+								  schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
+		
+		"duplicate_to": Attribute(field=duplicate_to, description="Duplication ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
+		"duplicate_from": Attribute(field=duplicate_from, description="Duplication ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
+		
+		"corrupt_to": Attribute(field=corrupt_to, description="Corruption ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
+		"corrupt_from": Attribute(field=corrupt_from, description="Corruption ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
+		
+		"delay_to": Attribute(field=delay_to, description="Delay in ms",
+								  schema=schema.Number(minValue=0.0), default=0.0),
+		"delay_from": Attribute(field=delay_from, description="Delay in ms",
+								  schema=schema.Number(minValue=0.0), default=0.0),
 
-	distribution_to_attr = Attr("distribution_to", desc="Distribution", type="str", options={"uniform": "Uniform", "normal": "Normal", "pareto": "Pareto", "paretonormal": "Pareto-Normal"}, default="uniform")
-	distribution_to = distribution_to_attr.attribute()
-	distribution_from_attr = Attr("distribution_from", desc="Distribution", type="str", options={"uniform": "Uniform", "normal": "Normal", "pareto": "Pareto", "paretonormal": "Pareto-Normal"}, default="uniform")
-	distribution_from = distribution_from_attr.attribute()
-	
+		"jitter_to": Attribute(field=jitter_to, description="Jitter in ms",
+							  schema=schema.Number(minValue=0.0), default=0.0),
+		"jitter_from": Attribute(field=jitter_from, description="Jitter in ms",
+								schema=schema.Number(minValue=0.0), default=0.0),
 
-	capturing_attr = Attr("capturing", desc="Enable packet capturing", type="bool", default=False)
-	capturing = capturing_attr.attribute()
-	capture_filter_attr = Attr("capture_filter", desc="Packet filter expression", type="str", default="")
-	capture_filter = capture_filter_attr.attribute()
-	capture_port_attr = Attr("capture_port", type="int")
-	capture_port = capture_port_attr.attribute()
-	capture_mode_attr = Attr("capture_mode", desc="Capture mode", type="str", options={"net": "Via network", "file": "For download"}, default="file")
-	capture_mode = capture_mode_attr.attribute()
-	capture_pid_attr = Attr("capture_pid", type="int")
-	capture_pid = capture_pid_attr.attribute()
+		"distribution_to": Attribute(field=distribution_to, description="Distribution",
+									   schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
+									   default="uniform"),
+		"distribution_from": Attribute(field=distribution_from, description="Distribution",
+								schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
+									   default="uniform"),
+	}
+
+	ATTRIBUTES_CAPTURE = {
+		"capturing": Attribute(field=capturing, description="Enable packet capturing", schema=schema.Bool(),
+							   default=False),
+		"capture_filter": Attribute(field=capture_filter, description="Packet filter expression",
+									schema=schema.String(), default=""),
+		"capture_mode": Attribute(field=capture_mode, description="Capture mode",
+								  schema=schema.String(options=["net", "file"]), default="file"),
+
+	}
+
+
 
 	TYPE = "bridge"
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		connections.REMOVE_ACTION: [StateName.CREATED, StateName.STARTED],
-	}
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}
-	CAP_ACTIONS_EMUL = {
-	}
-	CAP_ACTIONS_CAPTURE = {
-		"download_grant": [StateName.CREATED, StateName.STARTED],
-	}
-	CAP_ATTRS = {}
-	CAP_ATTRS_EMUL = {
-		"emulation": emulation_attr,
-		"delay_to": delay_to_attr,
-		"delay_from": delay_from_attr,
-		"jitter_to": jitter_to_attr,
-		"jitter_from": jitter_from_attr,
-		"distribution_to": distribution_to_attr,
-		"distribution_from": distribution_from_attr,
-		"bandwidth_to": bandwidth_to_attr,
-		"bandwidth_from": bandwidth_from_attr,
-		"lossratio_to": lossratio_to_attr,
-		"lossratio_from": lossratio_from_attr,
-		"duplicate_to": duplicate_to_attr,
-		"duplicate_from": duplicate_from_attr,
-		"corrupt_to": corrupt_to_attr,
-		"corrupt_from": corrupt_from_attr,
-	}
-	CAP_ATTRS_CAPTURE = {
-		"capturing": capturing_attr,
-		"capture_filter": capture_filter_attr,
-		"capture_mode": capture_mode_attr,
-	}
 	DEFAULT_ATTRS = {"bandwidth_to": 10000, "bandwidth_from": 10000}
 	CAP_CON_CONCEPTS = [(connections.CONCEPT_INTERFACE, connections.CONCEPT_INTERFACE)]
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
 	
-	class Meta:
-		db_table = "tomato_bridge"
-		app_label = 'tomato'
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
@@ -364,6 +352,22 @@ class Bridge(connections.Connection):
 			usage.memory = process.memory(self.capture_pid)
 		usage.diskspace = path.diskspace(self.dataPath())
 
+	ACTIONS = connections.Connection.ACTIONS.copy()
+	ACTIONS.update({
+		connections.REMOVE_ACTION: StatefulAction(connections.Connection.remove, check=connections.Connection.checkRemove,
+											 allowedStates=[StateName.CREATED, StateName.STARTED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+
+	})
+	ACTIONS_EMUL = {}
+	ACTIONS_CAPTURE = {
+		ActionName.DOWNLOAD_GRANT: StatefulAction(action_download_grant,
+												  allowedStates=[StateName.CREATED, StateName.STARTED]),
+	}
+
 if not config.MAINTENANCE:
 	bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
 	iprouteVersion = cmd.getDpkgVersion("iproute")
@@ -375,13 +379,13 @@ if not config.MAINTENANCE:
 		print "Warning: Bridge not supported on bridge-utils version %s" % bridgeUtilsVersion
 	
 	if iprouteVersion:
-		Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_EMUL)
-		Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_EMUL)
+		Bridge.ATTRIBUTES.update(Bridge.ATTRIBUTES_EMUL)
+		Bridge.CAP_ACTIONS.update(Bridge.ACTIONS_EMUL)
 	else:
 		print "Warning: Bridge link emulation needs iproute, disabled"
 	
 	if tcpdumpVersion:
-		Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_CAPTURE)
-		Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_CAPTURE)
+		Bridge.ATTRIBUTES.update(Bridge.ATTRIBUTES_CAPTURE)
+		Bridge.ACTIONS.update(Bridge.ACTIONS_CAPTURE)
 	else:
 		print "Warning: Bridge packet capturing needs tcpdump, disabled"

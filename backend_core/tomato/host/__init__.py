@@ -211,7 +211,8 @@ class Host(Entity, BaseDocument):
 			self.hostNetworks = self.getProxy().host_networks()
 		except:
 			self.hostNetworks = []
-		caps = self._convertCapabilities(self.getProxy().host_capabilities())
+		hostCapabilities = self.getProxy().host_capabilities()
+		caps = self._convertCapabilities(hostCapabilities)
 		self.elementTypes = caps["elements"].keys()
 		global element_caps
 		for k, v in caps["elements"].iteritems():
@@ -239,7 +240,10 @@ class Host(Entity, BaseDocument):
 		def convertActions(actions, next_state):
 			res = {}
 			for action, states in actions.items():
-				res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state.get(action)).info()
+				if type(states) == type(dict()):
+					res[action] = StatefulAction(None, allowedStates=states['allowed_states'], stateChange=states['state_change']).info()
+				else:
+					res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state.get(action)).info()
 			return res
 		def convertAttributes(attrs):
 			res = {}
@@ -270,19 +274,27 @@ class Host(Entity, BaseDocument):
 			return res
 		elems = {}
 		for name, info in caps['elements'].items():
+			attributes = info.get('attrs')
+			if not attributes and attributes != {}:
+				attributes = info.get('attributes')
 			elems[name] = {
 				"actions": convertActions(info.get('actions'), info.get('next_state')),
-				"attributes": convertAttributes(info.get('attrs')),
+				"attributes": convertAttributes(attributes),
 				"children": {n: {"allowed_states": states} for n, states in info.get('children').items()},
 				"parent": info.get('parent'),
 				"connectability": [{"concept": n, "allowed_states": None} for n in info.get('con_concepts')]
 			}
 		cons = {}
+
 		for name, info in caps['connections'].items():
+			attributes = info.get('attrs')
+			if not attributes and attributes != {}:
+				attributes = info.get('attributes')
 			cons[name] = {
 				"actions": convertActions(info.get('actions'), info.get('next_state')),
-				"attributes": convertAttributes(info.get('attrs')),
-				"connectability": [{"concept_from": names[0], "concept_to": names[1]} for names in info.get('con_concepts')]
+				"attributes": convertAttributes(attributes),
+				"connectability": [{"concept_from": names[0], "concept_to": names[1]} for names in
+								   info.get('con_concepts')]
 			}
 		return {
 			"elements": elems,
@@ -431,6 +443,7 @@ class Host(Entity, BaseDocument):
 					if not (attrs["tech"], attrs["name"]) in tpls:
 						# create resource
 						self.getProxy().resource_create("template", attrs)
+
 						logging.logMessage("template create", category="host", name=self.name, template=attrs)
 					else:
 						hTpl = tpls[(attrs["tech"], attrs["name"])]
@@ -685,7 +698,7 @@ class HostObject(BaseDocument):
 	:type topologyConnection: connection.Connection
 	"""
 	host = ReferenceField(Host, required=True, reverse_delete_rule=CASCADE)
-	num = IntField(unique_with='host', required=True)
+	num = StringField(unique_with='host', required=True)
 	topologyElement = ReferenceField('Element', db_field='topology_element') #reverse_delete_rule=NULLIFY defined at bottom of element/__init__.py
 	topologyConnection = ReferenceField('Connection', db_field='topology_connection')  #reverse_delete_rule=NULLIFY defined at bottom of connections.py
 	state = StringField(required=True)

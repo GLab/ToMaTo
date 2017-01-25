@@ -16,12 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil
-from django.db import models
 
 from .. import dump
+from ..db import *
+from ..generic import *
 from ..user import User
 from ..accounting import UsageStatistics
-from ..lib import db, attributes, logging #@UnresolvedImport
+from ..lib import attributes, logging #@UnresolvedImport
 from ..lib.constants import StateName
 
 TYPES = {}
@@ -72,22 +73,30 @@ Bridge concept interface:
 """
 
 
-class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
-	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
-	owner = models.ForeignKey(User, related_name='connections')
-	state = models.CharField(max_length=20, validators=[db.nameValidator])
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='connection')
-	attrs = db.JSONField()
-	#elements: set of elements.Element
-	
+class Connection(LockedStatefulEntity, BaseDocument):
+
+	type = StringField(required=True, max_length=20, choices=[(t, t) for t in TYPES.keys()])
+	owner = ReferenceField(User)
+	ownerId = ReferenceFieldId(owner)
+	state = StringField(choices=['default', 'created', 'prepared', 'started'], max_length=20, required=True)
+	usageStatistics = ReferenceField(UsageStatistics, null=True)
+	usageStatisticsId = ReferenceFieldId(usageStatistics)
+
+	@property
+	def elements(self):
+		from ..elements import Element
+		return Element.objects(connection=self)
+
+	meta = {
+		'allow_inheritance': True,
+	}
+
 	CAP_ACTIONS = {}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {}
 	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
-	
-	class Meta:
-		pass
+
 
 	def init(self, el1, el2, attrs=None):
 		if not attrs: attrs = {}
@@ -286,10 +295,13 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 			
 	def getElements(self):
 		return [el.upcast() for el in self.elements.all()]
-			
-	@classmethod	
+
+	@classmethod
 	def cap_attrs(cls):
-		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
+		return dict([(key, value) for (key, value) in cls.CAP_ATTRS.iteritems()])
+
+
+
 					
 	def info(self):
 		els = [el.id for el in self.elements.all()]
@@ -318,16 +330,28 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 			self.action_stop()
 		self.remove()
 
+	ACTIONS = {
+		Entity.REMOVE_ACTION: StatefulAction(remove, check=checkRemove)
+	}
+
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
+		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
+		"elements": Attribute(field=elements, schema=schema.List()),
+	}
+
 		
 def get(id_, **kwargs):
 	try:
-		con = Connection.objects.get(id=id_, **kwargs)
+		con = Connection.objects(id=id_, **kwargs)
 		return con.upcast()
 	except Connection.DoesNotExist:
 		return None
 
 def getAll(**kwargs):
-	return (con.upcast() for con in Connection.objects.filter(**kwargs))
+	return (con.upcast() for con in Connection.objects(**kwargs))
 
 def create(el1, el2, type_=None, attrs=None):
 	if not attrs: attrs = {}

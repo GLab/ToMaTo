@@ -18,6 +18,7 @@
 from .. import connections, config
 from ..lib import cmd #@UnresolvedImport
 from ..lib.cmd import net #@UnresolvedImport
+from ..generic import *
 
 DOC="""
 	Description
@@ -30,6 +31,14 @@ ST_DEFAULT = "default"
 
 class Fixed_Bridge(connections.Connection):
 	TYPE = "fixed_bridge"
+
+
+	ACTIONS = connections.Connection.ACTIONS.copy()
+	ACTIONS.update({
+		connections.REMOVE_ACTION: StatefulAction(connections.Connection.remove, check=connections.Connection.checkRemove,
+											 allowedStates=[ST_DEFAULT]),
+	})
+
 	CAP_ACTIONS = {
 		connections.REMOVE_ACTION: [ST_DEFAULT],
 	}

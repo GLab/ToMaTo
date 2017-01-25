@@ -80,6 +80,7 @@ class Template(Entity, BaseDocument):
 			return  # old hostmanager
 		if not self.checksum:
 			return
+
 		_, checksum = self.checksum.split(":")
 		url = ("http://%s:%d/" + PATTERNS[self.tech]) % (host.address, host.hostInfo["templateserver_port"], checksum)
 		if url in self.host_urls:

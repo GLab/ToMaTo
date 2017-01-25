@@ -18,11 +18,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import sys, threading
-import django.db
 
 from . import config, login, api, handleError as handleCurrentError
 from . import currentUser
-from .lib import db, rpc, logging  # @UnresolvedImport
+from .lib import rpc, logging  # @UnresolvedImport
 from .lib.error import Error, InternalError
 
 
@@ -36,11 +35,7 @@ class Wrapper:
 		self.semaphore.acquire()
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		self.semaphore.release()
-		if django.db.transaction.is_dirty():
-			django.db.transaction.commit()
-		django.db.connection.close()
 
-@db.commit_after
 def handleError(error, function, args, kwargs):
 	if not isinstance(error, Error):
 		error = InternalError.wrap(error)
@@ -49,7 +44,6 @@ def handleError(error, function, args, kwargs):
 	return error
 
 
-@db.commit_after
 def afterCall(*args, **kwargs):
 	pass
 

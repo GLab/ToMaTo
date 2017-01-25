@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, hashlib, base64
+from ..db import *
+from ..generic import *
 from .. import connections, elements, config
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -83,34 +85,24 @@ Actions:
 """
 
 class Tinc(elements.Element):
-	port_attr = Attr("port", type="int")
-	port = port_attr.attribute()
-	path_attr = Attr("path")
-	path = path_attr.attribute()
-	mode_attr = Attr("mode", desc="Mode", states=[StateName.CREATED], options={"hub": "Hub (broadcast)", "switch": "Switch (learning)"}, default="switch")
-	mode = mode_attr.attribute()
-	privkey_attr = Attr("privkey", desc="Private key")
-	privkey = privkey_attr.attribute()
-	pubkey_attr = Attr("pubkey", desc="Public key")
-	pubkey = pubkey_attr.attribute()
-	peers_attr = Attr("peers", desc="Peers", states=[StateName.CREATED], default=[])
-	peers = peers_attr.attribute()
+
+	port = IntField()
+	path = StringField()
+	mode= StringField(choices=["hub", "switch"], default="switch")
+	privkey = StringField()
+	pubkey = StringField()
+	peers = ListField(default=[])
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"mode": Attribute(field=mode, schema=schema.String(options=["hub", "switch"]), default="switch"),
+		"peers": Attribute(field=peers, description="Peers", default=[]),
+	})
+
+
 
 	TYPE = TypeName.TINC
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}	
-	CAP_ATTRS = {
-		"mode": mode_attr,
-		"peers": peers_attr,
-		"timeout": elements.Element.timeout_attr
-	}
+
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
@@ -238,7 +230,19 @@ class Tinc(elements.Element):
 			if not trafficA is None and not trafficB is None:
 				traffic = trafficA + trafficB
 				usage.updateContinuous("traffic", traffic, data)
-			
+
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+	})
+
+
 if not config.MAINTENANCE:
 	tincVersion = cmd.getDpkgVersion("tinc")
 	if [1, 0] <= tincVersion <= [2, 0]:

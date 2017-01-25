@@ -273,7 +273,7 @@ class MultiTechVMElement(VMElement):
 	def _get_elementTypeConfigurations(self):
 		if self.tech:
 			return [[self.tech, TypeTechTrans.TECH_TO_CHILD_TECH[self.tech]]]
-		return [[k, v] for k, v in TypeTechTrans.TECH_TO_CHILD_TECH.iteritems()]
+		return [[k, v] for k, v in TypeTechTrans.TECH_TO_CHILD_TECH.iteritems() if k in self.TECHS]
 
 	def get_tech_attribute(self):
 		return self.element.type if self.element else self.tech

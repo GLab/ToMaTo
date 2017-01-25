@@ -80,7 +80,7 @@ def resource_modify(id, attrs):  # @ReservedAssignment
 	  exist* is raised.
 	  Various other exceptions can be raised, depending on the resource type.
 	"""
-	res = _getResource(int(id))
+	res = _getResource(str(id))
 	res.modify(attrs)
 	return res.info()
 
@@ -100,7 +100,7 @@ def resource_remove(id):  # @ReservedAssignment
 	  exist* is raised.
 	  Various other exceptions can be raised, depending on the resource type.
 	"""
-	res = _getResource(int(id))
+	res = _getResource(str(id))
 	res.remove()
 
 
@@ -131,7 +131,7 @@ def resource_info(id):  # @ReservedAssignment
 	  If the given resource does not exist an exception *resource does not
 	  exist* is raised.
 	"""
-	res = _getResource(int(id))
+	res = _getResource(str(id))
 	return res.info()
 
 
@@ -148,6 +148,7 @@ def resource_list(type_filter=None):
 	  entry contains exactly the same information as returned by
 	  :py:func:`resource_info`. If no resource matches, the list is empty.
 	"""
+
 	res = resources.getAll(type=type_filter) if type_filter else resources.getAll()
 	return [r.info() for r in res]
 

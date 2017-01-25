@@ -94,7 +94,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	CUSTOM_ATTRS = {}
 	
 	DEFAULT_ATTRS = {"emulation": True, "bandwidth_to": 10000, "bandwidth_from": 10000}
-	
+
 	DOC=""
 
 	# noinspection PyMethodOverriding
@@ -137,7 +137,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	@property
 	def _remoteAttrs(self):
 		caps = Host.getConnectionCapabilities(self.remoteType)
-		allowed = caps["attributes"].keys() if caps else []
+		allowed = (a for a, v in caps["attributes"].iteritems() if not v.get("read_only", False)) if caps else []
 		attrs = {}
 		for key, value in self.directData.iteritems():
 			if key in allowed:
