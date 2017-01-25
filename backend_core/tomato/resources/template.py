@@ -62,6 +62,7 @@ class Template(Entity, BaseDocument):
 	showAsCommon = BooleanField(db_field='show_as_common')
 	creationDate = FloatField(db_field='creation_date', required=False)
 	hosts = ListField(StringField())
+	repy_doc = StringField(db_field="repy_doc", default=None)
 	icon = StringField()
 	meta = {
 		'ordering': ['type', '+preference', 'name'],
@@ -138,6 +139,7 @@ class Template(Entity, BaseDocument):
 		"icon": Attribute(field=icon),
 		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True, schema=schema.Number()),
 		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
+		"repy_doc": Attribute(readOnly=True, field=repy_doc),
 		"ready": Attribute(readOnly=True, get=getReadyInfo, schema=schema.StringMap(items={
 				'backend': schema.Bool(),
 				'hosts': schema.StringMap(items={
@@ -173,6 +175,16 @@ class Template(Entity, BaseDocument):
 			self.modify(kblang=kblang)
 		self.fetch(detached=True)
 
+	def _update_repy_doc(self):
+		self.repy_doc = None
+		if self.type == TypeName.REPY:
+			with open(self.getPath(), "r") as f:
+				script = f.read()
+			if script[:3] == '"""':
+				if '"""' in script[3:]:
+					self.repy_doc = script[3:].split('"""', 1)[0].strip()
+
+
 	def fetch(self, detached=False):
 		if not self.urls:
 			return
@@ -186,6 +198,7 @@ class Template(Entity, BaseDocument):
 		if old_checksum != self.checksum:
 			self.host_urls = []
 			self.hosts = []
+			self._update_repy_doc()
 		self.save()
 
 	def getPath(self):
