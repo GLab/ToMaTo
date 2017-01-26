@@ -40,14 +40,15 @@
 			try {
 				var xmlhttp=new XMLHttpRequest();
 				xmlhttp.onreadystatechange = function() {
-				if (xmlhttp.readyState==4) {
-					try {
-						res = JSON.parse(xmlhttp.responseText);
-					} catch(ex) {
-						alert('Failed to mark notifification');
-					}
+					if (xmlhttp.readyState==4) {
+						try {
+							res = JSON.parse(xmlhttp.responseText);
+						} catch(ex) {
+							alert('Failed to mark notifification');
+						}
 
-					location.reload();
+						location.reload();
+					}
 				}
 				xmlhttp.open("GET", url, true);
 				xmlhttp.send();

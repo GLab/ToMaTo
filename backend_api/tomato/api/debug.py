@@ -4,6 +4,8 @@ import traceback, sys
 from api_helpers import getCurrentUserInfo
 from ..lib.debug import run
 from ..lib.settings import Config
+from ..service_status import service_status, problems
+from ..service_status_manager import get_all_stats
 from ..lib.service import is_reachable, is_self, get_tomato_inner_proxy, get_backend_core_proxy
 from ..lib.remote_info import get_host_info
 from ..lib.exceptionhandling import wrap_and_handle_current_exception
@@ -17,18 +19,16 @@ def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
 	if is_self(tomato_module):
 		return {
 			"scheduler": scheduler.info(),
-			"threads": map(traceback.extract_stack, sys._current_frames().values())
+			"threads": map(traceback.extract_stack, sys._current_frames().values()),
+			"system": service_status(),
+			"problems": problems()
 		}
 	else:
 		api = get_tomato_inner_proxy(tomato_module)
 		return api.debug_stats()
 
 def debug_services_overview():
-	res = {}
-	for module in Config.TOMATO_BACKEND_MODULES:
-		res[module] = {
-			'reachable': is_reachable(module)
-		}
+	return get_all_stats()
 
 def debug_services_reachable():
 	res = {module: is_reachable(module) for module in Config.TOMATO_BACKEND_MODULES}
