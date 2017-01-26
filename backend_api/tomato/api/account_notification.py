@@ -35,7 +35,7 @@ def account_notification_set_all_read(read):
 	"""
 	username = getCurrentUserName()
 	api = get_backend_users_proxy()
-	api.notification_set_all_read(read)
+	api.notification_set_all_read(username, read)
 	get_user_info(username).invalidate_info()
 
 def account_send_notification(name, subject, message, ref=None, from_support=False, subject_group=None):
