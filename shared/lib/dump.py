@@ -397,9 +397,9 @@ def dumpUnknownException(type_, value, trace, **kwargs):
 # function to handle an Error from tomato.lib.error.py
 def dumpError(error):
 	try:
-		if not error.todump:
+		if (not error.todump) or (error.wasdumped):
 			return None
-		error.todump = False
+		error.wasdumped = True
 
 		trace = error.trace
 		data = {
