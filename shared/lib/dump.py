@@ -411,6 +411,7 @@ def dumpError(error):
 		
 		description = error.raw
 		del description['todump']
+		del description['wasdumped']
 		
 		exception_id = error.group_id()
 		
