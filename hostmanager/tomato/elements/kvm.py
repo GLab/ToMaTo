@@ -11,7 +11,7 @@ from ..lib.util import joinDicts #@UnresolvedImport
 from . import Element
 from ..generic import *
 from ..db import *
-
+from ..lib.exceptionhandling import print_all
 
 import time
 import xml.etree.ElementTree as ET
@@ -166,6 +166,7 @@ class KVM(elements.Element, elements.RexTFVElement):
 	def type(self):
 		return self.TYPE
 
+	@print_all
 	def init(self, *args, **kwargs):
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
@@ -219,6 +220,7 @@ class KVM(elements.Element, elements.RexTFVElement):
 		self.vir.stop(self.vmid)
 		self.setState(StateName.PREPARED, True)
 
+	@print_all
 	def action_prepare(self):
 		self._checkState()
 		templ = self._template()
@@ -533,9 +535,13 @@ class KVM_Interface(elements.Element):#
 	DOC = DOC_IFACE
 	__doc__ = DOC_IFACE  # @ReservedAssignment
 
+	@property
+	def type(self):
+		return self.TYPE
 
+
+	@print_all
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs)  # no id and no attrs before this line
 		assert isinstance(self.getParent(), KVM)

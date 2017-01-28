@@ -52,14 +52,17 @@ class VpnCloud(elements.Element):
 	DOC = DOC
 	__doc__ = DOC
 
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 
 	def _interfaceName(self):
-		return TypeName.VPNCLOUD + "%d" % self.id
+		return TypeName.VPNCLOUD + "%s" % str(self.id)
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None

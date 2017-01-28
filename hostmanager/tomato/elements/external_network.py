@@ -81,9 +81,12 @@ class External_Network(elements.Element):
 	DEFAULT_ATTRS = {}
 	DOC = DOC
 
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = self.ST_DEFAULT
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		#network: None, default network

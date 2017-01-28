@@ -24,6 +24,7 @@ from ..lib.constants import ActionName,StateName
 from ..db import *
 from ..generic import *
 import os
+from ..lib.exceptionhandling import print_all
 
 DOC="""
 	Description
@@ -58,6 +59,7 @@ class Bridge(connections.Connection):
 
 	ATTRIBUTES = connections.Connection.ATTRIBUTES.copy()
 	ATTRIBUTES_EMUL = {
+		"bridge": Attribute(field=bridge, schema=schema.String(), readOnly=True),
 		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
 		
 		"bandwith_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",
@@ -103,6 +105,8 @@ class Bridge(connections.Connection):
 							   default=False),
 		"capture_filter": Attribute(field=capture_filter, description="Packet filter expression",
 									schema=schema.String(), default=""),
+		"capture_port": Attribute(field=capture_port, schema=schema.Int(), readOnly=True),
+		"capture_pid": Attribute(field=capture_pid, schema=schema.Int(), readOnly=True),
 		"capture_mode": Attribute(field=capture_mode, description="Capture mode",
 								  schema=schema.String(options=["net", "file"]), default="file"),
 
@@ -115,13 +119,16 @@ class Bridge(connections.Connection):
 	CAP_CON_CONCEPTS = [(connections.CONCEPT_INTERFACE, connections.CONCEPT_INTERFACE)]
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
-	
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
+	@print_all
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
-		self.bridge = "br%d" % self.id
+		self.bridge = "br%s" % str(self.id)
 		self.capture_port = self.getResource("port")
 				
 	def _startCapturing(self):

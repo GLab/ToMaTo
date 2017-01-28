@@ -24,6 +24,7 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.constants import ActionName, StateName, TypeName
+from ..lib.exceptionhandling import print_all
 
 DOC="""
 Element type: ``tinc``
@@ -93,12 +94,6 @@ class Tinc(elements.Element):
 	pubkey = StringField()
 	peers = ListField(default=[])
 
-	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"mode": Attribute(field=mode, schema=schema.String(options=["hub", "switch"]), default="switch"),
-		"peers": Attribute(field=peers, description="Peers", default=[]),
-	})
-
 
 
 	TYPE = TypeName.TINC
@@ -109,13 +104,14 @@ class Tinc(elements.Element):
 	DEFAULT_ATTRS = {"mode": "switch"}
 	DOC = DOC
 	__doc__ = DOC
-	
-	class Meta:
-		db_table = "tomato_tinc"
-		app_label = 'tomato'
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
+
+	@print_all
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
@@ -124,7 +120,7 @@ class Tinc(elements.Element):
 		self.pubkey = cmd.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
 
 	def _interfaceName(self):
-		return TypeName.TINC + "%d" % self.id
+		return TypeName.TINC + "%s" % str(self.id)[0:8] # Mongodb Ids are to long, so cut them
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None
@@ -231,6 +227,11 @@ class Tinc(elements.Element):
 				traffic = trafficA + trafficB
 				usage.updateContinuous("traffic", traffic, data)
 
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"mode": Attribute(field=mode, set=modify_mode, schema=schema.String(options=["hub", "switch"]), default="switch"),
+		"peers": Attribute(field=peers, set=modify_peers, description="Peers", default=[]),
+	})
 
 	ACTIONS = elements.Element.ACTIONS.copy()
 	ACTIONS.update({

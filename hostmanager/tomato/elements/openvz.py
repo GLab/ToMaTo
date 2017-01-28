@@ -157,8 +157,8 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 	ram = IntField(default=256)
 	diskspace = IntField(default=10240)
 	rootpassword = StringField()
-	hostname = StringField()
 	gateway4 = StringField()
+	hostname = StringField()
 	gateway6 = StringField()
 	usbtablet = BooleanField(default=True)
 	template = ReferenceField(template.Template)
@@ -182,7 +182,10 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 
 	def init(self, *args, **kwargs):
 		self.state = StateName.CREATED
+		print args
+		print kwargs
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		print self.hostname
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
@@ -233,7 +236,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
 		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
-			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
+			data={"type": self.type, "id": str(self.id), "saved_state": savedState, "real_state": realState})
 
 	def _template(self):
 		if self.template:
@@ -281,6 +284,8 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 			self._vzctl("set", ["--userpasswd", "root:%s" % self.rootpassword, "--save"])
 
 	def _setHostname(self):
+		print "Assertion:"
+		print self.state != StateName.CREATED
 		assert self.state != StateName.CREATED
 		if self.hostname:
 			self._vzctl("set", ["--hostname", self.hostname, "--save"])
@@ -379,6 +384,8 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 			self._setRootpassword()
 	
 	def modify_hostname(self, val):
+		print "Modifying hostname"
+		print val
 		self.hostname = val
 		if self.state != StateName.CREATED:
 			self._setHostname()
@@ -422,7 +429,11 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		self._setRam()
 		self._setDiskspace()
 		self._setRootpassword()
+		print "hostname bevor setHostname"
+		print self.hostname
 		self._setHostname()
+		print "Hostname nach prepare"
+		print self.hostname
 		# add all interfaces
 		for interface in self.getChildren():
 			self._addInterface(interface)
@@ -601,7 +612,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"hostname": Attribute(field=hostname, set=modify_hostname, schema=schema.String(), label="hostname"),
+		"hostname": Attribute(field=hostname, set=modify_hostname, schema=schema.String()),
 		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, label="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"diskspace": Attribute(field=diskspace, label="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),
@@ -609,7 +620,6 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		"template": Attribute(get=lambda self: self.template.name if self.template else None, set=modify_template, label="Template"),
 		"gateway4": Attribute(field=gateway4, label="IPv4 gateway", schema=schema.String()),
 		"gateway6": Attribute(field=gateway4, label="IPv6 gateway", schema=schema.String()),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
 	})
 
 	ACTIONS = elements.Element.ACTIONS.copy()
@@ -696,7 +706,8 @@ class OpenVZ_Interface(elements.Element):
 	ipspy_pid = IntField()
 	used_addresses = ListField(default=[])
 
-	ATTRIBUTES = {
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"name": Attribute(field=name, description="Name", schema = schema.String(regex="^eth[0-9]+$")),
 		"ip4address": Attribute(field=ip4address, description="IPv4 address", schema=schema.String()),
 		"ip6address": Attribute(field=ip6address, description="IPv6	address", schema=schema.String()),
@@ -705,7 +716,7 @@ class OpenVZ_Interface(elements.Element):
 		"ipspy_pid": Attribute(field=ipspy_pid, schema=schema.Int()),
 		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[]),
 		"timeout": elements.Element.ATTRIBUTES["timeout"],
-	}
+	})
 
 	ACTIONS = elements.Element.ACTIONS.copy()
 	ACTIONS.update({
@@ -721,12 +732,12 @@ class OpenVZ_Interface(elements.Element):
 	DOC = DOC_IFACE
 	__doc__ = DOC_IFACE #@ReservedAssignment
 	
-	class Meta:
-		db_table = "tomato_openvz_interface"
-		app_label = 'tomato'
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), OpenVZ)

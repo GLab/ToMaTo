@@ -77,6 +77,8 @@ class UDP_Tunnel(elements.Element):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
+
+		"port": Attribute(field=port, schema=schema.Int(), readOnly=True),
 		"connection": Attribute(field=connection, schema=schema.String(), default=None),
 	})
 
@@ -92,13 +94,12 @@ class UDP_Tunnel(elements.Element):
 	DEFAULT_ATTRS = {}
 	DOC = DOC
 	__doc__ = DOC
-	
-	class Meta:
-		db_table = "tomato_udp_tunnel"
-		app_label = 'tomato'
+
+	@property
+	def type(self):
+		return self.TYPE
 	
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
@@ -115,7 +116,7 @@ class UDP_Tunnel(elements.Element):
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _interfaceName(self):
-		return "stap%d" % self.id
+		return "stap%s" % str(self.id)
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None

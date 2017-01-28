@@ -151,9 +151,11 @@ class Repy(elements.Element):
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
 
+	@property
+	def type(self):
+		return self.TYPE
 	
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
@@ -402,8 +404,11 @@ class Repy_Interface(elements.Element):
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
 
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), Repy)

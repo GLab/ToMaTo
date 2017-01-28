@@ -537,9 +537,11 @@ class KVMQM_Interface(elements.Element):
 	__doc__ = DOC_IFACE #@ReservedAssignment
 	
 
+	@property
+	def type(self):
+		return self.TYPE
 	
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), KVMQM)
@@ -589,6 +591,7 @@ class KVMQM_Interface(elements.Element):
 			if net.ifaceExists(ifname):
 				traffic = sum(net.trafficInfo(ifname))
 				usage.updateContinuous("traffic", traffic, data)
+
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
 		"num": Attribute(field=num, schema=schema.Int()),

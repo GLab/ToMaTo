@@ -24,6 +24,7 @@ from ..user import User
 from ..accounting import UsageStatistics
 from ..lib import attributes, logging #@UnresolvedImport
 from ..lib.constants import StateName
+from ..lib.exceptionhandling import print_all
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
@@ -75,7 +76,6 @@ Bridge concept interface:
 
 class Connection(LockedStatefulEntity, BaseDocument):
 
-	type = StringField(required=True, max_length=20, choices=[(t, t) for t in TYPES.keys()])
 	owner = ReferenceField(User)
 	ownerId = ReferenceFieldId(owner)
 	state = StringField(choices=['default', 'created', 'prepared', 'started'], max_length=20, required=True)
@@ -97,7 +97,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
 
+	TYPE = None
 
+	@property
+	def type(self):
+		return self.TYPE
+
+	@print_all
 	def init(self, el1, el2, attrs=None):
 		if not attrs: attrs = {}
 		concept_ = self.determineConcept(el1, el2)
@@ -118,7 +124,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		try:
 			data = self.info()
 		except Exception, ex:
-			data = {"info_exception": str(ex), "type": self.type, "id": self.id, "state": self.state, "attrs": self.attrs}
+			data = {"info_exception": str(ex), "type": self.type, "id": str(self.id), "state": self.state, "attrs": self.attrs}
 		dump.dumpException(connection=data, **kwargs)
 
 	def getUsageStatistics(self):
@@ -153,7 +159,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			return getattr(self, self.type)
 		except:
 			pass
-		raise InternalError(message="Failed to cast connection", code=InternalError.UPCAST, data={"id": self.id, "type": self.type})
+		raise InternalError(message="Failed to cast connection", code=InternalError.UPCAST, data={"id": str(self.id), "type": self.type})
 
 	def dataPath(self, filename=""):
 		"""
@@ -211,7 +217,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		@type attrs: dict
 		"""		
 		self.checkModify(attrs)
-		logging.logMessage("modify", category="connection", id=self.id, attrs=attrs)
+		logging.logMessage("modify", category="connection", id=str(self.id), attrs=attrs)
 		self.setBusy(True)
 		try:
 			for key, value in attrs.iteritems():
@@ -222,7 +228,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		finally:
 			self.setBusy(False)				
 		self.save()
-		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
+		logging.logMessage("info", category="connection", id=str(self.id), info=self.info())
 	
 	def checkAction(self, action):
 		"""
@@ -240,6 +246,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			"Action can not be executed in this state",
 			data={"action": action, "connection_type": self.type, "state": self.state})
 
+	@print_all
 	def action(self, action, params):
 		"""
 		Executes the action with the given parameters. This method first
@@ -255,23 +262,19 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		@param params: Parameters for the action
 		@type params: dict
 		"""
-		self.checkAction(action)
-		logging.logMessage("action start", category="connection", id=self.id, action=action, params=params)
+		logging.logMessage("action start", category="connection", id=str(self.id), action=action, params=params)
 		self.setBusy(True)
 		try:
-			res = getattr(self, "action_%s" % action)(**params)
-		except InternalError, err:
-			self.dumpException()
-			raise
+			res = Entity.action(self, action, params)
 		finally:
 			self.setBusy(False)
-		self.save()
+
 		if action in self.CAP_NEXT_STATE:
 			InternalError.check(self.state == self.CAP_NEXT_STATE[action], InternalError.INVALID_NEXT_STATE,
 				"Action lead to wrong state", data={"action": action, "element_type": self.type,
 				"expected_state": self.CAP_NEXT_STATE[action], "reached_state": self.state})
-		logging.logMessage("action end", category="connection", id=self.id, action=action, params=params, res=res)
-		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
+		logging.logMessage("action end", category="connection", id=str(self.id), action=action, params=params, res=res)
+		logging.logMessage("info", category="connection", id=str(self.id), info=self.info())
 		return res
 
 	def setState(self, state, dummy=None):
@@ -286,8 +289,8 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	def remove(self):
 		self.checkRemove()
-		logging.logMessage("info", category="connection", id=self.id, info=self.info())
-		logging.logMessage("remove", category="connection", id=self.id)
+		logging.logMessage("info", category="connection", id=str(self.id), info=self.info())
+		logging.logMessage("remove", category="connection", id=str(self.id))
 		self.elements.clear() #Important, otherwise elements will be deleted
 		self.delete()
 		if os.path.exists(self.dataPath()):
@@ -304,12 +307,12 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 					
 	def info(self):
-		els = [el.id for el in self.elements.all()]
+		els = [str(el.id) for el in self.elements.all()]
 		return {
-			"id": self.id,
+			"id": str(self.id),
 			"type": self.type,
 			"state": self.state,
-			"attrs": self.attrs.copy(),
+			"attrs": Entity.info(self),
 			"elements": sorted(els), #sort elements so that first one is from and second one is to
 		}
 		
@@ -356,9 +359,9 @@ def getAll(**kwargs):
 def create(el1, el2, type_=None, attrs=None):
 	if not attrs: attrs = {}
 	UserError.check(not el1.connection, UserError.ALREADY_CONNECTED, "Element is already connected",
-		data={"element_id": el1.id})
+		data={"element_id": str(el1.id)})
 	UserError.check(not el2.connection, UserError.ALREADY_CONNECTED, "Element is already connected",
-		data={"element_id": el2.id})
+		data={"element_id": str(el2.id)})
 	UserError.check(el1.owner == el2.owner == currentUser(), UserError.DIFFERENT_USER,
 		"Element belongs to different user")
 	if type_:
@@ -370,8 +373,8 @@ def create(el1, el2, type_=None, attrs=None):
 		except:
 			con.remove()
 			raise
-		logging.logMessage("create", category="connection", id=con.id)	
-		logging.logMessage("info", category="connection", id=con.id, info=con.info())	
+		logging.logMessage("create", category="connection", id=str(con.id))
+		logging.logMessage("info", category="connection", id=str(con.id), info=con.info())
 		return con
 	else:
 		for type_ in TYPES:

@@ -78,6 +78,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		return self.TYPE
 
 	def init(self, parent=None, attrs=None):
+		print attrs
 		if not attrs: attrs = {}
 		if parent:
 			UserError.check(parent.type in self.CAP_PARENT, UserError.UNABLE_TO_CONNECT, "Parent type not allowed",
@@ -94,10 +95,10 @@ class Element(LockedStatefulEntity, BaseDocument):
 		self.owner = currentUser()
 		self.timeout = time.time() + config.MAX_TIMEOUT
 		Entity.init(self, **attrs)
-		self.save()
 		self.getUsageStatistics()  # triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
+		Entity.init(self, **attrs)
 
 	def dumpException(self, **kwargs):
 		try:
@@ -198,6 +199,8 @@ class Element(LockedStatefulEntity, BaseDocument):
 		@type attrs: dict
 		"""
 		logging.logMessage("modify", category="element", id=str(self.id), attrs=attrs)
+		print "modifying element:"
+		print attrs
 		self.setBusy(True)
 		try:
 			Entity.modify(self, **attrs)
@@ -221,6 +224,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 			"Action can not be executed in this state",
 			data={"action": action, "element_type": self.type, "state": self.state})
 
+	@print_all
 	def action(self, action, params):
 		"""
 		Executes the action with the given parameters. This method first
@@ -332,12 +336,12 @@ class Element(LockedStatefulEntity, BaseDocument):
 		res = {
 			"id": str(self.id),
 			"type": self.type,
-			"parent": self.parent.id if self.hasParent() else None,
+			"parent": str(self.parent.id) if self.hasParent() else None,
 			"state": self.state,
 			"timeout": self.timeout,
 			"attrs": Entity.info(self),
-			"children": [ch.id for ch in self.getChildren()],
-			"connection": self.connection.id if self.connection else None,
+			"children": [str(ch.id) for ch in self.getChildren()],
+			"connection": str(self.connection.id) if self.connection else None,
 		}
 		res['attrs']['rextfv_supported'] = False
 		return res
@@ -518,7 +522,7 @@ def get(id_, **kwargs):
 def getAll(**kwargs):
 	return (el.upcast() for el in Element.objects(**kwargs))
 
-
+@print_all
 def create(type_, parent=None, attrs=None):
 	if not attrs: attrs = {}
 	UserError.check(type_ in TYPES, UserError.UNSUPPORTED_TYPE, "Unsupported type", data={"type": type_})
