@@ -24,7 +24,6 @@ from ..lib.constants import ActionName,StateName
 from ..db import *
 from ..generic import *
 import os
-from ..lib.exceptionhandling import print_all
 
 DOC="""
 	Description
@@ -124,7 +123,6 @@ class Bridge(connections.Connection):
 	def type(self):
 		return self.TYPE
 
-	@print_all
 	def init(self, *args, **kwargs):
 		self.state = StateName.CREATED
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line

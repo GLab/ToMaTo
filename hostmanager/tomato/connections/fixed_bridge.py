@@ -19,7 +19,6 @@ from .. import connections, config
 from ..lib import cmd #@UnresolvedImport
 from ..lib.cmd import net #@UnresolvedImport
 from ..generic import *
-from ..lib.exceptionhandling import print_all
 
 DOC="""
 	Description
@@ -54,7 +53,6 @@ class Fixed_Bridge(connections.Connection):
 	def type(self):
 		return self.TYPE
 
-	@print_all
 	def init(self, *args, **kwargs):
 		self.state = ST_DEFAULT
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line

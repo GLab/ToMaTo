@@ -24,7 +24,7 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.constants import ActionName, StateName, TypeName
-from ..lib.exceptionhandling import print_all
+
 
 DOC="""
 Element type: ``tinc``
@@ -109,8 +109,6 @@ class Tinc(elements.Element):
 	def type(self):
 		return self.TYPE
 
-
-	@print_all
 	def init(self, *args, **kwargs):
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line

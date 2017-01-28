@@ -24,7 +24,6 @@ from ..user import User
 from ..accounting import UsageStatistics
 from ..lib import attributes, logging #@UnresolvedImport
 from ..lib.constants import StateName
-from ..lib.exceptionhandling import print_all
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
@@ -103,7 +102,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	def type(self):
 		return self.TYPE
 
-	@print_all
 	def init(self, el1, el2, attrs=None):
 		if not attrs: attrs = {}
 		concept_ = self.determineConcept(el1, el2)
@@ -246,7 +244,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			"Action can not be executed in this state",
 			data={"action": action, "connection_type": self.type, "state": self.state})
 
-	@print_all
 	def action(self, action, params):
 		"""
 		Executes the action with the given parameters. This method first

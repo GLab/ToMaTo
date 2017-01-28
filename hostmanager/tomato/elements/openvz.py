@@ -182,10 +182,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 
 	def init(self, *args, **kwargs):
 		self.state = StateName.CREATED
-		print args
-		print kwargs
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
-		print self.hostname
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
@@ -284,8 +281,6 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 			self._vzctl("set", ["--userpasswd", "root:%s" % self.rootpassword, "--save"])
 
 	def _setHostname(self):
-		print "Assertion:"
-		print self.state != StateName.CREATED
 		assert self.state != StateName.CREATED
 		if self.hostname:
 			self._vzctl("set", ["--hostname", self.hostname, "--save"])
@@ -384,8 +379,6 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 			self._setRootpassword()
 	
 	def modify_hostname(self, val):
-		print "Modifying hostname"
-		print val
 		self.hostname = val
 		if self.state != StateName.CREATED:
 			self._setHostname()
@@ -429,11 +422,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		self._setRam()
 		self._setDiskspace()
 		self._setRootpassword()
-		print "hostname bevor setHostname"
-		print self.hostname
 		self._setHostname()
-		print "Hostname nach prepare"
-		print self.hostname
 		# add all interfaces
 		for interface in self.getChildren():
 			self._addInterface(interface)
