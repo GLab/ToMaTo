@@ -340,6 +340,8 @@ class Host(Entity, BaseDocument):
 		from .element import HostElement
 		hel = HostElement(type=el["type"], state=el["state"], host=self, num=el["id"], topologyElement=ownerElement, topologyConnection=ownerConnection)
 		hel.objectInfo = el
+		#Workaround
+		hel["num"] = str(hel["num"])
 		hel.save()
 		if ownerElement:
 			ownerElement.hostElements.append(hel)
