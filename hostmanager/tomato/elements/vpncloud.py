@@ -37,7 +37,9 @@ class VpnCloud(elements.Element):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"network_id": Attribute(field=network_id, schema=schema.Int()),
+		"port": Attribute(field=port, schema=schema.Int(), readOnly=True),
+		"pid": Attribute(field=pid, schema=schema.Int(null=True), readOnly=True),
+		"network_id": Attribute(field=network_id,  description="Network ID", schema=schema.Int()),
 		"peers": Attribute(field=peers, description="Peers", schema=schema.List(), default=[])
 	})
 

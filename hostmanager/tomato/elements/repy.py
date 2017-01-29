@@ -133,6 +133,12 @@ class Repy(elements.Element):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
+		"pid": Attribute(field=pid, readOnly=True, schema=schema.Int()),
+		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
+		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
+		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
+		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
+		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
 		"args": Attribute(field=args, description="Arguments", schema = schema.List(), default=[]),
 		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
@@ -379,10 +385,11 @@ class Repy_Interface(elements.Element):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$")),
-		"ipspy_pid": Attribute(field=ipspy_pid, schema=schema.Int()),
-		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[])
+		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
+		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$"), readOnly=True),
+		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
 	})
+
 
 	ACTIONS = elements.Element.ACTIONS.copy()
 	ACTIONS.update({

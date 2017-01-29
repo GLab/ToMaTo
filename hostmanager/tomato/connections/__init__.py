@@ -339,7 +339,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"elements": Attribute(field=elements, schema=schema.List()),
+		"elements": Attribute(field=elements, schema=schema.List(), readOnly=True),
 	}
 
 		

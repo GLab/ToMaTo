@@ -457,10 +457,16 @@ class KVM(elements.Element, elements.RexTFVElement):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
-		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
-		"kblang": Attribute(field=kblang, description="Keyboard language", schema=schema.Int(options=kblang_options), default=None),
-		"usbtablet": Attribute(field=usbtablet, description="USB tablet mouse mode", schema=schema.Bool(), default=True),
+		"vmid": Attribute(field=vmid, readOnly=True, schema=schema.Int()),
+		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
+		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
+		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
+		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
+		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
+		"cpus": Attribute(field=cpus, description="Number of CPUs", set=modify_cpus, schema=schema.Number(minValue=1,maxValue=4), default=1),
+		"ram": Attribute(field=ram, description="RAM", set=modify_ram, schema=schema.Int(minValue=64, maxValue=8192), default=256),
+		"kblang": Attribute(field=kblang, description="Keyboard language", set=modify_kblang, schema=schema.String(options=kblang_options), default=None),
+		"usbtablet": Attribute(field=usbtablet, description="USB tablet mouse mode", set=modify_usbtablet, schema=schema.Bool(), default=True),
 		"template": Attribute(field=templateId, description="Template", set=modify_template, schema=schema.Identifier()),
 	})
 
@@ -592,11 +598,11 @@ class KVM_Interface(elements.Element):#
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"num": Attribute(field=num, schema=schema.Int()),
+		"num": Attribute(field=num, schema=schema.Int(), readOnly=True),
+		"mac": Attribute(field=mac, description="Mac Address", schema=schema.String(), readOnly=True),
+		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
 		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$")),
-		"mac": Attribute(field=mac, description="MAC Address", schema=schema.String()),
-		"ipspy_pid": Attribute(field=ipspy_pid, schema=schema.Int()),
-		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[])
+		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
 	})
 
 	ACTIONS = elements.Element.ACTIONS.copy()

@@ -57,8 +57,10 @@ class Bridge(connections.Connection):
 	capture_pid = IntField()
 
 	ATTRIBUTES = connections.Connection.ATTRIBUTES.copy()
-	ATTRIBUTES_EMUL = {
+	ATTRIBUTES.update({
 		"bridge": Attribute(field=bridge, schema=schema.String(), readOnly=True),
+	})
+	ATTRIBUTES_EMUL = {
 		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
 		
 		"bandwith_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",

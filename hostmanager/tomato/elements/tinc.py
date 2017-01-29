@@ -227,7 +227,11 @@ class Tinc(elements.Element):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"mode": Attribute(field=mode, set=modify_mode, schema=schema.String(options=["hub", "switch"]), default="switch"),
+		"port": Attribute(field=port, readOnly=True, schema=schema.Int()),
+		"path": Attribute(field=path, readOnly=True),
+		"mode": Attribute(field=mode, set=modify_mode, description="Mode", schema=schema.String(options=["hub", "switch"]), default="switch"),
+		"privkey": Attribute(field=privkey, readOnly=True, description="Private key"),
+		"pubkey": Attribute(field=pubkey, readOnly=True, description="Public key"),
 		"peers": Attribute(field=peers, set=modify_peers, description="Peers", default=[]),
 	})
 
