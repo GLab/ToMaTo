@@ -813,9 +813,9 @@ def getConnectionTypes():
 	global connection_caps
 	return connection_caps.keys()
 
-@deprecated("host.Host.getElementCapabilites")
+@deprecated("host.Host.getConnectionCapabilites")
 def getConnectionCapabilities(type_):
-	return Host.getElementCapabilities(type_)
+	return Host.getConnectionCapabilities(type_)
 
 
 checkingHostsLock = threading.RLock()

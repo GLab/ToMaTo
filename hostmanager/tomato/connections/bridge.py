@@ -56,62 +56,7 @@ class Bridge(connections.Connection):
 	capture_mode = StringField(choices=["net", "file"], default="file")
 	capture_pid = IntField()
 
-	ATTRIBUTES = connections.Connection.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"bridge": Attribute(field=bridge, schema=schema.String(), readOnly=True),
-	})
-	ATTRIBUTES_EMUL = {
-		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
-		
-		"bandwith_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",
-								 schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
-		"bandwith_from": Attribute(field=bandwidth_from, description="Bandwidth in kbit/s",
-								   schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
-		
-		"lossratio_to": Attribute(field=lossratio_to, description="Loss ratio in kbit/s",
-								  schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
-		"lossratio_from": Attribute(field=lossratio_from, description="Loss ratio in kbit/s",
-								  schema=schema.Number(minValue=0, maxValue=1000000), default=10000),
-		
-		"duplicate_to": Attribute(field=duplicate_to, description="Duplication ratio in %",
-								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
-		"duplicate_from": Attribute(field=duplicate_from, description="Duplication ratio in %",
-								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
-		
-		"corrupt_to": Attribute(field=corrupt_to, description="Corruption ratio in %",
-								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
-		"corrupt_from": Attribute(field=corrupt_from, description="Corruption ratio in %",
-								  schema=schema.Number(minValue=0.0, maxValue=100.0), default=0.0),
-		
-		"delay_to": Attribute(field=delay_to, description="Delay in ms",
-								  schema=schema.Number(minValue=0.0), default=0.0),
-		"delay_from": Attribute(field=delay_from, description="Delay in ms",
-								  schema=schema.Number(minValue=0.0), default=0.0),
 
-		"jitter_to": Attribute(field=jitter_to, description="Jitter in ms",
-							  schema=schema.Number(minValue=0.0), default=0.0),
-		"jitter_from": Attribute(field=jitter_from, description="Jitter in ms",
-								schema=schema.Number(minValue=0.0), default=0.0),
-
-		"distribution_to": Attribute(field=distribution_to, description="Distribution",
-									   schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
-									   default="uniform"),
-		"distribution_from": Attribute(field=distribution_from, description="Distribution",
-								schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
-									   default="uniform"),
-	}
-
-	ATTRIBUTES_CAPTURE = {
-		"capturing": Attribute(field=capturing, description="Enable packet capturing", schema=schema.Bool(),
-							   default=False),
-		"capture_filter": Attribute(field=capture_filter, description="Packet filter expression",
-									schema=schema.String(), default=""),
-		"capture_port": Attribute(field=capture_port, schema=schema.Int(), readOnly=True),
-		"capture_pid": Attribute(field=capture_pid, schema=schema.Int(), readOnly=True),
-		"capture_mode": Attribute(field=capture_mode, description="Capture mode",
-								  schema=schema.String(options=["net", "file"]), default="file"),
-
-	}
 
 
 
@@ -359,13 +304,77 @@ class Bridge(connections.Connection):
 			usage.memory = process.memory(self.capture_pid)
 		usage.diskspace = path.diskspace(self.dataPath())
 
+	ATTRIBUTES = connections.Connection.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"bridge": Attribute(field=bridge, schema=schema.String(), readOnly=True),
+	})
+	ATTRIBUTES_EMUL = {
+		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
+
+		"bandwith_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",
+								 schema=schema.Number(minValue=0, maxValue=1000000), set=modify_bandwidth_to,
+								 default=10000),
+		"bandwith_from": Attribute(field=bandwidth_from, description="Bandwidth in kbit/s",
+								   schema=schema.Number(minValue=0, maxValue=1000000), set=modify_bandwidth_from,
+								   default=10000),
+
+		"lossratio_to": Attribute(field=lossratio_to, description="Loss ratio in kbit/s",
+								  schema=schema.Number(minValue=0, maxValue=1000000), set=modify_lossratio_to,
+								  default=10000),
+		"lossratio_from": Attribute(field=lossratio_from, description="Loss ratio in kbit/s",
+									schema=schema.Number(minValue=0, maxValue=1000000), set=modify_lossratio_from,
+									default=10000),
+
+		"duplicate_to": Attribute(field=duplicate_to, description="Duplication ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), set=modify_duplicate_to,
+								  default=0.0),
+		"duplicate_from": Attribute(field=duplicate_from, description="Duplication ratio in %",
+									schema=schema.Number(minValue=0.0, maxValue=100.0), set=modify_duplicate_from,
+									default=0.0),
+
+		"corrupt_to": Attribute(field=corrupt_to, description="Corruption ratio in %",
+								schema=schema.Number(minValue=0.0, maxValue=100.0), set=modify_corrupt_to, default=0.0),
+		"corrupt_from": Attribute(field=corrupt_from, description="Corruption ratio in %",
+								  schema=schema.Number(minValue=0.0, maxValue=100.0), set=modify_corrupt_from,
+								  default=0.0),
+
+		"delay_to": Attribute(field=delay_to, description="Delay in ms",
+							  schema=schema.Number(minValue=0.0), set=modify_delay_to, default=0.0),
+		"delay_from": Attribute(field=delay_from, description="Delay in ms",
+								schema=schema.Number(minValue=0.0), set=modify_delay_from, default=0.0),
+
+		"jitter_to": Attribute(field=jitter_to, description="Jitter in ms",
+							   schema=schema.Number(minValue=0.0), set=modify_jitter_to, default=0.0),
+		"jitter_from": Attribute(field=jitter_from, description="Jitter in ms",
+								 schema=schema.Number(minValue=0.0), set=modify_jitter_from, default=0.0),
+
+		"distribution_to": Attribute(field=distribution_to, description="Distribution",
+									 schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
+									 set=modify_distribution_to,
+									 default="uniform"),
+		"distribution_from": Attribute(field=distribution_from, description="Distribution",
+									   schema=schema.String(options=["uniform", "normal", "pareto", "paretonormal"]),
+									   set=modify_distribution_from,
+									   default="uniform"),
+	}
+
+	ATTRIBUTES_CAPTURE = {
+		"capturing": Attribute(field=capturing, description="Enable packet capturing", schema=schema.Bool(),
+							   set=modify_capturing,
+							   default=False),
+		"capture_filter": Attribute(field=capture_filter, description="Packet filter expression",
+									schema=schema.String(), set=modify_capture_filter, default=""),
+		"capture_port": Attribute(field=capture_port, schema=schema.Int(), readOnly=True),
+		"capture_pid": Attribute(field=capture_pid, schema=schema.Int(), readOnly=True),
+		"capture_mode": Attribute(field=capture_mode, description="Capture mode", set=modify_capture_mode,
+								  schema=schema.String(options=["net", "file"]), default="file"),
+
+	}
+
 	ACTIONS = connections.Connection.ACTIONS.copy()
-	ACTIONS.update({
-		connections.REMOVE_ACTION: StatefulAction(connections.Connection.remove, check=connections.Connection.checkRemove,
-											 allowedStates=[StateName.CREATED, StateName.STARTED]),
-		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+	ACTIONS.update({ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
 										 stateChange=StateName.STARTED),
-		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+					ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
 										stateChange=StateName.CREATED),
 
 	})
@@ -387,7 +396,7 @@ if not config.MAINTENANCE:
 	
 	if iprouteVersion:
 		Bridge.ATTRIBUTES.update(Bridge.ATTRIBUTES_EMUL)
-		Bridge.CAP_ACTIONS.update(Bridge.ACTIONS_EMUL)
+		Bridge.ACTIONS.update(Bridge.ACTIONS_EMUL)
 	else:
 		print "Warning: Bridge link emulation needs iproute, disabled"
 	

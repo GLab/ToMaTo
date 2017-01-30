@@ -173,6 +173,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		self.topology.checkTimeout()
 
 	def checkUnknownAction(self, action, params=None):
+
 		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_GRANT]:
 			self.checkTopologyTimeout()
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
@@ -549,13 +550,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if not attrs: attrs = {}
 		UserError.check(el1 != el2, code=UserError.INVALID_CONFIGURATION, message="Cannot connect element with itself")
 		UserError.check(not el1.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
-			data={"element": el1.id})
+			data={"element": str(el1.id)})
 		UserError.check(not el2.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
-			data={"element": el2.id})
+			data={"element": str(el2.id)})
 		UserError.check(el1.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
-			data={"element": el1.id})
+			data={"element": str(el1.id)})
 		UserError.check(el2.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
-			data={"element": el2.id})
+			data={"element": str(el2.id)})
 		UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
 			message="Can only connect elements from same topology")
 		con = cls()
