@@ -1,6 +1,5 @@
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
-		options.helpTarget = help_baseUrl+"/editor:configwindow_connection";
 		this._super(options);
 
 		var panels = $('<ul class="nav nav-tabs" style="margin-bottom: 1pt;"></ul>');

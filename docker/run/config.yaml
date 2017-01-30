@@ -33,7 +33,7 @@ web-url: http://127.0.0.1:8080
 
 external-urls:
   aup:        http://tomato-lab.org/aup
-  help:       http://github.com/GLab/ToMaTo/wiki
+  help:       http://tomato-lab.org/manuals/user/
   impressum:  http://tomato-lab.org/contact/
   project:    http://tomato-lab.org
   json-feed:  http://www.tomato-lab.org/feed.json

@@ -92,7 +92,7 @@ var Component = Class.extend({
 		
 		var helpTarget = undefined;
 		if ($.inArray(this.data.type,settings.supported_configwindow_help_pages)) {
-			helpTarget = help_baseUrl+"/editor:configwindow_"+this.data.type;
+			helpTarget = this.helpTarget ? this.helpTarget : help_baseUrl;
 		}
 
 		

@@ -1,3 +1,13 @@
+"""
+Web resources are resources that are only available to the webfrontend
+They are defined via a fixed URL that usually points to a JSON document.
+
+Current kinds of web resources:
+ - default executable archives
+ - custom element icons
+"""
+
+
 __author__ = 't-gerhard'
 
 import json, urllib2

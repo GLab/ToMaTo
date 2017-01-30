@@ -33,13 +33,14 @@ class ModuleStatus(object):
 		with self.lock:
 			if is_reachable(self.tomato_module) or is_self(self.tomato_module):
 				if is_self(self.tomato_module):
-					from . import api
+					from .api.debug import _debug_stats_withoutauth
+					debug_stats = _debug_stats_withoutauth()
 				else:
 					api = get_tomato_inner_proxy(self.tomato_module)
 					if not self.last_reachable:
 						self.last_reachable = True
 						self.send_problem_report("service unreachable", True)
-				debug_stats = api.debug_stats()
+					debug_stats = api.debug_stats()
 				new_problems = set(debug_stats.get("problems", ()))
 				for new_problem in (new_problems-self.last_problems):
 					self.send_problem_report(new_problem, False)
