@@ -1,5 +1,9 @@
 
 var VMInterfaceElement = ChildElement.extend({
+	init: function(topology, data, canvas) {
+		this._super(topology, data, canvas);
+		this.helpTarget = "http://tomato-lab.org/manuals/user/element/device/" + data.type.replace("_interface", "") + "#interface_config";
+	},
 	showUsedAddresses: function() {
 		var t = this;
 		this.update(true, function() {

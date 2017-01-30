@@ -6,6 +6,7 @@ var Connection = Component.extend({
 		this._super(topology, data, canvas);
 		this.elements = [];
 		this.segment = -1;
+		this.helpTarget = "http://tomato-lab.org/manuals/user/connection/"
 	},
 	fromElement: function() {
 		return this.elements[0].id < this.elements[1].id ? this.elements[0] : this.elements[1];
@@ -187,7 +188,8 @@ var Connection = Component.extend({
 					t.configWindow.remove();
 					t.configWindow = null;
 				} 
-			}
+			},
+			helpTarget: this.helpTarget
 		}, this);
 		this.configWindow.show();
 		this.triggerEvent({operation: "attribute-dialog"});
