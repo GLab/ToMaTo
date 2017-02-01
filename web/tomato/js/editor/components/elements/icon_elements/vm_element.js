@@ -1,6 +1,10 @@
 
 
 var VMElement = IconElement.extend({
+	init: function(topology, data, canvas) {
+		this._super(topology, data, canvas);
+		this.helpTarget = "http://tomato-lab.org/manuals/user/element/device/"+data.type+"#config"
+	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
 	},

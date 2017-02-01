@@ -14,15 +14,22 @@ from ..lib.error import InternalError
 def ping():
 	return True
 
+def _debug_stats_withoutauth():
+	"""
+	debug stats, but without authentication. Only use internally.
+	:return:
+	"""
+	return {
+		"scheduler": scheduler.info(),
+		"threads": map(traceback.extract_stack, sys._current_frames().values()),
+		"system": service_status(),
+		"problems": problems()
+	}
+
 def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
 	getCurrentUserInfo().check_may_view_debugging_info()
 	if is_self(tomato_module):
-		return {
-			"scheduler": scheduler.info(),
-			"threads": map(traceback.extract_stack, sys._current_frames().values()),
-			"system": service_status(),
-			"problems": problems()
-		}
+		return _debug_stats_withoutauth()
 	else:
 		api = get_tomato_inner_proxy(tomato_module)
 		return api.debug_stats()

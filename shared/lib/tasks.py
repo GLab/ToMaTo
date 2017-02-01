@@ -5,6 +5,8 @@ Created on Jan 24, 2014
 '''
 
 import threading, time, random
+from .error import Error
+from .exceptionhandling import wrap_and_handle_current_exception
 
 MAX_WAIT = 3600.0
 
@@ -45,10 +47,11 @@ class Task(object):
 		try:
 			self.fn(*self.args, **self.kwargs)
 			self.success = True
-		except Exception:
+		except Exception, e:
 			self.success = False
-			import traceback
-			traceback.print_exc()
+			if isinstance(e, Error):
+				e.todump = True
+			wrap_and_handle_current_exception(re_raise=False)
 		self.duration = time.time()-self.last
 		self.last = self.next
 		if self.repeated:
