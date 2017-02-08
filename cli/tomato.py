@@ -215,10 +215,23 @@ def run():
 	url = options.url if options.url else createUrl(options.protocol, options.hostname, options.port, options.username, options.password)
 	api = getConnection(url, options.client_cert)
 	locals = getLocals(api)
-	locals["upload_and_use_rextfv"] = lambda element_id, filename: upload_and_use_rextfv(api, element_id, filename)
-	locals["upload_and_use_image"] = lambda element_id, filename: upload_and_use_image(api, element_id, filename)
-	locals["download_rextfv"] = lambda element_id, filename: download_rextfv(api, element_id, filename)
-	locals["download_image"] = lambda element_id, filename: download_image(api, element_id, filename)
+
+	def _upload_and_use_rextfv(*args, **kwargs):
+		return upload_and_use_rextfv(api, *args, **kwargs)
+	locals["upload_and_use_rextfv"] = _upload_and_use_rextfv
+
+	def _upload_and_use_image(*args, **kwargs):
+		return upload_and_use_image(api, *args, **kwargs)
+	locals["upload_and_use_image"] = _upload_and_use_image
+
+	def _download_rextfv(*args, **kwargs):
+		return download_rextfv(api, *args, **kwargs)
+	locals["download_rextfv"] = _download_rextfv
+
+	def _download_image(*args, **kwargs):
+		return download_image(api, *args, **kwargs)
+	locals["download_image"] = _download_image
+
 	if options.arguments:
 		runSource(locals, "\n".join(options.arguments))
 	elif options.file:

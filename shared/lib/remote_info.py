@@ -904,7 +904,7 @@ def get_host_list(site=None, organization=None):
 	"""
 	return get_backend_core_proxy().host_list(site, organization)
 
-@cached(1800)
+@cached(1)
 def get_element_info(element_id):
 	"""
 	return ElementInfo object for the respective element
