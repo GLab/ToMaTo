@@ -9,13 +9,13 @@ import time
 covered API functions:
 	profile_list
 		Scenario 1: No parameters
-		Scenario 2: Set tech parameter to existing technology
-		Scenario 3: Set tech parameter to non existing technology
+		Scenario 2: Set type parameter to existing technology
+		Scenario 3: Set type parameter to non existing technology
 	profile_create
 		Scenario 1: Correct parameters
 		Scenario 2: Correct parameters, no permission
-		Scenario 3: Non existing techs, and otherwise corret parameters
-		Scenario 4: Already existing name (and same technology), but otherwise correct parameters
+		Scenario 3: Non existing types, and otherwise corret parameters
+		Scenario 4: Already existing name (and same type), but otherwise correct parameters
 		Scenario 5: Incorrect attributes
 	profile_modify
 		Scenario 1: Correct parameters
@@ -52,14 +52,14 @@ class ProfileTestCase(ProxyHoldingTestCase):
 		self.remove_all_profiles()
 
 		#Create test profile for container
-		self.testprofile_tech = "container"
+		self.testprofile_type = "container"
 		self.testprofile_name = "normal"
 		self.testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
 
 
-		self.proxy_holder.backend_core.profile_create(self.testprofile_tech,self.testprofile_name, self.testprofile_args)
-		self.testprofile_id = self.proxy_holder.backend_core.profile_id(self.testprofile_tech, self.testprofile_name)
+		self.proxy_holder.backend_core.profile_create(self.testprofile_type,self.testprofile_name, self.testprofile_args)
+		self.testprofile_id = self.proxy_holder.backend_core.profile_id(self.testprofile_type, self.testprofile_name)
 
 	@classmethod
 	def tearDownClass(cls):
@@ -85,10 +85,10 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	def test_profile_list_correct_param(self):
 
 
-		profile_list_api = self.proxy_holder.backend_api.profile_list(self.testprofile_tech)
+		profile_list_api = self.proxy_holder.backend_api.profile_list(self.testprofile_type)
 		self.assertIsNotNone(profile_list_api)
 
-		profile_list_core = self.proxy_holder.backend_core.profile_list(self.testprofile_tech)
+		profile_list_core = self.proxy_holder.backend_core.profile_list(self.testprofile_type)
 		self.assertIsNotNone(profile_list_core)
 
 		self.assertEqual(profile_list_api, profile_list_core)
@@ -96,23 +96,23 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	#Receive a list by calling profile_list() with a non existing technology as parameter and check for emptiness
 	def test_profile_list_non_existing(self):
 
-		profile_tech = "closedvz"
+		profile_type = "closedvz"
 
-		profile_list_api = self.proxy_holder.backend_api.profile_list(profile_tech)
+		profile_list_api = self.proxy_holder.backend_api.profile_list(profile_type)
 		self.assertEqual(profile_list_api, [])
-		profile_list_core = self.proxy_holder.backend_core.profile_list(profile_tech)
+		profile_list_core = self.proxy_holder.backend_core.profile_list(profile_type)
 		self.assertEqual(profile_list_core, [])
 
 	#Create a new correct profile
 	def test_profile_create(self):
-		profile_tech = "full"
+		profile_type = "full"
 		profile_name = "normal"
 		profile_args = {'diskspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
 
-		profile = self.proxy_holder.backend_api.profile_create(profile_tech, profile_name, profile_args)
+		profile = self.proxy_holder.backend_api.profile_create(profile_type, profile_name, profile_args)
 		self.assertIsNotNone(profile)
-		profile_id = self.proxy_holder.backend_core.profile_id(profile_tech, profile_name)
+		profile_id = self.proxy_holder.backend_core.profile_id(profile_type, profile_name)
 		self.assertIsNotNone(profile_id)
 		ref_profile = self.proxy_holder.backend_core.profile_info(profile_id)
 		self.assertEqual(profile, ref_profile)
@@ -121,45 +121,45 @@ class ProfileTestCase(ProxyHoldingTestCase):
 	#Create a new correct profile without the user permission to do so
 	def test_profile_create_no_permission(self):
 		#Valid profile
-		profile_tech = "full"
+		profile_type = "full"
 		profile_name = "normal"
 		profile_args = {'diskspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
-		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.profile_create, profile_tech, profile_name, profile_args)
-		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_core.profile_id, profile_tech, profile_name)
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.profile_create, profile_type, profile_name, profile_args)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST,self.proxy_holder.backend_core.profile_id, profile_type, profile_name)
 
 	#Create a new profile with non existing technology
-	def test_profile_create_non_existing_tech(self):
+	def test_profile_create_non_existing_type(self):
 		#Valid profile
-		profile_tech = "not_existing"
+		profile_type = "not_existing"
 		profile_name = "normal"
 		profile_args = {'diskspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
-		self.assertRaisesError(UserError, UserError.INVALID_VALUE, self.proxy_holder.backend_api.profile_create, profile_tech, profile_name, profile_args)
-		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.profile_id, profile_tech, profile_name)
+		self.assertRaisesError(UserError, UserError.INVALID_VALUE, self.proxy_holder.backend_api.profile_create, profile_type, profile_name, profile_args)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.profile_id, profile_type, profile_name)
 
 	#Create a new profile which already exists (same technology and name)
 	def test_profile_create_already_existing(self):
 		#Valid profile
-		profile_tech = "full"
+		profile_type = "full"
 		profile_name = "normal"
 		profile_args = {'diskspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'preference': 10, 'description': 'Test profile'}
 
-		profile = self.proxy_holder.backend_api.profile_create(profile_tech, profile_name, profile_args)
+		profile = self.proxy_holder.backend_api.profile_create(profile_type, profile_name, profile_args)
 
 		self.assertIsNotNone(profile)
-		self.assertRaisesError(UserError, UserError.ALREADY_EXISTS, self.proxy_holder.backend_api.profile_create, profile_tech, profile_name, profile_args)
-		profile_id_core = self.proxy_holder.backend_core.profile_id(profile_tech, profile_name)
+		self.assertRaisesError(UserError, UserError.ALREADY_EXISTS, self.proxy_holder.backend_api.profile_create, profile_type, profile_name, profile_args)
+		profile_id_core = self.proxy_holder.backend_core.profile_id(profile_type, profile_name)
 		self.assertIsNotNone(profile_id_core)
 
 	#Create a new profile with non existing attribute
 	def test_profile_create_with_incorrect_attributes(self):
 		#Valid profile
-		profile_tech = "full"
+		profile_type = "full"
 		profile_name = "normal"
 		profile_args = {'disksspace': 5120, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal', 'description': 'Test profile', 'preference': 10}
 
-		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ATTRIBUTE, self.proxy_holder.backend_api.profile_create, profile_tech, profile_name, profile_args)
+		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ATTRIBUTE, self.proxy_holder.backend_api.profile_create, profile_type, profile_name, profile_args)
 
 	#Modify the testprofile correctly
 	def test_profile_modify(self):
