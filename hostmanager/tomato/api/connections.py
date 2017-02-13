@@ -108,7 +108,7 @@ def connection_modify(id, attrs):  # @ReservedAssignment
 	  and state.
 	"""
 	con = _getConnection(str(id))
-	con.modify(attrs)
+	con.modify(**attrs)
 	return con.info()
 
 

@@ -73,7 +73,7 @@ class Bridge(connections.Connection):
 	def init(self, *args, **kwargs):
 		self.state = StateName.CREATED
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
-		self.bridge = "br%s" % str(self.id)
+		self.bridge = "br%s" % str(self.id)[0:12]
 		self.capture_port = self.getResource("port")
 				
 	def _startCapturing(self):
@@ -127,8 +127,8 @@ class Bridge(connections.Connection):
 		if not ifA or not ifB:
 			return
 		#set attributes in reversed manner as it only applies to traffic being received
-		attrsA = dict([(k.replace("_to", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_to")])
-		attrsB = dict([(k.replace("_from", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_from")])
+		attrsA = dict([(k.replace("_to", ""), v) for k, v in self.info().iteritems() if k.endswith("_to")])
+		attrsB = dict([(k.replace("_from", ""), v) for k, v in self.info().iteritems() if k.endswith("_from")])
 		tc.setLinkEmulation(ifA, **attrsA)
 		tc.setLinkEmulation(ifB, **attrsB)
 	
@@ -213,10 +213,10 @@ class Bridge(connections.Connection):
 		self._emulRestart |= self.corrupt_from != val
 		self.corrupt_from = val
 
-	def modify(self, attrs):
+	def modify(self, **attrs):
 		self._emulRestart = False
 		self._captureRestart = False
-		connections.Connection.modify(self, attrs)
+		connections.Connection.modify(self, **attrs)
 		if self._emulRestart:
 			# no need to stop emulation
 			self._startEmulation()
@@ -259,6 +259,7 @@ class Bridge(connections.Connection):
 			return
 		if oldBridge:
 			net.bridgeRemoveInterface(oldBridge, ifname)
+
 		net.bridgeAddInterface(self.bridge, ifname)
 		if len(net.bridgeInterfaces(self.bridge)) == 2:
 			self._startEmulation()
@@ -311,10 +312,10 @@ class Bridge(connections.Connection):
 	ATTRIBUTES_EMUL = {
 		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
 
-		"bandwith_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",
+		"bandwidth_to": Attribute(field=bandwidth_to, description="Bandwidth in kbit/s",
 								 schema=schema.Number(minValue=0, maxValue=1000000), set=modify_bandwidth_to,
 								 default=10000),
-		"bandwith_from": Attribute(field=bandwidth_from, description="Bandwidth in kbit/s",
+		"bandwidth_from": Attribute(field=bandwidth_from, description="Bandwidth in kbit/s",
 								   schema=schema.Number(minValue=0, maxValue=1000000), set=modify_bandwidth_from,
 								   default=10000),
 

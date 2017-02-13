@@ -75,16 +75,15 @@ Bridge concept interface:
 
 class Connection(LockedStatefulEntity, BaseDocument):
 
+
+
 	owner = ReferenceField(User)
 	ownerId = ReferenceFieldId(owner)
 	state = StringField(choices=['default', 'created', 'prepared', 'started'], max_length=20, required=True)
 	usageStatistics = ReferenceField(UsageStatistics, null=True)
 	usageStatisticsId = ReferenceFieldId(usageStatistics)
+	elements = ListField(ReferenceField("Element"))
 
-	@property
-	def elements(self):
-		from ..elements import Element
-		return Element.objects(connection=self)
 
 	meta = {
 		'allow_inheritance': True,
@@ -108,15 +107,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		UserError.check(concept_, UserError.UNABLE_TO_CONNECT, "Not able to connect the two elements with this connection type",
 			data={"element_types": (el1.type, el2.type), "connection_type": self.type})
 		self.owner = currentUser()
-		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
-		self.elements.add(el1)
-		self.elements.add(el2)
+		self.elements = [el1,el2]
 		self.save()
 		self.getUsageStatistics() #triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
-		self.modify(attrs)
+		Entity.init(self, **attrs)
 
 	def dumpException(self, **kwargs):
 		try:
@@ -200,7 +197,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 				data={"connection_type": self.type, "attribute": key})
 			self.CAP_ATTRS[key].check(self, attrs[key])
 		
-	def modify(self, attrs):
+	def modify(self, **attrs):
 		"""
 		Sets the given attributes to their given values. This method first
 		checks if the change can be made using checkModify() and then executes
@@ -218,14 +215,9 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		logging.logMessage("modify", category="connection", id=str(self.id), attrs=attrs)
 		self.setBusy(True)
 		try:
-			for key, value in attrs.iteritems():
-				getattr(self, "modify_%s" % key)(value)
-		except InternalError, err:
-			self.dumpException()
-			raise				
+			Entity.modify(self, **attrs)
 		finally:
-			self.setBusy(False)				
-		self.save()
+			self.setBusy(False)
 		logging.logMessage("info", category="connection", id=str(self.id), info=self.info())
 	
 	def checkAction(self, action):
@@ -288,23 +280,20 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		self.checkRemove()
 		logging.logMessage("info", category="connection", id=str(self.id), info=self.info())
 		logging.logMessage("remove", category="connection", id=str(self.id))
-		self.elements.clear() #Important, otherwise elements will be deleted
 		self.delete()
 		if os.path.exists(self.dataPath()):
 			shutil.rmtree(self.dataPath())
 			
 	def getElements(self):
-		return [el.upcast() for el in self.elements.all()]
+		return [el.upcast() for el in self.elements]
 
 	@classmethod
 	def cap_attrs(cls):
 		return dict([(key, value) for (key, value) in cls.CAP_ATTRS.iteritems()])
 
 
-
-					
 	def info(self):
-		els = [str(el.id) for el in self.elements.all()]
+		els = [str(el.id) for el in self.elements]
 		return {
 			"id": str(self.id),
 			"type": self.type,
@@ -325,6 +314,14 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	def updateUsage(self, usage, data):
 		pass
 
+	@property
+	def elementIds(self):
+		return [str(el.id) for el in self.elements]
+
+	@property
+	def ownerId(self):
+		return str(self.owner.id)
+
 	def tearDown(self):
 		if self.state == StateName.STARTED:
 			self.action_stop()
@@ -336,16 +333,16 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	ATTRIBUTES = {
 		"id": IdAttribute(),
-		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
+		"owner": Attribute(field=ownerId, readOnly=True, schema=schema.Identifier()),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"elements": Attribute(field=elements, schema=schema.List(), readOnly=True),
+		"elements": Attribute(field=elementIds, schema=schema.List(), readOnly=True),
 	}
 
 		
 def get(id_, **kwargs):
 	try:
-		con = Connection.objects(id=id_, **kwargs)
+		con = Connection.objects.get(id=id_, **kwargs)
 		return con.upcast()
 	except Connection.DoesNotExist:
 		return None

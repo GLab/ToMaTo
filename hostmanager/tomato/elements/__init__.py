@@ -92,7 +92,6 @@ class Element(LockedStatefulEntity, BaseDocument):
 		self.parent = parent
 		self.owner = currentUser()
 		self.timeout = time.time() + config.MAX_TIMEOUT
-		Entity.init(self, **attrs)
 		self.getUsageStatistics()  # triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())

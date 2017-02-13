@@ -470,10 +470,10 @@ class Host(Entity, BaseDocument):
 			# check for completeness
 			for el in self.elements.all():
 				if not str(el.num) in orig_data["elements"]:
-					print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (el.num, self.name)
+					print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (str(el.num), self.name)
 			for con in self.connections.all():
 				if not str(con.num) in orig_data["connections"]:
-					print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
+					print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (str(con.num), self.name)
 					continue
 
 			# transform

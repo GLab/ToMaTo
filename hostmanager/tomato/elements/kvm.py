@@ -558,9 +558,7 @@ class KVM_Interface(elements.Element):#
 			try:
 				return self.vir.getNicName(self.getParent().vmid, self.num)
 			except InternalError as err:
-				"Ich hab nen fehler beim Interface Name"
 				if err.code == InternalError.INVALID_PARAMETER:
-					"Ich hab nen fehler beim Interface Name"
 					return
 				raise
 		else:
