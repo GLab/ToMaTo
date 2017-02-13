@@ -177,7 +177,7 @@ class Template(Entity, BaseDocument):
 		self.fetch(detached=True)
 
 	def _update_repy_doc(self):
-		self.repy_doc = None
+		self.args_doc = None
 		if self.type == TypeName.REPY:
 			self.args_doc = read_repy_doc(self.getPath())
 
