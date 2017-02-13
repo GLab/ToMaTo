@@ -28,10 +28,10 @@ import os, threading
 from ..lib.constants import TypeName,TechName
 
 PATTERNS = {
-	TechName.KVMQM: "%s.qcow2",
-	TechName.KVM: "%s.qcow2",
-	TechName.OPENVZ: "%s.tar.gz",
-	TypeName.REPY: "%s.repy",
+	TypeName.KVMQM: "%s.qcow2",
+	TypeName.KVM: "%s.qcow2",
+	TypeName.OPENVZ: "%s.tar.gz",
+	TypeName.LXC: "%s.tar.gz",
 }
 
 class Template(resources.Resource):

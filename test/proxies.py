@@ -177,12 +177,12 @@ class ProxyHoldingTestCase(unittest.TestCase):
 		if(template_list == []):
 			templates = copy.deepcopy(cls.test_temps)
 			for template in templates:
-				tech = template['tech']
+				type_ = template['type']
 				name = template['name']
-				del template['tech']
+				del template['type']
 				del template['name']
 				attrs = template
-				proxy_holder.backend_core.template_create(tech, name, attrs)
+				proxy_holder.backend_core.template_create(type_, name, attrs)
 
 		template_ready_on_backend = 0
 		template_list = proxy_holder.backend_core.template_list()
@@ -204,7 +204,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 	def add_profiles(cls):
 		for temp in cls.test_temps:
 			# Create test profile for container
-			testprofile_tech = temp['tech']
+			testprofile_type = temp['type']
 			restricted = False
 			if(temp['restricted'] == True):
 				testprofile_name = "%s_restricted"%cls.default_profile_name
@@ -214,7 +214,7 @@ class ProxyHoldingTestCase(unittest.TestCase):
 			testprofile_args = {'diskspace': 10240, 'restricted': restricted, 'ram': 512, 'cpus': 1.0, 'label': 'Normal',
 									'preference': 10, 'description': 'Test profile'}
 
-			cls.proxy_holder.backend_core.profile_create(testprofile_tech, testprofile_name,
+			cls.proxy_holder.backend_core.profile_create(testprofile_type, testprofile_name,
 														 testprofile_args)
 
 

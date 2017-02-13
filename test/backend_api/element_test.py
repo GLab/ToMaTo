@@ -110,7 +110,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 			}
 
 		self.testelement = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		 type=self.test_temps[0]['tech'],
+																		 type=self.test_temps[0]['type'],
 																		 attrs=self.testelement_attrs)
 		self.testelement_id = self.testelement['id']
 
@@ -167,7 +167,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 		self.testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
 																				  type=self.test_temps[0][
-																						   'tech'] + "_interface",
+																						   'type'] + "_interface",
 																				  parent=self.testelement_id)
 
 		element_info_api = self.proxy_holder.backend_api.element_info(self.testelement_id,fetch=True)
@@ -209,7 +209,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 		testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
 																					type=self.test_temps[0][
-																							 'tech'] + "_interface",
+																							 'type'] + "_interface",
 																					parent=self.testelement_id)
 
 		self.proxy_holder.backend_api.element_remove(self.testelement_id)
@@ -228,7 +228,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		}
 
 		self.testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																		 type=self.test_temps[0]['tech'],
+																		 type=self.test_temps[0]['type'],
 																		 attrs=testelement_attrs)
 		self.assertIsNotNone(self.testelement)
 
@@ -246,7 +246,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.element_create,
 																			top=self.testtopology_id,
-																			type=self.test_temps[0]['tech'],
+																			type=self.test_temps[0]['type'],
 																			attrs=testelement_attrs)
 
 	def test_element_create_with_non_existing_template(self):
@@ -264,7 +264,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST,
 							   self.proxy_holder.backend_api.element_create,
 							   top=self.testtopology_id,
-							   type=self.test_temps[0]['tech'],
+							   type=self.test_temps[0]['type'],
 							   attrs=testelement_attrs)
 
 
@@ -274,7 +274,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		Create an element without parent and attrs attribute
 		"""
 		self.testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																		 type=self.test_temps[0]['tech'])
+																		 type=self.test_temps[0]['type'])
 
 		self.assertIsNotNone(self.testelement)
 
@@ -307,7 +307,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		}
 
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.element_create,top=topology_id,
-																		 type=self.test_temps[0]['tech'],
+																		 type=self.test_temps[0]['type'],
 																		 attrs=testelement_attrs)
 
 	def test_element_create_non_existing_parent(self):
@@ -323,7 +323,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		}
 
 		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_api.element_create, top=self.testtopology_id,
-																		 type=self.test_temps[0]['tech'],
+																		 type=self.test_temps[0]['type'],
 																		 parent=parent_id,
 																		 attrs=testelement_attrs)
 
@@ -341,7 +341,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		}
 
 		self.assertRaisesError(UserError, UserError.INVALID_CONFIGURATION, self.proxy_holder.backend_api.element_create, top=topology_id,
-																		 type=self.test_temps[0]['tech'],
+																		 type=self.test_temps[0]['type'],
 																		 parent=self.testelement_id,
 																		 attrs=testelement_attrs)
 
@@ -359,13 +359,13 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "stop")
 
 		testelement_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		type=self.test_temps[0]['tech']+"_interface",
+																		type=self.test_temps[0]['type']+"_interface",
 																		parent=self.testelement_id)
 		testelement_interface_id = testelement_interface["id"]
 
 
 		self.assertRaisesError(UserError, UserError.INVALID_VALUE, self.proxy_holder.backend_api.element_create, top=self.testtopology_id,
-							   type=self.test_temps[0]['tech'],
+							   type=self.test_temps[0]['type'],
 							   parent=testelement_interface_id,
 							   attrs=testelement_attrs)
 
@@ -383,7 +383,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 		self.assertRaisesError(UserError, UserError.INVALID_VALUE, self.proxy_holder.backend_api.element_create,
 							   top=self.testtopology_id,
-							   type=self.test_temps[0]['tech'],
+							   type=self.test_temps[0]['type'],
 							   parent=self.testelement_id,
 							   attrs=testelement_attrs)
 
@@ -400,7 +400,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 			}
 
 			self.testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																		 type=temp['tech'],
+																		 type=temp['type'],
 																		 attrs=self.testelement_attrs)
 			self.assertIsNotNone(self.testelement)
 
@@ -415,7 +415,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 			}
 
 		self.assertRaisesError(UserError, UserError.DENIED,self.proxy_holder_tester.backend_api.element_create,top=self.testtopology_id,
-																		 type=self.test_temps[0]['tech'],
+																		 type=self.test_temps[0]['type'],
 																		 attrs=self.testelement_attrs)
 
 
@@ -498,7 +498,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.proxy_holder.backend_core.topology_set_permission(self.testtopology_id,self.testuser["name"], "manager")
 		temp_restricted = {}
 		for temp in self.test_temps:
-			if(temp["restricted"] == True and temp["tech"] ==self.testelement["type"]):
+			if(temp["restricted"] == True and temp["type"] ==self.testelement["type"]):
 				temp_restricted = temp
 
 		testelement_attrs = {

@@ -20,7 +20,7 @@ settings = get_settings(config_module)
 from django.shortcuts import render
 import time
 from .lib import wrap_rpc
-from .lib.references_web import techs
+from .lib.constants import TypeName
 from .lib.exceptionhandling import wrap_and_handle_current_exception
 
 def web_resources():
@@ -72,7 +72,7 @@ def executable_archives(split_alternatives=True, ignore_errors=True):
 			entry['default_archive'] = urljoin(url, default_archive['default_archive'])
 
 			if split_alternatives:
-				entry['alternatives'] = {k: dict() for k in techs()}
+				entry['alternatives'] = {k: dict() for k in TypeName.VMELEMENT_TYPES}
 			else:
 				entry['alternatives'] = []
 
@@ -92,11 +92,11 @@ def executable_archives(split_alternatives=True, ignore_errors=True):
 				if split_alternatives:
 					for template in alternative['templates']:
 							if ':' in template:
-								tech, template_name = template.split(':')
-								entry['alternatives'][tech][template_name] = alt_entry
+								type, template_name = template.split(':')
+								entry['alternatives'][type][template_name] = alt_entry
 							else:
-								for tech in techs():
-									entry['alternatives'][tech][template] = alt_entry
+								for type in TypeName.VMELEMENT_TYPES():
+									entry['alternatives'][type][template] = alt_entry
 				else:
 					alt_entry['templates'] = alternative['templates']
 					entry['alternatives'].append(alt_entry)
@@ -140,9 +140,9 @@ def executable_archive_info(api, request, name):
 
 	# build template dict for later usage
 	template_list = api.template_list()
-	template_dict = {k: dict() for k in techs()}
+	template_dict = {k: dict() for k in TypeName.VMELEMENT_TYPES}
 	for template in template_list:
-		template_dict[template['tech']][template['name']] = template
+		template_dict[template['type']][template['name']] = template
 
 	# convert template list into better format
 	alt_list_new = []
@@ -150,20 +150,20 @@ def executable_archive_info(api, request, name):
 		templates_described = []
 		for template in alternative['templates']:
 			if ':' in template:
-				tech, template_name = template.split(':')
-				templates_described.append((tech, template_name))
+				type, template_name = template.split(':')
+				templates_described.append((type, template_name))
 			else:
-				for tech in techs():
-					templates_described.append((tech, template))
+				for type in TypeName.VMELEMENT_TYPES:
+					templates_described.append((type, template))
 		alternative['templates'] = []
-		for tech, name in templates_described:
-			template = template_dict.get(tech, {}).get(name, None)
+		for type, name in templates_described:
+			template = template_dict.get(type, {}).get(name, None)
 			if template:
 				alternative['templates'].append({
 					'id': template['id'],
 					'name': name,
 					'label': template['label'] if template['label'] else name,
-					'tech': tech
+					'type': type
 				})
 
 	default_executable_archives_list_url = settings.get_web_resource_location(Config.WEB_RESOURCE_DEFAULT_EXECUTABLE_ARCHIVE_LIST)

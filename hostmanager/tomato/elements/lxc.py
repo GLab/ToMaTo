@@ -16,17 +16,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os.path, sys
-from ..generic import *
-from ..db import *
+from django.db import models
 from .. import connections, elements, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
+from ..lib.newcmd import virsh #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
-from ..lib.constants import ActionName, StateName, TechName
-
+from ..lib.constants import ActionName, StateName, TypeName
 
 DHCP_CMDS = ["[ -e /sbin/dhclient ] && /sbin/dhclient -nw %s",
 			 "[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s"]
@@ -145,95 +144,104 @@ Actions:
 		same as download_grant, but only for the nlXTP folder
 """
 
-class OpenVZ(elements.Element, elements.RexTFVElement):
+class LXC(elements.RexTFVElement,elements.Element):
+	vmid_attr = Attr("vmid", type="int")
+	vmid = vmid_attr.attribute()
+	websocket_port_attr = Attr("websocket_port", type="int")
+	websocket_port = websocket_port_attr.attribute()
+	websocket_pid_attr = Attr("websocket_pid", type="int")
+	websocket_pid = websocket_pid_attr.attribute()
+	vncport_attr = Attr("vncport", type="int")
+	vncport = vncport_attr.attribute()
+	vncpid_attr = Attr("vncpid", type="int")
+	vncpid = vncpid_attr.attribute()
+	vncpassword_attr = Attr("vncpassword", type="str")
+	vncpassword = vncpassword_attr.attribute()
+	ram_attr = Attr("ram", desc="RAM", unit="MB", type="int", minValue=64, maxValue=4096, default=256)
+	ram = ram_attr.attribute()
+	cpus_attr = Attr("cpus", desc="Number of CPUs", type="float", minValue=0.1, maxValue=4.0, default=1.0)
+	cpus = cpus_attr.attribute()
+	diskspace_attr = Attr("diskspace", desc="Disk space", unit="MB", type="int", minValue=512, maxValue=102400, default=10240)
+	diskspace = diskspace_attr.attribute()
+	rootpassword_attr = Attr("rootpassword", desc="Root password", type="str")
+	rootpassword = rootpassword_attr.attribute()
+	hostname_attr = Attr("hostname", desc="Hostname", type="str")
+	hostname = hostname_attr.attribute()
+	gateway4_attr = Attr("gateway4", desc="IPv4 gateway", type="str")
+	gateway4 = gateway4_attr.attribute()	
+	gateway6_attr = Attr("gateway6", desc="IPv6 gateway", type="str")
+	gateway6 = gateway6_attr.attribute()		
+	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
+	template = models.ForeignKey(template.Template, null=True)
 
-	vmid = IntField()
-	websocket_port = IntField()
-	websocket_pid = IntField()
-	vncport = IntField()
-	vncpid = IntField()
-	vncpassword =StringField()
-	cpus = IntField(default=1)
-	ram = IntField(default=256)
-	diskspace = IntField(default=10240)
-	rootpassword = StringField()
-	gateway4 = StringField()
-	hostname = StringField()
-	gateway6 = StringField()
-	usbtablet = BooleanField(default=True)
-	template = ReferenceField(template.Template)
-	templateId = ReferenceFieldId(template)
-
-
-	TYPE = TechName.OPENVZ
-
-
+	TYPE = TypeName.LXC
+	CAP_ACTIONS = {
+		ActionName.PREPARE: [StateName.CREATED],
+		ActionName.DESTROY: [StateName.PREPARED],
+		ActionName.START: [StateName.PREPARED],
+		ActionName.STOP: [StateName.STARTED],
+		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
+		ActionName.REXTFV_UPLOAD_GRANT: [StateName.PREPARED,StateName.STARTED],
+		ActionName.UPLOAD_USE: [StateName.PREPARED],
+		ActionName.REXTFV_UPLOAD_USE: [StateName.PREPARED,StateName.STARTED],
+		"download_grant": [StateName.PREPARED],
+		"rextfv_download_grant": [StateName.PREPARED,StateName.STARTED],
+		"execute": [StateName.STARTED],
+		elements.REMOVE_ACTION: [StateName.CREATED],
+	}
+	CAP_NEXT_STATE = {
+		ActionName.PREPARE: StateName.PREPARED,
+		ActionName.DESTROY: StateName.CREATED,
+		ActionName.START: StateName.STARTED,
+		ActionName.STOP: StateName.PREPARED,
+	}	
+	CAP_ATTRS = {
+		"cpus": cpus_attr,
+		"ram": ram_attr,
+		"diskspace": diskspace_attr,
+		"rootpassword": rootpassword_attr,
+		"hostname": hostname_attr,
+		"gateway4": gateway4_attr,
+		"gateway6": gateway6_attr,
+		"template": template_attr,
+		"timeout": elements.Element.timeout_attr
+	}
 	CAP_CHILDREN = {
-		TechName.OPENVZ_INTERFACE: [StateName.CREATED, StateName.PREPARED],
+		TypeName.LXC_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
-	DEFAULT_ATTRIBUTES = {"ram": 256, "diskspace": 10240}
+	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
 
-	@property
-	def type(self):
-		return self.TYPE
+	vir = virsh.virsh(TypeName.LXC)
 
+
+	class Meta:
+		db_table = "tomato_lxc"
+		app_label = 'tomato'
+	
 	def init(self, *args, **kwargs):
+		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
-		self.save()
 		#template: None, default template
 	
 	def _imagePath(self):
 		return "/var/lib/vz/private/%d" % self.vmid
 
-	def modify_template(self, tmplName):
-		temp= template.Template.objects(self.TYPE, tmplName)
-		UserError.check(temp, code=UserError.INVALID_VALUE, message="No such template", data={"value": tmplName})
-		self.template = temp
-
-	# 9: locked
-	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
-	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode in [9, 51])
-	def _vzctl(self, cmd_, args=None, timeout=None):
-		if not args: args = []
-		cmd_ = ["vzctl", cmd_, str(self.vmid)] + args
-		if timeout:
-			cmd_ = ["perl", "-e", "alarm %d; exec @ARGV" % timeout] + cmd_
-		out = cmd.run(cmd_)
-		return out
-			
-	def _execute(self, cmd_, timeout=60):
-		assert self.state == StateName.STARTED
-		out = self._vzctl("exec", [cmd_], timeout=timeout)
-		return out
-			
-	def _getState(self):
-		if not self.vmid:
-			return StateName.CREATED
-		res = self._vzctl("status")
-		if "exist" in res and "running" in res:
-			return StateName.STARTED
-		if "exist" in res and "down" in res:
-			return StateName.PREPARED
-		if "deleted" in res:
-			return StateName.CREATED
-		raise InternalError(message="Unable to determine openvz state", code=InternalError.INVALID_STATE,
-			data={"state": res})
 
 	def _checkState(self):
 		savedState = self.state
-		realState = self._getState()
+		realState = self.vir.getState(self.id)
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
 		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
-			data={"type": self.type, "id": str(self.id), "saved_state": savedState, "real_state": realState})
+			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _template(self):
 		if self.template:
@@ -254,26 +262,19 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 	
 	def _addInterface(self, interface):
 		assert self.state != StateName.CREATED
-		self._vzctl("set", ["--netif_add", interface.name, "--save"])
-		self._vzctl("set", ["--ifname", interface.name, "--bridge", "dummy", "--mac", interface.mac, "--host_ifname", self._interfaceName(interface.name), "--mac_filter",  "off", "--save"])
-		
+		self.vir.addNic(self.vmid, interface.num)
+
 	def _removeInterface(self, interface):
 		assert self.state != StateName.CREATED
-		self._vzctl("set", ["--netif_del", interface.name, "--save"])
-		
-	def _setCpus(self):
-		assert self.state != StateName.CREATED
-		self._vzctl("set", ["--cpulimit", str(int(self.cpus * 100)), "--cpus", str(int(self.cpus)), "--save"])
+		try:
+			self.vir.delNic(self.vmid, interface.num)
+		except InternalError as err:
+			if  err.code == InternalError.INVALID_PARAMETER:
+				err.dump()
+				# ignore error as it is exactly what we wanted
+			else:
+				raise
 
-	def _setRam(self):
-		assert self.state != StateName.CREATED
-		val = "%dM" % int(self.ram)
-		self._vzctl("set", ["--ram", val, "--swap", val, "--save"])
-	
-	def _setDiskspace(self):
-		assert self.state != StateName.CREATED
-		val = "%dM" % int(self.diskspace)
-		self._vzctl("set", ["--diskspace", val, "--save"])
 
 	def _setRootpassword(self):
 		assert self.state != StateName.CREATED
@@ -404,7 +405,6 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 
 	def action_prepare(self):
 		self._checkState()
-
 		templ = self._template()
 		templ.fetch()
 		tplPath = templ.getPath()
@@ -414,30 +414,25 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		imgPath = self._imagePath()
 		if path.exists(imgPath):
 			path.remove(imgPath, recursive=True)
-		if path.exists("/etc/vz/conf/%d.conf" % self.vmid):
-			path.remove("/etc/vz/conf/%d.conf" % self.vmid)
-		self._vzctl("create", ["--ostemplate", tplPath, "--config", "default"])
-		self._vzctl("set", ["--devices", "c:10:200:rw", "--capability", "net_admin:on", "--save"])
-		self.setState(StateName.PREPARED, True) #must be here or the set commands fail
-		self._setRam()
-		self._setDiskspace()
-		self._setRootpassword()
-		self._setHostname()
+		if path.exists("/etc/lxc/conf/%d.conf" % self.vmid):
+			path.remove("/etc/lxc/conf/%d.conf" % self.vmid)
+
+		self.vir.prepare(self.vmid,
+						 imagepath=self._imagePath(),
+						 ram=self.ram,
+						 cpus=self.cpus,
+						 vncport=self.vncport,
+						 vncpassword=self.vncpassword,)
+		self.vir.addNetTun(self.vmid)
+		self.vir.addNetAdminCapabilitie(self.vmid)
+		self.setState(StateName.PREPARED, True)
 		# add all interfaces
 		for interface in self.getChildren():
 			self._addInterface(interface)
 		
 	def action_destroy(self):
 		self._checkState()
-		self._vzctl("set", ["--hostname", "workaround", "--save"]) #Workaround for fault in vzctl 4.0-1pve6
-		try:
-			self._vzctl(ActionName.DESTROY)
-		except cmd.CommandError, exc:
-			if exc.errorCode == 41: # [41] Container is currently mounted (umount first)
-				self._vzctl("umount")
-				self._vzctl(ActionName.DESTROY)
-			else:
-				raise
+		self.vir.destroy(self.vmid)
 		self.setState(StateName.CREATED, True)
 
 	def action_start(self):
@@ -458,7 +453,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 			interface._start() #configure after connecting to allow dhcp, etc.
 		self._setGateways()
 		net.freeTcpPort(self.vncport)
-		self.vncpid = cmd.spawnShell("while true; do vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter screen -RRL; vzctl enter %d; sleep 1; done'; sleep 1; done" % (self.vncport, self.vncpassword, self.vmid), useExec=False)
+		self.vncpid = cmd.spawnShell("while true; do vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; sleep 1; done'; sleep 1; done" % (self.vncport, self.vncpassword, self.vmid), useExec=False)
 		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), InternalError.ASSERTION,
 			"VNC server did not start")
 		if not self.websocket_port:
@@ -477,15 +472,12 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 				con.disconnectInterface(self._interfaceName(interface.name))
 			interface._stop()
 		if self.vncpid:
-			process.killTree(self.vncpid)
+			self.vir.stopVnc(self.vncpid, self.websocket_pid)
 			del self.vncpid
-		if self.websocket_pid:
-			process.killTree(self.websocket_pid)
 			del self.websocket_pid
-		self._vzctl("set", ["--hostname", "workaround", "--save"]) #Workaround for fault in vzctl 4.0-1pve6
-		self._vzctl(ActionName.STOP)
-		self._vzctl("set", ["--hostname", self.hostname, "--save"]) #Workaround for fault in vzctl 4.0-1pve6
+		self.vir.stop(self.vmid)
 		self.setState(StateName.PREPARED, True)
+
 
 	def action_upload_grant(self):
 		return fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
@@ -597,53 +589,12 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		diskspace = self._diskspace()
 		if diskspace:
 			usage.diskspace = diskspace
-
-
-	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"vmid": Attribute(field=vmid, readOnly=True, schema=schema.Int()),
-		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
-		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
-		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
-		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
-		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
-		"hostname": Attribute(field=hostname, set=modify_hostname, schema=schema.String()),
-		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
-		"ram": Attribute(field=ram, label="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
-		"diskspace": Attribute(field=diskspace, label="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),
-		"rootpassword": Attribute(field=rootpassword, label="Root password", schema=schema.String()),
-		"template": Attribute(get=lambda self: self.template.name if self.template else None, set=modify_template, label="Template"),
-		"gateway4": Attribute(field=gateway4, label="IPv4 gateway", schema=schema.String()),
-		"gateway6": Attribute(field=gateway4, label="IPv6 gateway", schema=schema.String()),
-	})
-
-	ACTIONS = elements.Element.ACTIONS.copy()
-	ACTIONS.update({
-		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
-											 allowedStates=[StateName.CREATED]),
-		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED, StateName.PREPARED],
-										 stateChange=StateName.STARTED),
-		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
-										stateChange=StateName.PREPARED),
-		ActionName.PREPARE: StatefulAction(action_prepare,
-										   allowedStates=[StateName.CREATED], stateChange=StateName.PREPARED),
-		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[StateName.PREPARED, StateName.STARTED],
-										   stateChange=StateName.CREATED),
-		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=[StateName.PREPARED]),
-		ActionName.REXTFV_UPLOAD_GRANT: StatefulAction(action_rextfv_upload_grant,
-													   allowedStates=[StateName.PREPARED]),
-		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=[StateName.PREPARED]),
-		ActionName.REXTFV_UPLOAD_USE: StatefulAction(action_rextfv_upload_use, allowedStates=[StateName.PREPARED]),
-		"download_grant": StatefulAction(action_download_grant, allowedStates=[StateName.PREPARED]),
-		"rextfv_download_grant": StatefulAction(action_rextfv_download_grant,
-												allowedStates=[StateName.PREPARED, StateName.STARTED]),
-		"execute": StatefulAction(action_execute, allowedStates=[StateName.STARTED]),
-	})
-OpenVZ.__doc__ = DOC			
+			
+LXC.__doc__ = DOC
 
 
 DOC_IFACE="""
-Element type: ``openvz_interface``
+Element type: ``lxc_interface``
 
 Description:
 	This element type represents a network interface of openvz element type. 
@@ -692,50 +643,49 @@ Attributes:
 Actions: None
 """
 
-class OpenVZ_Interface(elements.Element):
-	name = StringField(regex="^eth[0-9]+$")
-	ip4address = StringField()
-	ip6address = StringField()
-	use_dhcp = BooleanField(default=False)
-	mac = StringField()
-	ipspy_pid = IntField()
-	used_addresses = ListField(default=[])
+class LXC_Interface(elements.Element):
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[StateName.CREATED])
+	name = name_attr.attribute()
+	ip4address_attr = Attr("ip4address", desc="IPv4 address", type="str")
+	ip4address = ip4address_attr.attribute()	
+	ip6address_attr = Attr("ip6address", desc="IPv6 address", type="str")
+	ip6address = ip6address_attr.attribute()		
+	use_dhcp_attr = Attr("use_dhcp", desc="Use DHCP", type="bool", default=False)
+	use_dhcp = use_dhcp_attr.attribute()		
+	mac_attr = Attr("mac", desc="MAC Address", type="str")
+	mac = mac_attr.attribute()
+	ipspy_pid_attr = Attr("ipspy_pid", type="int")
+	ipspy_pid = ipspy_pid_attr.attribute()
+	used_addresses_attr = Attr("used_addresses", type=list, default=[])
+	used_addresses = used_addresses_attr.attribute()
 
-	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"mac": Attribute(field=mac, description="Mac Address", schema=schema.String(), readOnly=True),
-		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
-		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
-		"name": Attribute(field=name, description="Name", schema = schema.String(regex="^eth[0-9]+$")),
-		"ip4address": Attribute(field=ip4address, description="IPv4 address", schema=schema.String()),
-		"ip6address": Attribute(field=ip6address, description="IPv6	address", schema=schema.String()),
-		"use_dhcp": Attribute(field=use_dhcp, description="Use DHCP", schema=schema.Bool(), default=False),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
-	})
-
-	ACTIONS = elements.Element.ACTIONS.copy()
-	ACTIONS.update({
-		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
-											 allowedStates=[StateName.CREATED]),
-	})
-
-	TYPE = TechName.OPENVZ_INTERFACE
-
+	TYPE = TypeName.LXC_INTERFACE
+	CAP_ACTIONS = {
+		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
+	}
+	CAP_NEXT_STATE = {}	
+	CAP_ATTRS = {
+		"name": name_attr,
+		"ip4address": ip4address_attr,
+		"ip6address": ip6address_attr,
+		"use_dhcp": use_dhcp_attr,
+		"timeout": elements.Element.timeout_attr
+	}
 	CAP_CHILDREN = {}
-	CAP_PARENT = [OpenVZ.TYPE]
+	CAP_PARENT = [LXC.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
 	__doc__ = DOC_IFACE #@ReservedAssignment
 	
-
-	@property
-	def type(self):
-		return self.TYPE
-
+	class Meta:
+		db_table = "tomato_lxc_interface"
+		app_label = 'tomato'
+	
 	def init(self, *args, **kwargs):
+		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
-		assert isinstance(self.getParent(), OpenVZ)
+		assert isinstance(self.getParent(), LXC)
 		if not self.name:
 			self.name = self.getParent()._nextIfaceName()
 		self.mac = net.randomMac()
@@ -817,28 +767,28 @@ class OpenVZ_Interface(elements.Element):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
 			
-OpenVZ_Interface.__doc__ = DOC_IFACE
+LXC_Interface.__doc__ = DOC_IFACE
 
 def register(): #pragma: no cover
 	if not os.path.exists("/dev/vzctl"):
-		print >>sys.stderr, "Warning: OpenVZ needs /dev/vzctl, disabled"
+		print >>sys.stderr, "Warning: LXC needs /dev/vzctl, disabled"
 		return	
 	if not vzctlVersion:
-		print >>sys.stderr, "Warning: OpenVZ needs a Proxmox VE host, disabled"
+		print >>sys.stderr, "Warning: LXC needs a Proxmox VE host, disabled"
 		return
 	if not ([3, 0, 30] <= vzctlVersion < [4, 1]):
-		print >>sys.stderr, "Warning: OpenVZ not supported on vzctl version %s, disabled" % vzctlVersion
+		print >>sys.stderr, "Warning: LXC not supported on vzctl version %s, disabled" % vzctlVersion
 		return
 	if not vnctermVersion:
-		print >>sys.stderr, "Warning: OpenVZ needs vncterm, disabled"
+		print >>sys.stderr, "Warning: LXC needs vncterm, disabled"
 		return
 	if not perlVersion:
-		print >>sys.stderr, "Warning: OpenVZ needs perl, disabled"
+		print >>sys.stderr, "Warning: LXC needs perl, disabled"
 		return
 	if not ipspyVersion:
 		print >>sys.stderr, "Warning: ipspy not available"
-	elements.TYPES[OpenVZ.TYPE] = OpenVZ
-	elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface
+	elements.TYPES[LXC.TYPE] = LXC
+	elements.TYPES[LXC_Interface.TYPE] = LXC_Interface
 
 
 if not config.MAINTENANCE:
@@ -847,4 +797,5 @@ if not config.MAINTENANCE:
 	vnctermVersion = cmd.getDpkgVersion("vncterm")
 	websockifyVersion = cmd.getDpkgVersion("websockify")
 	ipspyVersion = cmd.getDpkgVersion("ipspy")
+	print "Registriere lxc..."
 	register()

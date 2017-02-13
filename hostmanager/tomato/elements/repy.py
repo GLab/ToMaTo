@@ -25,6 +25,7 @@ from ..lib import util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.constants import ActionName, StateName, TypeName
+from ..lib.repy_doc_reader import read_repy_doc
 
 DOC="""
 Element type: ``repy``
@@ -125,6 +126,7 @@ class Repy(elements.Element):
 	vncpid = IntField()
 	vncpassword =StringField()
 	args = ListField()
+	args_doc = StringField(default=None, required=False)
 	cpus = IntField(default=1)
 	ram = IntField(default=256)
 	bandwidth = IntField(min_value=1024, max_value=10000000000, default=1000000)
@@ -140,6 +142,7 @@ class Repy(elements.Element):
 		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
 		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
 		"args": Attribute(field=args, description="Arguments", schema = schema.List(), default=[]),
+		"args_doc": Attribute(field=args_doc, description="Arguments Documentation", readOnly=True),
 		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"bandwidth": Attribute(field=bandwidth, description="Bandwidth in bytes/s", schema=schema.Int(minValue=1024, maxValue=10000000000), default=1000000),
@@ -201,6 +204,10 @@ class Repy(elements.Element):
 		while "eth%d" % num in [iface.name for iface in ifaces]:
 			num += 1
 		return "eth%d" % num
+
+	def _update_args_doc(self):
+		self.args_doc = read_repy_doc(self.dataPath("program.repy"))
+		self.save()
 
 	def _useImage(self, path_):
 		if path.exists(self.dataPath("program.repy")):
@@ -297,6 +304,7 @@ class Repy(elements.Element):
 			"No file has been uploaded")
 		self._checkImage(self.dataPath("uploaded.repy"))
 		os.rename(self.dataPath("uploaded.repy"), self.dataPath("program.repy"))
+		self._update_args_doc()
 		
 	def action_download_grant(self):
 		#no need to copy file first

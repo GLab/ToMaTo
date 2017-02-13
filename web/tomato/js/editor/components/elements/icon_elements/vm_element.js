@@ -42,18 +42,19 @@ var VMElement = IconElement.extend({
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "tech", "_endpoint", "_custom_icon"];
 		config.ignore.push("info_last_sync");
+		config.ignore.push("args_doc");
 
-		conf = editor.options.vm_element_config
-		if (this.data.type in conf) {
-			conf = conf[this.data.type];
+		var tech_conf = editor.options.vm_element_config
+		if (this.data.type in tech_conf) {
+			var t_conf = tech_conf[this.data.type];
 
-			choices = {null: "Automatic"};
-			for (var tech in conf) {
+			choices = {"": "Automatic"};
+			for (var tech in t_conf) {
 				if (tech != "remove")
-					choices[conf[tech]] = editor.options.tech_names[conf[tech]];
+					choices[t_conf[tech]] = editor.options.tech_names[t_conf[tech]];
 			}
 
-			if (conf.length > 1) {
+			if (t_conf.length > 1) {
 				config.ignore.remove("tech");
 				config.special.tech = new ChoiceElement({
 					label: "Tech",
@@ -195,6 +196,12 @@ var VMElement = IconElement.extend({
 			name: "_custom_icon",
 			value:this.data._custom_icon,
 			hint: "URL to 32x32 PNG image"
+		});
+		config.special.args = new CommandTextElement({
+			label: "Arguments",
+			name: "args",
+			value: this.data.args,
+			args_doc: this.data.args_doc
 		});
 		return config;
 	},

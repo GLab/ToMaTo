@@ -29,8 +29,8 @@
 		<td>{{profile.label}}</td>
 	</tr>
 	<tr>
-		<th>Tech:</th>
-		<td><img src="/img/{{profile.tech}}16.png" /> {{profile.tech|tech_to_label}} <small>({{profile.tech}})</small></td>
+		<th>Type:</th>
+		<td><img src="/img/{{profile.type}}16.png" /> {{profile.type|type_to_label}} <small>({{profile.type}})</small></td>
 	</tr>
 	<tr>
 		<th>Preference:</th>
@@ -50,7 +50,7 @@
 		<th>Resources:</th>
 		<td>
 			<dl class="dl-horizontal">
-				{% if profile.tech != 'repy' %}
+				{% if profile.type != 'repy' %}
   					<dt>Disk space</dt><dd>{{profile.diskspace}} MB</dd>
 				{% endif %}
 				<dt>Memory</dt><dd>{{profile.ram}} MB</dd>

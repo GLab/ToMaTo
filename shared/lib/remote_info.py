@@ -1,4 +1,5 @@
 from error import InternalError, UserError
+from exceptionhandling import deprecated
 from service import get_backend_users_proxy, get_backend_core_proxy, get_backend_accounting_proxy
 from cache import cached
 from hierarchy import ClassName
@@ -692,8 +693,8 @@ class TemplateInfo(InfoObj):
 		get_template_list.invalidate()
 
 	@staticmethod
-	def create(tech, name, attrs):
-		res = get_backend_core_proxy().template_create(tech, name, attrs)
+	def create(type, name, attrs):
+		res = get_backend_core_proxy().template_create(type, name, attrs)
 		get_template_info(res['id']).invalidate_info()
 		get_template_list.invalidate()
 		return res
@@ -719,8 +720,8 @@ class ProfileInfo(InfoObj):
 	__slots__ = ("profile_id")
 
 	@staticmethod
-	def create(tech, name, attrs):
-		res = get_backend_core_proxy().profile_create(tech, name, attrs)
+	def create(type, name, attrs):
+		res = get_backend_core_proxy().profile_create(type, name, attrs)
 		get_profile_list.invalidate()
 		return res
 
@@ -935,14 +936,14 @@ def get_template_info(template_id):
 	return TemplateInfo(template_id)
 
 @cached(1)
-def get_template_list(tech=None):
+def get_template_list(type=None):
 	"""
 	get the list of all templates
-	:param str tech: filter for tech if wanted
+	:param str type: filter for type if wanted
 	:return: list of templates
 	:rtype: list(dict)
 	"""
-	return get_backend_core_proxy().template_list(tech)
+	return get_backend_core_proxy().template_list(type)
 
 @cached(1800)
 def get_profile_info(profile_id):
@@ -955,54 +956,62 @@ def get_profile_info(profile_id):
 	return ProfileInfo(profile_id)
 
 @cached(1)
-def get_profile_list(tech=None):
+def get_profile_list(type=None):
 	"""
 	get the list of all profile
-	:param str tech: filter for tech if wanted
+	:param str type: filter for type if wanted
 	:return: list of profiles
 	:rtype: list(dict)
 	"""
-	return get_backend_core_proxy().profile_list(tech)
+	return get_backend_core_proxy().profile_list(type)
 
 
 @cached(1800)
-def _template_id(tech, name):
+def _template_id(type, name):
 	"""
-	get template id by tech and name
-	:param tech: template tech
+	get template id by type and name
+	:param type: template type
 	:param name: template name
 	:return: template id
 	"""
-	return get_backend_core_proxy().template_id(tech, name)
-def get_template_info_by_techname(tech, name):
+	return get_backend_core_proxy().template_id(type, name)
+
+@deprecated("get_template_info_by_typename")
+def get_template_info_by_techname(type, name):
+	return get_template_info_by_typename(type, name)
+def get_template_info_by_typename(type, name):
 	"""
 	return TemplateInfo object for the respective template
-	:param str tech: tech of the target template
+	:param str type: type of the target template
 	:param str name: name of the target template
 	:return: TemplateInfo object
 	:rtype: TemplateInfo
 	"""
-	return get_template_info(_template_id(tech, name))
+	return get_template_info(_template_id(type, name))
 
 
 @cached(1800)
-def _profile_id(tech, name):
+def _profile_id(type, name):
 	"""
 	get profile id by tech and name
-	:param tech: profile tech
+	:param type: profile type
 	:param name: profile name
 	:return: profile id
 	"""
-	return get_backend_core_proxy().profile_id(tech, name)
-def get_profile_info_by_techname(tech, name):
+	return get_backend_core_proxy().profile_id(type, name)
+
+@deprecated("get_profile_info_by_typename")
+def get_profile_info_by_techname(type, name):
+	return get_profile_info_by_typename(type, name)
+def get_profile_info_by_typename(type, name):
 	"""
 	return ProfileInfo object for the respective profile
-	:param str tech: tech of the target profile
+	:param str type: type of the target profile
 	:param str name: name of the target profile
 	:return: ProfileInfo object
 	:rtype: ProfileInfo
 	"""
-	return get_profile_info(_profile_id(tech, name))
+	return get_profile_info(_profile_id(type, name))
 
 
 @cached(1800)

@@ -266,9 +266,11 @@ class MultiTechVMElement(VMElement):
 	tech = StringField(required=False, default=None)
 
 	def modify_tech(self, tech):
-		if tech is not None:
+		if tech:
 			UserError.check(tech in self.TECHS, UserError.INVALID_VALUE, "tech '%s' not supported for type '%s'" % (tech, self.TYPE), data={"tech": tech, "type": self.TYPE})
-		self.tech = tech
+			self.tech = tech
+		else:
+			self.tech = None
 
 	def _get_elementTypeConfigurations(self):
 		if self.tech:
@@ -290,7 +292,7 @@ class MultiTechVMElement(VMElement):
 
 	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"tech": StatefulAttribute(get=lambda self: self.get_tech_attribute(), label="Tech", set=modify_tech, writableStates=[ST_CREATED], schema=schema.Identifier())
+		"tech": StatefulAttribute(get=lambda self: self.get_tech_attribute(), label="Tech", set=modify_tech, writableStates=[ST_CREATED])
 	})
 
 class VMInterface(Element):

@@ -27,12 +27,12 @@ class CapabilitiesTestCase(ProxyHoldingTestCase):
 				cls.test_temp1_id = temp['id']
 
 		# Create test profile for container
-		cls.testprofile_tech = "container"
+		cls.testprofile_type = "container"
 		cls.testprofile_name = "normal"
 		cls.testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal',
 								 'preference': 10, 'description': 'Test profile'}
 
-		cls.proxy_holder.backend_core.profile_create(cls.testprofile_tech, cls.testprofile_name,
+		cls.proxy_holder.backend_core.profile_create(cls.testprofile_type, cls.testprofile_name,
 													 cls.testprofile_args)
 
 		# Create user without permission to create profiles
