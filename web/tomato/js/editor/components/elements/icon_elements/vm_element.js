@@ -42,6 +42,7 @@ var VMElement = IconElement.extend({
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "tech", "_endpoint", "_custom_icon"];
 		config.ignore.push("info_last_sync");
+		config.ignore.push("args_doc");
 
 		conf = editor.options.vm_element_config
 		if (this.data.type in conf) {
@@ -195,6 +196,12 @@ var VMElement = IconElement.extend({
 			name: "_custom_icon",
 			value:this.data._custom_icon,
 			hint: "URL to 32x32 PNG image"
+		});
+		config.special.args = new CommandTextElement({
+			label: "Arguments",
+			name: "args",
+			value: this.data.args,
+			args_doc: this.data.args_doc
 		});
 		return config;
 	},
