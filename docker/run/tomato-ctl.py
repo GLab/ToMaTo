@@ -575,6 +575,7 @@ class Module:
 			flat_list([["-p", "%s:%s" % p] for p in ports]),
 			["-e", "TIMEZONE=%s" % timezone],
 			["-e", "TOMATO_VERSION=%s" % tomato_version],
+			["-e", "TOMATO_MODULE=%s" % module_name],
 			["-e", "SECRET_KEY=%s" % "".join(random.choice(string.digits+string.ascii_letters) for _ in range(32))],
 			["--name", self.container_name],
 			additional_args,

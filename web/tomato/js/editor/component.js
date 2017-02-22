@@ -76,7 +76,7 @@ var Component = Class.extend({
 	configWindowSettings: function() {
 		return {
 			order: ["name"],
-			ignore: ["id", "parent", "connection", "host_info", "host", "state", "debug", "type", "children", "topology","info_last_sync","info_next_sync", "tech"],
+			ignore: ["id", "parent", "connection", "host_info", "host", "state", "debug", "type", "children", "topology","info_last_sync","info_next_sync", "tech", "args_doc"],
 			unknown: true,
 			special: {}
 		}
@@ -92,7 +92,7 @@ var Component = Class.extend({
 		
 		var helpTarget = undefined;
 		if ($.inArray(this.data.type,settings.supported_configwindow_help_pages)) {
-			helpTarget = help_baseUrl+"/editor:configwindow_"+this.data.type;
+			helpTarget = this.helpTarget ? this.helpTarget : help_baseUrl;
 		}
 
 		

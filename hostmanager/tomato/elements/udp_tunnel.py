@@ -16,10 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import connections, elements, config
+from ..db import *
+from ..generic import *
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import net, process #@UnresolvedImport
 from ..lib.error import InternalError
+from ..connections import Connection
 from ..lib.constants import ActionName, StateName, TypeName
 
 DOC="""
@@ -67,40 +70,36 @@ Actions:
 """
 
 class UDP_Tunnel(elements.Element):
-	pid_attr = Attr("pid", type="int")
-	pid = pid_attr.attribute()
-	port_attr = Attr("port", type="int")
-	port = port_attr.attribute()
-	connect_attr = Attr("connect", desc="Connect to", states=[StateName.CREATED], type="str", null=True, default=None)
-	connect = connect_attr.attribute()
+
+	pid = IntField()
+	port = IntField()
+	connection = StringField(null=True, default=None)
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"pid": Attribute(field=pid, schema=schema.Int(), readOnly=True),
+		"port": Attribute(field=port, schema=schema.Int(), readOnly=True),
+		"connection": Attribute(field=connection, schema=schema.String(), default=None),
+	})
+
+
+
 
 	TYPE = TypeName.UDP_TUNNEL
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}		
-	CAP_ATTRS = {
-		"connect": connect_attr,
-		"timeout": elements.Element.timeout_attr
-	}
+
+
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DEFAULT_ATTRS = {}
 	DOC = DOC
 	__doc__ = DOC
-	
-	class Meta:
-		db_table = "tomato_udp_tunnel"
-		app_label = 'tomato'
+
+	@property
+	def type(self):
+		return self.TYPE
 	
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
@@ -117,7 +116,7 @@ class UDP_Tunnel(elements.Element):
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _interfaceName(self):
-		return "stap%d" % self.id
+		return "stap%s" % str(self.id)
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None
@@ -168,6 +167,17 @@ class UDP_Tunnel(elements.Element):
 		except: #Tunnel just quit
 			traffic = 0
 		usage.updateContinuous("traffic", traffic, data)
+
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+	})
 
 if not config.MAINTENANCE:
 	socatVersion = cmd.getDpkgVersion("socat")

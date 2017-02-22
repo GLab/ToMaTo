@@ -1,5 +1,4 @@
 from ..lib.constants import ActionName, StateName, TechName
-from django.db import models #@UnresolvedImport
 from ..resources import template
 from .. import connections, elements, resources, config
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -9,17 +8,15 @@ from ..lib.newcmd import virsh, vfat, qemu_img, ipspy
 from ..lib.newcmd.util import io,  net, proc
 from ..lib.error import UserError, InternalError
 from ..lib.util import joinDicts #@UnresolvedImport
+from . import Element
+from ..generic import *
+from ..db import *
 
 import time
 import xml.etree.ElementTree as ET
 import random, os, sys, re, shutil
 
-kblang_options = {"en-us": "English (US)",
-					"en-gb": "English (GB)",
-					"de": "German",
-					"fr": "French",
-					"ja": "Japanese"
-					}
+kblang_options = ["en-us","en-gb","de", "fr", "ja"]
 
 DOC="""
 Element type: ``kvm``
@@ -133,77 +130,42 @@ Actions:
 		same as download_grant, but only for the nlXTP folder
 """
 
-class KVM(elements.RexTFVElement,elements.Element):
-	vmid_attr = Attr("vmid", type="int")
-	vmid = vmid_attr.attribute()
-	websocket_port_attr = Attr("websocket_port", type="int")
-	websocket_port = websocket_port_attr.attribute()
-	websocket_pid_attr = Attr("websocket_pid", type="int")
-	websocket_pid = websocket_pid_attr.attribute()
-	vncport_attr = Attr("vncport", type="int")
-	vncport = vncport_attr.attribute()
-	vncpid_attr = Attr("vncpid", type="int")
-	vncpid = vncpid_attr.attribute()
-	vncpassword_attr = Attr("vncpassword", type="str")
-	vncpassword = vncpassword_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[StateName.CREATED, StateName.PREPARED], type="int", minValue=1, maxValue=4, default=1)
-	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[StateName.CREATED, StateName.PREPARED], type="int", minValue=64, maxValue=8192, default=256)
-	ram = ram_attr.attribute()
-	kblang_attr = Attr("kblang", desc="Keyboard language", states=[StateName.CREATED, StateName.PREPARED], type="str", options=kblang_options, default=None, null=True)
-	#["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br", "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"]
-	kblang = kblang_attr.attribute()
-	usbtablet_attr = Attr("usbtablet", desc="USB tablet mouse mode", states=[StateName.CREATED, StateName.PREPARED], type="bool", default=True)
-	usbtablet = usbtablet_attr.attribute()
-	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
-	template = models.ForeignKey(template.Template, null=True)
+class KVM(elements.Element, elements.RexTFVElement):
+
+	vmid = IntField()
+	websocket_port = IntField()
+	websocket_pid = IntField()
+	vncport = IntField()
+	vncpid = IntField()
+	vncpassword =StringField()
+	cpus = IntField(default=1)
+	ram = IntField(default=256)
+	kblang = StringField(default=None, choises=kblang_options)
+	usbtablet = BooleanField(default=True)
+	template = ReferenceField(resources.template.Template)
+	templateId = ReferenceFieldId(template)
+
+
 
 	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
 	vir = virsh.virsh(TechName.KVM)
 
 	TYPE = TechName.KVM
-	CAP_ACTIONS = {
-		ActionName.PREPARE: [StateName.CREATED],
-		ActionName.DESTROY: [StateName.PREPARED],
-		ActionName.START: [StateName.PREPARED],
-		ActionName.STOP: [StateName.STARTED],
-		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
-		ActionName.REXTFV_UPLOAD_GRANT: [StateName.PREPARED],
-		ActionName.UPLOAD_USE: [StateName.PREPARED],
-		ActionName.REXTFV_UPLOAD_USE: [StateName.PREPARED],
-		"download_grant": [StateName.PREPARED],
-		"rextfv_download_grant": [StateName.PREPARED, StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
 
-	CAP_NEXT_STATE = {
-		ActionName.PREPARE: StateName.PREPARED,
-		ActionName.DESTROY: StateName.CREATED,
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.PREPARED,
-	}
-	CAP_ATTRS = {
-		"cpus": cpus_attr,
-		"ram": ram_attr,
-		"kblang": kblang_attr,
-		"usbtablet": usbtablet_attr,
-		"template": template_attr,
-		"timeout": elements.Element.timeout_attr
-	}
-	CAP_CHILDREN = {
-		TechName.KVM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
-	}
+
+
+
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": None, "usbtablet": True}
 	__doc__ = DOC  # @ReservedAssignment
 	DOC = DOC
 
-	class Meta:
-		db_table = "tomato_kvm"
-		app_label = 'tomato'
+
+	@property
+	def type(self):
+		return self.TYPE
 
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
@@ -272,9 +234,9 @@ class KVM(elements.RexTFVElement,elements.Element):
 						 vncpassword=self.vncpassword,
 						 keyboard=self.kblang)
 		self.vir.writeInitialConfig(TechName.KVM, self.vmid)
+		self.setState(StateName.PREPARED, True)
 		for interface in self.getChildren():
 			self._addInterface(interface)
-		self.setState(StateName.PREPARED, True)
 		#self._configure()
 		# add all interfaces
 
@@ -294,11 +256,11 @@ class KVM(elements.RexTFVElement,elements.Element):
 		return self
 
 	def _addInterface(self, interface):
-		assert self.state == StateName.CREATED or self.state == StateName.PREPARED
+		assert self.state != StateName.CREATED
 		self.vir.addNic(self.vmid, interface.num)
 
 	def _removeInterface(self, interface):
-		assert self.state == StateName.CREATED or self.state == StateName.PREPARED
+		assert self.state != StateName.CREATED
 		try:
 			self.vir.delNic(self.vmid, interface.num)
 		except InternalError as err:
@@ -493,6 +455,41 @@ class KVM(elements.RexTFVElement,elements.Element):
 			vfat.create(self._nlxtp_device_filename(), KVM.rextfv_max_size / 1024,
 						nested=True)  # size (last argument) depends on nlxtp_max_size
 
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"vmid": Attribute(field=vmid, readOnly=True, schema=schema.Int()),
+		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
+		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
+		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
+		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
+		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
+		"cpus": Attribute(field=cpus, description="Number of CPUs", set=modify_cpus, schema=schema.Number(minValue=1,maxValue=4), default=1),
+		"ram": Attribute(field=ram, description="RAM", set=modify_ram, schema=schema.Int(minValue=64, maxValue=8192), default=256),
+		"kblang": Attribute(field=kblang, description="Keyboard language", set=modify_kblang, schema=schema.String(options=kblang_options), default=None),
+		"usbtablet": Attribute(field=usbtablet, description="USB tablet mouse mode", set=modify_usbtablet, schema=schema.Bool(), default=True),
+		"template": Attribute(field=templateId, description="Template", set=modify_template, schema=schema.Identifier()),
+	})
+
+	CAP_CHILDREN = {
+		TechName.KVM_INTERFACE: [StateName.CREATED, StateName.PREPARED],
+	}
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove, allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED, StateName.PREPARED], stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED], stateChange=StateName.PREPARED),
+		ActionName.PREPARE: StatefulAction(action_prepare,
+										   allowedStates=[StateName.CREATED], stateChange=StateName.PREPARED),
+		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[StateName.PREPARED, StateName.STARTED],
+										   stateChange=StateName.CREATED),
+		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=[StateName.PREPARED]),
+		ActionName.REXTFV_UPLOAD_GRANT: StatefulAction(action_rextfv_upload_grant, allowedStates=[StateName.PREPARED]),
+		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=[StateName.PREPARED]),
+		ActionName.REXTFV_UPLOAD_USE: StatefulAction(action_rextfv_upload_use, allowedStates=[StateName.PREPARED]),
+		"download_grant": StatefulAction(action_download_grant, allowedStates=[StateName.PREPARED]),
+		"rextfv_download_grant": StatefulAction(action_rextfv_download_grant, allowedStates=[StateName.PREPARED, StateName.STARTED]),
+	})
 
 DOC_IFACE = """
 Element type: ``kvm_interface``
@@ -524,40 +521,29 @@ Actions: None
 """
 
 
-class KVM_Interface(elements.Element):
-	num_attr = Attr("num", type="int")
-	num = num_attr.attribute()
-	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[StateName.CREATED])
-	mac_attr = Attr("mac", desc="MAC Address", type="str")
-	mac = mac_attr.attribute()
-	ipspy_pid_attr = Attr("ipspy_pid", type="int")
-	ipspy_pid = ipspy_pid_attr.attribute()
-	used_addresses_attr = Attr("used_addresses", type=list, default=[])
-	used_addresses = used_addresses_attr.attribute()
+class KVM_Interface(elements.Element):#
 
+	num = IntField()
+	name = StringField()
+	mac = StringField()
+	ipspy_pid = IntField()
+	used_addresses = ListField(default=[])
 
 	vir = virsh.virsh(TechName.KVM)
 	TYPE = TechName.KVM_INTERFACE
-	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
-	}
-	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {
-		"name": name_attr,
-		"timeout": elements.Element.timeout_attr
-	}
+
 	CAP_CHILDREN = {}
 	CAP_PARENT = [KVM.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
 	__doc__ = DOC_IFACE  # @ReservedAssignment
 
-	class Meta:
-		db_table = "tomato_kvm_virsh_interface"
-		app_label = 'tomato'
+	@property
+	def type(self):
+		return self.TYPE
+
 
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs)  # no id and no attrs before this line
 		assert isinstance(self.getParent(), KVM)
@@ -572,9 +558,7 @@ class KVM_Interface(elements.Element):
 			try:
 				return self.vir.getNicName(self.getParent().vmid, self.num)
 			except InternalError as err:
-				"Ich hab nen fehler beim Interface Name"
 				if err.code == InternalError.INVALID_PARAMETER:
-					"Ich hab nen fehler beim Interface Name"
 					return
 				raise
 		else:
@@ -610,6 +594,19 @@ class KVM_Interface(elements.Element):
 				traffic = sum(net.trafficInfo(ifname))
 				usage.updateContinuous("traffic", traffic, data)
 
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"num": Attribute(field=num, schema=schema.Int(), readOnly=True),
+		"mac": Attribute(field=mac, description="Mac Address", schema=schema.String(), readOnly=True),
+		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
+		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$")),
+		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+														 allowedStates=[StateName.CREATED]),
+					})
 
 KVM_Interface.__doc__ = DOC_IFACE
 

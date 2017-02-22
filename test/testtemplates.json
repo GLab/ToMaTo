@@ -1,5 +1,5 @@
 [
-  {"tech": "container",
+  {"type": "container",
     "nlXTP_installed": true,
     "description": "",
     "icon": "",
@@ -12,7 +12,7 @@
     "creation_date": 1462881777.857998,
     "name": "ubuntu-14.04_x86"
   },
-  {"tech": "container",
+  {"type": "container",
     "nlXTP_installed": true,
     "description": "",
     "icon": "",
@@ -26,7 +26,7 @@
     "name": "ubuntu-16.04_x86_restricted"
   },
   {
-    "tech": "full",
+    "type": "full",
     "name": "tinycore-7.0",
     "nlXTP_installed": false,
     "description": "",
@@ -40,7 +40,7 @@
     "creation_date": 1462881777.857998
   },
   {
-    "tech": "repy",
+    "type": "repy",
     "name": "pingable_node",
     "nlXTP_installed": false,
     "description": "",

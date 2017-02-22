@@ -21,3 +21,16 @@ class settings:
 			"lifetime": config.DUMP_LIFETIME,
 			"auto-push": False
 		}
+
+	@staticmethod
+	def get_db_settings():
+		"""
+		get database settings
+		:return: dict containing 'database' (name), 'host' and 'port'
+		:rtype: dict
+		"""
+		return {
+			'database': "tomato_host",
+			'host': "localhost",
+			'port': 27017
+		}

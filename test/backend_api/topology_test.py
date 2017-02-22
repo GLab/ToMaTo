@@ -340,13 +340,13 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		}
 
 		self.testelement1 = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		type=self.test_temps[0]['tech'],
+																		type=self.test_temps[0]['type'],
 																		attrs=self.testelement1_attrs)
 		self.testelement1_id = self.testelement1['id']
 
 		self.testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
 																				  type=self.test_temps[0][
-																						   'tech'] + "_interface",
+																						   'type'] + "_interface",
 																				  parent=self.testelement1_id)
 		self.testelement1_interface_id = self.testelement1_interface["id"]
 
@@ -357,13 +357,13 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		}
 
 		self.testelement2 = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		type=self.test_temps[0]['tech'],
+																		type=self.test_temps[0]['type'],
 																		attrs=self.testelement2_attrs)
 		self.testelement2_id = self.testelement2['id']
 
 		self.testelement2_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
 																				  type=self.test_temps[0][
-																						   'tech'] + "_interface",
+																						   'type'] + "_interface",
 																				  parent=self.testelement2_id)
 		self.testelement2_interface_id = self.testelement2_interface["id"]
 

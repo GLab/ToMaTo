@@ -1,4 +1,5 @@
 from .. import scheduler
+from ..service_status import service_status, problems
 from ..lib.debug import run
 from ..lib.error import InternalError
 from ..lib.exceptionhandling import wrap_and_handle_current_exception
@@ -12,7 +13,9 @@ def debug_stats():
 	stats = {
 		"db": database_obj.command("dbstats"),
 		"scheduler": scheduler.info(),
-		"threads": map(traceback.extract_stack, sys._current_frames().values())
+		"threads": map(traceback.extract_stack, sys._current_frames().values()),
+		"system": service_status(),
+		"problems": problems()
 	}
 	stats["db"]["collections"] = {name: database_obj.command("collstats", name) for name in
 	                              database_obj.collection_names()}

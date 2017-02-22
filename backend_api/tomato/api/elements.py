@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from api_helpers import getCurrentUserInfo
-from ..lib.remote_info import get_topology_info, get_element_info, get_profile_info_by_techname, get_template_info_by_techname, ElementInfo
+from ..lib.remote_info import get_topology_info, get_element_info, get_profile_info_by_typename, get_template_info_by_typename, ElementInfo
 from ..lib.error import UserError
 
 def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
@@ -63,9 +63,9 @@ def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	getCurrentUserInfo().check_may_create_element(top_inf)
 	if not attrs: attrs = {}
 	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(type, attrs['template']))
+		getCurrentUserInfo().check_may_use_template(get_template_info_by_typename(type, attrs['template']))
 	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(type, attrs['profile']))
+		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_typename(type, attrs['profile']))
 	return ElementInfo.create(top_inf, type, parent, attrs)
 
 def element_modify(id, attrs): #@ReservedAssignment
@@ -100,9 +100,9 @@ def element_modify(id, attrs): #@ReservedAssignment
 	elem = get_element_info(id)
 	getCurrentUserInfo().check_may_modify_element(elem)
 	if "template" in attrs:
-		getCurrentUserInfo().check_may_use_template(get_template_info_by_techname(elem.get_type(), attrs['template']))
+		getCurrentUserInfo().check_may_use_template(get_template_info_by_typename(elem.get_type(), attrs['template']))
 	if "profile" in attrs:
-		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_techname(elem.get_type(), attrs['profile']))
+		getCurrentUserInfo().check_may_use_profile(get_profile_info_by_typename(elem.get_type(), attrs['profile']))
 	return elem.modify(attrs)
 
 def element_action(id, action, params=None): #@ReservedAssignment

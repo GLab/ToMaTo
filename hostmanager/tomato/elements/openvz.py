@@ -16,17 +16,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os.path, sys
-from django.db import models
 
-from ..lib.cmd import archive
+from django.db import models
+from ..generic import *
+from ..db import *
 from .. import connections, elements, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
-from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
+from ..lib.cmd import fileserver, archive, process, net, path, CommandError #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.constants import ActionName, StateName, TechName
+
 
 DHCP_CMDS = ["[ -e /sbin/dhclient ] && /sbin/dhclient -nw %s",
 			 "[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s"]
@@ -145,92 +147,58 @@ Actions:
 		same as download_grant, but only for the nlXTP folder
 """
 
-class OpenVZ(elements.RexTFVElement,elements.Element):
-	vmid_attr = Attr("vmid", type="int")
-	vmid = vmid_attr.attribute()
-	websocket_port_attr = Attr("websocket_port", type="int")
-	websocket_port = websocket_port_attr.attribute()
-	websocket_pid_attr = Attr("websocket_pid", type="int")
-	websocket_pid = websocket_pid_attr.attribute()
-	vncport_attr = Attr("vncport", type="int")
-	vncport = vncport_attr.attribute()
-	vncpid_attr = Attr("vncpid", type="int")
-	vncpid = vncpid_attr.attribute()
-	vncpassword_attr = Attr("vncpassword", type="str")
-	vncpassword = vncpassword_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", type="int", minValue=64, maxValue=4096, default=256)
-	ram = ram_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", type="float", minValue=0.1, maxValue=4.0, default=1.0)
-	cpus = cpus_attr.attribute()
-	diskspace_attr = Attr("diskspace", desc="Disk space", unit="MB", type="int", minValue=512, maxValue=102400, default=10240)
-	diskspace = diskspace_attr.attribute()
-	rootpassword_attr = Attr("rootpassword", desc="Root password", type="str")
-	rootpassword = rootpassword_attr.attribute()
-	hostname_attr = Attr("hostname", desc="Hostname", type="str")
-	hostname = hostname_attr.attribute()
-	gateway4_attr = Attr("gateway4", desc="IPv4 gateway", type="str")
-	gateway4 = gateway4_attr.attribute()	
-	gateway6_attr = Attr("gateway6", desc="IPv6 gateway", type="str")
-	gateway6 = gateway6_attr.attribute()		
-	template_attr = Attr("template", desc="Template", states=[StateName.CREATED, StateName.PREPARED], type="str", null=True)
-	template = models.ForeignKey(template.Template, null=True)
+class OpenVZ(elements.Element, elements.RexTFVElement):
+
+	vmid = IntField()
+	websocket_port = IntField()
+	websocket_pid = IntField()
+	vncport = IntField()
+	vncpid = IntField()
+	vncpassword =StringField()
+	cpus = IntField(default=1)
+	ram = IntField(default=256)
+	diskspace = IntField(default=10240)
+	rootpassword = StringField()
+	gateway4 = StringField()
+	hostname = StringField()
+	gateway6 = StringField()
+	usbtablet = BooleanField(default=True)
+	template = ReferenceField(template.Template)
+	templateId = ReferenceFieldId(template)
+
 
 	TYPE = TechName.OPENVZ
-	CAP_ACTIONS = {
-		ActionName.PREPARE: [StateName.CREATED],
-		ActionName.DESTROY: [StateName.PREPARED],
-		ActionName.START: [StateName.PREPARED],
-		ActionName.STOP: [StateName.STARTED],
-		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
-		ActionName.REXTFV_UPLOAD_GRANT: [StateName.PREPARED,StateName.STARTED],
-		ActionName.UPLOAD_USE: [StateName.PREPARED],
-		ActionName.REXTFV_UPLOAD_USE: [StateName.PREPARED,StateName.STARTED],
-		"download_grant": [StateName.PREPARED],
-		"rextfv_download_grant": [StateName.PREPARED,StateName.STARTED],
-		"execute": [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
-	CAP_NEXT_STATE = {
-		ActionName.PREPARE: StateName.PREPARED,
-		ActionName.DESTROY: StateName.CREATED,
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.PREPARED,
-	}	
-	CAP_ATTRS = {
-		"cpus": cpus_attr,
-		"ram": ram_attr,
-		"diskspace": diskspace_attr,
-		"rootpassword": rootpassword_attr,
-		"hostname": hostname_attr,
-		"gateway4": gateway4_attr,
-		"gateway6": gateway6_attr,
-		"template": template_attr,
-		"timeout": elements.Element.timeout_attr
-	}
+
+
 	CAP_CHILDREN = {
 		TechName.OPENVZ_INTERFACE: [StateName.CREATED, StateName.PREPARED],
 	}
 	CAP_PARENT = [None]
-	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
+	DEFAULT_ATTRIBUTES = {"ram": 256, "diskspace": 10240}
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
-	
-	class Meta:
-		db_table = "tomato_openvz"
-		app_label = 'tomato'
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
+		self.save()
 		#template: None, default template
 	
 	def _imagePath(self):
 		return "/var/lib/vz/private/%d" % self.vmid
+
+	def modify_template(self, tmplName):
+		temp= template.Template.objects(self.TYPE, tmplName)
+		UserError.check(temp, code=UserError.INVALID_VALUE, message="No such template", data={"value": tmplName})
+		self.template = temp
 
 	# 9: locked
 	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
@@ -267,7 +235,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
 		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
-			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
+			data={"type": self.type, "id": str(self.id), "saved_state": savedState, "real_state": realState})
 
 	def _template(self):
 		if self.template:
@@ -491,7 +459,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			interface._start() #configure after connecting to allow dhcp, etc.
 		self._setGateways()
 		net.freeTcpPort(self.vncport)
-		self.vncpid = cmd.spawnShell("while true; do vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; sleep 1; done'; sleep 1; done" % (self.vncport, self.vncpassword, self.vmid), useExec=False)
+		self.vncpid = cmd.spawnShell("while true; do vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter screen -RRL; vzctl enter %d; sleep 1; done'; sleep 1; done" % (self.vncport, self.vncpassword, self.vmid), useExec=False)
 		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), InternalError.ASSERTION,
 			"VNC server did not start")
 		if not self.websocket_port:
@@ -630,7 +598,48 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		diskspace = self._diskspace()
 		if diskspace:
 			usage.diskspace = diskspace
-			
+
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"vmid": Attribute(field=vmid, readOnly=True, schema=schema.Int()),
+		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
+		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
+		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
+		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
+		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
+		"hostname": Attribute(field=hostname, set=modify_hostname, schema=schema.String()),
+		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
+		"ram": Attribute(field=ram, label="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
+		"diskspace": Attribute(field=diskspace, label="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),
+		"rootpassword": Attribute(field=rootpassword, label="Root password", schema=schema.String()),
+		"template": Attribute(get=lambda self: self.template.name if self.template else None, set=modify_template, label="Template"),
+		"gateway4": Attribute(field=gateway4, label="IPv4 gateway", schema=schema.String()),
+		"gateway6": Attribute(field=gateway4, label="IPv6 gateway", schema=schema.String()),
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED, StateName.PREPARED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.PREPARED),
+		ActionName.PREPARE: StatefulAction(action_prepare,
+										   allowedStates=[StateName.CREATED], stateChange=StateName.PREPARED),
+		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[StateName.PREPARED, StateName.STARTED],
+										   stateChange=StateName.CREATED),
+		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=[StateName.PREPARED]),
+		ActionName.REXTFV_UPLOAD_GRANT: StatefulAction(action_rextfv_upload_grant,
+													   allowedStates=[StateName.PREPARED]),
+		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=[StateName.PREPARED]),
+		ActionName.REXTFV_UPLOAD_USE: StatefulAction(action_rextfv_upload_use, allowedStates=[StateName.PREPARED]),
+		"download_grant": StatefulAction(action_download_grant, allowedStates=[StateName.PREPARED]),
+		"rextfv_download_grant": StatefulAction(action_rextfv_download_grant,
+												allowedStates=[StateName.PREPARED, StateName.STARTED]),
+		"execute": StatefulAction(action_execute, allowedStates=[StateName.STARTED]),
+	})
 OpenVZ.__doc__ = DOC			
 
 
@@ -685,45 +694,46 @@ Actions: None
 """
 
 class OpenVZ_Interface(elements.Element):
-	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[StateName.CREATED])
-	name = name_attr.attribute()
-	ip4address_attr = Attr("ip4address", desc="IPv4 address", type="str")
-	ip4address = ip4address_attr.attribute()	
-	ip6address_attr = Attr("ip6address", desc="IPv6 address", type="str")
-	ip6address = ip6address_attr.attribute()		
-	use_dhcp_attr = Attr("use_dhcp", desc="Use DHCP", type="bool", default=False)
-	use_dhcp = use_dhcp_attr.attribute()		
-	mac_attr = Attr("mac", desc="MAC Address", type="str")
-	mac = mac_attr.attribute()
-	ipspy_pid_attr = Attr("ipspy_pid", type="int")
-	ipspy_pid = ipspy_pid_attr.attribute()
-	used_addresses_attr = Attr("used_addresses", type=list, default=[])
-	used_addresses = used_addresses_attr.attribute()
+	name = StringField(regex="^eth[0-9]+$")
+	ip4address = StringField()
+	ip6address = StringField()
+	use_dhcp = BooleanField(default=False)
+	mac = StringField()
+	ipspy_pid = IntField()
+	used_addresses = ListField(default=[])
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"mac": Attribute(field=mac, description="Mac Address", schema=schema.String(), readOnly=True),
+		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
+		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
+		"name": Attribute(field=name, description="Name", schema = schema.String(regex="^eth[0-9]+$")),
+		"ip4address": Attribute(field=ip4address, description="IPv4 address", schema=schema.String()),
+		"ip6address": Attribute(field=ip6address, description="IPv6	address", schema=schema.String()),
+		"use_dhcp": Attribute(field=use_dhcp, description="Use DHCP", schema=schema.Bool(), default=False),
+		"timeout": elements.Element.ATTRIBUTES["timeout"],
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+	})
 
 	TYPE = TechName.OPENVZ_INTERFACE
-	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [StateName.CREATED, StateName.PREPARED]
-	}
-	CAP_NEXT_STATE = {}	
-	CAP_ATTRS = {
-		"name": name_attr,
-		"ip4address": ip4address_attr,
-		"ip6address": ip6address_attr,
-		"use_dhcp": use_dhcp_attr,
-		"timeout": elements.Element.timeout_attr
-	}
+
 	CAP_CHILDREN = {}
 	CAP_PARENT = [OpenVZ.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
 	__doc__ = DOC_IFACE #@ReservedAssignment
 	
-	class Meta:
-		db_table = "tomato_openvz_interface"
-		app_label = 'tomato'
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), OpenVZ)

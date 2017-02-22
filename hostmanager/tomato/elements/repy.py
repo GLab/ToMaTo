@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, sys, shutil
-from django.db import models
+from ..db import *
+from ..generic import *
 from .. import connections, elements, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -24,6 +25,7 @@ from ..lib import util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.constants import ActionName, StateName, TypeName
+from ..lib.repy_doc_reader import read_repy_doc
 
 DOC="""
 Element type: ``repy``
@@ -116,52 +118,25 @@ Actions:
 """
 
 class Repy(elements.Element):
-	pid_attr = Attr("pid", type="int")
-	pid = pid_attr.attribute()
-	websocket_port_attr = Attr("websocket_port", type="int")
-	websocket_port = websocket_port_attr.attribute()
-	websocket_pid_attr = Attr("websocket_pid", type="int")
-	websocket_pid = websocket_pid_attr.attribute()
-	vncport_attr = Attr("vncport", type="int")
-	vncport = vncport_attr.attribute()
-	vncpid_attr = Attr("vncpid", type="int")
-	vncpid = vncpid_attr.attribute()
-	vncpassword_attr = Attr("vncpassword", type="str")
-	vncpassword = vncpassword_attr.attribute()
-	args_attr = Attr("args", desc="Arguments", states=[StateName.PREPARED], default=[])
-	args = args_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[StateName.PREPARED], type="float", minValue=0.01, maxValue=4.0, default=0.25)
-	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[StateName.PREPARED], type="int", minValue=10, maxValue=4096, default=25)
-	ram = ram_attr.attribute()
-	bandwidth_attr = Attr("bandwidth", desc="Bandwidth", unit="bytes/s", states=[StateName.PREPARED], type="int", minValue=1024, maxValue=10000000000, default=1000000)
-	bandwidth = bandwidth_attr.attribute()
-	#TODO: use template ref instead of attr
-	template_attr = Attr("template", desc="Template", states=[StateName.PREPARED], type="str", null=True)
-	template = models.ForeignKey(template.Template, null=True)
+
+	pid = IntField()
+	websocket_port = IntField()
+	websocket_pid = IntField()
+	vncport = IntField()
+	vncpid = IntField()
+	vncpassword =StringField()
+	args = ListField()
+	args_doc = StringField(default=None, required=False)
+	cpus = IntField(default=1)
+	ram = IntField(default=256)
+	bandwidth = IntField(min_value=1024, max_value=10000000000, default=1000000)
+	template = ReferenceField(template.Template, null=True)
+	templateId = ReferenceFieldId(template)
+
 
 	TYPE = TypeName.REPY
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.PREPARED],
-		ActionName.STOP: [StateName.STARTED],
-		ActionName.UPLOAD_GRANT: [StateName.PREPARED],
-		ActionName.UPLOAD_USE: [StateName.PREPARED],
-		"download_grant": [StateName.PREPARED],
-        "download_log_grant": [StateName.PREPARED, StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.PREPARED],
-	}
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.PREPARED,
-	}	
-	CAP_ATTRS = {
-		"template": template_attr,
-		"args": args_attr,
-		"cpus": cpus_attr,
-		"ram": ram_attr,
-		"bandwidth": bandwidth_attr,
-		"timeout": elements.Element.timeout_attr		
-	}
+
+
 	CAP_CHILDREN = {
 		TypeName.REPY_INTERFACE: [StateName.PREPARED],
 	}
@@ -169,22 +144,20 @@ class Repy(elements.Element):
 	DEFAULT_ATTRS = {"args": [], "cpus": 0.25, "ram": 25, "bandwidth": 1000000}
 	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
-	
-	class Meta:
-		db_table = "tomato_repy"
-		app_label = 'tomato'
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
-		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
 		if not self.template:
 			self.modify_template("") #use default template
-		self._setProfile()
+		self.modify(**args[1])
 
 	def _getState(self):
 		if self.pid and process.exists(self.pid):
@@ -197,10 +170,15 @@ class Repy(elements.Element):
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
 		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state of element was wrong",
-			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_State": realState})
+			data={"type": self.type, "id": str(self.id), "saved_state": savedState, "real_State": realState})
 
 	def _interfaceName(self, name):
-		return TypeName.REPY + "%d%s" % (self.id, name)
+		#Linux only allows interface names of 15 bytes, so we have to compromise:
+		#Use technology identifier + part of the object id.
+		#Since the object id is a 24 symbol long hexadezimal representation of the 12 byte mongoengine object id,
+		#We use the last 6 symbols which are hopefully individual as identifier
+		#We force interfacenames to be max length of 4
+		return TypeName.REPY + "%s%s" % (str(self.id)[18:24], name)
 
 	def _template(self):
 		if self.template:
@@ -215,6 +193,10 @@ class Repy(elements.Element):
 		while "eth%d" % num in [iface.name for iface in ifaces]:
 			num += 1
 		return "eth%d" % num
+
+	def _update_args_doc(self):
+		self.args_doc = read_repy_doc(self.dataPath("program.repy"))
+		self.save()
 
 	def _useImage(self, path_):
 		if path.exists(self.dataPath("program.repy")):
@@ -311,6 +293,7 @@ class Repy(elements.Element):
 			"No file has been uploaded")
 		self._checkImage(self.dataPath("uploaded.repy"))
 		os.rename(self.dataPath("uploaded.repy"), self.dataPath("program.repy"))
+		self._update_args_doc()
 		
 	def action_download_grant(self):
 		#no need to copy file first
@@ -349,6 +332,36 @@ class Repy(elements.Element):
 				cputime += process.cputime(self.vncpid)
 			usage.updateContinuous("cputime", cputime, data)
 
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"pid": Attribute(field=pid, readOnly=True, schema=schema.Int()),
+		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
+		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
+		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
+		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
+		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
+		"args": Attribute(field=args, description="Arguments", set=modify_args, schema = schema.List(), default=[]),
+		"args_doc": Attribute(field=args_doc, description="Arguments Documentation", readOnly=True),
+		"cpus": Attribute(field=cpus, description="Number of CPUs", set=modify_cpus, schema=schema.Number(minValue=1,maxValue=4), default=1),
+		"ram": Attribute(field=ram, description="RAM", set=modify_ram, schema=schema.Int(minValue=64, maxValue=8192), default=256),
+		"bandwidth": Attribute(field=bandwidth, description="Bandwidth in bytes/s", set=modify_bandwidth, schema=schema.Int(minValue=1024, maxValue=10000000000), default=1000000),
+		"template": Attribute(field=templateId, description="Template", set=modify_template, schema=schema.Identifier()),
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.PREPARED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.PREPARED),
+		ActionName.UPLOAD_GRANT: StatefulAction(action_upload_grant, allowedStates=[StateName.PREPARED]),
+		ActionName.UPLOAD_USE: StatefulAction(action_upload_use, allowedStates=[StateName.PREPARED]),
+		"download_grant": StatefulAction(action_download_grant, allowedStates=[StateName.PREPARED]),
+		"download_log_grant": StatefulAction(action_download_log_grant,
+												allowedStates=[StateName.PREPARED, StateName.STARTED]),
+	})
 Repy.__doc__ = DOC
 
 DOC_IFACE="""
@@ -378,32 +391,44 @@ Actions: None
 """
 
 class Repy_Interface(elements.Element):
-	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$")
-	name = name_attr.attribute()
-	ipspy_pid_attr = Attr("ipspy_pid", type="int")
-	ipspy_pid = ipspy_pid_attr.attribute()
-	used_addresses_attr = Attr("used_addresses", type=list, default=[])
-	used_addresses = used_addresses_attr.attribute()
+
+	name = StringField(regex="^eth[0-9]+$", max_length=4)
+	ipspy_pid = IntField()
+	used_addresses = ListField(default=[])
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
+		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$", maxLength=4), readOnly=True),
+		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
+	})
+
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+	})
 
 	TYPE = TypeName.REPY_INTERFACE
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [StateName.PREPARED]
 	}
-	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
-		"timeout": elements.Element.timeout_attr
+		"timeout": elements.Element.timeout
 	}
+
+	CAP_NEXT_STATE = {}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [Repy.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
-	
-	class Meta:
-		db_table = "tomato_repy_interface"
-		app_label = 'tomato'
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), Repy)

@@ -3,27 +3,27 @@ from api_helpers import checkauth, getCurrentUserInfo
 from ..lib.remote_info import get_template_info, get_template_list, TemplateInfo
 
 @checkauth
-def template_list(tech=None):
+def template_list(type=None):
 	"""
 	Retrieves information about all resources.
 
-	Parameter *tech*:
-	  If *tech* is set, only resources with a matching tech will be returned.
+	Parameter *type*:
+	  If *type* is set, only resources with a matching type will be returned.
 
 	Return value:
 	  A list with information entries of all matching templates. Each list
 	  entry contains exactly the same information as returned by
 	  :py:func:`template_info`. If no resource matches, the list is empty.
 	"""
-	return get_template_list(tech)
+	return get_template_list(type)
 
-def template_create(tech, name, attrs=None):
+def template_create(type, name, attrs=None):
 	"""
-	Creates a template of given tech and name, configuring it with the given attributes.
+	Creates a template of given type and name, configuring it with the given attributes.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  template techs.
+	Parameter *type*:
+	  The parameter *type* must be a string identifying one of the supported
+	  template types.
 
 	Parameter *name*:
 	  The parameter *name* must be a string giving a name for the template.
@@ -38,7 +38,7 @@ def template_create(tech, name, attrs=None):
 	  returned by :py:func:`resource_info`.
 	"""
 	getCurrentUserInfo().check_may_create_user_resources()
-	return TemplateInfo.create(tech, name, attrs)
+	return TemplateInfo.create(type, name, attrs)
 
 def template_modify(id, attrs):
 	"""

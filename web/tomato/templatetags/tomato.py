@@ -32,7 +32,7 @@ def externalurl(name):
 		return ""
 
 @register.filter
-def tech_to_label(value):
+def type_to_label(value):
 	return ONSCREEN_TYPESTECHS.get(value, value)
 	
 @register.simple_tag

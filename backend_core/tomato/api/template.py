@@ -10,29 +10,29 @@ def _getTemplate(id_):
 
 
 
-def template_list(tech=None):
+def template_list(type=None):
 	"""
 	Retrieves information about all resources.
 
-	Parameter *tech*:
-	  If *tech* is set, only resources with a matching tech will be returned.
+	Parameter *type*:
+	  If *type* is set, only resources with a matching type will be returned.
 
 	Return value:
 	  A list with information entries of all matching templates. Each list
 	  entry contains exactly the same information as returned by
 	  :py:func:`template_info`. If no resource matches, the list is empty.
 	"""
-	res = Template.objects(tech=tech) if tech else Template.objects()
+	res = Template.objects(type=type) if type else Template.objects()
 	return [r.info() for r in res]
 
 
-def template_create(tech, name, attrs=None):
+def template_create(type, name, attrs=None):
 	"""
 	Creates a template of given tech and name, configuring it with the given attributes.
 
-	Parameter *tech*:
-	  The parameter *tech* must be a string identifying one of the supported
-	  template techs.
+	Parameter *type*:
+	  The parameter *type* must be a string identifying one of the supported
+	  template types.
 
 	Parameter *name*:
 	  The parameter *name* must be a string giving a name for the template.
@@ -48,7 +48,7 @@ def template_create(tech, name, attrs=None):
 	"""
 	if not attrs: attrs = {}
 	attrs = dict(attrs)
-	attrs.update(name=name, tech=tech)
+	attrs.update(name=name, type=type)
 	res = Template.create(**attrs)
 	return res.info()
 
@@ -99,11 +99,11 @@ def template_remove(id):
 	return {}
 
 @wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
-def template_id(tech, name):
+def template_id(type, name):
 	"""
-	translate tech and name to a template id
+	translate type and name to a template id
 	"""
-	return str(Template.objects.get(tech=tech, name=name).id)
+	return str(Template.objects.get(type=type, name=name).id)
 
 @wrap_errors(errorcls_func=lambda e: UserError, errorcode=UserError.ENTITY_DOES_NOT_EXIST)
 def template_info(id): #@ReservedAssignment

@@ -16,46 +16,67 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, os.path, abc, time
-from django.db import models
 from threading import Lock
 
+from ..generic import *
+from ..db import *
 from ..lib.cmd import archive
-from ..user import User
+from ..user import User # @UnresolvedImport
 from ..connections import Connection
 from ..accounting import UsageStatistics
-from ..lib import db, attributes, logging, cmd  # @UnresolvedImport
+from ..lib import attributes, logging, cmd  # @UnresolvedImport
 from ..lib.attributes import Attr  # @UnresolvedImport
 from ..lib.decorators import *
 from .. import config, dump, scheduler
 from ..lib.constants import StateName
 
+
+
 TYPES = {}
 REMOVE_ACTION = "(remove)"
 
 
-class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
-	type = models.CharField(max_length=20, validators=[db.nameValidator],
-		choices=[(t, t) for t in TYPES.keys()])  # @ReservedAssignment
-	owner = models.ForeignKey(User, related_name='elements')
-	parent = models.ForeignKey('self', null=True, related_name='children')
-	connection = models.ForeignKey(Connection, null=True, related_name='elements')
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='element')
-	state = models.CharField(max_length=20, validators=[db.nameValidator])
-	timeout = models.FloatField()
-	timeout_attr = Attr("timeout", desc="Timeout", states=[], type="float", null=False)
-	attrs = db.JSONField()
+class Element(LockedStatefulEntity, BaseDocument):
+
+
+	STATES = ['default', StateName.CREATED, StateName.PREPARED, StateName.STARTED]
+
+	owner = ReferenceField(User, null=True)
+	ownerId = ReferenceFieldId(owner)
+	parent = GenericReferenceField(null=True)
+	parentId = ReferenceFieldId(parent)
+	connection = ReferenceField(Connection, reverse_delete_rule=NULLIFY, null=True)
+	connectionId = ReferenceFieldId(connection)
+	usageStatistics = ReferenceField(UsageStatistics)
+	usageStatisticsId = ReferenceFieldId(usageStatistics)
+	state = StringField(choices=STATES, required=True)
+	timeout = FloatField(required=True)
+
+	meta = {
+		'allow_inheritance': True,
+	}
+
+	@property
+	def children(self):
+		return Element.objects(parent=self) if self.id else []
+
+
+
+
+
+	DEFAULT_STATE = 'default'
 
 	DOC = ""
-	CAP_ACTIONS = {}
-	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {"timeout": timeout_attr}
 	CAP_CHILDREN = {}
 	CAP_PARENT = []
 	CAP_CON_CONCEPTS = []
-	DEFAULT_ATTRS = {}
+	DEFAULT_ATTRIBUTES = {}
 
-	class Meta:
-		pass
+	TYPE = None
+
+	@property
+	def type(self):
+		return self.TYPE
 
 	def init(self, parent=None, attrs=None):
 		if not attrs: attrs = {}
@@ -72,13 +93,12 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 				data={"type": self.type})
 		self.parent = parent
 		self.owner = currentUser()
-		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.timeout = time.time() + config.MAX_TIMEOUT
-		self.save()
+		Entity.init(self, **attrs)
 		self.getUsageStatistics()  # triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
-		self.modify(attrs)
+		self.save()
 
 	def dumpException(self, **kwargs):
 		try:
@@ -164,7 +184,7 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 			"Refusing to set timeout too far into the future")
 		self.timeout = value
 
-	def modify(self, attrs):
+	def modify(self, **attrs):
 		"""
 		Sets the given attributes to their given values. This method first
 		checks if the change can be made using checkModify() and then executes
@@ -178,33 +198,27 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""
-		self.checkModify(attrs)
-		logging.logMessage("modify", category="element", id=self.id, attrs=attrs)
+		logging.logMessage("modify", category="element", id=str(self.id), attrs=attrs)
 		self.setBusy(True)
 		try:
-			for key, value in attrs.iteritems():
-				getattr(self, "modify_%s" % key)(value)
-		except InternalError, exc:
-			self.dumpException()
-			raise
+			Entity.modify(self, **attrs)
 		finally:
 			self.setBusy(False)
-		self.save()
-		logging.logMessage("info", category="element", id=self.id, info=self.info())
+		logging.logMessage("info", category="element", id=str(self.id), info=self.info())
 
 	def checkAction(self, action):
 		"""
 		Checks if the action can be executed. This method checks if the action
-		is listed in CAP_ACTIONS and if the current state is listed in
-		CAP_ACTIONS[action].
+		is listed in ACTIONS and if the current state is listed in
+		ACTIONS[action].
 
 		@param action: Action to check
 		@type action: str
 		"""
 		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
-		UserError.check(action in self.CAP_ACTIONS, UserError.UNSUPPORTED_ACTION, "Unsuported action",
+		UserError.check(action in self.ACTIONS, UserError.UNSUPPORTED_ACTION, "Unsuported action",
 			data={"element_type": self.type, "action": action})
-		UserError.check(self.state in self.CAP_ACTIONS[action], UserError.INVALID_STATE,
+		UserError.check(self.state in self.ACTIONS[action], UserError.INVALID_STATE,
 			"Action can not be executed in this state",
 			data={"action": action, "element_type": self.type, "state": self.state})
 
@@ -223,32 +237,22 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 		@param params: Parameters for the action
 		@type params: dict
 		"""
-		self.checkAction(action)
-		logging.logMessage("action start", category="element", id=self.id, action=action, params=params)
+		logging.logMessage("action start", category="element", id=str(self.id), action=action, params=params)
 		self.setBusy(True)
-		try:
-			res = getattr(self, "action_%s" % action)(**params)
-		except InternalError, exc:
-			self.dumpException()
-			raise
-		finally:
-			self.setBusy(False)
-		self.save()
-		if action in self.CAP_NEXT_STATE:
-			InternalError.check(self.state == self.CAP_NEXT_STATE[action], InternalError.INVALID_NEXT_STATE,
-				"Action lead to wrong state",
-				data={"action": action, "element_type": self.type,
-					"expected_state": self.CAP_NEXT_STATE[action], "reached_state": self.state})
-		logging.logMessage("action end", category="element", id=self.id, action=action, params=params, res=res)
-		logging.logMessage("info", category="element", id=self.id, info=self.info())
+		res = Entity.action(self, action, params)
+
+		InternalError.check(self.state == self.ACTIONS.get(action).stateChange, InternalError.INVALID_NEXT_STATE,
+			"Action lead to wrong state",
+			data={"action": action, "element_type": self.type,
+				"expected_state": self.ACTIONS.get(action).stateChange, "reached_state": self.state})
+		logging.logMessage("action end", category="element", id=str(self.id), action=action, params=params, res=res)
+		logging.logMessage("info", category="element", id=str(self.id), info=self.info())
 		return res
 
 	def checkRemove(self, recurse=True):
 		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
 		UserError.check(recurse or self.children.empty(), UserError.INVALID_STATE, "Cannot remove element with children")
-		UserError.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION],
-			UserError.INVALID_STATE, "Element can not be removed in its current state",
-			data={"element_type": self.type, "state": self.state})
+		Entity.checkAction(self, "remove")
 		for ch in self.getChildren():
 			ch.checkRemove(recurse=recurse)
 		if self.connection:
@@ -263,8 +267,8 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 
 	def remove(self, recurse=True):
 		self.checkRemove(recurse)
-		logging.logMessage("info", category="element", id=self.id, info=self.info())
-		logging.logMessage("remove", category="element", id=self.id)
+		logging.logMessage("info", category="element", id=str(self.id), info=self.info())
+		logging.logMessage("remove", category="element", id=str(self.id))
 		if self.parent:
 			self.getParent().onChildRemoved(self)
 		for ch in self.getChildren():
@@ -279,7 +283,7 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 		return self.parent.upcast() if self.parent else None
 
 	def getChildren(self):
-		return [el.upcast() for el in self.children.all()]
+		return [el.upcast() for el in self.children]
 
 	def getConnection(self):
 		return self.connection.upcast() if self.connection else None
@@ -323,29 +327,53 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 
 	@classmethod
 	def cap_attrs(cls):
-		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
+		return dict([(key, value) for (key, value) in cls.CAP_ATTRS.iteritems()])
 
 	def info(self):
 		res = {
-			"id": self.id,
+			"id": str(self.id),
 			"type": self.type,
-			"parent": self.parent.id if self.hasParent() else None,
+			"parent": str(self.parent.id) if self.hasParent() else None,
 			"state": self.state,
 			"timeout": self.timeout,
-			"attrs": self.attrs.copy(),
-			"children": [ch.id for ch in self.getChildren()],
-			"connection": self.connection.id if self.connection else None,
+			"attrs": Entity.info(self),
+			"children": [str(ch.id) for ch in self.getChildren()],
+			"connection": str(self.connection.id) if self.connection else None,
 		}
 		res['attrs']['rextfv_supported'] = False
 		return res
 
+	ACTIONS = {
+		Entity.REMOVE_ACTION: StatefulAction(remove, check=checkRemove)
+	}
+
 	def updateUsage(self, usage, data):
 		pass
 
+	def modify_connection(self, connectionId=None):
+		self.connection = connectionId
 
-class RexTFVElement:
+	def modify_parent(self, parentId=None):
+		self.parent = parentId
+
+	def modify_owner(self, ownerName):
+		self.owner = User.objects(name=ownerName)
+
+
+	ATTRIBUTES = {
+		"timeout": Attribute(field=timeout, set=modify_timeout, schema=schema.Number(null=False))
+	}
+
+
+
+
+class RexTFVElement(BaseDocument):
 	lock = Lock()
 	rextfv_max_size = None
+
+	meta = {
+		'allow_inheritance': True
+	}
 
 	@abc.abstractmethod
 	def _nlxtp_path(self, filename):
@@ -478,6 +506,8 @@ class RexTFVElement:
 		return res
 
 
+
+
 def get(id_, **kwargs):
 	try:
 		el = Element.objects.get(id=id_, **kwargs)
@@ -487,14 +517,14 @@ def get(id_, **kwargs):
 
 
 def getAll(**kwargs):
-	return (el.upcast() for el in Element.objects.filter(**kwargs))
-
+	return (el.upcast() for el in Element.objects(**kwargs))
 
 def create(type_, parent=None, attrs=None):
 	if not attrs: attrs = {}
 	UserError.check(type_ in TYPES, UserError.UNSUPPORTED_TYPE, "Unsupported type", data={"type": type_})
 	UserError.check(not parent or parent.owner == currentUser(), UserError.DIFFERENT_USER,
 		"Parent element belongs to different user")
+
 	el = TYPES[type_]()
 	try:
 		el.init(parent, attrs)
@@ -504,8 +534,8 @@ def create(type_, parent=None, attrs=None):
 		raise
 	if parent:
 		parent.onChildAdded(el)
-	logging.logMessage("create", category="element", id=el.id)
-	logging.logMessage("info", category="element", id=el.id, info=el.info())
+	logging.logMessage("create", category="element", id=str(el.id))
+	logging.logMessage("info", category="element", id=str(el.id), info=el.info())
 	return el
 
 
