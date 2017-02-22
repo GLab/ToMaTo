@@ -68,7 +68,7 @@ class TemplateTestCase(ProxyHoldingTestCase):
 
 		self.proxy_holder.backend_core.template_create(self.testtemplate_type, self.testtemplate_name, self.testtemplate_attrs)
 
-		self.testtemplate_id = self.proxy_holder.backend_core.template_id(tech=self.testtemplate_type, name=self.testtemplate_name)
+		self.testtemplate_id = self.proxy_holder.backend_core.template_id(type=self.testtemplate_type, name=self.testtemplate_name)
 
 
 	def tearDown(self):
