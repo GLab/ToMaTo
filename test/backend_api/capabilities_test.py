@@ -61,7 +61,7 @@ class CapabilitiesTestCase(ProxyHoldingTestCase):
 			"template":  self.test_temps[0]['name']
 			}
 
-		self.testelement = self.proxy_holder.backend_core.element_create(top=self.testtopology_id, type=self.test_temps[0]['tech'], attrs=self.testelement_attrs)
+		self.testelement = self.proxy_holder.backend_core.element_create(top=self.testtopology_id, type=self.test_temps[0]['type'], attrs=self.testelement_attrs)
 		self.testelement_id = self.testelement['id']
 
 		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "start")
