@@ -166,7 +166,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "stop")
 
 		self.testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																				  type=self.testelement['tech'] + "_interface",
+																				  type=self.testelement['type'] + "_interface",
 																				  parent=self.testelement_id)
 
 		element_info_api = self.proxy_holder.backend_api.element_info(self.testelement_id,fetch=True)
@@ -207,7 +207,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.proxy_holder.backend_core.element_action(self.testelement_id, "destroy")
 
 		testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																					type=self.testelement['tech'] + "_interface",
+																					type=self.testelement['type'] + "_interface",
 																					parent=self.testelement_id)
 
 		self.proxy_holder.backend_api.element_remove(self.testelement_id)
@@ -357,7 +357,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "stop")
 
 		testelement_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		type=self.testelement['tech']+"_interface",
+																		type=self.testelement['type']+"_interface",
 																		parent=self.testelement_id)
 		testelement_interface_id = testelement_interface["id"]
 

@@ -72,7 +72,7 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		cls.testelement2_id = cls.testelement2['id']
 
 		cls.testelement2_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['type']+"_interface",
+																		type=cls.testelement2['type']+"_interface",
 																		parent=cls.testelement2_id)
 		cls.testelement2_interface_id = cls.testelement2_interface["id"]
 
@@ -88,22 +88,22 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		cls.testelement3_id = cls.testelement3['id']
 
 		cls.testelement3_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['type']+"_interface",
+																		type=cls.testelement3['type']+"_interface",
 																		parent=cls.testelement3_id)
 		cls.testelement3_interface_id = cls.testelement3_interface["id"]
 		
 		cls.testelement1_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																				  type=cls.testelement1['tech'] + "_interface",
+																				  type=cls.testelement1['type'] + "_interface",
 																				  parent=cls.testelement1_id)
 		cls.testelement1_interface_id = cls.testelement1_interface["id"]
 
 		cls.testelement1_interface_2 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																				  type=cls.testelement1['tech'] + "_interface",
+																				  type=cls.testelement1['type'] + "_interface",
 																				  parent=cls.testelement1_id)
 		cls.testelement1_interface_2_id = cls.testelement1_interface_2["id"]
 
 		cls.testelement2_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																				  type=cls.testelement1['tech'] + "_interface",
+																				  type=cls.testelement1['type'] + "_interface",
 																				  parent=cls.testelement2_id)
 		cls.testelement2_interface_id = cls.testelement2_interface["id"]
 
