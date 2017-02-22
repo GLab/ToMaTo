@@ -16,13 +16,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os.path, sys
+
+from django.db import models
 from ..generic import *
 from ..db import *
 from .. import connections, elements, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
-from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
+from ..lib.cmd import fileserver, archive, process, net, path, CommandError #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.constants import ActionName, StateName, TechName
@@ -322,7 +324,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		imgPath = self._imagePath()
 		path.remove(imgPath, recursive=True)
 		path.createDir(imgPath)
-		path.extractArchive(path_, imgPath)
+		archive.extract(path_, imgPath)
 
 	def _checkImage(self, path_):
 		res = cmd.run(["tar", "-tzvf", path_, "./sbin/init"])
@@ -509,7 +511,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
 			os.remove(self.dataPath("download.tar.gz"))
-		cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
+		archive.pack(self._imagePath(), self.dataPath("download.tar.gz", True, archive.ArchiveTypes.TARGZ))
 		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 	
 	def action_rextfv_download_grant(self):

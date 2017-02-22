@@ -20,6 +20,7 @@ from threading import Lock
 
 from ..generic import *
 from ..db import *
+from ..lib.cmd import archive
 from ..user import User # @UnresolvedImport
 from ..connections import Connection
 from ..accounting import UsageStatistics
@@ -27,7 +28,6 @@ from ..lib import attributes, logging, cmd  # @UnresolvedImport
 from ..lib.attributes import Attr  # @UnresolvedImport
 from ..lib.decorators import *
 from .. import config, dump, scheduler
-from ..lib.cmd import path  # @UnresolvedImport
 from ..lib.constants import StateName
 
 
@@ -424,7 +424,7 @@ class RexTFVElement(BaseDocument):
 					self._clear_nlxtp_contents__already_mounted()
 				if not os.path.exists(self._nlxtp_path("")):
 					os.makedirs(self._nlxtp_path(""))
-				path.extractArchive(filename, self._nlxtp_path(""), ["--no-same-owner"])
+				archive.extract(filename, self._nlxtp_path(""), True)
 			finally:
 				self._nlxtp_close()
 
@@ -441,7 +441,7 @@ class RexTFVElement(BaseDocument):
 				tar_success = False
 				while tries_left > 0:
 					try:
-						cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
+						archive.pack(self._nlxtp_path(""), filename, True, archive.ArchiveTypes.TARGZ)
 						tar_success = True
 						break
 					except:
