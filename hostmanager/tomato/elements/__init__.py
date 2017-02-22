@@ -30,6 +30,8 @@ from .. import config, dump, scheduler
 from ..lib.cmd import path  # @UnresolvedImport
 from ..lib.constants import StateName
 
+
+
 TYPES = {}
 REMOVE_ACTION = "(remove)"
 
@@ -92,10 +94,11 @@ class Element(LockedStatefulEntity, BaseDocument):
 		self.parent = parent
 		self.owner = currentUser()
 		self.timeout = time.time() + config.MAX_TIMEOUT
+		Entity.init(self, **attrs)
 		self.getUsageStatistics()  # triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
-		Entity.init(self, **attrs)
+		self.save()
 
 	def dumpException(self, **kwargs):
 		try:

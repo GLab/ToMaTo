@@ -25,13 +25,14 @@ from ..lib.newcmd import aria2
 from ..lib.newcmd.util import fs
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, threading
-from ..lib.constants import TypeName,TechName
+from ..lib.constants import TypeName, TechName
 
 PATTERNS = {
-	TypeName.KVMQM: "%s.qcow2",
-	TypeName.KVM: "%s.qcow2",
-	TypeName.OPENVZ: "%s.tar.gz",
-	TypeName.LXC: "%s.tar.gz",
+	TechName.KVMQM: "%s.qcow2",
+	TechName.KVM: "%s.qcow2",
+	TechName.OPENVZ: "%s.tar.gz",
+	TechName.LXC: "%s.tar.gz",
+	TypeName.REPY: "%s.repy",
 }
 
 class Template(resources.Resource):
@@ -131,7 +132,6 @@ class Template(resources.Resource):
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
-		info["attrs"]["kblang"] = self.kblang
 		info["attrs"]["urls"] = self.urls
 		info["attrs"]["checksum"] = self.checksum
 		info["attrs"]["size"] = self.size

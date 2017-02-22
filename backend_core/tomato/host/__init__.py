@@ -270,7 +270,7 @@ class Host(Entity, BaseDocument):
 					sch = schema.Bool(**params)
 				else:
 					sch = schema.Any(**params)
-				res[attr] = StatefulAttribute(writableStates=desc.get('states'), label=desc.get('desc'), schema=sch, default=desc.get('default')).info()
+				res[attr] = StatefulAttribute(writableStates=desc.get('states'), readOnly=desc.get('read_only'), label=desc.get('desc'), schema=sch, default=desc.get('default')).info()
 			return res
 		elems = {}
 		for name, info in caps['elements'].items():
@@ -404,6 +404,7 @@ class Host(Entity, BaseDocument):
 	def grantUrl(self, grant, action):
 		return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
 
+
 	def synchronizeResources(self, forced=False):
 		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL] and not forced:
 			return
@@ -432,7 +433,7 @@ class Host(Entity, BaseDocument):
 					logging.logMessage("network update", category="host", name=self.name, network=attrs)
 		tpls = {}
 		for tpl in self.getProxy().resource_list("template"):
-			tpls[(tpl["attrs"]["type"], tpl["attrs"]["name"])] = tpl
+			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
 			type_ = tpl.type
@@ -470,10 +471,10 @@ class Host(Entity, BaseDocument):
 			# check for completeness
 			for el in self.elements.all():
 				if not str(el.num) in orig_data["elements"]:
-					print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (str(el.num), self.name)
+					print >>sys.stderr, "Missing accounting data for element #%s on host %s" % (str(el.num), self.name)
 			for con in self.connections.all():
 				if not str(con.num) in orig_data["connections"]:
-					print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (str(con.num), self.name)
+					print >>sys.stderr, "Missing accounting data for connection #%s on host %s" % (str(con.num), self.name)
 					continue
 
 			# transform
@@ -838,7 +839,7 @@ def synchronizeHost(host_name):
 				host.update()
 				host.synchronizeResources()
 			except Exception as e:
-				print >>sys.stderr, "Error updating host information from %s" % host
+				print >>sys.stderr, "Error updating host information from %s" % host_name
 				if isinstance(e, TransportError):
 					e.todump = False
 				else:
@@ -866,7 +867,7 @@ def updateAccounting(host_name):
 	try:
 		host.updateAccountingData()
 	except Exception as e:
-		print >>sys.stderr, "Error updating accounting information from %s" % host
+		print >>sys.stderr, "Error updating accounting information from %s" % host_name
 		if isinstance(e, TransportError):
 			e.todump = False
 		else:

@@ -233,7 +233,7 @@ class KVM(elements.Element, elements.RexTFVElement):
 						 vncport=self.vncport,
 						 vncpassword=self.vncpassword,
 						 keyboard=self.kblang)
-		self.vir.writeInitialConfig(TypeName.KVM, self.vmid)
+		self.vir.writeInitialConfig(TechName.KVM, self.vmid)
 		self.setState(StateName.PREPARED, True)
 		for interface in self.getChildren():
 			self._addInterface(interface)

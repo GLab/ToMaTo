@@ -133,21 +133,6 @@ class Repy(elements.Element):
 	template = ReferenceField(template.Template, null=True)
 	templateId = ReferenceFieldId(template)
 
-	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
-	ATTRIBUTES.update({
-		"pid": Attribute(field=pid, readOnly=True, schema=schema.Int()),
-		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
-		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
-		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
-		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
-		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
-		"args": Attribute(field=args, description="Arguments", schema = schema.List(), default=[]),
-		"args_doc": Attribute(field=args_doc, description="Arguments Documentation", readOnly=True),
-		"cpus": Attribute(field=cpus, description="Number of CPUs", schema=schema.Int(minValue=1,maxValue=4), default=1),
-		"ram": Attribute(field=ram, description="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
-		"bandwidth": Attribute(field=bandwidth, description="Bandwidth in bytes/s", schema=schema.Int(minValue=1024, maxValue=10000000000), default=1000000),
-		"template": Attribute(field=templateId, description="Template", schema=schema.Identifier()),
-	})
 
 	TYPE = TypeName.REPY
 
@@ -163,17 +148,16 @@ class Repy(elements.Element):
 	@property
 	def type(self):
 		return self.TYPE
-	
+
 	def init(self, *args, **kwargs):
 		self.state = StateName.PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
-		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
 		if not self.template:
 			self.modify_template("") #use default template
-		self._setProfile()
+		self.modify(**args[1])
 
 	def _getState(self):
 		if self.pid and process.exists(self.pid):
@@ -186,10 +170,15 @@ class Repy(elements.Element):
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
 		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state of element was wrong",
-			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_State": realState})
+			data={"type": self.type, "id": str(self.id), "saved_state": savedState, "real_State": realState})
 
 	def _interfaceName(self, name):
-		return TypeName.REPY + "%d%s" % (self.id, name)
+		#Linux only allows interface names of 15 bytes, so we have to compromise:
+		#Use technology identifier + part of the object id.
+		#Since the object id is a 24 symbol long hexadezimal representation of the 12 byte mongoengine object id,
+		#We use the last 6 symbols which are hopefully individual as identifier
+		#We force interfacenames to be max length of 4
+		return TypeName.REPY + "%s%s" % (str(self.id)[18:24], name)
 
 	def _template(self):
 		if self.template:
@@ -343,6 +332,22 @@ class Repy(elements.Element):
 				cputime += process.cputime(self.vncpid)
 			usage.updateContinuous("cputime", cputime, data)
 
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"pid": Attribute(field=pid, readOnly=True, schema=schema.Int()),
+		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
+		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
+		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
+		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
+		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
+		"args": Attribute(field=args, description="Arguments", set=modify_args, schema = schema.List(), default=[]),
+		"args_doc": Attribute(field=args_doc, description="Arguments Documentation", readOnly=True),
+		"cpus": Attribute(field=cpus, description="Number of CPUs", set=modify_cpus, schema=schema.Number(minValue=1,maxValue=4), default=1),
+		"ram": Attribute(field=ram, description="RAM", set=modify_ram, schema=schema.Int(minValue=64, maxValue=8192), default=256),
+		"bandwidth": Attribute(field=bandwidth, description="Bandwidth in bytes/s", set=modify_bandwidth, schema=schema.Int(minValue=1024, maxValue=10000000000), default=1000000),
+		"template": Attribute(field=templateId, description="Template", set=modify_template, schema=schema.Identifier()),
+	})
+
 	ACTIONS = elements.Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
@@ -387,14 +392,14 @@ Actions: None
 
 class Repy_Interface(elements.Element):
 
-	name = StringField(regex="^eth[0-9]+$")
+	name = StringField(regex="^eth[0-9]+$", max_length=4)
 	ipspy_pid = IntField()
 	used_addresses = ListField(default=[])
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
 		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
-		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$"), readOnly=True),
+		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$", maxLength=4), readOnly=True),
 		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
 	})
 

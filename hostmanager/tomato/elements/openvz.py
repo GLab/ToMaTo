@@ -404,7 +404,6 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 
 	def action_prepare(self):
 		self._checkState()
-
 		templ = self._template()
 		templ.fetch()
 		tplPath = templ.getPath()
