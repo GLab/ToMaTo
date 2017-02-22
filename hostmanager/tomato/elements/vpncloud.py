@@ -35,31 +35,18 @@ class VpnCloud(elements.Element):
 	network_id = IntField()
 	peers = ListField(default=[])
 
-	ATTRIBUTES = {
-		"port": Attribute(field=port, schema=schema.Int()),
-		"pid": Attribute(field=pid, schema=schema.Int()),
-		"network_id": Attribute(field=network_id, schema=schema.Int()),
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"port": Attribute(field=port, schema=schema.Int(), readOnly=True),
+		"pid": Attribute(field=pid, schema=schema.Int(null=True), readOnly=True),
+		"network_id": Attribute(field=network_id,  description="Network ID", schema=schema.Int()),
 		"peers": Attribute(field=peers, description="Peers", schema=schema.List(), default=[])
-	}
+	})
 
 
 
 	TYPE = TypeName.VPNCLOUD
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
 
-	CAP_ATTRS = {
-		"network_id": network_id,
-		"peers": peers,
-	}
-
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
@@ -67,14 +54,17 @@ class VpnCloud(elements.Element):
 	DOC = DOC
 	__doc__ = DOC
 
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 
 	def _interfaceName(self):
-		return TypeName.VPNCLOUD + "%d" % self.id
+		return TypeName.VPNCLOUD + "%s" % str(self.id)
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None
@@ -115,7 +105,18 @@ class VpnCloud(elements.Element):
 			if not trafficA is None and not trafficB is None:
 				traffic = trafficA + trafficB
 				usage.updateContinuous("traffic", traffic, data)
-			
+
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+	})
+
 if not config.MAINTENANCE:
 	if vpncloud.isSupported():
 		elements.TYPES[VpnCloud.TYPE] = VpnCloud

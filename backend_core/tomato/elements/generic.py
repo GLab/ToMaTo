@@ -26,6 +26,7 @@ from .. import elements, host
 from ..lib.error import UserError, InternalError
 import time
 from ..lib.constants import StateName, ActionName, TypeTechTrans
+from ..lib.references import Reference
 
 ST_CREATED = StateName.CREATED
 ST_PREPARED = StateName.PREPARED
@@ -252,7 +253,7 @@ class VMElement(Element):
 	ACTIONS = Element.ACTIONS.copy()
 	ACTIONS.update({
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
-		ActionName.START: StatefulAction(action_start, allowedStates=[ST_CREATED, ST_PREPARED], stateChange=ST_STARTED),
+		ActionName.START: StatefulAction(action_start, after=after_start, allowedStates=[ST_CREATED, ST_PREPARED], stateChange=ST_STARTED),
 		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
 		ActionName.PREPARE: StatefulAction(action_prepare, check=Element.checkTopologyTimeout, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
 		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED, ST_STARTED], stateChange=ST_CREATED),
@@ -265,14 +266,16 @@ class MultiTechVMElement(VMElement):
 	tech = StringField(required=False, default=None)
 
 	def modify_tech(self, tech):
-		if tech is not None:
+		if tech:
 			UserError.check(tech in self.TECHS, UserError.INVALID_VALUE, "tech '%s' not supported for type '%s'" % (tech, self.TYPE), data={"tech": tech, "type": self.TYPE})
-		self.tech = tech
+			self.tech = tech
+		else:
+			self.tech = None
 
 	def _get_elementTypeConfigurations(self):
 		if self.tech:
 			return [[self.tech, TypeTechTrans.TECH_TO_CHILD_TECH[self.tech]]]
-		return [[k, v] for k, v in TypeTechTrans.TECH_TO_CHILD_TECH.iteritems()]
+		return [[k, v] for k, v in TypeTechTrans.TECH_TO_CHILD_TECH.iteritems() if k in self.TECHS]
 
 	def get_tech_attribute(self):
 		return self.element.type if self.element else self.tech
@@ -285,11 +288,11 @@ class MultiTechVMElement(VMElement):
 				if tech in _host.elementTypes:
 					return tech
 		raise InternalError(code=InternalError.ASSERTION, message="selected host doesn't match element requirement",
-		                    data={"type": self.TYPE, "host": _host.name})
+		                    data={"type": self.TYPE, "host": _host.name, "ref": Reference.host(_host.name)})
 
 	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"tech": StatefulAttribute(get=lambda self: self.get_tech_attribute(), label="Tech", set=modify_tech, writableStates=[ST_CREATED], schema=schema.Identifier())
+		"tech": StatefulAttribute(get=lambda self: self.get_tech_attribute(), label="Tech", set=modify_tech, writableStates=[ST_CREATED])
 	})
 
 class VMInterface(Element):

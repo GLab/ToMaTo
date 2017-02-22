@@ -1,15 +1,15 @@
 [
-    {"tech":"openvz",
+    {"type":"container",
      "site":"ukl",
      "template":"debian-8",
      "packets":["python", "python-pip"]
     },
-    {"tech":"openvz",
+    {"type":"container",
      "site":"ukl",
      "template":"ubuntu-14.04",
      "packets":["python", "python-pip"]
     },
-    {"tech":"openvz",
+    {"type":"container",
      "site":"ukl",
      "template":"ubuntu-16.04",
      "packets":["python", "python-pip"]

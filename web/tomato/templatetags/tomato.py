@@ -5,7 +5,6 @@ from django import template
 from ..lib import getVersion, serverInfo, security_token
 from django.utils.safestring import mark_safe
 from ..lib import anyjson as json
-from ..lib.reference_library import tech_to_label as lib_tech_to_label
 
 from ..lib.settings import get_settings
 from .. import settings as config_module
@@ -33,8 +32,8 @@ def externalurl(name):
 		return ""
 
 @register.filter
-def tech_to_label(value):
-	return lib_tech_to_label(value)
+def type_to_label(value):
+	return ONSCREEN_TYPESTECHS.get(value, value)
 	
 @register.simple_tag
 def backend_version():

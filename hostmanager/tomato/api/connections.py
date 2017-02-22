@@ -107,8 +107,8 @@ def connection_modify(id, attrs):  # @ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection type
 	  and state.
 	"""
-	con = _getConnection(int(id))
-	con.modify(attrs)
+	con = _getConnection(str(id))
+	con.modify(**attrs)
 	return con.info()
 
 
@@ -146,7 +146,7 @@ def connection_action(id, action, params=None):  # @ReservedAssignment
 	"""
 	if not params:
 		params = {}
-	con = _getConnection(int(id))
+	con = _getConnection(str(id))
 	res = con.action(action, params)
 	return res
 
@@ -172,7 +172,7 @@ def connection_remove(id):  # @ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection type
 	  and state.
 	"""
-	con = _getConnection(int(id))
+	con = _getConnection(str(id))
 	con.remove()
 
 
@@ -211,7 +211,7 @@ def connection_info(id):  # @ReservedAssignment
 	  If the given connection does not exist or belongs to another owner
 	  an exception *connection does not exist* is raised.
 	"""
-	con = _getConnection(int(id))
+	con = _getConnection(str(id))
 	return con.info()
 
 

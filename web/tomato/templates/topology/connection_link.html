@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+{% load tomato %}
+
+{% block title %}
+<title>Connection Link - ToMaTo Testbed</title>
+{% endblock %}
+
+{% block page %}
+<h2 style="text-align: center">{{conn.label|safe}}</h2>
+{% if conn.link_statistics %}
+    <h4 style="text-align: center">{{conn.link_statistics.distance}} connection</h4>
+    {% if conn.link_statistics.statistics %}
+        <iframe
+            src="{% url 'tomato.site_map.details_link' conn.link_statistics.siteA conn.link_statistics.siteB %}"
+            style="width:768px; height:545px; border: none;
+            margin-left: auto; margin-right: auto; display: block;"
+        ></iframe>
+    {% else %}
+        <div class="alert alert-success text-center" style="margin-top: 100px; margin-left: 20%; margin-right: 20%;">
+            <h4 class="alert-heading">This is an intra-host connection.</h4>
+            <p>The connectivity inside a single host is not measured.</p>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="alert alert-warning text-center" style="margin-top: 100px; margin-left: 20%; margin-right: 20%;">
+        <h4 class="alert-heading">No statistics available</h4>
+        <p>There are no statistics available for this link. Most likely, the connected elements have not been prepared yet.</p>
+    </div>
+{% endif %}
+{% endblock %}

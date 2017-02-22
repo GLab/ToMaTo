@@ -90,6 +90,12 @@
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
+
+			{% if templ.args_doc %}
+				<img src="/img/doc.png" />
+			{% else %}
+		    	<img src="/img/invisible16.png" />
+		    {%endif%}
 		    
 		    {% if templ.show_as_common %}
 		    	<img src="/img/tick.png"/>
@@ -109,7 +115,7 @@
 		    	<img src="/img/invisible16.png" />
 			{% endif %}
 
-			{% if templ.description or templ.show_as_common or not templ.nlXTP_installed and templ.type != 'repy' or templ.restricted %}
+			{% if templ.description or templ.show_as_common or not templ.nlXTP_installed and templ.type != 'repy' or templ.restricted or templ.args_doc %}
 				<div class="hiddenbox"><table>
 				{% if templ.description %}
 					<tr>
@@ -117,6 +123,13 @@
 						<td>{{ templ.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 					</tr>
 				{%endif%}
+
+				{% if templ.args_doc %}
+					<tr>
+						<td><img src="/img/doc.png" /></td>
+						<td><pre style="border: 0px; background: transparent;">{{ templ.args_doc}}</pre></td>
+					</tr>
+				{% endif %}
 
 				{% if templ.show_as_common %}
 					<tr>

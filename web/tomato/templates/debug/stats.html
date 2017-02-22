@@ -12,6 +12,35 @@
 
 <div class="skip-sm"></div>
 
+{% if stats.problems %}
+
+<div class="alert alert-danger">This service is experiencing the following problems:
+	<ul>
+		{% for problem in stats.problems %}
+			<li>{{problem}}</li>
+		{% endfor %}
+	</ul>
+</div>
+
+<div class="skip-sm"></div>
+{% endif %}
+
+{% if stats.system %}
+<h2>System</h2>
+
+<table class="table table-striped">
+	<tr>
+		<th>Memory (available)</th>
+		<th>Diskspace (available)</th>
+	</tr>
+	<tr>
+		<td>{{stats.system.memory.avail}} MiB / {{stats.system.memory.total}} MiB</td>
+		<td>{{stats.system.filesystem.avail}} MiB / {{stats.system.filesystem.total}} MiB</td>
+	</tr>
+</table>
+<div class="skip-sm"></div>
+{% endif %}
+
 {% if stats.db %}
 <h2>Database</h2>
 

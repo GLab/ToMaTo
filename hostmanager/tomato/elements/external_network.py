@@ -58,11 +58,14 @@ class External_Network(elements.Element):
 	network = ReferenceField(Network, reverse_delete_rule=DENY)
 	networkId = ReferenceFieldId(network)
 
-	ACTIONS = {
-	}
-	ATTRIBUTES = {
+
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
 		"network": Attribute(field=networkId, schema=schema.Identifier()),
-	}
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
 
 	ST_DEFAULT = "default"
 	TYPE = TypeName.EXTERNAL_NETWORK
@@ -70,10 +73,6 @@ class External_Network(elements.Element):
 		"__remove__": [ST_DEFAULT],
 	}
 
-	CAP_ATTRS = {
-		"network": network,
-		"timeout": elements.Element.timeout
-	}
 
 	CAP_NEXT_STATE = {}
 	CAP_CHILDREN = {}
@@ -82,9 +81,12 @@ class External_Network(elements.Element):
 	DEFAULT_ATTRS = {}
 	DOC = DOC
 
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = self.ST_DEFAULT
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		#network: None, default network
@@ -104,7 +106,6 @@ class External_Network(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["network"] = self.network.kind if self.network else None
 		return info
 
 	def bridgeName(self):

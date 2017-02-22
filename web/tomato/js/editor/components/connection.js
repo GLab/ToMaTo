@@ -6,6 +6,7 @@ var Connection = Component.extend({
 		this._super(topology, data, canvas);
 		this.elements = [];
 		this.segment = -1;
+		this.helpTarget = "http://tomato-lab.org/manuals/user/connection/"
 	},
 	fromElement: function() {
 		return this.elements[0].id < this.elements[1].id ? this.elements[0] : this.elements[1];
@@ -50,12 +51,25 @@ var Connection = Component.extend({
 		var pos2 = this.fromElement().getAbsPos();
 		return Raphael.angle(pos1.x, pos1.y, pos2.x, pos2.y);
 	},
+	getHandleColor: function() {
+		if (this.data.link_statistics == null) {  // links that have not been deployed
+			return "#CDCDB3";
+		} else if (this.data.link_statistics.distance == "intra-host") {
+			return "#63dd37";
+		} else if (this.data.link_statistics.distance == "intra-site") {
+			return "#e8e417";
+		} else if (this.data.link_statistics.distance == "inter-site") {
+			return "#e28706";
+		} else {  // unexpected value
+			return "#474747";
+		}
+	},
 	paint: function() {
 		this.path = this.canvas.path(this.getPath());
 		this.path.toBack();
 		var pos = this.getAbsPos();
 		var width = settings.connectionHandleWidth;
-		this.handle = this.canvas.rect(pos.x-(width/2), pos.y-(width/2), width, width).attr({fill: "#4040FF", transform: "R"+this.getAngle()});
+		this.handle = this.canvas.rect(pos.x-(width/2), pos.y-(width/2), width, width).attr({fill: this.getHandleColor(), transform: "R"+this.getAngle()});
 		$(this.handle.node).attr("class", "tomato connection");
 		this.handle.node.obj = this;
 		var t = this;
@@ -86,7 +100,7 @@ var Connection = Component.extend({
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
 		var width = settings.connectionHandleWidth;
-		this.handle.attr({x: pos.x-(width/2), y: pos.y-(width/2), transform: "R"+this.getAngle()});
+		this.handle.attr({x: pos.x-(width/2), y: pos.y-(width/2), transform: "R"+this.getAngle(), fill: this.getHandleColor()});
 		if (this.editor.options.show_connection_controls) {
 			this.handle.attr({'width': width});  //fixme: this should be a global parameter
 		} else {
@@ -127,6 +141,10 @@ var Connection = Component.extend({
 			var url = "http://" + con.data.host_info.address + ":" + con.data.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name);
 			window.location.href = url;
 		}})
+	},
+	showLinkInfo: function() {
+		window.open('../connection/'+this.id+'/link', '_blank', "innerWidth=768,innerheight=700,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+		this.triggerEvent({operation: "console-dialog"});
 	},
 	/*
 	viewCapture: function() {
@@ -170,7 +188,8 @@ var Connection = Component.extend({
 					t.configWindow.remove();
 					t.configWindow = null;
 				} 
-			}
+			},
+			helpTarget: this.helpTarget
 		}, this);
 		this.configWindow.show();
 		this.triggerEvent({operation: "attribute-dialog"});

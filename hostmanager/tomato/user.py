@@ -18,7 +18,7 @@
 from .db import *
 from .generic import *
 
-class User(BaseDocument):
+class User(Entity, BaseDocument):
 	name = StringField(required=True) #@ReservedAssignment
 	# elements: [Element]
 	# connections: [Connection]
@@ -29,6 +29,14 @@ class User(BaseDocument):
 		"id": IdAttribute(),
 		"name": Attribute(field=name, schema=schema.String())
 	}
+
+	meta = {
+		'ordering': ['name'],
+		'indexes': [
+			'name'
+		]
+	}
+
 
 	@property
 	def elements(self):

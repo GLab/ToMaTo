@@ -17,18 +17,34 @@
 
 from ..generic import *
 from .. import elements, host
+from ..db import *
 from .generic import ST_CREATED, ST_PREPARED, VMElement, VMInterface
 from ..lib.error import UserError
 from ..lib.constants import TypeName, ActionName
 
 class Repy(VMElement):
 	TYPE = TypeName.REPY
+
+	args_doc = StringField()
+
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "bandwidth", "timeout", "template"]
 	CAP_CHILDREN = {
 		TypeName.REPY_INTERFACE: [ST_CREATED, ST_PREPARED],
 	}
 	PROFILE_ATTRS = ["ram", "cpus", "bandwidth"]
+
 	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy"]
+
+
+	def init(self, *args, **kwargs):
+		self.state = ST_CREATED
+		VMElement.init(self, *args, **kwargs)
+		if self.template is not None:
+			return self.template.args_doc
+		else:
+			return None
+		self.save()
+
 
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
@@ -57,6 +73,11 @@ class Repy(VMElement):
 	ACTIONS.update({
 		ActionName.PREPARE: StatefulAction(action_prepare, check=VMElement.checkTopologyTimeout, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
 		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+	})
+
+	ATTRIBUTES = VMElement.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"args_doc": Attribute(field=args_doc, readOnly=True, get=lambda self: self.args_doc)
 	})
 	
 class Repy_Interface(VMInterface):

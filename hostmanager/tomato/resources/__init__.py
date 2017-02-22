@@ -28,9 +28,9 @@ TYPES = {}
 def give(type_, num, owner):
 	logging.logMessage("instance_return", category="resource", type=type_, num=num, owner=(owner.__class__.__name__.lower(), owner.id))
 	if isinstance(owner, Element):
-		instance = ResourceInstance.objects.get(type=type_, num=num, ownerElement=owner)
+		instance = ResourceInstance.objects(type=type_, num=num, ownerElement=owner)
 	elif isinstance(owner, Connection):
-		instance = ResourceInstance.objects.get(type=type_, num=num, ownerConnection=owner)
+		instance = ResourceInstance.objects(type=type_, num=num, ownerConnection=owner)
 	else:
 		raise InternalError(code=InternalError.INVALID_PARAMETER,
 			message="Owner must either be Element or Connection", data={"owner_type": owner.__class__.__name__})
@@ -53,7 +53,7 @@ def take(type_, owner, blacklist=None):
 		try:
 			instance = ResourceInstance()
 			instance.init(type_, num, owner)
-			logging.logMessage("instance_take", category="resource", type=type_, num=num, owner=(owner.__class__.__name__.lower(), owner.id))
+			logging.logMessage("instance_take", category="resource", type=type_, num=num, owner=(owner.__class__.__name__.lower(), str(owner.id)))
 			return num
 		except:
 			pass
@@ -62,11 +62,12 @@ def take(type_, owner, blacklist=None):
 from ..elements import Element
 from ..connections import Connection
 
-class Resource(LockedStatefulEntity, BaseDocument):
-	type = StringField(choices=[(t, t) for t in TYPES]) #@ReservedAssignment
-
+class Resource(Entity, BaseDocument):
+	type = StringField(choices=[(t, t) for t in TYPES], max_length=20) #@ReservedAssignment
+	attrs = DictField()
 
 	meta = {
+		'auto_create_index': False,
 		'allow_inheritance': True,
 	}
 
@@ -84,26 +85,26 @@ class Resource(LockedStatefulEntity, BaseDocument):
 		except:
 			import traceback
 			traceback.print_exc()
-		raise InternalError(message="Failed to cast resource", code=InternalError.UPCAST, data={"id": self.id, "type": self.type})
+		raise InternalError(message="Failed to cast resource", code=InternalError.UPCAST, data={"id": str(self.id), "type": self.type})
 
 	def modify(self, attrs):
-		logging.logMessage("modify", category="resource", type=self.type, id=self.id, attrs=attrs)
+		logging.logMessage("modify", category="resource", type=self.type, id=str(self.id), attrs=attrs)
 		for key, value in attrs.iteritems():
 			if hasattr(self, "modify_%s" % key):
 				getattr(self, "modify_%s" % key)(value)
 			else:
 				self.attrs[key] = value
-		logging.logMessage("info", category="resource", type=self.type, id=self.id, info=self.info())
+		logging.logMessage("info", category="resource", type=self.type, id=str(self.id), info=self.info())
 		self.save()
 	
 	def remove(self):
-		logging.logMessage("info", category="resource", type=self.type, id=self.id, info=self.info())
-		logging.logMessage("remove", category="resource", type=self.type, id=self.id)
+		logging.logMessage("info", category="resource", type=self.type, id=str(self.id), info=self.info())
+		logging.logMessage("remove", category="resource", type=self.type, id=str(self.id))
 		self.delete()	
 	
 	def info(self):
 		return {
-			"id": self.id,
+			"id": str(self.id),
 			"type": self.type,
 			"attrs": self.attrs.copy(),
 		}
@@ -115,7 +116,9 @@ class ResourceInstance(BaseDocument):
 	ownerElementId = ReferenceFieldId(ownerElement)
 	ownerConnection = ReferenceField(Connection)
 	ownerConnectionId = ReferenceFieldId(ownerConnection)
+	attrs = DictField()
 
+	ACTIONS = {}
 	ATTRIBUTES = {
 		"id": IdAttribute(),
 		"type": Attribute(field=type, schema=schema.String(options=TYPES)),
@@ -123,9 +126,6 @@ class ResourceInstance(BaseDocument):
 		"ownerElement": Attribute(field=ownerElementId, schema=schema.Identifier()),
 		"ownerConnection": Attribute(field=ownerConnectionId, schema=schema.Identifier()),
 	}
-	
-	class Meta:
-		unique_together = (("num", "type"),)
 
 	def init(self, type, num, owner, attrs=None): #@ReservedAssignment
 		if not attrs: attrs = {}
@@ -162,8 +162,8 @@ def create(type_, attrs=None):
 	res = TYPES[type_](owner=currentUser())
 	res.init(attrs)
 	res.save()
-	logging.logMessage("create", category="resource", type=res.type, id=res.id, attrs=attrs)
-	logging.logMessage("info", category="resource", type=res.type, id=res.id, info=res.info())
+	logging.logMessage("create", category="resource", type=res.type, id=str(res.id), attrs=attrs)
+	logging.logMessage("info", category="resource", type=res.type, id=str(res.id), info=res.info())
 	return res
 
 from .. import currentUser

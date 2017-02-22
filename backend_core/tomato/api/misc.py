@@ -22,7 +22,7 @@ from ..lib.settings import settings
 from ..lib.userflags import Flags
 
 def link_statistics(siteA, siteB):
-	return link.getStatistics(siteA, siteB)
+	return link.getStatisticsInfo(siteA, siteB)
 
 def notifyAdmins(subject, text, global_contact, issue, user_orga, user_name):
 	api = get_backend_users_proxy()

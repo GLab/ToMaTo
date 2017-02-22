@@ -25,7 +25,6 @@ import base64, re
 from lib import wrap_rpc, serverInfo
 from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons, append_empty_choice
 import datetime
-from lib.reference_library import type_to_label
 from lib.constants import TypeName
 
 from tomato.crispy_forms.layout import Layout
@@ -33,7 +32,7 @@ from django.core.urlresolvers import reverse
 
 from lib.error import UserError #@UnresolvedImport
 
-types = [{"name": t, "label": type_to_label(t)} for t in [TypeName.FULL_VIRTUALIZATION, TypeName.CONTAINER_VIRTUALIZATION, TypeName.REPY]]
+types = [{"name": t, "label": TypeName.ONSCREEN.get(t, t)} for t in [TypeName.FULL_VIRTUALIZATION, TypeName.CONTAINER_VIRTUALIZATION, TypeName.REPY]]
 
 types_dict = dict([(t["name"], t["label"]) for t in types])
 

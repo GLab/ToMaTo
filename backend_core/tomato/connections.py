@@ -24,8 +24,9 @@ from .host import Host
 from .lib import logging #@UnresolvedImport
 from .lib.error import UserError, InternalError
 from .lib.cache import cached #@UnresolvedImport
-from .lib.constants import ActionName, StateName, TypeName
+from .lib.constants import ActionName, StateName, TypeName, ConnectionDistance
 from .lib.exceptionhandling import wrap_and_handle_current_exception
+from .link import getStatistics
 
 REMOVE_ACTION = "(remove)"
 
@@ -93,7 +94,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	CUSTOM_ATTRS = {}
 	
 	DEFAULT_ATTRS = {"emulation": True, "bandwidth_to": 10000, "bandwidth_from": 10000}
-	
+
 	DOC=""
 
 	# noinspection PyMethodOverriding
@@ -136,7 +137,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	@property
 	def _remoteAttrs(self):
 		caps = Host.getConnectionCapabilities(self.remoteType)
-		allowed = caps["attributes"].keys() if caps else []
+		allowed = (a for a, v in caps["attributes"].iteritems() if not v.get("read_only", False)) if caps else []
 		attrs = {}
 		for key, value in self.directData.iteritems():
 			if key in allowed:
@@ -172,6 +173,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		self.topology.checkTimeout()
 
 	def checkUnknownAction(self, action, params=None):
+
 		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_GRANT]:
 			self.checkTopologyTimeout()
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
@@ -463,6 +465,58 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			'fileserver_port': host.hostInfo.get('fileserver_port', None)
 		}
 
+	def link_stats(self):
+		if self.elementFrom.state == ST_CREATED or self.elementTo.state == ST_CREATED:
+			return None
+
+		hostA = self.elementFrom.host.name
+		siteA = self.elementFrom.host.site.name
+		hostB = self.elementTo.host.name
+		siteB = self.elementTo.host.site.name
+
+		if hostA == hostB:
+			distance = ConnectionDistance.INTRA_HOST
+			link_stats = None
+
+		else:
+
+			if siteA == siteB:
+				distance = ConnectionDistance.INTRA_SITE
+			else:
+				distance = ConnectionDistance.INTER_SITE
+
+			link_stats_ = getStatistics(siteA, siteB)
+			if link_stats_:
+				link_stats_info = link_stats_.quickInfo()
+				recent = None
+				average = None
+				for key in ["5minutes", "hour", "day", "month", "year"]:
+					if link_stats_info[key]:
+						recent = link_stats_info[key]
+						break
+				for key in ["year", "month", "day", "hour", "5minutes"]:
+					if link_stats_info[key]:
+						average = link_stats_info[key]
+						break
+				if recent or average:
+					link_stats = {
+						"recent": recent.info(),
+						"average": average.info()
+					}
+				else:
+					link_stats = None
+			else:
+				link_stats = None
+
+		return {
+			"hostA": hostA,
+			"siteA": siteA,
+			"hostB": hostB,
+			"siteB": siteB,
+			"distance": distance,
+			"statistics": link_stats
+		}
+
 	ACTIONS = {
 		Entity.REMOVE_ACTION: StatefulAction(_remove, check=checkRemove)
 	}
@@ -479,6 +533,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			'host_elements': schema.List(items=schema.List(minLength=2, maxLength=2)),
 			'host_connections': schema.List(items=schema.List(minLength=2, maxLength=2))
 		}, required=['host_elements', 'host_connections'])),
+		"link_statistics": Attribute(get=link_stats, readOnly=True),
 		"host": Attribute(get=lambda self: self.host.name if self.host else None, readOnly=True),
 		"host_info": Attribute(field=host_info, readOnly=True)
 	}
@@ -495,13 +550,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if not attrs: attrs = {}
 		UserError.check(el1 != el2, code=UserError.INVALID_CONFIGURATION, message="Cannot connect element with itself")
 		UserError.check(not el1.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
-			data={"element": el1.id})
+			data={"element": str(el1.id)})
 		UserError.check(not el2.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
-			data={"element": el2.id})
+			data={"element": str(el2.id)})
 		UserError.check(el1.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
-			data={"element": el1.id})
+			data={"element": str(el1.id)})
 		UserError.check(el2.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
-			data={"element": el2.id})
+			data={"element": str(el2.id)})
 		UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
 			message="Can only connect elements from same topology")
 		con = cls()

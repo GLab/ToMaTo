@@ -47,8 +47,8 @@ class virsh:
 	TYPE = TechName.KVM
 
 	HYPERVISOR_MAPPING = {
-		TypeName.LXC: "lxc://",
-		TypeName.KVM: "qemu:///session"
+		TechName.LXC: "lxc://",
+		TechName.KVM: "qemu:///session"
 	}
 	DRIVER_MAPPING = {
 		TechName.KVMQM: "qcow2",
@@ -113,7 +113,7 @@ class virsh:
 		driver_type = self.DRIVER_MAPPING[self.TYPE]
 
 
-		if self.TYPE == TypeName.KVM:
+		if self.TYPE == TechName.KVM:
 			cmd_ = ["virt-install",
 					"--connect", self.HYPERVISOR_MAPPING[self.TYPE],
 					"--name", "vm_%d" % vmid,

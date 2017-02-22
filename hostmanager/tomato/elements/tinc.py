@@ -25,6 +25,7 @@ from ..lib.cmd import process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.constants import ActionName, StateName, TypeName
 
+
 DOC="""
 Element type: ``tinc``
 
@@ -93,33 +94,9 @@ class Tinc(elements.Element):
 	pubkey = StringField()
 	peers = ListField(default=[])
 
-	ATTRIBUTES = {
-		"port": Attribute(field=port, schema=schema.Int()),
-		"path": Attribute(field=path, schema=schema.String()),
-		"mode": Attribute(field=mode, schema=schema.String(options=["hub", "switch"]), default="switch"),
-		"privkey": Attribute(field=privkey, description="Private key", schema=schema.String()),
-		"pubkey": Attribute(field=pubkey, description="Public key",  schema=schema.String()),
-		"peers": Attribute(field=peers, description="Peers", default=[])
-	}
 
 
 	TYPE = TypeName.TINC
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
-
-	CAP_ATTRS = {
-		"mode": mode,
-		"peers": peers,
-		"timeout": elements.Element.timeout
-	}
-
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}
 
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -127,13 +104,12 @@ class Tinc(elements.Element):
 	DEFAULT_ATTRS = {"mode": "switch"}
 	DOC = DOC
 	__doc__ = DOC
-	
-	class Meta:
-		db_table = "tomato_tinc"
-		app_label = 'tomato'
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
@@ -142,7 +118,7 @@ class Tinc(elements.Element):
 		self.pubkey = cmd.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
 
 	def _interfaceName(self):
-		return TypeName.TINC + "%d" % self.id
+		return TypeName.TINC + "%s" % str(self.id)[0:8] # Mongodb Ids are to long, so cut them
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None
@@ -248,7 +224,28 @@ class Tinc(elements.Element):
 			if not trafficA is None and not trafficB is None:
 				traffic = trafficA + trafficB
 				usage.updateContinuous("traffic", traffic, data)
-			
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"port": Attribute(field=port, readOnly=True, schema=schema.Int()),
+		"path": Attribute(field=path, readOnly=True),
+		"mode": Attribute(field=mode, set=modify_mode, description="Mode", schema=schema.String(options=["hub", "switch"]), default="switch"),
+		"privkey": Attribute(field=privkey, readOnly=True, description="Private key"),
+		"pubkey": Attribute(field=pubkey, readOnly=True, description="Public key"),
+		"peers": Attribute(field=peers, set=modify_peers, description="Peers", default=[]),
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+	})
+
+
 if not config.MAINTENANCE:
 	tincVersion = cmd.getDpkgVersion("tinc")
 	if [1, 0] <= tincVersion <= [2, 0]:

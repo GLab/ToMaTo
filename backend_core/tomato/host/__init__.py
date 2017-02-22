@@ -29,6 +29,7 @@ from ..lib.service import get_backend_users_proxy, get_backend_accounting_proxy
 from ..lib.settings import settings, Config
 from ..lib.userflags import Flags
 from ..lib.constants import TechName, TypeName, TypeTechTrans
+from ..lib.references import Reference
 
 
 element_caps = {}
@@ -210,7 +211,8 @@ class Host(Entity, BaseDocument):
 			self.hostNetworks = self.getProxy().host_networks()
 		except:
 			self.hostNetworks = []
-		caps = self._convertCapabilities(self.getProxy().host_capabilities())
+		hostCapabilities = self.getProxy().host_capabilities()
+		caps = self._convertCapabilities(hostCapabilities)
 		self.elementTypes = caps["elements"].keys()
 		global element_caps
 		for k, v in caps["elements"].iteritems():
@@ -238,7 +240,10 @@ class Host(Entity, BaseDocument):
 		def convertActions(actions, next_state):
 			res = {}
 			for action, states in actions.items():
-				res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state.get(action)).info()
+				if type(states) == type(dict()):
+					res[action] = StatefulAction(None, allowedStates=states['allowed_states'], stateChange=states['state_change']).info()
+				else:
+					res[action] = StatefulAction(None, allowedStates=states, stateChange=next_state.get(action)).info()
 			return res
 		def convertAttributes(attrs):
 			res = {}
@@ -265,23 +270,31 @@ class Host(Entity, BaseDocument):
 					sch = schema.Bool(**params)
 				else:
 					sch = schema.Any(**params)
-				res[attr] = StatefulAttribute(writableStates=desc.get('states'), label=desc.get('desc'), schema=sch, default=desc.get('default')).info()
+				res[attr] = StatefulAttribute(writableStates=desc.get('states'), readOnly=desc.get('read_only'), label=desc.get('desc'), schema=sch, default=desc.get('default')).info()
 			return res
 		elems = {}
 		for name, info in caps['elements'].items():
+			attributes = info.get('attrs')
+			if not attributes and attributes != {}:
+				attributes = info.get('attributes')
 			elems[name] = {
 				"actions": convertActions(info.get('actions'), info.get('next_state')),
-				"attributes": convertAttributes(info.get('attrs')),
+				"attributes": convertAttributes(attributes),
 				"children": {n: {"allowed_states": states} for n, states in info.get('children').items()},
 				"parent": info.get('parent'),
 				"connectability": [{"concept": n, "allowed_states": None} for n in info.get('con_concepts')]
 			}
 		cons = {}
+
 		for name, info in caps['connections'].items():
+			attributes = info.get('attrs')
+			if not attributes and attributes != {}:
+				attributes = info.get('attributes')
 			cons[name] = {
 				"actions": convertActions(info.get('actions'), info.get('next_state')),
-				"attributes": convertAttributes(info.get('attrs')),
-				"connectability": [{"concept_from": names[0], "concept_to": names[1]} for names in info.get('con_concepts')]
+				"attributes": convertAttributes(attributes),
+				"connectability": [{"concept_from": names[0], "concept_to": names[1]} for names in
+								   info.get('con_concepts')]
 			}
 		return {
 			"elements": elems,
@@ -327,6 +340,8 @@ class Host(Entity, BaseDocument):
 		from .element import HostElement
 		hel = HostElement(type=el["type"], state=el["state"], host=self, num=el["id"], topologyElement=ownerElement, topologyConnection=ownerConnection)
 		hel.objectInfo = el
+		#Workaround
+		hel["num"] = str(hel["num"])
 		hel.save()
 		if ownerElement:
 			ownerElement.hostElements.append(hel)
@@ -389,6 +404,7 @@ class Host(Entity, BaseDocument):
 	def grantUrl(self, grant, action):
 		return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
 
+
 	def synchronizeResources(self, forced=False):
 		if time.time() - self.lastResourcesSync < settings.get_host_connections_settings()[Config.HOST_RESOURCE_SYNC_INTERVAL] and not forced:
 			return
@@ -417,7 +433,7 @@ class Host(Entity, BaseDocument):
 					logging.logMessage("network update", category="host", name=self.name, network=attrs)
 		tpls = {}
 		for tpl in self.getProxy().resource_list("template"):
-			tpls[(tpl["attrs"]["type"], tpl["attrs"]["name"])] = tpl
+			tpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
 		avail = []
 		for tpl in template.Template.objects():
 			type_ = tpl.type
@@ -430,6 +446,7 @@ class Host(Entity, BaseDocument):
 					if not (attrs["tech"], attrs["name"]) in tpls:
 						# create resource
 						self.getProxy().resource_create("template", attrs)
+
 						logging.logMessage("template create", category="host", name=self.name, template=attrs)
 					else:
 						hTpl = tpls[(attrs["tech"], attrs["name"])]
@@ -454,10 +471,10 @@ class Host(Entity, BaseDocument):
 			# check for completeness
 			for el in self.elements.all():
 				if not str(el.num) in orig_data["elements"]:
-					print >>sys.stderr, "Missing accounting data for element #%d on host %s" % (el.num, self.name)
+					print >>sys.stderr, "Missing accounting data for element #%s on host %s" % (str(el.num), self.name)
 			for con in self.connections.all():
 				if not str(con.num) in orig_data["connections"]:
-					print >>sys.stderr, "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
+					print >>sys.stderr, "Missing accounting data for connection #%s on host %s" % (str(con.num), self.name)
 					continue
 
 			# transform
@@ -598,7 +615,7 @@ class Host(Entity, BaseDocument):
 				self.sendMessageToHostManagers(
 					title="Host %s: Problems resolved" % self,
 					message="Problems on host %s have been resolved." % self,
-					ref=['host', self.name],
+					ref=Reference.host(self.name),
 					subject_group="host failure"
 				)
 			self.problemAge = 0
@@ -609,7 +626,7 @@ class Host(Entity, BaseDocument):
 				self.sendMessageToHostManagers(
 					title="Host %s: Problems" % self,
 					message="Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)),
-					ref=['host', self.name],
+					ref=Reference.host(self.name),
 					subject_group="host failure"
 				)
 			if self.problemAge < time.time() - 6 * 60 * 60:
@@ -621,7 +638,7 @@ class Host(Entity, BaseDocument):
 					self.sendMessageToHostManagers(
 						title="Host %s: Problems persist" % self,
 						message="Host %s has the following problems since %s:\n\n%s" % (self, duration, ", ".join(problems)),
-						ref=['host', self.name],
+						ref=Reference.host(self.name),
 						subject_group="host failure"
 					)
 		self.save_if_exists()
@@ -684,7 +701,7 @@ class HostObject(BaseDocument):
 	:type topologyConnection: connection.Connection
 	"""
 	host = ReferenceField(Host, required=True, reverse_delete_rule=CASCADE)
-	num = IntField(unique_with='host', required=True)
+	num = StringField(unique_with='host', required=True)
 	topologyElement = ReferenceField('Element', db_field='topology_element') #reverse_delete_rule=NULLIFY defined at bottom of element/__init__.py
 	topologyConnection = ReferenceField('Connection', db_field='topology_connection')  #reverse_delete_rule=NULLIFY defined at bottom of connections.py
 	state = StringField(required=True)
@@ -797,9 +814,9 @@ def getConnectionTypes():
 	global connection_caps
 	return connection_caps.keys()
 
-@deprecated("host.Host.getElementCapabilites")
+@deprecated("host.Host.getConnectionCapabilites")
 def getConnectionCapabilities(type_):
-	return Host.getElementCapabilities(type_)
+	return Host.getConnectionCapabilities(type_)
 
 
 checkingHostsLock = threading.RLock()
@@ -822,7 +839,7 @@ def synchronizeHost(host_name):
 				host.update()
 				host.synchronizeResources()
 			except Exception as e:
-				print >>sys.stderr, "Error updating host information from %s" % host
+				print >>sys.stderr, "Error updating host information from %s" % host_name
 				if isinstance(e, TransportError):
 					e.todump = False
 				else:
@@ -850,7 +867,7 @@ def updateAccounting(host_name):
 	try:
 		host.updateAccountingData()
 	except Exception as e:
-		print >>sys.stderr, "Error updating accounting information from %s" % host
+		print >>sys.stderr, "Error updating accounting information from %s" % host_name
 		if isinstance(e, TransportError):
 			e.todump = False
 		else:

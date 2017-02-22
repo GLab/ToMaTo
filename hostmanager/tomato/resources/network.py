@@ -21,7 +21,7 @@ from .. import resources, firewall, currentUser
 from ..user import User
 
 
-class Network(resources.Resource, BaseDocument):
+class Network(resources.Resource):
 	owner = ReferenceField(User)
 	ownerId = ReferenceFieldId(owner)
 	kind = StringField(required=True, unique=True)
@@ -36,11 +36,7 @@ class Network(resources.Resource, BaseDocument):
 		from ..elements.external_network import External_Network
 		return External_Network.objects(network=self)
 
-	class Meta:
-		db_table = "tomato_network"
-		app_label = 'tomato'
-		unique_together = (("bridge", "owner"))
-	
+
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		resources.Resource.init(self, *args, **kwargs)
@@ -86,17 +82,6 @@ class Network(resources.Resource, BaseDocument):
 		info["attrs"]["preference"] = self.preference
 		return info
 
-	ACTIONS = {
-		Entity.REMOVE_ACTION: Action(fn=remove)
-	}
-	ATTRIBUTES = {
-		"id": IdAttribute(),
-		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
-		"kind": Attribute(field=kind, schema=schema.String()),
-		"bridge": Attribute(field=bridge, schema=schema.String()),
-		"preference": Attribute(field=preference, schema=schema.Int(minValue=0)),
-	}
-
 	meta = {
 		'ordering': ['-preference', 'kind'],
 		'indexes': [
@@ -107,7 +92,7 @@ class Network(resources.Resource, BaseDocument):
 def get(kind):
 	return Network.objects.filter((models.Q(kind=kind)|models.Q(kind__startswith=kind+"/"))&models.Q(owner=currentUser())).order_by("-preference")[0]
 
-def getAll():
-	return Network.objects.all()
+def getAll(**kwargs):
+	return Network.objects.filter(**kwargs)
 
 resources.TYPES[Network.TYPE] = Network

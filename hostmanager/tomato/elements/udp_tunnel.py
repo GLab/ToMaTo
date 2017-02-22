@@ -75,29 +75,18 @@ class UDP_Tunnel(elements.Element):
 	port = IntField()
 	connection = StringField(null=True, default=None)
 
-	ATTRIBUTES = {
-		"pid": Attribute(field=pid, schema=schema.Int()),
-		"port": Attribute(field=port, schema=schema.Int(minValue=0)),
-		"connection": Attribute(field=connection, schema=schema.String(), default=None)
-	}
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"pid": Attribute(field=pid, schema=schema.Int(), readOnly=True),
+		"port": Attribute(field=port, schema=schema.Int(), readOnly=True),
+		"connection": Attribute(field=connection, schema=schema.String(), default=None),
+	})
+
+
 
 
 	TYPE = TypeName.UDP_TUNNEL
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
 
-	CAP_ATTRS = {
-		"connect": connection,
-		"timeout": elements.Element.timeout
-	}
-
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}
 
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -105,13 +94,12 @@ class UDP_Tunnel(elements.Element):
 	DEFAULT_ATTRS = {}
 	DOC = DOC
 	__doc__ = DOC
-	
-	class Meta:
-		db_table = "tomato_udp_tunnel"
-		app_label = 'tomato'
+
+	@property
+	def type(self):
+		return self.TYPE
 	
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
@@ -128,7 +116,7 @@ class UDP_Tunnel(elements.Element):
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _interfaceName(self):
-		return "stap%d" % self.id
+		return "stap%s" % str(self.id)
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None
@@ -179,6 +167,17 @@ class UDP_Tunnel(elements.Element):
 		except: #Tunnel just quit
 			traffic = 0
 		usage.updateContinuous("traffic", traffic, data)
+
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+	})
 
 if not config.MAINTENANCE:
 	socatVersion = cmd.getDpkgVersion("socat")

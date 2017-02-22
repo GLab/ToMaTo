@@ -25,16 +25,17 @@ from ..lib.newcmd import aria2
 from ..lib.newcmd.util import fs
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, threading
-from ..lib.constants import TypeName,TechName
+from ..lib.constants import TypeName, TechName
 
 PATTERNS = {
-	TypeName.KVMQM: "%s.qcow2",
-	TypeName.KVM: "%s.qcow2",
-	TypeName.OPENVZ: "%s.tar.gz",
-	TypeName.LXC: "%s.tar.gz",
+	TechName.KVMQM: "%s.qcow2",
+	TechName.KVM: "%s.qcow2",
+	TechName.OPENVZ: "%s.tar.gz",
+	TechName.LXC: "%s.tar.gz",
+	TypeName.REPY: "%s.repy",
 }
 
-class Template(resources.Resource, Entity):
+class Template(resources.Resource):
 	owner = ReferenceField(User)
 	ownerId = ReferenceFieldId(owner)
 	tech = StringField()
@@ -52,8 +53,8 @@ class Template(resources.Resource, Entity):
 	meta = {
 		'ordering': ['tech', '+preference', 'name'],
 		'indexes': [
-			('tech', 'preference'), ('tech', 'name')
-		]
+			('tech', 'preference'), ('tech', 'name'), ('tech', 'name', 'owner')
+		],
 	}
 
 	def init(self, *args, **kwargs):
@@ -116,7 +117,7 @@ class Template(resources.Resource, Entity):
 
 	def modify(self, attrs):
 		res = resources.Resource.modify(self, attrs)
-		#self.fetch(detached=True)
+		#self.fetch(detached=False)
 		return res
 
 	def remove(self):
@@ -131,30 +132,15 @@ class Template(resources.Resource, Entity):
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
+		info["attrs"]["urls"] = self.urls
+		info["attrs"]["checksum"] = self.checksum
+		info["attrs"]["size"] = self.size
+		info["attrs"]["popularity"] = self.popularity
+		info["attrs"]["ready"] = self.ready
 		info["attrs"]["kblang"] = self.kblang
 		return info
 
-	ACTIONS = {
-		Entity.REMOVE_ACTION: Action(fn=remove)
-	}
 
-	ATTRIBUTES = {
-		"id": IdAttribute(),
-		"tech": Attribute(field=tech, schema=schema.String(options=PATTERNS.keys())),
-		"name": Attribute(field=name, schema=schema.Identifier()),
-		"owner": Attribute(field=ownerId, schema=schema.Identifier()),
-		"popularity": Attribute(field=popularity, readOnly=True, schema=schema.Number(minValue=0)),
-		"urls": Attribute(field=urls, schema=schema.List(items=schema.URL()),
-						  set=lambda obj, value: obj.modify_urls(value)),
-		"all_urls": Attribute(schema=schema.List(items=schema.URL()), readOnly=True, get=lambda obj: obj.all_urls),
-		"preference": Attribute(field=preference, schema=schema.Number(minValue=0)),
-		"kblang": Attribute(field=kblang, set=lambda obj, value: obj.modify_kblang(value),
-							schema=schema.String()),
-		"size": Attribute(get=lambda obj: float(obj.size) if obj.size else obj.size, readOnly=True,
-						  schema=schema.Number()),
-		"checksum": Attribute(readOnly=True, field=checksum, schema=schema.String()),
-		"ready": Attribute(readOnly=True, schema=schema.Bool()),
-	}
 
 def get(tech, name):
 	try:
@@ -163,7 +149,7 @@ def get(tech, name):
 		return None
 	
 def getPreferred(tech):
-	tmpls = Template.objects.filter(tech=tech, owner=currentUser()).order_by("-preference")
+	tmpls = Template.objects(tech=tech, owner=currentUser()).order_by("-preference")
 	InternalError.check(tmpls, InternalError.CONFIGURATION_ERROR, "No template registered", data={"tech": tech})
 	return tmpls[0]
 

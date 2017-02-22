@@ -1,3 +1,8 @@
+class ConnectionDistance:
+	INTRA_HOST = "intra-host"
+	INTRA_SITE = "intra-site"
+	INTER_SITE = "inter-site"
+
 
 class DumpSourcePrefix:
 	API = "api:"
@@ -20,6 +25,8 @@ class ActionName:
 	REXTFV_UPLOAD_GRANT = "rextfv_upload_grant"
 	REXTFV_UPLOAD_USE = "rextfv_upload_use"
 	REXTFV_DOWNLOAD_GRANT = "rextfv_download_grant"
+
+	DOWNLOAD_LOG_GRANT = "download_log_grant"
 
 	CHANGE_TEMPLATE = "change_template"
 
@@ -78,6 +85,7 @@ class TypeName:
 	BRIDGE = "bridge"
 	FIXED_BRIDGE = "fixed_bridge"
 
+	VMELEMENT_TYPES = [FULL_VIRTUALIZATION, CONTAINER_VIRTUALIZATION, REPY]
 	ONSCREEN = {
 		FULL_VIRTUALIZATION: "full virtualization",
 		FULL_VIRTUALIZATION_INTERFACE: "full virtualization interface",

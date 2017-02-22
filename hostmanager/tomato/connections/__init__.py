@@ -75,17 +75,15 @@ Bridge concept interface:
 
 class Connection(LockedStatefulEntity, BaseDocument):
 
-	type = StringField(required=True, max_length=20, choices=[(t, t) for t in TYPES.keys()])
+
+
 	owner = ReferenceField(User)
 	ownerId = ReferenceFieldId(owner)
 	state = StringField(choices=['default', 'created', 'prepared', 'started'], max_length=20, required=True)
 	usageStatistics = ReferenceField(UsageStatistics, null=True)
 	usageStatisticsId = ReferenceFieldId(usageStatistics)
+	elements = ListField(ReferenceField("Element"))
 
-	@property
-	def elements(self):
-		from ..elements import Element
-		return Element.objects(connection=self)
 
 	meta = {
 		'allow_inheritance': True,
@@ -97,6 +95,11 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
 
+	TYPE = None
+
+	@property
+	def type(self):
+		return self.TYPE
 
 	def init(self, el1, el2, attrs=None):
 		if not attrs: attrs = {}
@@ -104,21 +107,19 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		UserError.check(concept_, UserError.UNABLE_TO_CONNECT, "Not able to connect the two elements with this connection type",
 			data={"element_types": (el1.type, el2.type), "connection_type": self.type})
 		self.owner = currentUser()
-		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
-		self.elements.add(el1)
-		self.elements.add(el2)
+		self.elements = [el1,el2]
 		self.save()
 		self.getUsageStatistics() #triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
-		self.modify(attrs)
+		Entity.init(self, **attrs)
 
 	def dumpException(self, **kwargs):
 		try:
 			data = self.info()
 		except Exception, ex:
-			data = {"info_exception": str(ex), "type": self.type, "id": self.id, "state": self.state, "attrs": self.attrs}
+			data = {"info_exception": str(ex), "type": self.type, "id": str(self.id), "state": self.state, "attrs": self.attrs}
 		dump.dumpException(connection=data, **kwargs)
 
 	def getUsageStatistics(self):
@@ -153,7 +154,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			return getattr(self, self.type)
 		except:
 			pass
-		raise InternalError(message="Failed to cast connection", code=InternalError.UPCAST, data={"id": self.id, "type": self.type})
+		raise InternalError(message="Failed to cast connection", code=InternalError.UPCAST, data={"id": str(self.id), "type": self.type})
 
 	def dataPath(self, filename=""):
 		"""
@@ -196,7 +197,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 				data={"connection_type": self.type, "attribute": key})
 			self.CAP_ATTRS[key].check(self, attrs[key])
 		
-	def modify(self, attrs):
+	def modify(self, **attrs):
 		"""
 		Sets the given attributes to their given values. This method first
 		checks if the change can be made using checkModify() and then executes
@@ -211,18 +212,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		@type attrs: dict
 		"""		
 		self.checkModify(attrs)
-		logging.logMessage("modify", category="connection", id=self.id, attrs=attrs)
+		logging.logMessage("modify", category="connection", id=str(self.id), attrs=attrs)
 		self.setBusy(True)
 		try:
-			for key, value in attrs.iteritems():
-				getattr(self, "modify_%s" % key)(value)
-		except InternalError, err:
-			self.dumpException()
-			raise				
+			Entity.modify(self, **attrs)
 		finally:
-			self.setBusy(False)				
-		self.save()
-		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
+			self.setBusy(False)
+		logging.logMessage("info", category="connection", id=str(self.id), info=self.info())
 	
 	def checkAction(self, action):
 		"""
@@ -255,23 +251,19 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		@param params: Parameters for the action
 		@type params: dict
 		"""
-		self.checkAction(action)
-		logging.logMessage("action start", category="connection", id=self.id, action=action, params=params)
+		logging.logMessage("action start", category="connection", id=str(self.id), action=action, params=params)
 		self.setBusy(True)
 		try:
-			res = getattr(self, "action_%s" % action)(**params)
-		except InternalError, err:
-			self.dumpException()
-			raise
+			res = Entity.action(self, action, params)
 		finally:
 			self.setBusy(False)
-		self.save()
+
 		if action in self.CAP_NEXT_STATE:
 			InternalError.check(self.state == self.CAP_NEXT_STATE[action], InternalError.INVALID_NEXT_STATE,
 				"Action lead to wrong state", data={"action": action, "element_type": self.type,
 				"expected_state": self.CAP_NEXT_STATE[action], "reached_state": self.state})
-		logging.logMessage("action end", category="connection", id=self.id, action=action, params=params, res=res)
-		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
+		logging.logMessage("action end", category="connection", id=str(self.id), action=action, params=params, res=res)
+		logging.logMessage("info", category="connection", id=str(self.id), info=self.info())
 		return res
 
 	def setState(self, state, dummy=None):
@@ -286,27 +278,27 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	def remove(self):
 		self.checkRemove()
-		logging.logMessage("info", category="connection", id=self.id, info=self.info())
-		logging.logMessage("remove", category="connection", id=self.id)
-		self.elements.clear() #Important, otherwise elements will be deleted
+		logging.logMessage("info", category="connection", id=str(self.id), info=self.info())
+		logging.logMessage("remove", category="connection", id=str(self.id))
 		self.delete()
 		if os.path.exists(self.dataPath()):
 			shutil.rmtree(self.dataPath())
 			
 	def getElements(self):
-		return [el.upcast() for el in self.elements.all()]
-			
-	@classmethod	
+		return [el.upcast() for el in self.elements]
+
+	@classmethod
 	def cap_attrs(cls):
-		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
-					
+		return dict([(key, value) for (key, value) in cls.CAP_ATTRS.iteritems()])
+
+
 	def info(self):
-		els = [el.id for el in self.elements.all()]
+		els = [str(el.id) for el in self.elements]
 		return {
-			"id": self.id,
+			"id": str(self.id),
 			"type": self.type,
 			"state": self.state,
-			"attrs": self.attrs.copy(),
+			"attrs": Entity.info(self),
 			"elements": sorted(els), #sort elements so that first one is from and second one is to
 		}
 		
@@ -322,6 +314,14 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	def updateUsage(self, usage, data):
 		pass
 
+	@property
+	def elementIds(self):
+		return [str(el.id) for el in self.elements]
+
+	@property
+	def ownerId(self):
+		return str(self.owner.id)
+
 	def tearDown(self):
 		if self.state == StateName.STARTED:
 			self.action_stop()
@@ -333,16 +333,16 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	ATTRIBUTES = {
 		"id": IdAttribute(),
-		"owner": Attribute(field=owner, readOnly=True, schema=schema.Identifier()),
+		"owner": Attribute(field=ownerId, readOnly=True, schema=schema.Identifier()),
 		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
 		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
-		"elements": Attribute(field=elements, schema=schema.List()),
+		"elements": Attribute(field=elementIds, schema=schema.List(), readOnly=True),
 	}
 
 		
 def get(id_, **kwargs):
 	try:
-		con = Connection.objects(id=id_, **kwargs)
+		con = Connection.objects.get(id=id_, **kwargs)
 		return con.upcast()
 	except Connection.DoesNotExist:
 		return None
@@ -353,9 +353,9 @@ def getAll(**kwargs):
 def create(el1, el2, type_=None, attrs=None):
 	if not attrs: attrs = {}
 	UserError.check(not el1.connection, UserError.ALREADY_CONNECTED, "Element is already connected",
-		data={"element_id": el1.id})
+		data={"element_id": str(el1.id)})
 	UserError.check(not el2.connection, UserError.ALREADY_CONNECTED, "Element is already connected",
-		data={"element_id": el2.id})
+		data={"element_id": str(el2.id)})
 	UserError.check(el1.owner == el2.owner == currentUser(), UserError.DIFFERENT_USER,
 		"Element belongs to different user")
 	if type_:
@@ -367,8 +367,8 @@ def create(el1, el2, type_=None, attrs=None):
 		except:
 			con.remove()
 			raise
-		logging.logMessage("create", category="connection", id=con.id)	
-		logging.logMessage("info", category="connection", id=con.id, info=con.info())	
+		logging.logMessage("create", category="connection", id=str(con.id))
+		logging.logMessage("info", category="connection", id=str(con.id), info=con.info())
 		return con
 	else:
 		for type_ in TYPES:

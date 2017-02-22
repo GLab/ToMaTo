@@ -119,6 +119,35 @@ class LinkStatistics(BaseDocument):
 		self.single.append(measurement)
 		self.save()
 
+	def quickInfo(self):
+		if self.by5minutes:
+			fminutes = max(self.by5minutes, key=lambda r: r.end)
+		else:
+			fminutes = None
+		if self.byHour:
+			hour = max(self.byHour, key=lambda r: r.end)
+		else:
+			hour = None
+		if self.byDay:
+			day = max(self.byDay, key=lambda r: r.end)
+		else:
+			day = None
+		if self.byMonth:
+			month = max(self.byMonth, key=lambda r: r.end)
+		else:
+			month = None
+		if self.byYear:
+			year = max(self.byYear, key=lambda r: r.end)
+		else:
+			year = None
+
+		return {
+			"5minutes": fminutes,
+			"hour": hour,
+			"day": day,
+			"month": month,
+			"year": year
+		}
 
 pingingLock = threading.RLock()
 pinging = set()
@@ -195,7 +224,7 @@ def get_site_pairs():
 def housekeep():
 	exec_js(js_code("link_housekeep"), now=time.time(), types=TYPES, keep_records=KEEP_RECORDS, max_age={k: v.total_seconds() for k, v in MAX_AGE.items()})
 
-def getStatistics(siteA, siteB): #@ReservedAssignment
+def getStatistics(siteA, siteB):
 	_siteA = Site.get(siteA)
 	_siteB = Site.get(siteB)
 	UserError.check(_siteA is not None, UserError.ENTITY_DOES_NOT_EXIST, "site does not exist", data={"site": siteA})
@@ -203,12 +232,13 @@ def getStatistics(siteA, siteB): #@ReservedAssignment
 	if _siteA.id > _siteB.id:
 		_siteA, _siteB = _siteB, _siteA
 	try:
-		stats = LinkStatistics.objects.get(siteA=_siteA, siteB=_siteB)
-		return stats.info()
+		return LinkStatistics.objects.get(siteA=_siteA, siteB=_siteB)
 	except LinkStatistics.DoesNotExist:
 		ping(_siteA, _siteB)
-		stats = LinkStatistics.objects.get(siteA=_siteA, siteB=_siteB)
-		return stats.info()
+		return LinkStatistics.objects.get(siteA=_siteA, siteB=_siteB)
+
+def getStatisticsInfo(siteA, siteB): #@ReservedAssignment
+	return getStatistics(siteA, siteB).info()
 
 
 scheduler.scheduleMaintenance(60, get_site_pairs, lambda pair: ping(pair[0], pair[1], ignore_missing_site=True))  # every minute

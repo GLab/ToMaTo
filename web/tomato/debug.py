@@ -45,11 +45,14 @@ def connection(api, request, id):
 def stats(api, request, tomato_module=None):
 	if tomato_module is None:
 		try:
-			v = api.debug_services_reachable()
+			v = api.debug_services_overview()
 		except:
-			v = {Config.TOMATO_MODULE_BACKEND_API: False}
-		values = [{'module': module, 'reachable': reachable} for module, reachable in v.iteritems()]
-		return render(request, "debug/backend_overview.html", {"reachability_stats": values})
+			v = {Config.TOMATO_MODULE_BACKEND_API: {"reachable": False, "problems": ["service unreachable"]}}
+			for tomato_module in Config.TOMATO_BACKEND_INTERNAL_REACHABLE_MODULES:
+				v[tomato_module] = {"reachable": False, "problems": ["backend_api unreachable"]}
+		for k, v_ in v.iteritems():
+			v_["module"] = k
+		return render(request, "debug/backend_overview.html", {"reachability_stats": v.itervalues()})
 	else:
 		stats = api.debug_stats(tomato_module)
 		return render(request, "debug/stats.html", {'stats': stats, 'tomato_module': tomato_module})

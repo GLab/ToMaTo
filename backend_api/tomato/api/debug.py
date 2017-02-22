@@ -4,6 +4,8 @@ import traceback, sys
 from api_helpers import getCurrentUserInfo
 from ..lib.debug import run
 from ..lib.settings import Config
+from ..service_status import service_status, problems
+from ..service_status_manager import get_all_stats
 from ..lib.service import is_reachable, is_self, get_tomato_inner_proxy, get_backend_core_proxy
 from ..lib.remote_info import get_host_info
 from ..lib.exceptionhandling import wrap_and_handle_current_exception
@@ -12,23 +14,28 @@ from ..lib.error import InternalError
 def ping():
 	return True
 
+def _debug_stats_withoutauth():
+	"""
+	debug stats, but without authentication. Only use internally.
+	:return:
+	"""
+	return {
+		"scheduler": scheduler.info(),
+		"threads": map(traceback.extract_stack, sys._current_frames().values()),
+		"system": service_status(),
+		"problems": problems()
+	}
+
 def debug_stats(tomato_module=Config.TOMATO_MODULE_BACKEND_API):
 	getCurrentUserInfo().check_may_view_debugging_info()
 	if is_self(tomato_module):
-		return {
-			"scheduler": scheduler.info(),
-			"threads": map(traceback.extract_stack, sys._current_frames().values())
-		}
+		return _debug_stats_withoutauth()
 	else:
 		api = get_tomato_inner_proxy(tomato_module)
 		return api.debug_stats()
 
 def debug_services_overview():
-	res = {}
-	for module in Config.TOMATO_BACKEND_MODULES:
-		res[module] = {
-			'reachable': is_reachable(module)
-		}
+	return get_all_stats()
 
 def debug_services_reachable():
 	res = {module: is_reachable(module) for module in Config.TOMATO_BACKEND_MODULES}
@@ -75,7 +82,7 @@ def debug_execute_task(tomato_module, task_id):
 	else:
 		get_tomato_inner_proxy(tomato_module).debug_execute_task(task_id)
 
-def debug_throw_error(tomato_module=None):
+def debug_throw_error(tomato_module=None, data=None):
 	"""
 	throw an error that is then dumped.
 	:return:
@@ -87,8 +94,8 @@ def debug_throw_error(tomato_module=None):
 	UserError.check(tomato_module in Config.TOMATO_BACKEND_MODULES, code=UserError.INVALID_VALUE, message="bad tomato module", data={"tomato_module": tomato_module})
 	if is_self(tomato_module):
 		try:
-			InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True)
+			InternalError.check(False, code=InternalError.UNKNOWN, message="Test Dump", todump=True, data=data)
 		except:
 			wrap_and_handle_current_exception(re_raise=True)
 	else:
-		get_tomato_inner_proxy(tomato_module).debug_throw_error()
+		get_tomato_inner_proxy(tomato_module).debug_throw_error(data=data)

@@ -3,12 +3,14 @@ from .lib.error import UserError as Error
 from .lib import schema
 
 class Action(object):
-	__slots__ = ("fn", "description", "checkFn", "paramSchema")
-	def __init__(self, fn, description=None, check=None, paramSchema=None):
+	__slots__ = ("fn", "description", "checkFn", "paramSchema", "beforeFn", "afterFn")
+	def __init__(self, fn, description=None, check=None, paramSchema=None, before=None, after=None):
 		self.fn = fn
 		self.description = description or fn.__doc__
 		self.checkFn = check
 		self.paramSchema = paramSchema
+		self.beforeFn = before
+		self.afterFn = after
 	def check(self, obj, **params):
 		if self.paramSchema:
 			try:
@@ -21,7 +23,12 @@ class Action(object):
 			self.checkFn(obj, **params)
 	def __call__(self, obj, **kwargs):
 		self.check(obj, **kwargs)
-		return self.fn(obj, **kwargs)
+		if self.beforeFn:
+			self.beforeFn(obj, **kwargs)
+		result = self.fn(obj, **kwargs)
+		if self.afterFn:
+			self.afterFn(obj, **kwargs)
+		return result
 	def info(self):
 		return {
 			"description": self.description,

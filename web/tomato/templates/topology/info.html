@@ -31,7 +31,8 @@
 <script language="JavaScript" type="text/javascript" src="js/editor/form_elements/template_element.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor/form_elements/textarea_element.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor/form_elements/text_element.js"></script>
-	
+<script language="JavaScript" type="text/javascript" src="js/editor/form_elements/command_text_element.js"></script>
+
 <script language="JavaScript" type="text/javascript" src="js/editor/menu.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor/menus/menu_group.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor/menus/menu_tab.js"></script>
@@ -164,7 +165,7 @@
 				any: "Scripts (Repy)"
 			}
 		},
-		type_names: {{type_names|jsonify}},
+		tech_names: {{tech_names|jsonify}},
 		error_message_appendix: 'If you continue to encounter this problem, please <a href="{%url "help.contact_form"%}" style="color: blue;" target="_blank">contact an administrator</a> or <a href="{%externalurl 'bugtracker' %}" style="color: blue;" target="_help">file a bug report</a>.',
 	onready: function(){
 		{% if tutorial_info.state.enabled %}
