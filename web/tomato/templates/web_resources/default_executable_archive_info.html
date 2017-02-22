@@ -72,7 +72,7 @@
 		<td>
 			<ul>
 				{% for template in alternative.templates %}
-					<li><a href="{%url 'tomato.template.info' template.id%}"><img src="/img/{{template.tech}}16.png"/> {{template.label}} ({{template.tech|tech_to_label}})</a></li>
+					<li><a href="{%url 'tomato.template.info' template.id%}"><img src="/img/{{template.type}}16.png"/> {{template.label}} ({{template.type|type_to_label}})</a></li>
 				{% endfor %}
 			</ul>
 		</td>
