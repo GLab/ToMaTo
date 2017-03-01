@@ -55,7 +55,8 @@ def syncRexTFV():
 	for e in ContainerVirtualization.objects.filter(nextSync__gt=0.0, nextSync__lte=time.time()):
 		with e:
 			try:
-				e.reload().updateInfo()
+				e.reload()
+				e.updateInfo()
 			except ContainerVirtualization.DoesNotExist:
 				pass
 

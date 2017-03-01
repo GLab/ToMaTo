@@ -28,6 +28,7 @@ import time
 from ..lib.constants import StateName, ActionName, TypeTechTrans
 from ..lib.references import Reference
 
+
 ST_CREATED = StateName.CREATED
 ST_PREPARED = StateName.PREPARED
 ST_STARTED = StateName.STARTED
@@ -56,13 +57,12 @@ class VMElement(Element):
 	PROFILE_ATTRS = []
 	
 	#for every subclass which supports RexTFV: create a process which calls this function on every VMElement with  0 != next_sync < time.time()
-	def updateInfo(self): 
-		if self.element is None:
-			return
+	def updateInfo(self):
+		#Todo: Check if lastSync should be set to 0 in order to avoid unnaccessary updates
 		try:
 			self.element.updateInfo()
 		except:
-			pass
+			return
 		
 		self.lastSync = time.time()
 		
@@ -98,7 +98,7 @@ class VMElement(Element):
 	@property
 	def mainElement(self):
 		return self.element
-	
+
 	def _nextIfaceName(self):
 		ifaces = self.children
 		num = 0
@@ -195,7 +195,7 @@ class VMElement(Element):
 			iface._create()
 		self.element.action(ActionName.PREPARE)
 		self.setState(ST_PREPARED, True)
-		
+
 	def action_destroy(self):
 		if isinstance(self.element, HostElement):
 			try:

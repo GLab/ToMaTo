@@ -32,6 +32,7 @@ from ..lib.constants import StateName
 
 
 
+
 TYPES = {}
 REMOVE_ACTION = "(remove)"
 
@@ -252,7 +253,6 @@ class Element(LockedStatefulEntity, BaseDocument):
 	def checkRemove(self, recurse=True):
 		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
 		UserError.check(recurse or self.children.empty(), UserError.INVALID_STATE, "Cannot remove element with children")
-		Entity.checkAction(self, "remove")
 		for ch in self.getChildren():
 			ch.checkRemove(recurse=recurse)
 		if self.connection:

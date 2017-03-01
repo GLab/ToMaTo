@@ -181,22 +181,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 				return (p2, p1)
 		return None
 
-	def checkModify(self, attrs):
-		"""
-		Checks whether the attribute change can succeed before changing the
-		attributes.
-		If checks whether the attributes are listen in CAP_ATTRS and if the
-		current object state is listed in CAP_ATTRS[NAME].
-		
-		@param attrs: Attributes to change
-		@type attrs: dict
-		"""
-		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
-		for key in attrs.keys():
-			UserError.check(key in self.CAP_ATTRS, UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute",
-				data={"connection_type": self.type, "attribute": key})
-			self.CAP_ATTRS[key].check(self, attrs[key])
-		
 	def modify(self, **attrs):
 		"""
 		Sets the given attributes to their given values. This method first
@@ -210,8 +194,8 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		
 		@param attrs: Attributes to change
 		@type attrs: dict
-		"""		
-		self.checkModify(attrs)
+		"""
+		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
 		logging.logMessage("modify", category="connection", id=str(self.id), attrs=attrs)
 		self.setBusy(True)
 		try:
@@ -286,11 +270,6 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			
 	def getElements(self):
 		return [el.upcast() for el in self.elements]
-
-	@classmethod
-	def cap_attrs(cls):
-		return dict([(key, value) for (key, value) in cls.CAP_ATTRS.iteritems()])
-
 
 	def info(self):
 		els = [str(el.id) for el in self.elements]

@@ -187,6 +187,7 @@ class Template(Entity, BaseDocument):
 			return
 		if detached:
 			return threading.Thread(target=self.fetch).start()
+
 		path = self.getPath()
 		aria2.download(self.urls, path)
 		self.size = fs.file_size(path)
@@ -207,7 +208,8 @@ class Template(Entity, BaseDocument):
 
 	def modify_urls(self, val):
 		self.urls = val
-		self.fetch(detached=True)
+		if self.type:
+			self.fetch(detached=True)
 
 	def isReady(self):
 		return not self.checksum is None

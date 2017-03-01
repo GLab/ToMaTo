@@ -215,7 +215,7 @@ class UsageStatistics(BaseDocument):
     
 class UsageRecord(BaseDocument):
     statistics = ReferenceField(UsageStatistics)
-    type = StringField(choices=[(t, t) for t in TYPES], required=True) #@ReservedAssignment
+    type = StringField(choices=[(t, t) for t in TYPES], max_length=10) #@ReservedAssignment
     begin = FloatField() #unix timestamp
     end = FloatField() #unix timestamp
     measurements = IntField()

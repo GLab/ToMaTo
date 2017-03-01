@@ -99,7 +99,6 @@ def element_modify(id, attrs):  # @ReservedAssignment
 	el.modify(**attrs)
 	return el.info()
 
-
 def element_action(id, action, params=None):  # @ReservedAssignment
 	"""
 	Performs an action on the element and possibly on its children too.

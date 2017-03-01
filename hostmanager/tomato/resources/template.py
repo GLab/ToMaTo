@@ -48,7 +48,7 @@ class Template(resources.Resource):
 	ready = BooleanField(default=False)
 	kblang = StringField(default="en-us")
 
-	TYPE = "template"(attrs["tech"], attrs["name"]) in tpls
+	TYPE = "template"
 
 	meta = {
 		'ordering': ['tech', '+preference', 'name'],

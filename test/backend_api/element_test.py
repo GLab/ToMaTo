@@ -101,8 +101,8 @@ class ElementTestCase(ProxyHoldingTestCase):
 
 
 	def setUp(self):
-	
 
+		self.remove_all_elements()
 		self.testelement_attrs = {
 			"profile": self.default_profile_name,
 			"name": "Ubuntu 12.04 (x86) #1",
@@ -114,7 +114,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 																		 attrs=self.testelement_attrs)
 		self.testelement_id = self.testelement['id']
 
-		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "start")
+		self.proxy_holder.backend_core.element_action(self.testelement_id, "start")
 		self.testelement = self.proxy_holder.backend_core.element_info(self.testelement_id)
 		self.testelement_id = self.testelement['id']
 
@@ -529,7 +529,7 @@ class ElementTestCase(ProxyHoldingTestCase):
 		Get usage data for an element
 		"""
 
-		hostelement_id = "%d@%s"%(self.testelement['debug']['host_elements'][0][1],self.testelement['debug']['host_elements'][0][0])
+		hostelement_id = "%s@%s"%(self.testelement['debug']['host_elements'][0][1],self.testelement['debug']['host_elements'][0][0])
 
 		self.proxy_holder.backend_accounting.push_usage(elements={hostelement_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)]},connections={})
 		element_info_api = self.proxy_holder.backend_api.element_usage(self.testelement_id)

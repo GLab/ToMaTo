@@ -220,7 +220,7 @@ class KVMQM(elements.Element, elements.RexTFVElement):
 		if savedState != realState:
 			self.setState(realState, True)
 		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
-			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
+			data={"type": self.type, "id": str(self.id), "saved_state": savedState, "real_state": realState})
 
 	def _template(self):
 		if self.template:

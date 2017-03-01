@@ -36,6 +36,9 @@ class Network(resources.Resource):
 		from ..elements.external_network import External_Network
 		return External_Network.objects(network=self)
 
+	@property
+	def type(self):
+		return self.TYPE
 
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE

@@ -73,7 +73,7 @@ class Bridge(connections.Connection):
 	def init(self, *args, **kwargs):
 		self.state = StateName.CREATED
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
-		self.bridge = "br%s" % str(self.id)[0:12]
+		self.bridge = "br%s" % str(self.id)[13:24]
 		self.capture_port = self.getResource("port")
 				
 	def _startCapturing(self):

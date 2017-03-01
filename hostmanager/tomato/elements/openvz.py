@@ -536,14 +536,28 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 	def _cputime(self):
 		if self.state != StateName.STARTED:
 			return None
-		with open("/proc/vz/vestat") as fp:
-			for line in fp:
-				parts = line.split()
-				if len(parts) < 4:
-					continue
-				veid, user, _, system = line.strip().split()[:4]
-				if veid == str(self.vmid):
-					break
+
+		repeater = 0
+		success = False
+		error = None
+		while repeater < 3 and not success:
+			try:
+				with open("/proc/vz/vestat") as fp:
+					for line in fp:
+						parts = line.split()
+						if len(parts) < 4:
+							continue
+						veid, user, _, system = line.strip().split()[:4]
+						if veid == str(self.vmid):
+							break
+					success = True
+			except Exception as e:
+				error = e
+				success = False
+			repeater+=1
+		if not success:
+				raise e
+
 		if veid == str(self.vmid):
 			cputime = (int(user) + int(system))/process.jiffiesPerSecond()
 		else: #pragma: no cover
@@ -584,7 +598,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 				return int(fp.readline().split()[1]) * 1024
 		else:
 			path.diskspace(self._imagePath())
-		
+
 	def updateUsage(self, usage, data):
 		self._checkState()
 		if self.state == StateName.CREATED:

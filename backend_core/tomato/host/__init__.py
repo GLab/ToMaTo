@@ -542,7 +542,7 @@ class Host(Entity, BaseDocument):
 		for t in Template.objects():
 			if self.name in t.hosts:
 				t.hosts.remove(self.name)
-			t.save()
+				t.save()
 		if self.id:
 			self.delete()
 

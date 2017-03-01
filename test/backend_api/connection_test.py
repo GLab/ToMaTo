@@ -276,7 +276,7 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		tests whether the api returns correctly usage informations about a connection or not
 		"""
 
-		hostconnection_id = "%d@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
+		hostconnection_id = "%s@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
 
 		self.proxy_holder.backend_accounting.push_usage(elements={},connections={hostconnection_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)]})
 		connection_info_api = self.proxy_holder.backend_api.connection_usage(self.testconnection_id)
@@ -359,7 +359,7 @@ class FullTechnologyTestCase(ProxyHoldingTestCase):
 
 			tech_attrs = {
 				"full": ["kvm", "kvmqm"],
-				"container": ["lxc", "openvz"],
+				"container": ["openvz"],
 				"repy": [None]  # None: dont set tech attribute
 			}[temp["type"]]
 
