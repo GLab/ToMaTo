@@ -116,6 +116,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 			stats.init()
 			stats.save()
 			self.usageStatistics = stats
+			self.save()
 		return self.usageStatistics
 
 	def _saveAttributes(self):

@@ -375,7 +375,7 @@ class Host(Entity, BaseDocument):
 			self.incrementErrors()
 			raise
 		from .connection import HostConnection
-		hcon = HostConnection(host=self, num=con["id"], topologyElement=ownerElement,
+		hcon = HostConnection(host=self, num=str(con["id"]), topologyElement=ownerElement,
 							  topologyConnection=ownerConnection, state=con["state"], type=con["type"],
 							  elementFrom=hel1, elementTo=hel2)
 		hcon.objectInfo = con

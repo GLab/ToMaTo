@@ -100,7 +100,7 @@ class CapabilitiesTestCase(ProxyHoldingTestCase):
 		self.assertDictEqual(self.proxy_holder.backend_api.capabilities_connection("bridge"), self.proxy_holder.backend_core.capabilities_connection("bridge"))
 
 	def test_capabilities_connection_wrong_type(self):
-		self.assertRaisesError(UserError, UserError.INVALID_CONFIGURATION, self.proxy_holder.backend_api.capabilities_connection,"NoTech")
+		self.assertRaisesError(UserError, UserError.UNSUPPORTED_TYPE, self.proxy_holder.backend_api.capabilities_connection,"NoTech")
 
 	def test_capabilities(self):
 		self.assertDictEqual(self.proxy_holder.backend_api.capabilities(), self.proxy_holder.backend_core.capabilities())

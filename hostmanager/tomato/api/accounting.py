@@ -86,7 +86,7 @@ def accounting_element_statistics(id, type=None, after=None, before=None): #@Res
     Return value:
       This method returns usage statistics for the given element.
     """
-    return _getElement(id).getUsageStatistics().info(type, after, before)
+    return _getElement(str(id)).getUsageStatistics().info(type, after, before)
     
 def accounting_connection_statistics(id, type=None, after=None, before=None): #@ReservedAssignment
     """

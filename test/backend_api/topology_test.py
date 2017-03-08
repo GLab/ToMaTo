@@ -377,12 +377,6 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		self.testelement2 = self.proxy_holder.backend_core.element_info(self.testelement2_id)
 
 
-		print "Connection"
-		print self.testconnection['debug']['host_connections']
-		print "Elements"
-		print self.testconnection['debug']['host_elements']
-		print "Debug"
-		print self.testconnection['debug']
 		hostconnection_id = "%s@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
 		hostelement1_id = "%s@%s"%(self.testconnection['debug']['host_elements'][0][1],self.testconnection['debug']['host_elements'][0][0])
 		hostelement2_id = "%s@%s"%(self.testconnection['debug']['host_elements'][0][1],self.testconnection['debug']['host_elements'][0][0])

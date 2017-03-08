@@ -257,7 +257,9 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	@property
 	def hostElements(self):
-		return filter(bool, [self.connectionElementFrom, self.connectionElementTo])
+		elementFrom = [v for v in self.elementFrom.hostElements]
+		elementTo = [v for v in self.elementFrom.hostElements]
+		return filter(bool, elementFrom+elementTo)
 
 	@property
 	def hostConnections(self):

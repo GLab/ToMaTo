@@ -210,9 +210,12 @@ class VMElement(Element):
 			for iface in self.children:
 				iface.triggerConnectionStop()
 				iface._remove()
-			self.element.remove()
+
+			hostElement = self.element
 			self.element = None
+			hostElement.remove()
 			self.customTemplate = False
+		self.save()
 		self.setState(ST_CREATED, True)
 		
 	def action_stop(self):
@@ -332,8 +335,9 @@ class VMInterface(Element):
 		
 	def _remove(self, recurse=None):
 		if isinstance(self.element, HostElement):
-			self.element.remove()
+			hostElement = self.element
 			self.element = None
+			hostElement.remove()
 			self.save()
 
 	@property
