@@ -96,6 +96,6 @@ def get(kind):
 	return Network.objects.filter((models.Q(kind=kind)|models.Q(kind__startswith=kind+"/"))&models.Q(owner=currentUser())).order_by("-preference")[0]
 
 def getAll(**kwargs):
-	return Network.objects.filter(**kwargs)
+	return Network.objects(**kwargs)
 
 resources.TYPES[Network.TYPE] = Network

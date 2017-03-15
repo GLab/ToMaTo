@@ -64,7 +64,7 @@ class VpnCloud(elements.Element):
 		self.port = self.getResource("port")
 
 	def _interfaceName(self):
-		return TypeName.VPNCLOUD + "%s" % str(self.id)
+		return TypeName.VPNCLOUD + "%s" % str(self.id)[16:24]
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None

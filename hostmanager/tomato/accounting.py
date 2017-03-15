@@ -200,13 +200,13 @@ class UsageStatistics(BaseDocument):
             if self.begin > end:
                 break
             try:
-                UsageRecord.objects(statistics=self, type=type_, begin=begin, end=end)
+                records = UsageRecord.objects(statistics=self, type=lastType, begin__gte=begin, end__lte=end)
+                usage, coverage = _combine(begin, end, records)
+                self.createRecord(type_, begin, end, coverage, usage)
+                lastType = type_
             except UsageRecord.DoesNotExist:
                 break
-            records = UsageRecord.objects(statistics=self, type=lastType, begin__gte=begin, end__lte=end)
-            usage, coverage = _combine(begin, end, records)
-            self.createRecord(type_, begin, end, coverage, usage)
-            lastType = type_
+
             
     def _removeOld(self):
         for type_ in TYPES:

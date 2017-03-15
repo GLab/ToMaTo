@@ -556,7 +556,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 				success = False
 			repeater+=1
 		if not success:
-				raise e
+				raise error
 
 		if veid == str(self.vmid):
 			cputime = (int(user) + int(system))/process.jiffiesPerSecond()
