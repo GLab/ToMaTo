@@ -116,7 +116,7 @@ class UDP_Tunnel(elements.Element):
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _interfaceName(self):
-		return "stap%s" % str(self.id)
+		return "stap%s" % str(self.id)[16:24]
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None

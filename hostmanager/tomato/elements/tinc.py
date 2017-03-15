@@ -118,7 +118,7 @@ class Tinc(elements.Element):
 		self.pubkey = cmd.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
 
 	def _interfaceName(self):
-		return TypeName.TINC + "%s" % str(self.id)[0:8] # Mongodb Ids are to long, so cut them
+		return TypeName.TINC + "%s" % str(self.id)[16:24] # Mongodb Ids are to long, so cut them
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None
