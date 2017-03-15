@@ -270,12 +270,18 @@ class Host(Entity, BaseDocument):
 					sch = schema.Bool(**params)
 				else:
 					sch = schema.Any(**params)
-				res[attr] = StatefulAttribute(writableStates=desc.get('states'), readOnly=desc.get('read_only'), label=desc.get('desc'), schema=sch, default=desc.get('default')).info()
+				if 'desc' in desc:
+					label = desc.get('desc')
+					description = None
+				else:
+					label = desc.get('label')
+					description = desc.get('description')
+				res[attr] = StatefulAttribute(writableStates=desc.get('states'), readOnly=desc.get('read_only'), label=label, description=description, schema=sch, default=desc.get('default')).info()
 			return res
 		elems = {}
 		for name, info in caps['elements'].items():
 			attributes = info.get('attrs')
-			if not attributes and attributes != {}:
+			if not "attrs" in info:
 				attributes = info.get('attributes')
 			elems[name] = {
 				"actions": convertActions(info.get('actions'), info.get('next_state')),
@@ -288,7 +294,7 @@ class Host(Entity, BaseDocument):
 
 		for name, info in caps['connections'].items():
 			attributes = info.get('attrs')
-			if not attributes and attributes != {}:
+			if not "attrs" in info:
 				attributes = info.get('attributes')
 			cons[name] = {
 				"actions": convertActions(info.get('actions'), info.get('next_state')),

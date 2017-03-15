@@ -183,7 +183,7 @@ class Template(Entity, BaseDocument):
 
 
 	def fetch(self, detached=False):
-		if not self.urls:
+		if not (self.urls and self.name and self.type):
 			return
 		if detached:
 			return threading.Thread(target=self.fetch).start()

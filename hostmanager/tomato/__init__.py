@@ -79,10 +79,10 @@ httpd_pid = None
 
 def start():
 	logging.openDefault(config.LOG_FILE)
-	#if not os.environ.has_key("TOMATO_NO_MIGRATE"):
-	#	db.migrate()
-	#else:
-	#	print >>sys.stderr, "Skipping migrations"
+	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
+		db.migrate()
+	else:
+		print >>sys.stderr, "Skipping migrations"
 	dump.init()
 	firewall.add_all_networks(network.getAll())
 	global httpd_pid
