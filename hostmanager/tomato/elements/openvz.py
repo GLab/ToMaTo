@@ -622,7 +622,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
 		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
 		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
-		"hostname": Attribute(field=hostname, set=modify_hostname, schema=schema.String()),
+		"hostname": Attribute(field=hostname, label="Hostname", set=modify_hostname, schema=schema.String()),
 		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, label="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"diskspace": Attribute(field=diskspace, label="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),

@@ -47,6 +47,7 @@ def take(type_, owner, blacklist=None):
 			continue
 		try:
 			ResourceInstance.objects.get(type=type_, num=num)
+			continue
 		except ResourceInstance.DoesNotExist:
 			pass
 		try:

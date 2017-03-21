@@ -192,7 +192,7 @@ class Entity(object):
 	def capabilities(cls):
 		return {
 			"actions": {key: action.info() for key, action in cls.ACTIONS.items()},
-			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items()},
+			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items() if not attr.readOnly},
 		}
 
 	@classmethod

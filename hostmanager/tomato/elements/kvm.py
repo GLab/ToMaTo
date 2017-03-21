@@ -152,7 +152,6 @@ class KVM(elements.Element, elements.RexTFVElement):
 
 	TYPE = TechName.KVM
 
-	vir = None
 
 
 
@@ -168,7 +167,6 @@ class KVM(elements.Element, elements.RexTFVElement):
 		return self.TYPE
 
 	def init(self, *args, **kwargs):
-		self.vir = virsh.virsh(TechName.KVM)
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
@@ -549,7 +547,6 @@ class KVM_Interface(elements.Element):#
 
 
 	def init(self, *args, **kwargs):
-		self.vir = virsh.virsh(TechName.KVM)
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs)  # no id and no attrs before this line
 		assert isinstance(self.getParent(), KVM)
