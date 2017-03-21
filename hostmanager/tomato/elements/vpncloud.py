@@ -40,7 +40,7 @@ class VpnCloud(elements.Element):
 		"port": Attribute(field=port, schema=schema.Int(), readOnly=True),
 		"pid": Attribute(field=pid, schema=schema.Int(null=True), readOnly=True),
 		"network_id": Attribute(field=network_id,  description="Network ID", schema=schema.Int()),
-		"peers": Attribute(field=peers, description="Peers", schema=schema.List(), default=[])
+		"peers": Attribute(field=peers, label="Peers", schema=schema.List(), default=[])
 	})
 
 

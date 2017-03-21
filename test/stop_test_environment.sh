@@ -21,6 +21,7 @@ echo -n "stopping test ToMaTo instance... "
 echo "done"
 
 # remove files
+mv "$DOCKER_DIR/backend_accounting/target" "/tmp/target"
 rm -rf "$DOCKER_DIR"
 if [ -e "$DOCKER_DIR" ]; then
 	echo "failed removing $DOCKER_DIR"

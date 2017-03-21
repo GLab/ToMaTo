@@ -148,9 +148,11 @@ class KVM(elements.Element, elements.RexTFVElement):
 
 
 	rextfv_max_size = 512*1024*124 # depends on _nlxtp_create_device_and_mountpoint.
-	vir = virsh.virsh(TechName.KVM)
+	vir = None
 
 	TYPE = TechName.KVM
+
+	vir = None
 
 
 
@@ -166,6 +168,7 @@ class KVM(elements.Element, elements.RexTFVElement):
 		return self.TYPE
 
 	def init(self, *args, **kwargs):
+		self.vir = virsh.virsh(TechName.KVM)
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
@@ -529,8 +532,10 @@ class KVM_Interface(elements.Element):#
 	ipspy_pid = IntField()
 	used_addresses = ListField(default=[])
 
-	vir = virsh.virsh(TechName.KVM)
 	TYPE = TechName.KVM_INTERFACE
+
+	vir = None
+
 
 	CAP_CHILDREN = {}
 	CAP_PARENT = [KVM.TYPE]
@@ -544,6 +549,7 @@ class KVM_Interface(elements.Element):#
 
 
 	def init(self, *args, **kwargs):
+		self.vir = virsh.virsh(TechName.KVM)
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs)  # no id and no attrs before this line
 		assert isinstance(self.getParent(), KVM)
@@ -633,7 +639,9 @@ def register():  # pragma: no cover
 		if not ipspyVersion:
 			print >> sys.stderr, "Warning: ipspy not available"
 		elements.TYPES[KVM.TYPE] = KVM
+		KVM.vir = virsh.virsh(TechName.KVM)
 		elements.TYPES[KVM_Interface.TYPE] = KVM_Interface
+		KVM_Interface.vir = virsh.virsh(TechName.KVM)
 
 if not config.MAINTENANCE:
 	tcpserverVersion = cmd.getDpkgVersion("ucspi-tcp")

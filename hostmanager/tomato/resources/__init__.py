@@ -47,7 +47,6 @@ def take(type_, owner, blacklist=None):
 			continue
 		try:
 			ResourceInstance.objects.get(type=type_, num=num)
-			continue
 		except ResourceInstance.DoesNotExist:
 			pass
 		try:
@@ -112,9 +111,9 @@ class Resource(Entity, BaseDocument):
 class ResourceInstance(BaseDocument):
 	type = StringField(choices=[(t, t) for t in TYPES]) #@ReservedAssignment
 	num = IntField()
-	ownerElement = ReferenceField(Element)
+	ownerElement = ReferenceField(Element, null=True, reverse_delete_rule=CASCADE)
 	ownerElementId = ReferenceFieldId(ownerElement)
-	ownerConnection = ReferenceField(Connection)
+	ownerConnection = ReferenceField(Connection, null=True, reverse_delete_rule=CASCADE)
 	ownerConnectionId = ReferenceFieldId(ownerConnection)
 	attrs = DictField()
 

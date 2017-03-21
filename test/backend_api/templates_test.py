@@ -55,7 +55,6 @@ class TemplateTestCase(ProxyHoldingTestCase):
 		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 	def setUp(self):
-
 		#Create template
 		self.testtemplate_attrs = self.test_temps[0].copy()
 		self.testtemplate_type = self.testtemplate_attrs['type']

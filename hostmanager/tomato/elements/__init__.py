@@ -32,7 +32,6 @@ from ..lib.constants import StateName
 
 
 
-
 TYPES = {}
 REMOVE_ACTION = "(remove)"
 
@@ -519,6 +518,7 @@ def get(id_, **kwargs):
 
 def getAll(**kwargs):
 	return (el.upcast() for el in Element.objects(**kwargs))
+
 
 def create(type_, parent=None, attrs=None):
 	if not attrs: attrs = {}
