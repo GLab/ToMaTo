@@ -616,12 +616,6 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"vmid": Attribute(field=vmid, readOnly=True, schema=schema.Int()),
-		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
-		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
-		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
-		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
-		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
 		"hostname": Attribute(field=hostname, label="Hostname", set=modify_hostname, schema=schema.String()),
 		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, label="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
@@ -718,14 +712,10 @@ class OpenVZ_Interface(elements.Element):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
-		"mac": Attribute(field=mac, description="Mac Address", schema=schema.String(), readOnly=True),
-		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
-		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
 		"name": Attribute(field=name, description="Name", schema = schema.String(regex="^eth[0-9]+$")),
 		"ip4address": Attribute(field=ip4address, description="IPv4 address", schema=schema.String()),
 		"ip6address": Attribute(field=ip6address, description="IPv6	address", schema=schema.String()),
 		"use_dhcp": Attribute(field=use_dhcp, description="Use DHCP", schema=schema.Bool(), default=False),
-		"timeout": elements.Element.ATTRIBUTES["timeout"],
 	})
 
 	ACTIONS = elements.Element.ACTIONS.copy()
