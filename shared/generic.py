@@ -327,7 +327,7 @@ class StatefulEntity(Entity):
 	def capabilities(cls):
 		return {
 			"actions": {key: action.info() for key, action in cls.ACTIONS.iteritems()},
-			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.iteritems()},
+			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.iteritems() if not attr.readOnly},
 			"states": cls.STATES,
 			"default_state": cls.DEFAULT_STATE
 		}
