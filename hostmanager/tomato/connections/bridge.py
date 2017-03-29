@@ -306,6 +306,9 @@ class Bridge(connections.Connection):
 		usage.diskspace = path.diskspace(self.dataPath())
 
 	ATTRIBUTES = connections.Connection.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"bridge": Attribute(field=bridge, schema=schema.String(), readOnly=True),
+	})
 	ATTRIBUTES_EMUL = {
 		"emulation": Attribute(field=emulation, description="Enable emulation", schema=schema.Bool(), default=True),
 
@@ -362,6 +365,8 @@ class Bridge(connections.Connection):
 							   default=False),
 		"capture_filter": Attribute(field=capture_filter, description="Packet filter expression",
 									schema=schema.String(), set=modify_capture_filter, default=""),
+		"capture_port": Attribute(field=capture_port, schema=schema.Int(), readOnly=True),
+		"capture_pid": Attribute(field=capture_pid, schema=schema.Int(), readOnly=True),
 		"capture_mode": Attribute(field=capture_mode, description="Capture mode", set=modify_capture_mode,
 								  schema=schema.String(options=["net", "file"]), default="file"),
 

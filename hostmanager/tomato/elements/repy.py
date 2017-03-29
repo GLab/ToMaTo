@@ -334,6 +334,12 @@ class Repy(elements.Element):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
+		"pid": Attribute(field=pid, readOnly=True, schema=schema.Int()),
+		"websocket_port": Attribute(field=websocket_port, readOnly=True, schema=schema.Int()),
+		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
+		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
+		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
+		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
 		"args": Attribute(field=args, description="Arguments", set=modify_args, schema = schema.List(), default=[]),
 		"args_doc": Attribute(field=args_doc, description="Arguments Documentation", readOnly=True),
 		"cpus": Attribute(field=cpus, description="Number of CPUs", set=modify_cpus, schema=schema.Number(minValue=1,maxValue=4), default=1),

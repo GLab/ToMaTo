@@ -311,6 +311,11 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	}
 
 	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"owner": Attribute(field=ownerId, readOnly=True, schema=schema.Identifier()),
+		"type": Attribute(field=type, readOnly=True, schema=schema.Identifier()),
+		"state": Attribute(field=state, readOnly=True, schema=schema.Identifier()),
+		"elements": Attribute(field=elementIds, schema=schema.List(), readOnly=True),
 	}
 
 		

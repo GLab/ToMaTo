@@ -120,6 +120,11 @@ class ResourceInstance(BaseDocument):
 
 	ACTIONS = {}
 	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"type": Attribute(field=type, schema=schema.String(options=TYPES)),
+		"num": Attribute(field=num,  schema=schema.Int(minValue=0)),
+		"ownerElement": Attribute(field=ownerElementId, schema=schema.Identifier()),
+		"ownerConnection": Attribute(field=ownerConnectionId, schema=schema.Identifier()),
 	}
 
 	def init(self, type, num, owner, attrs=None): #@ReservedAssignment

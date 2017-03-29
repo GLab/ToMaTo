@@ -77,6 +77,8 @@ class UDP_Tunnel(elements.Element):
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
+		"pid": Attribute(field=pid, schema=schema.Int(), readOnly=True),
+		"port": Attribute(field=port, schema=schema.Int(), readOnly=True),
 		"connect": Attribute(field=connect, label="Connect to", schema=schema.String(), default=None),
 	})
 
