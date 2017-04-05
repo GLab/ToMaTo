@@ -58,10 +58,10 @@ class Attribute(object):
 				raise
 		if self.checkFn:
 			self.checkFn(obj, value)
-	def set(self, obj, value):
+	def set(self, obj, init, value):
 		self.check(obj, value)
 		if self.setFn:
-			self.setFn(obj, value)
+			self.setFn(obj, init, value)
 		elif self.field:
 			self.field.__set__(obj, value)
 	def get(self, obj):
@@ -97,19 +97,23 @@ class Entity(object):
 	DEFAULT_ATTRIBUTES = {}
 	REMOVE_ACTION = "(remove)"
 
-	save = id = delete = None
-	del save, id, delete
+	INITIALIZING = False
+
+	save = id = delete = update = None
+	del save, id, delete, update
 
 	@property
 	def type(self):
 		return self.__class__.__name__.lower()
 
 	def init(self, **attrs):
+		self.INITIALIZING = True
 		toSet = {}
 		toSet.update(self.DEFAULT_ATTRIBUTES)
 		if attrs:
 			toSet.update(attrs)
 		self.modify(**toSet)
+		self.INITIALIZING = False
 
 	def checkUnknownAttribute(self, key, value):
 		raise Error(code=Error.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
@@ -147,7 +151,11 @@ class Entity(object):
 				raise
 		if unknownAttrs:
 			self.setUnknownAttributes(unknownAttrs)
-		self.save()
+		if self.INITIALIZING:
+			self.save()
+		else:
+			self.update()
+
 
 	def checkUnknownAction(self, action, params=None):
 		raise Error(code=Error.UNSUPPORTED_ACTION, message="Unsupported action", data={"capabilities": self.capabilities()})
