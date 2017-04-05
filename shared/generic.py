@@ -58,7 +58,7 @@ class Attribute(object):
 				raise
 		if self.checkFn:
 			self.checkFn(obj, value)
-	def set(self, obj, init, value):
+	def set(self, obj, value):
 		self.check(obj, value)
 		if self.setFn:
 			self.setFn(obj, init, value)
