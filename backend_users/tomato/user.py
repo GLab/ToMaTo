@@ -42,7 +42,6 @@ class Notification(EmbeddedDocument):
 		self.ref_obj = ref if ref else []
 		self.sender = sender.name if sender else None
 		self.subject_group = subject_group
-		self.save()
 
 	def info(self):
 		return {
@@ -226,7 +225,7 @@ class User(Entity, BaseDocument):
 		notf = Notification(title=subject, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
-		self.update()
+		self.save()
 
 		# send email
 		if Flags.NoMails not in self.flags:
