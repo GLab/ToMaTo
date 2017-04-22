@@ -42,6 +42,7 @@ class Notification(EmbeddedDocument):
 		self.ref_obj = ref if ref else []
 		self.sender = sender.name if sender else None
 		self.subject_group = subject_group
+		self.save()
 
 	def info(self):
 		return {
