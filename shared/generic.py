@@ -115,6 +115,14 @@ class Entity(object):
 		self.modify(**toSet)
 		self.INITIALIZING = False
 
+	def update(self, **kwargs):
+		if self.objects(id=str(self.id)) is None:
+			self.save()
+		if kwargs is not None:
+			object.update(self, kwargs)
+		else:
+			self.save()
+
 	def checkUnknownAttribute(self, key, value):
 		raise Error(code=Error.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
 
@@ -151,10 +159,7 @@ class Entity(object):
 				raise
 		if unknownAttrs:
 			self.setUnknownAttributes(unknownAttrs)
-		if self.INITIALIZING:
-			self.save()
-		else:
-			self.update()
+		self.update()
 
 
 	def checkUnknownAction(self, action, params=None):
@@ -188,7 +193,7 @@ class Entity(object):
 			raise
 		finally:
 			if action != self.REMOVE_ACTION:
-				self.save()
+				self.update()
 
 	def remove(self, params=None):
 		self.action(self.REMOVE_ACTION, params)

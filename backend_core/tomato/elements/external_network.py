@@ -143,7 +143,7 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 				for iface in self.children:
 					iface._remove()
 				self.element = None
-			self.save()
+			self.update(element=self.element)
 
 	def action_start(self):
 		hPref, sPref = self.getLocationPrefs()

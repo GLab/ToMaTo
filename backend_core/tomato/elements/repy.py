@@ -56,7 +56,7 @@ class Repy(VMElement):
 		})
 		attrs.update(self._profileAttrs)
 		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, ownerElement=self)
-		self.save()
+		self.update()
 		for iface in self.children:
 			iface._create()
 		self.setState(ST_PREPARED, True)

@@ -163,7 +163,7 @@ class VMElement(Element):
 				for iface in self.children:
 					iface._remove()
 				self.element = None
-			self.save()
+			self.update(element=self.element)
 			
 	def action_change_template(self, template):
 		self.modify_template(template)
@@ -190,7 +190,7 @@ class VMElement(Element):
 		})
 		attrs.update(self._profileAttrs)
 		self.element = _host.createElement(type_, parent=None, attrs=attrs, ownerElement=self)
-		self.save()
+		self.update()
 		for iface in self.children:
 			iface._create()
 		self.element.action(ActionName.PREPARE)
@@ -215,7 +215,7 @@ class VMElement(Element):
 			self.element = None
 			hostElement.remove()
 			self.customTemplate = False
-		self.save()
+		self.update()
 		self.setState(ST_CREATED, True)
 		
 	def action_stop(self):
@@ -241,7 +241,7 @@ class VMElement(Element):
 
 	def after_upload_use(self):
 		self.customTemplate = True
-		self.save()
+		self.update()
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({

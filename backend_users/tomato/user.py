@@ -170,16 +170,14 @@ class User(Entity, BaseDocument):
 		orga = Organization.get(val)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": val})
 		self.organization = orga
+		self.update(organization=self.organization)
 
 	def modify_quota(self, val):
 		self.quota.modify(val)
 
 	def modify_password(self, password):
 		self.password = User.hashPassword(password)
-		if self.INITIALIZING:
-			self.save()
-		else:
-			self.update()
+		self.update(password=self.password)
 
 	def modify_flags(self, flags):
 		UserError.check(isinstance(flags, dict), code=UserError.INVALID_DATA, message="flags must be a dictionary")
@@ -188,6 +186,7 @@ class User(Entity, BaseDocument):
 				self.flags.remove(flag)
 			if (is_set) and (flag not in self.flags):
 				self.flags.append(flag)
+		self.update(flags=self.flags)
 
 
 
@@ -246,19 +245,14 @@ class User(Entity, BaseDocument):
 
 	def notification_set_read(self, notification_id, read=True):
 		notif = self.notification_get(notification_id)
-		notif.read = read
-		self.update()
+		notif.update(read = read)
 
 	def notification_set_all_read(self, read=True):
 		for notif in self.notifications:
-			notif.read=read
-		self.update()
+			notif.update(read=read)
 
 	def register_activity(self):
-		#self.lastLogin = time.time()
 		self.update(lastLogin=time.time())
-		print "lastlogin: %d" % self.lastLogin
-		print "time: %d" % time.time()
 
 	def clean_up_notifications(self):
 		border_read = time.time() - 60*60*24*30  # fixme: should be configurable
