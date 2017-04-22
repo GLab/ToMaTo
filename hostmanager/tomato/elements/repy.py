@@ -239,7 +239,7 @@ class Repy(elements.Element):
 		if tmplName:
 			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
 		templ = self._template()
-		templ.fetch()
+		templ.fetch(detached=False, init=self.INITIALIZING)
 		self._useImage(templ.getPath())
 
 	def action_start(self):

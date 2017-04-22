@@ -195,11 +195,6 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 	def _imagePath(self):
 		return "/var/lib/vz/private/%d" % self.vmid
 
-	def modify_template(self, tmplName):
-		temp= template.Template.objects(self.TYPE, tmplName)
-		UserError.check(temp, code=UserError.INVALID_VALUE, message="No such template", data={"value": tmplName})
-		self.template = temp
-
 	# 9: locked
 	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
 	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode in [9, 51])
@@ -400,7 +395,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		if tmplName:
 			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
 		templ = self._template()
-		templ.fetch()
+		templ.fetch(detached=False, init=self.INITIALIZING)
 		if self.state == StateName.PREPARED:
 			self._useImage(templ.getPath())
 
