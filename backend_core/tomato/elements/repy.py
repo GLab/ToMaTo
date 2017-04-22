@@ -43,7 +43,7 @@ class Repy(VMElement):
 			return self.template.args_doc
 		else:
 			return None
-		self.save()
+		self.update()
 
 
 	def action_prepare(self):

@@ -43,7 +43,7 @@ class UDPEndpoint(Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
-		self.save()
+		self.update()
 	
 	@property
 	def mainElement(self):

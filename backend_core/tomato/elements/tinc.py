@@ -46,7 +46,7 @@ class TincVPN(ConnectingElement, Element):
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + self.idStr
-		self.save()
+		self.update()
 	
 	def onChildAdded(self, iface):
 		if self.state == ST_PREPARED: #self is correct
@@ -252,7 +252,7 @@ class TincEndpoint(ConnectingElement, Element):
 			self.mode = self.parent.mode
 		if not self.name:
 			self.name = self.parent._nextName("port")
-		self.save()
+		self.update()
 	
 	@property
 	def mainElement(self):
