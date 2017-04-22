@@ -96,7 +96,7 @@ class User(Entity, BaseDocument):
 			attrs = {}
 		from .quota import Quota, Usage
 		default_quota = settings.get_user_quota(Config.USER_QUOTA_DEFAULT)
-		obj = cls(lastLogin=time.time(),
+		obj = User.init(lastLogin=time.time(),
 		          password=password,
 							quota=Quota(
 								used=Usage(cputime=0, memory=0, diskspace=0, traffic=0),
@@ -108,7 +108,6 @@ class User(Entity, BaseDocument):
 		try:
 			obj.modify(name=name, organization=organization, email=email, **attrs)
 			obj.modify_password(password)
-			obj.save()
 		except:
 			if obj.id:
 				obj.remove()
@@ -177,7 +176,7 @@ class User(Entity, BaseDocument):
 
 	def modify_password(self, password):
 		self.password = User.hashPassword(password)
-		self.save()
+		self.update()
 
 	def modify_flags(self, flags):
 		UserError.check(isinstance(flags, dict), code=UserError.INVALID_DATA, message="flags must be a dictionary")
@@ -226,7 +225,7 @@ class User(Entity, BaseDocument):
 		notf = Notification(title=subject, message=message, timestamp=now, id=notf_id)
 		notf.init(ref, fromUser, subject_group)
 		self.notifications.append(notf)
-		self.save()
+		self.update()
 
 		# send email
 		if Flags.NoMails not in self.flags:
@@ -245,16 +244,16 @@ class User(Entity, BaseDocument):
 	def notification_set_read(self, notification_id, read=True):
 		notif = self.notification_get(notification_id)
 		notif.read = read
-		self.save()
+		self.update()
 
 	def notification_set_all_read(self, read=True):
 		for notif in self.notifications:
 			notif.read=read
-		self.save()
+		self.update()
 
 	def register_activity(self):
 		self.lastLogin = time.time()
-		self.save()
+		self.update()
 
 	def clean_up_notifications(self):
 		border_read = time.time() - 60*60*24*30  # fixme: should be configurable
