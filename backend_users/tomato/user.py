@@ -176,7 +176,10 @@ class User(Entity, BaseDocument):
 
 	def modify_password(self, password):
 		self.password = User.hashPassword(password)
-		self.update()
+		if self.INITIALIZING:
+			self.save()
+		else:
+			self.update()
 
 	def modify_flags(self, flags):
 		UserError.check(isinstance(flags, dict), code=UserError.INVALID_DATA, message="flags must be a dictionary")
@@ -252,8 +255,10 @@ class User(Entity, BaseDocument):
 		self.update()
 
 	def register_activity(self):
-		self.lastLogin = time.time()
-		self.update()
+		#self.lastLogin = time.time()
+		self.update(lastLogin=time.time())
+		print "lastlogin: %d" % self.lastLogin
+		print "time: %d" % time.time()
 
 	def clean_up_notifications(self):
 		border_read = time.time() - 60*60*24*30  # fixme: should be configurable
