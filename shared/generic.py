@@ -61,7 +61,7 @@ class Attribute(object):
 	def set(self, obj, value):
 		self.check(obj, value)
 		if self.setFn:
-			self.setFn(obj, init, value)
+			self.setFn(obj, value)
 		elif self.field:
 			self.field.__set__(obj, value)
 	def get(self, obj):
@@ -97,8 +97,6 @@ class Entity(object):
 	DEFAULT_ATTRIBUTES = {}
 	REMOVE_ACTION = "(remove)"
 
-	INITIALIZING = False
-
 	save = id = delete = update = None
 	del save, id, delete, update
 
@@ -107,19 +105,21 @@ class Entity(object):
 		return self.__class__.__name__.lower()
 
 	def init(self, **attrs):
-		self.INITIALIZING = True
 		toSet = {}
 		toSet.update(self.DEFAULT_ATTRIBUTES)
 		if attrs:
 			toSet.update(attrs)
 		self.modify(**toSet)
-		self.INITIALIZING = False
 
-	def update(self, **kwargs):
-		if self.objects(id=str(self.id)) is None:
+	def update_or_save(self, **kwargs):
+		if not self.id:
 			self.save()
-		if kwargs is not None:
-			object.update(self, kwargs)
+		if not self.__class__.objects.with_id(str(self.id)):
+			#If the object has a id but doesn't exist in the database it is the result of bad parallelization
+			#So don't save it
+			return
+		if kwargs:
+			self.update(**kwargs)
 		else:
 			self.save()
 
@@ -159,7 +159,7 @@ class Entity(object):
 				raise
 		if unknownAttrs:
 			self.setUnknownAttributes(unknownAttrs)
-		self.update()
+		self.update_or_save()
 
 
 	def checkUnknownAction(self, action, params=None):
@@ -193,7 +193,7 @@ class Entity(object):
 			raise
 		finally:
 			if action != self.REMOVE_ACTION:
-				self.update()
+				self.update_or_save()
 
 	def remove(self, params=None):
 		self.action(self.REMOVE_ACTION, params)

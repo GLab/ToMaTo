@@ -174,8 +174,7 @@ class Template(LockedEntity, BaseDocument):
 			self.host_urls = []
 			self.hosts = []
 			self._update_repy_doc()
-		if Template.objects(id=str(self.id)):
-			self.save()
+		self.update_or_save()
 
 	def getPath(self):
 		return os.path.join(settings.get_template_dir(), PATTERNS[self.type] % self.name)
