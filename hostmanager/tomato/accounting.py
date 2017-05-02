@@ -15,13 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-from django.core import exceptions
+from .db import *
+from .generic import *
+
 import traceback
 import time
 from datetime import datetime, timedelta
 
-from lib import db, attributes, logging #@UnresolvedImport
+from lib import attributes, logging #@UnresolvedImport
 from lib.decorators import *
 from . import scheduler
 
@@ -95,10 +96,36 @@ class Usage:
     def info(self):
         return {"cputime": self.cputime, "memory": self.memory, "diskspace": self.diskspace, "traffic": self.traffic}
     
-class UsageStatistics(attributes.Mixin, models.Model):
-    begin = models.FloatField() #unix timestamp
-    #records: [UsageRecord]
-    attrs = db.JSONField()
+class UsageStatistics(BaseDocument):
+    begin = FloatField() #unix timestamp
+    attrs = DictField()
+
+
+    ATTRIBUTES = {
+        "id": IdAttribute(),
+        "begin": Attribute(field=begin, schema=schema.Number()),
+        "element":  Attribute(get=lambda self: self.element.id if self.element else None),
+        "connection":  Attribute(get=lambda self: self.connection.id if self.element else None)
+    }
+
+    meta = {
+		'auto_create_index': False,
+        'indexes': ['id']
+    }
+
+    @property
+    def records(self):
+        return UsageRecord.objects(statistics=self)
+
+    @property
+    def element(self):
+        from elements import Element
+        return Element.objects.get(usageStatistics=self)
+
+    @property
+    def connection(self):
+        from connections import Connection
+        return Connection.objects.get(usageStatistics=self)
     
     class Meta:
         pass
@@ -119,7 +146,7 @@ class UsageStatistics(attributes.Mixin, models.Model):
         
        
     def getRecords(self, type_, after=None, before=None):
-        all_ = self.records.filter(type=type_)
+        all_ = UsageRecord.objects(statistics=self, type=type_)
         if after:
             all_ = all_.filter(end__gte=after)
         if before:
@@ -130,23 +157,21 @@ class UsageStatistics(attributes.Mixin, models.Model):
         record = UsageRecord()
         record.init(self, type_, begin, end, measurements, usage)
         record.save()
-        self.records.add(record)
         obj = self._object()
-        logging.logMessage("record", category="accounting", type=type_, begin=begin, end=end, measurements=measurements, object=(obj.__class__.__name__.lower(), obj.id), usage=usage.info())
+        logging.logMessage("record", category="accounting", type=type_, begin=begin, end=end, measurements=measurements, object=(obj.__class__.__name__.lower(), str(obj.id)), usage=usage.info())
        
     def _object(self):
         try:
             if self.element:
                 return self.element
-        except exceptions.ObjectDoesNotExist:
+        except DoesNotExist:
             pass
         try:
             if self.connection:
                 return self.connection
-        except exceptions.ObjectDoesNotExist:
+        except DoesNotExist:
             pass
-       
-    @db.commit_after
+
     def update(self):
         usage = Usage()
         begin = time.time()
@@ -174,32 +199,34 @@ class UsageStatistics(attributes.Mixin, models.Model):
                 begin = self.begin
             if self.begin > end:
                 break
-            if self.records.filter(type=type_, begin=begin, end=end).exists():
+            try:
+                records = UsageRecord.objects(statistics=self, type=lastType, begin__gte=begin, end__lte=end)
+                usage, coverage = _combine(begin, end, records)
+                self.createRecord(type_, begin, end, coverage, usage)
+                lastType = type_
+            except UsageRecord.DoesNotExist:
                 break
-            records = self.records.filter(type=lastType, begin__gte=begin, end__lte=end)
-            usage, coverage = _combine(begin, end, records)
-            self.createRecord(type_, begin, end, coverage, usage)
-            lastType = type_
+
             
     def _removeOld(self):
         for type_ in TYPES:
             for r in self.getRecords(type_).order_by("-begin")[KEEP_RECORDS[type_]:]:
                 r.delete()
     
-class UsageRecord(models.Model):
-    statistics = models.ForeignKey(UsageStatistics, related_name="records")
-    type = models.CharField(max_length=10, choices=[(t, t) for t in TYPES]) #@ReservedAssignment
-    begin = models.FloatField() #unix timestamp
-    end = models.FloatField() #unix timestamp
-    measurements = models.IntegerField()
+class UsageRecord(BaseDocument):
+    statistics = ReferenceField(UsageStatistics)
+    type = StringField(choices=[(t, t) for t in TYPES], max_length=10) #@ReservedAssignment
+    begin = FloatField() #unix timestamp
+    end = FloatField() #unix timestamp
+    measurements = IntField()
     #using fields to save space
-    memory = models.FloatField() #unit: bytes
-    diskspace = models.FloatField() #unit: bytes
-    traffic = models.FloatField() #unit: bytes
-    cputime = models.FloatField() #unit: cpu seconds
+    memory = FloatField() #unit: bytes
+    diskspace = FloatField() #unit: bytes
+    traffic = FloatField() #unit: bytes
+    cputime = FloatField() #unit: cpu seconds
     
-    class Meta:
-        pass
+    meta = {"allow_inheritance": True}
+
 
     def init(self, statistics, type, begin, end, measurements, usage): #@ReservedAssignment
         self.statistics = statistics

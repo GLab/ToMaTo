@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# ToMaTo (Topology management software) 
+# ToMaTo (Topology management software)
 # Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
 #
 # This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	hostConnections = ListField(ReferenceField('HostConnection', reverse_delete_rule=PULL), db_field='host_connections')
 	clientData = DictField(db_field='client_data')
 	directData = DictField(db_field='direct_data')
-	
+
 	meta = {
 		'allow_inheritance': True,
 		'indexes': [
@@ -61,7 +61,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	@property
 	def children(self):
 		return Element.objects(parent=self) if self.id else []
-	
+
 	DIRECT_ACTIONS = True
 	DIRECT_ACTIONS_EXCLUDE = []
 
@@ -69,7 +69,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	DIRECT_ATTRS_EXCLUDE = []
 
 	HOST_TYPE = ""
-	
+
 	DOC = ""
 
 	CAP_CHILDREN = {}
@@ -86,7 +86,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	# whether neighboring elements should be on the same host/site
 	SAME_HOST_AFFINITY = -10 #distribute load
 	SAME_SITE_AFFINITY = 20 #keep traffic local and latencies low
-	
+
 	def init(self, topology, parent=None, **attrs):
 		if parent:
 			UserError.check(parent.type in self.CAP_PARENT, code=UserError.INVALID_VALUE,
@@ -118,7 +118,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 	@property
 	def _remoteAttrs(self):
 		caps = Host.getElementCapabilities(self.remoteType)
-		allowed = caps["attributes"].keys() if caps else []
+		allowed = [a for a, v in caps["attributes"].iteritems() if not v.get("read_only", False)] if caps else []
 		attrs = {}
 		for key, value in self.info().iteritems():
 			if key in allowed:
@@ -158,8 +158,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		UserError.check(self.mainElement, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (not deployed)")
 		if not action in self.mainElement.getAllowedActions():
 			self.mainElement.updateInfo()
-			self.state = self.mainElement.state
-			self.save()
+			self.update_or_save(state=self.mainElement.state)
 		UserError.check(action in self.mainElement.getAllowedActions(),
 			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (not supported by deployed element)")
 		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_GRANT]:
@@ -192,8 +191,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		if recursive:
 			for ch in self.children:
 				ch.setState(state, True)
-		self.state = state
-		self.save()
+		self.update_or_save(state=self.state)
 
 	def _remove(self, recurse=True):
 		try:
@@ -224,7 +222,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 
 	def onChildAdded(self, child):
 		pass
-	
+
 	def onChildRemoved(self, child):
 		pass
 
@@ -243,7 +241,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		if self.id == els[1].id:
 			return els[0]
 		assert False
-		
+
 	def getLocationData(self, maxDepth=3):
 		"""
 		Determines where this element is located and how much it wants other elements to be close by.
@@ -251,18 +249,18 @@ class Element(LockedStatefulEntity, BaseDocument):
 		data of these elements instead.
 		Since this calculation can get stuck in a loop the depth is limited by a parameter. The
 		maxDepth is decremented each time the calculation spans another element group.
-		 
+
 		@param maxDepth: Parameter limiting the maximal depth of calculation
 		"""
 		els = set()
 		for el in self.hostElements:
 			els.add((el, self.SAME_HOST_AFFINITY, self.SAME_SITE_AFFINITY))
 		return els
-			
+
 	def getLocationPrefs(self, children=True):
 		"""
 		Calculate and return host and site preferences by collecting and merging location data
-		of connected elements 
+		of connected elements
 		"""
 		hostPrefs = {}
 		sitePrefs = {}
@@ -276,15 +274,15 @@ class Element(LockedStatefulEntity, BaseDocument):
 			for ch in self.children:
 				hPref, sPref = ch.getLocationPrefs()
 				for host, pref in hPref.iteritems():
-					hostPrefs[host] = hostPrefs.get(host, 0.0) + pref 
+					hostPrefs[host] = hostPrefs.get(host, 0.0) + pref
 				for site, pref in sPref.iteritems():
 					sitePrefs[site] = sitePrefs.get(site, 0.0) + pref
 		return (hostPrefs, sitePrefs)
-			
+
 	def triggerConnectionStart(self):
 		if self.connection:
 			self.connection.triggerStart()
-			
+
 	def triggerConnectionStop(self):
 		if self.connection:
 			self.connection.triggerStop()
@@ -317,7 +315,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 					caps["attributes"][attr] = params
 		caps.update(children=cls.CAP_CHILDREN, parent=cls.CAP_PARENT, connectable=cls.CAP_CONNECTABLE)
 		return caps
-			
+
 	def info(self, childrenIdsHint=None):
 		# Speed optimization: use existing information to avoid database accesses
 		if not childrenIdsHint is None:
@@ -340,7 +338,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 
 	def __str__(self):
 		return "%s_%s" % (self.type, self.id)
-		
+
 	@property
 	def readyToConnect(self):
 		return False
@@ -409,8 +407,8 @@ class Element(LockedStatefulEntity, BaseDocument):
 		"children": Attribute(field=childrenIds, readOnly=True, schema=schema.List(items=schema.Identifier())),
 		"connection": Attribute(field=connectionId, readOnly=True, schema=schema.Identifier(null=True)),
 		"debug": Attribute(get=lambda obj: {
-			"host_elements": [(o.host.name, o.num) for o in obj.hostElements],
-			"host_connections": [(o.host.name, o.num) for o in obj.hostConnections],
+			"host_elements": [(o.host.name, str(o.num)) for o in obj.hostElements],
+			"host_connections": [(o.host.name, str(o.num)) for o in obj.hostConnections],
 		}, readOnly=True, schema=schema.StringMap(items={
 			'host_elements': schema.List(items=schema.List(minLength=2, maxLength=2)),
 			'host_connections': schema.List(items=schema.List(minLength=2, maxLength=2))

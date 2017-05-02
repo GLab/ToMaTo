@@ -20,6 +20,12 @@ if [ -e "$DOCKER_DIR" ]; then
 	exit 1
 fi
 
+if [ -e "/tmp/target" ]; then
+    echo -n "copying old accounting files to save some compiling time..."
+    mkdir -p "$DOCKER_DIR/backend_accounting/"
+    mv "/tmp/target" "$DOCKER_DIR/backend_accounting/"
+fi
+
 # stop tomato
 echo -n "stopping current ToMaTo instance... "
 ../docker/run/tomato-ctl.py stop > /dev/null

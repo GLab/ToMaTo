@@ -61,7 +61,7 @@ def element_create(type, parent=None, attrs=None):  # @ReservedAssignment
 	  Various other exceptions can be raised, depending on the given type.
 	"""
 	if not attrs: attrs = {}
-	parentEl = _getElement(int(parent)) if parent else None
+	parentEl = _getElement(str(parent)) if parent else None
 	attrs = dict(attrs)
 	el = elements.create(type, parentEl, attrs)
 	return el.info()
@@ -95,10 +95,9 @@ def element_modify(id, attrs):  # @ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type
 	  and state.
 	"""
-	el = _getElement(int(id))
-	el.modify(attrs)
+	el = _getElement(str(id))
+	el.modify(**attrs)
 	return el.info()
-
 
 def element_action(id, action, params=None):  # @ReservedAssignment
 	"""
@@ -135,7 +134,7 @@ def element_action(id, action, params=None):  # @ReservedAssignment
 	  and state.
 	"""
 	if not params: params = {}
-	el = _getElement(int(id))
+	el = _getElement(str(id))
 	res = el.action(action, params)
 	return res
 
@@ -177,7 +176,7 @@ def element_remove(id, recurse=True):  # @ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type
 	  and state.
 	"""
-	el = _getElement(int(id))
+	el = _getElement(str(id))
 	el.remove(recurse)
 
 
@@ -225,7 +224,7 @@ def element_info(id):  # @ReservedAssignment
 	  If the given element does not exist or belongs to another owner
 	  an exception *element does not exist* is raised.
 	"""
-	el = _getElement(int(id))
+	el = _getElement(str(id))
 	return el.info()
 
 

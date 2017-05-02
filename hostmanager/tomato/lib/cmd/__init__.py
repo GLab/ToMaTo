@@ -96,7 +96,10 @@ def getDpkgVersion(package, verStr=None):
     return splitVersion(verStr)
 
 def getVirshVersion():
-    error, output = runUnchecked(["virsh", "-version"])
+    try:
+        error, output = runUnchecked(["virsh", "-version"])
+    except:
+        return None
     return splitVersion(output)
 
 def escape(s):

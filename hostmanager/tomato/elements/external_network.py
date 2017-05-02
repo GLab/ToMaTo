@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+from ..db import *
+from ..generic import *
 from .. import connections, elements, resources
 from ..lib.attributes import Attr #@UnresolvedImport
-from ..resources import network
+from ..resources.network import Network
 from ..lib.constants import TypeName
 
 DOC="""
@@ -54,31 +55,38 @@ Actions: None
 
 
 class External_Network(elements.Element):
-	network_attr = Attr("network", null=True)
-	network = models.ForeignKey(network.Network, null=True, related_name="instances")
+	network = ReferenceField(Network, reverse_delete_rule=DENY)
+	networkId = ReferenceFieldId(network)
+
+
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"network": Attribute(field=networkId, schema=schema.Identifier()),
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
 
 	ST_DEFAULT = "default"
 	TYPE = TypeName.EXTERNAL_NETWORK
 	CAP_ACTIONS = {
 		"__remove__": [ST_DEFAULT],
 	}
+
+
 	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {
-		"network": network_attr,
-		"timeout": elements.Element.timeout_attr
-	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_BRIDGE]
 	DEFAULT_ATTRS = {}
 	DOC = DOC
-	
-	class Meta:
-		db_table = "tomato_external_network"
-		app_label = 'tomato'
-	
+
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = self.ST_DEFAULT
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		#network: None, default network
@@ -98,7 +106,6 @@ class External_Network(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["network"] = self.network.kind if self.network else None
 		return info
 
 	def bridgeName(self):

@@ -18,6 +18,7 @@
 from .. import connections, config
 from ..lib import cmd #@UnresolvedImport
 from ..lib.cmd import net #@UnresolvedImport
+from ..generic import *
 
 DOC="""
 	Description
@@ -30,6 +31,14 @@ ST_DEFAULT = "default"
 
 class Fixed_Bridge(connections.Connection):
 	TYPE = "fixed_bridge"
+
+
+	ACTIONS = connections.Connection.ACTIONS.copy()
+	ACTIONS.update({
+		connections.REMOVE_ACTION: StatefulAction(connections.Connection.remove, check=connections.Connection.checkRemove,
+											 allowedStates=[ST_DEFAULT]),
+	})
+
 	CAP_ACTIONS = {
 		connections.REMOVE_ACTION: [ST_DEFAULT],
 	}
@@ -38,13 +47,13 @@ class Fixed_Bridge(connections.Connection):
 	CAP_CON_CONCEPTS = [(connections.CONCEPT_BRIDGE, connections.CONCEPT_INTERFACE)]
 	DOC = DOC
 	__doc__ = DOC
-	
-	class Meta:
-		db_table = "tomato_fixed_bridge"
-		app_label = 'tomato'
-	
+
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = ST_DEFAULT
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
 		brname = self._bridgeName()

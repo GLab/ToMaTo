@@ -28,6 +28,7 @@ from .lib.service import get_backend_users_proxy
 from .lib.constants import StateName, ActionName
 from .lib.exceptionhandling import wrap_and_handle_current_exception
 from .lib.references import Reference
+from .lib.constants import TypeName
 
 class TimeoutStep:
 	INITIAL = 0
@@ -103,30 +104,59 @@ class Topology(Entity, BaseDocument):
 				self.clientData[key[1:]] = value
 
 	def action_prepare(self):
-		self._compoundAction(action="prepare", stateFilter=lambda state: state=="created", 
-							 typeOrder=["kvm","kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint"],
-							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
-	
+		self._compoundAction(action="prepare", stateFilter=lambda state: state=="created",
+							 typeOrder=[TypeName.FULL_VIRTUALIZATION,
+										TypeName.CONTAINER_VIRTUALIZATION,
+										TypeName.REPY,
+										TypeName.TINC_VPN,
+										TypeName.UDP_ENDPOINT],
+							 typesExclude=[TypeName.FULL_VIRTUALIZATION_INTERFACE,
+										   TypeName.CONTAINER_VIRTUALIZATION_INTERFACE,
+										   TypeName.REPY_INTERFACE,
+										   TypeName.EXTERNAL_NETWORK,
+										   TypeName.EXTERNAL_NETWORK_ENDPOINT,
+										   TypeName.FIXED_BRIDGE,
+										   TypeName.BRIDGE])
+
 	def action_destroy(self):
 		try:
 			self.action_stop()
 		except:
 			pass  # destroying may still work...
 		self._compoundAction(action="destroy", stateFilter=lambda state: state=="prepared",
-							 typeOrder=["tinc_vpn", "udp_endpoint", "kvm", "kvmqm", "openvz", "repy"],
-							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface", "external_network", "external_network_endpoint", "fixed_bridge", "bridge"])
-	
+							 typeOrder=[TypeName.TINC_VPN,
+										TypeName.UDP_ENDPOINT,
+										TypeName.FULL_VIRTUALIZATION,
+										TypeName.CONTAINER_VIRTUALIZATION,
+										TypeName.REPY],
+							 typesExclude=[TypeName.FULL_VIRTUALIZATION_INTERFACE,
+										   TypeName.CONTAINER_VIRTUALIZATION_INTERFACE,
+										   TypeName.REPY_INTERFACE,
+										   TypeName.EXTERNAL_NETWORK,
+										   TypeName.EXTERNAL_NETWORK_ENDPOINT,
+										   TypeName.FIXED_BRIDGE,
+										   TypeName.BRIDGE])
+
 	def action_start(self):
 		self.action_prepare()
 		self._compoundAction(action="start", stateFilter=lambda state: state!="started",
-							 typeOrder=["tinc_vpn", "udp_endpoint", "external_network", "kvm", "kvmqm", "openvz", "repy"],
-							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface"])
+							 typeOrder=[TypeName.TINC_VPN, TypeName.UDP_ENDPOINT,TypeName.EXTERNAL_NETWORK, TypeName.FULL_VIRTUALIZATION, TypeName.CONTAINER_VIRTUALIZATION, TypeName.REPY],
+							 typesExclude = [TypeName.FULL_VIRTUALIZATION_INTERFACE,
+											TypeName.CONTAINER_VIRTUALIZATION_INTERFACE,
+											TypeName.REPY_INTERFACE])
 		
 	
 	def action_stop(self):
-		self._compoundAction(action="stop", stateFilter=lambda state: state=="started", 
-							 typeOrder=["kvm", "kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint", "external_network"],
-							 typesExclude=["kvm_interface", "kvmqm_interface", "openvz_interface", "repy_interface"])
+		self._compoundAction(action="stop", stateFilter=lambda state: state=="started",
+							 typeOrder=[TypeName.FULL_VIRTUALIZATION,
+										TypeName.CONTAINER_VIRTUALIZATION,
+										TypeName.REPY,
+										TypeName.TINC_VPN,
+										TypeName.UDP_ENDPOINT,
+										TypeName.EXTERNAL_NETWORK],
+							 typesExclude=[TypeName.FULL_VIRTUALIZATION_INTERFACE,
+										   TypeName.CONTAINER_VIRTUALIZATION_INTERFACE,
+										   TypeName.REPY_INTERFACE])
 
 	def action_renew(self, timeout):
 		topology_config = settings.get_topology_settings()

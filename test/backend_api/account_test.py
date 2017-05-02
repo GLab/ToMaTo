@@ -95,7 +95,12 @@ class NoOtherAccountTestCase(ProxyHoldingTestCase):
 		"""
 		tests whether account_info responds correctly when given no username. Should return current user info
 		"""
-		self.assertEqual(self.proxy_holder.backend_api.account_info(),self.proxy_holder.backend_api.account_info(self.proxy_holder.username))
+		acc_api = self.proxy_holder.backend_api.account_info()
+		acc_backend = self.proxy_holder.backend_users.user_info(self.proxy_holder.username)
+
+		del acc_api["last_login"]
+		del acc_backend["last_login"]
+		self.assertEqual(acc_api,acc_backend)
 
 	def test_account_info_non_existent_username(self):
 		"""
@@ -107,8 +112,12 @@ class NoOtherAccountTestCase(ProxyHoldingTestCase):
 		"""
 		tests whether account info is correct for self (i.e., includes everything)
 		"""
-		self.assertEqual(self.proxy_holder.backend_api.account_info(self.proxy_holder.username),
-		                 self.proxy_holder.backend_users.user_info(self.proxy_holder.username))
+		acc_api = self.proxy_holder.backend_api.account_info(self.proxy_holder.username)
+		acc_backend = self.proxy_holder.backend_users.user_info(self.proxy_holder.username)
+
+		del acc_api["last_login"]
+		del acc_backend["last_login"]
+		self.assertEqual(acc_api,acc_backend)
 
 	def test_account_create(self):
 		username = "testuser"
@@ -183,7 +192,15 @@ class AccountListTestCases(ProxyHoldingTestCase):
 		"""
 		tests whether account_list responds correctly when given no argument. Should return all accounts for current user=admin otherwise throw exception
 		"""
-		self.assertEqual(self.proxy_holder.backend_api.account_list(),self.proxy_holder.backend_users.user_list())
+		accs_backend = self.proxy_holder.backend_users.user_list()
+		accs_api = self.proxy_holder.backend_api.account_list()
+		for acc in accs_api:
+			del acc['last_login']
+
+		for acc in accs_backend:
+			del acc['last_login']
+
+		self.assertEqual(accs_api,accs_backend)
 
 		self.proxy_holder_tester = ProxyHolder("testuser","123")
 
@@ -258,9 +275,11 @@ class AccountModifyTestCases(ProxyHoldingTestCase):
 		"""
 		before = self.proxy_holder.backend_api.account_info()
 
+		del before['last_login']
 		self.proxy_holder.backend_api.account_modify()
 
 		after = self.proxy_holder.backend_api.account_info()
+		del after['last_login']
 
 		self.assertEqual(before, after)
 

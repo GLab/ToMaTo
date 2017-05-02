@@ -340,13 +340,12 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		}
 
 		self.testelement1 = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		type=self.test_temps[0]['tech'],
+																		type=self.test_temps[0]['type'],
 																		attrs=self.testelement1_attrs)
 		self.testelement1_id = self.testelement1['id']
 
 		self.testelement1_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																				  type=self.test_temps[0][
-																						   'tech'] + "_interface",
+																				  type=self.testelement1['type'] + "_interface",
 																				  parent=self.testelement1_id)
 		self.testelement1_interface_id = self.testelement1_interface["id"]
 
@@ -357,13 +356,12 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		}
 
 		self.testelement2 = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																		type=self.test_temps[0]['tech'],
+																		type=self.test_temps[0]['type'],
 																		attrs=self.testelement2_attrs)
 		self.testelement2_id = self.testelement2['id']
 
 		self.testelement2_interface = self.proxy_holder.backend_core.element_create(top=self.testtopology_id,
-																				  type=self.test_temps[0][
-																						   'tech'] + "_interface",
+																				  type=self.testelement1['type'] + "_interface",
 																				  parent=self.testelement2_id)
 		self.testelement2_interface_id = self.testelement2_interface["id"]
 
@@ -379,9 +377,9 @@ class TopologyTestCase(ProxyHoldingTestCase):
 		self.testelement2 = self.proxy_holder.backend_core.element_info(self.testelement2_id)
 
 
-		hostconnection_id = "%d@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
-		hostelement1_id = "%d@%s"%(self.testconnection['debug']['host_elements'][0][1],self.testconnection['debug']['host_elements'][0][0])
-		hostelement2_id = "%d@%s"%(self.testconnection['debug']['host_elements'][0][1],self.testconnection['debug']['host_elements'][0][0])
+		hostconnection_id = "%s@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
+		hostelement1_id = "%s@%s"%(self.testconnection['debug']['host_elements'][0][1],self.testconnection['debug']['host_elements'][0][0])
+		hostelement2_id = "%s@%s"%(self.testconnection['debug']['host_elements'][0][1],self.testconnection['debug']['host_elements'][0][0])
 
 
 		self.proxy_holder.backend_accounting.push_usage(elements={hostelement1_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)],hostelement2_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)]}, connections={

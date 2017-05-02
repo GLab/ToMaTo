@@ -45,8 +45,7 @@ class TincVPN(ConnectingElement, Element):
 		self.state = ST_CREATED
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
-			self.name = self.TYPE + self.idStr
-		self.save()
+			self.update_or_save(name=self.TYPE+self.idStr)
 	
 	def onChildAdded(self, iface):
 		if self.state == ST_PREPARED: #self is correct
@@ -249,10 +248,9 @@ class TincEndpoint(ConnectingElement, Element):
 		self.state = ST_CREATED
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if self.parent:
-			self.mode = self.parent.mode
+			self.update_or_save(mode=self.parent.mode)
 		if not self.name:
-			self.name = self.parent._nextName("port")
-		self.save()
+			self.update_or_save(name=self.parent._nextName("port"))
 	
 	@property
 	def mainElement(self):
@@ -319,7 +317,7 @@ class TincEndpoint(ConnectingElement, Element):
 		Entity.REMOVE_ACTION: StatefulAction(Element._remove, check=Element.checkRemove, allowedStates=[ST_CREATED]),
 		ActionName.STOP: StatefulAction(action_stop, allowedStates=[ST_STARTED], stateChange=ST_PREPARED),
 		ActionName.PREPARE: StatefulAction(action_prepare, check=Element.checkTopologyTimeout, allowedStates=[ST_CREATED], stateChange=ST_PREPARED),
-		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED),
+		ActionName.DESTROY: StatefulAction(action_destroy, allowedStates=[ST_PREPARED], stateChange=ST_CREATED)
 	})
 
 

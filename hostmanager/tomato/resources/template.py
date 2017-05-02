@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
 from .. import resources, config
+from ..db import *
+from ..generic import *
 from ..user import User
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import path #@UnresolvedImport
@@ -24,34 +25,38 @@ from ..lib.newcmd import aria2
 from ..lib.newcmd.util import fs
 from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, threading
-from ..lib.constants import TypeName,TechName
+from ..lib.constants import TypeName, TechName
 
 PATTERNS = {
 	TechName.KVMQM: "%s.qcow2",
 	TechName.KVM: "%s.qcow2",
 	TechName.OPENVZ: "%s.tar.gz",
+	TechName.LXC: "%s.tar.gz",
 	TypeName.REPY: "%s.repy",
 }
 
 class Template(resources.Resource):
-	owner = models.ForeignKey(User, related_name='templates')
-	tech = models.CharField(max_length=20)
-	name = models.CharField(max_length=50)
-	preference = models.IntegerField(default=0)
-	urls = attributes.attribute("urls", list)
-	checksum = attributes.attribute("checksum", str)
-	size = attributes.attribute("size", long)
-	popularity = attributes.attribute("popularity", float)
-	ready = attributes.attribute("ready", bool)
-	kblang = attributes.attribute("kblang",str,null=False,default="en-us")
+	owner = ReferenceField(User)
+	ownerId = ReferenceFieldId(owner)
+	tech = StringField()
+	name = StringField()
+	preference = IntField()
+	urls = ListField()
+	checksum = StringField()
+	size = IntField()
+	popularity = IntField()
+	ready = BooleanField(default=False)
+	kblang = StringField(default="en-us")
 
 	TYPE = "template"
 
-	class Meta:
-		db_table = "tomato_template"
-		app_label = 'tomato'
-		unique_together = (("tech", "name", "owner"))
-	
+	meta = {
+		'ordering': ['tech', '+preference', 'name'],
+		'indexes': [
+			('tech', 'preference'), ('tech', 'name'), ('tech', 'name', 'owner')
+		],
+	}
+
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		attrs = args[0]
@@ -62,7 +67,7 @@ class Template(resources.Resource):
 		self.ready = False
 		resources.Resource.init(self, *args, **kwargs)
 
-	def fetch(self, detached=False):
+	def fetch(self, detached=False, init=False):
 		path = self.getPath()
 		if self.ready and os.path.exists(path):
 			return
@@ -70,7 +75,10 @@ class Template(resources.Resource):
 			return threading.Thread(target=self.fetch).start()
 		aria2.download(self.urls, path)
 		self.ready = True
-		self.save()
+		if init:
+			self.save()
+		else:
+			self.update()
 
 	def upcast(self):
 		return self
@@ -112,7 +120,7 @@ class Template(resources.Resource):
 
 	def modify(self, attrs):
 		res = resources.Resource.modify(self, attrs)
-		#self.fetch(detached=True)
+		#self.fetch(detached=False)
 		return res
 
 	def remove(self):
@@ -127,8 +135,15 @@ class Template(resources.Resource):
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
+		info["attrs"]["urls"] = self.urls
+		info["attrs"]["checksum"] = self.checksum
+		info["attrs"]["size"] = self.size
+		info["attrs"]["popularity"] = self.popularity
+		info["attrs"]["ready"] = self.ready
 		info["attrs"]["kblang"] = self.kblang
 		return info
+
+
 
 def get(tech, name):
 	try:
@@ -137,7 +152,7 @@ def get(tech, name):
 		return None
 	
 def getPreferred(tech):
-	tmpls = Template.objects.filter(tech=tech, owner=currentUser()).order_by("-preference")
+	tmpls = Template.objects(tech=tech, owner=currentUser()).order_by("-preference")
 	InternalError.check(tmpls, InternalError.CONFIGURATION_ERROR, "No template registered", data={"tech": tech})
 	return tmpls[0]
 

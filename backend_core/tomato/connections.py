@@ -94,7 +94,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	CUSTOM_ATTRS = {}
 	
 	DEFAULT_ATTRS = {"emulation": True, "bandwidth_to": 10000, "bandwidth_from": 10000}
-	
+
 	DOC=""
 
 	# noinspection PyMethodOverriding
@@ -137,7 +137,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	@property
 	def _remoteAttrs(self):
 		caps = Host.getConnectionCapabilities(self.remoteType)
-		allowed = caps["attributes"].keys() if caps else []
+		allowed = (a for a, v in caps["attributes"].iteritems() if not v.get("read_only", False)) if caps else []
 		attrs = {}
 		for key, value in self.directData.iteritems():
 			if key in allowed:
@@ -173,6 +173,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		self.topology.checkTimeout()
 
 	def checkUnknownAction(self, action, params=None):
+
 		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_GRANT]:
 			self.checkTopologyTimeout()
 		UserError.check(self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE,
@@ -256,7 +257,9 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	@property
 	def hostElements(self):
-		return filter(bool, [self.connectionElementFrom, self.connectionElementTo])
+		elementFrom = [v for v in self.elementFrom.hostElements]
+		elementTo = [v for v in self.elementFrom.hostElements]
+		return filter(bool, elementFrom+elementTo)
 
 	@property
 	def hostConnections(self):
@@ -549,13 +552,13 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		if not attrs: attrs = {}
 		UserError.check(el1 != el2, code=UserError.INVALID_CONFIGURATION, message="Cannot connect element with itself")
 		UserError.check(not el1.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
-			data={"element": el1.id})
+			data={"element": str(el1.id)})
 		UserError.check(not el2.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
-			data={"element": el2.id})
+			data={"element": str(el2.id)})
 		UserError.check(el1.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
-			data={"element": el1.id})
+			data={"element": str(el1.id)})
 		UserError.check(el2.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
-			data={"element": el2.id})
+			data={"element": str(el2.id)})
 		UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
 			message="Can only connect elements from same topology")
 		con = cls()

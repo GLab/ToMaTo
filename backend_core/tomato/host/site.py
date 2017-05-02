@@ -23,9 +23,6 @@ class Site(Entity, BaseDocument):
 		from . import Host
 		return Host.objects(site=self)
 
-	def init(self, **attrs):
-		self.modify(**attrs)
-
 	def modify_geolocation(self, value):
 		if isinstance(value, dict):
 			value = (value.get('latitude'), value.get('longitude'))

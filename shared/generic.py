@@ -3,12 +3,14 @@ from .lib.error import UserError as Error
 from .lib import schema
 
 class Action(object):
-	__slots__ = ("fn", "description", "checkFn", "paramSchema")
-	def __init__(self, fn, description=None, check=None, paramSchema=None):
+	__slots__ = ("fn", "description", "checkFn", "paramSchema", "beforeFn", "afterFn")
+	def __init__(self, fn, description=None, check=None, paramSchema=None, before=None, after=None):
 		self.fn = fn
 		self.description = description or fn.__doc__
 		self.checkFn = check
 		self.paramSchema = paramSchema
+		self.beforeFn = before
+		self.afterFn = after
 	def check(self, obj, **params):
 		if self.paramSchema:
 			try:
@@ -21,7 +23,12 @@ class Action(object):
 			self.checkFn(obj, **params)
 	def __call__(self, obj, **kwargs):
 		self.check(obj, **kwargs)
-		return self.fn(obj, **kwargs)
+		if self.beforeFn:
+			self.beforeFn(obj, **kwargs)
+		result = self.fn(obj, **kwargs)
+		if self.afterFn:
+			self.afterFn(obj, **kwargs)
+		return result
 	def info(self):
 		return {
 			"description": self.description,
@@ -54,7 +61,7 @@ class Attribute(object):
 	def set(self, obj, value):
 		self.check(obj, value)
 		if self.setFn:
-			self.setFn(obj, value)
+			self.setFn(obj, init, value)
 		elif self.field:
 			self.field.__set__(obj, value)
 	def get(self, obj):
@@ -90,8 +97,8 @@ class Entity(object):
 	DEFAULT_ATTRIBUTES = {}
 	REMOVE_ACTION = "(remove)"
 
-	save = id = delete = None
-	del save, id, delete
+	save = id = delete = update = None
+	del save, id, delete, update
 
 	@property
 	def type(self):
@@ -103,6 +110,17 @@ class Entity(object):
 		if attrs:
 			toSet.update(attrs)
 		self.modify(**toSet)
+
+	def update_or_save(self, **kwargs):
+		if not self.id:
+			self.save()
+		if not self.__class__.objects.with_id(str(self.id)):
+			self.save()
+		if kwargs:
+			print kwargs
+			self.update(**kwargs)
+		else:
+			self.save()
 
 	def checkUnknownAttribute(self, key, value):
 		raise Error(code=Error.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")
@@ -140,7 +158,8 @@ class Entity(object):
 				raise
 		if unknownAttrs:
 			self.setUnknownAttributes(unknownAttrs)
-		self.save()
+		self.update_or_save()
+
 
 	def checkUnknownAction(self, action, params=None):
 		raise Error(code=Error.UNSUPPORTED_ACTION, message="Unsupported action", data={"capabilities": self.capabilities()})
@@ -173,7 +192,7 @@ class Entity(object):
 			raise
 		finally:
 			if action != self.REMOVE_ACTION:
-				self.save()
+				self.update_or_save()
 
 	def remove(self, params=None):
 		self.action(self.REMOVE_ACTION, params)
@@ -185,7 +204,7 @@ class Entity(object):
 	def capabilities(cls):
 		return {
 			"actions": {key: action.info() for key, action in cls.ACTIONS.items()},
-			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items()},
+			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.items() if not attr.readOnly},
 		}
 
 	@classmethod
@@ -320,7 +339,7 @@ class StatefulEntity(Entity):
 	def capabilities(cls):
 		return {
 			"actions": {key: action.info() for key, action in cls.ACTIONS.iteritems()},
-			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.iteritems()},
+			"attributes": {key: attr.info() for key, attr in cls.ATTRIBUTES.iteritems() if not attr.readOnly},
 			"states": cls.STATES,
 			"default_state": cls.DEFAULT_STATE
 		}

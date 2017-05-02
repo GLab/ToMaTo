@@ -47,7 +47,7 @@ class virsh:
 	TYPE = TechName.KVM
 
 	HYPERVISOR_MAPPING = {
-		TechName.LXC: "LXC://",
+		TechName.LXC: "lxc://",
 		TechName.KVM: "qemu:///session"
 	}
 	DRIVER_MAPPING = {
@@ -111,27 +111,59 @@ class virsh:
 	def prepare(self, vmid, imagepath, nlxtp_floppy_filename=None, nlxtp_device_filename=None,ram=512,cpus=1, vncport=None, vncpassword=None,keyboard="en-us"):
 		self._checkStatus(vmid,[StateName.CREATED])
 		driver_type = self.DRIVER_MAPPING[self.TYPE]
-		cmd_ = ["virt-install",
-				"--connect", self.HYPERVISOR_MAPPING[self.TYPE],
-				"--name", "vm_%d" % vmid,
-				"--ram",  str(ram),
-				"--vcpus", str(cpus),
-				#"--os-type", ostype,
-				"--import", #Use the image given to install a guest os
-				"--disk", "path=%s,driver_type=%s" % (imagepath, driver_type), # VDA ,device=disk,driver_type=%s,bus=virtio, % driver_type
-				("--disk" if nlxtp_device_filename else ""),("path=%s" % nlxtp_device_filename #,device=disk,bus=virtio
-															 if nlxtp_device_filename else ""), # Virtual 'big' device for nlxtp
-				("--disk" if nlxtp_floppy_filename else ""), # Floppy device for nlXTP
-				("path=%s,device=floppy,cache=writethrough" % nlxtp_floppy_filename if nlxtp_floppy_filename else ""),
-				"--graphics", "vnc%s%s,keymap=%s" % (
-					(",port=%s" % vncport if vncpassword else ""),
-					(",password=%s" % vncpassword if vncpassword else ""),
-					keyboard),
-				"--nonetworks", #Don't create automatically a bridge
-				"--noautoconsole", # Don't enter a console on the device after install
-				"--noreboot"] #Don't boot the device after install
+
+
+		if self.TYPE == TechName.KVM:
+			cmd_ = ["virt-install",
+					"--connect", self.HYPERVISOR_MAPPING[self.TYPE],
+					"--name", "vm_%d" % vmid,
+					"--ram",  str(ram),
+					"--vcpus", str(cpus),
+					#"--os-type", ostype,
+					"--import", #Use the image given to install a guest os
+					"--disk", "path=%s,driver_type=%s" % (imagepath, driver_type), # VDA ,device=disk,driver_type=%s,bus=virtio, % driver_type
+					("--disk" if nlxtp_device_filename else ""),("path=%s" % nlxtp_device_filename #,device=disk,bus=virtio
+																 if nlxtp_device_filename else ""), # Virtual 'big' device for nlxtp
+					("--disk" if nlxtp_floppy_filename else ""), # Floppy device for nlXTP
+					("path=%s,device=floppy,cache=writethrough" % nlxtp_floppy_filename if nlxtp_floppy_filename else ""),
+					"--graphics", "vnc%s%s,keymap=%s" % (
+						(",port=%s" % vncport if vncpassword else ""),
+						(",password=%s" % vncpassword if vncpassword else ""),
+						keyboard),
+					"--nonetworks", #Don't create automatically a default bridge
+					"--noautoconsole", # Don't enter a console on the device after install
+					"--noreboot"] #Don't boot the device after install
+		else:
+			cmd_ = ["virt-install",
+					"--connect", self.HYPERVISOR_MAPPING[self.TYPE],
+					"--name", "vm_%d" % vmid,
+					"--ram", str(ram),
+					"--vcpus", str(cpus),
+					# "--os-type", ostype,
+					"--import",  # Use the image given to install a guest os
+					"--filesystem", "%s,/,type=mount" % (imagepath),
+					# VDA ,device=disk,driver_type=%s,bus=virtio, % driver_type
+					#("--disk" if nlxtp_device_filename else ""),
+					#("path=%s" % nlxtp_device_filename  # ,device=disk,bus=virtio
+					# if nlxtp_device_filename else ""),  # Virtual 'big' device for nlxtp
+					#("--disk" if nlxtp_floppy_filename else ""),  # Floppy device for nlXTP
+					#(
+					#"path=%s,device=floppy,cache=writethrough" % nlxtp_floppy_filename if nlxtp_floppy_filename else ""),
+					"--host-devices","/dev/net/tun"
+					"--graphics", "vnc%s%s,keymap=%s" % (
+						(",port=%s" % vncport if vncpassword else ""),
+						(",password=%s" % vncpassword if vncpassword else ""),
+						keyboard),
+					"--nonetworks",  # Don't create automatically a default bridge
+					"--noautoconsole",  # Don't enter a console on the device after install
+					"--noreboot"]  # Don't boot the device after install
+
 		cmd.run(cmd_)
+
 		self.writeInitialConfig(self.TYPE, vmid)
+
+
+
 
 
 	def stop(self, vmid, forced=True):
@@ -205,6 +237,20 @@ class virsh:
 
 		return names[num]
 
+	def addToConfig(self, vmid, parentNode, xmlElement):
+		tree = ET.parse(self._configPath(vmid))
+		root = tree.getroot()
+
+		for element in root.getchildren():
+			if element.tag == parentNode:
+				element.append(xmlElement)
+
+		if not os.path.exists(os.path.dirname(self._configPath(vmid))):
+			os.makedirs(os.path.dirname(self._configPath(vmid)))
+
+		tree.write(self._configPath(vmid))
+		self._virsh("define", [self._configPath(vmid)])
+
 	def	addNic(self, vmid, num, bridge="dummy", model="e1000", mac=None):
 		vmid = params.convert(vmid, convert=int, gte=1)
 		num = params.convert(num, convert=int, gte=0, lte=31)
@@ -214,8 +260,7 @@ class virsh:
 		with locks[vmid]:
 			self._checkStatus(vmid, [StateName.CREATED, StateName.PREPARED])
 			VirshError.check(num not in self.getNicList(vmid), VirshError.CODE_NIC_ALREADY_EXISTS, "Nic already exists", {"vmid: ": vmid, "num: ": num})
-			tree = ET.parse(self._configPath(vmid))
-			root = tree.getroot()
+
 
 			elementInterface = ET.Element("interface", {"type": "bridge"})
 
@@ -232,15 +277,8 @@ class virsh:
 			elementInterface.append(elementAlias)
 			elementInterface.append(elementModel)
 
-			for element in root.getchildren():
-				if element.tag == "devices":
-					element.append(elementInterface)
+			self.addToConfig(vmid, "devices", elementInterface)
 
-			if not os.path.exists(os.path.dirname(self._configPath(vmid))):
-				os.makedirs(os.path.dirname(self._configPath(vmid)))
-
-			tree.write(self._configPath(vmid))
-			self._virsh("define", [self._configPath(vmid)])
 
 
 	def delNic(self, vmid, num):
@@ -254,6 +292,33 @@ class virsh:
 						 "--type bridge",
 						 ("--mac %s" % ET.tostring(mac)) if mac else "",
 						 "--config"])
+
+	def addNetTun(self, vmid):
+		vmid = params.convert(vmid, convert=int, gte=1)
+		with locks[vmid]:
+			self._checkStatus(vmid, [StateName.CREATED, StateName.PREPARED])
+
+			elementHostDev = ET.Element("hostdev", {"mode": "capabilities", "type": "misc"})
+			elementSource = ET.Element("source")
+			elementChar = ET.Element("char")
+			elementChar.text = "/dev/net/tun"
+
+			elementSource.append(elementChar)
+			elementHostDev.append(elementSource)
+			self.addToConfig(vmid, "devices", elementHostDev)
+
+
+	def addNetAdminCapabilitie(self,vmid):
+		vmid = params.convert(vmid, convert=int, gte=1)
+		with locks[vmid]:
+			self._checkStatus(vmid, [StateName.CREATED, StateName.PREPARED])
+			elementFeatures = ET.Element("features")
+			elementCapabilities = ET.Element("capabilities", {"policy": "default"})
+			elementNetAdmin = ET.Element("net_admin", {"state": "on"})
+
+			elementCapabilities.append(elementNetAdmin)
+			elementFeatures.append(elementCapabilities)
+			self.addToConfig(vmid, "domain", elementFeatures)
 
 	def update_vm_list(self):
 		#go through currently listed vms and add them to vm_list

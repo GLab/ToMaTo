@@ -16,12 +16,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, hashlib, base64
+from ..db import *
+from ..generic import *
 from .. import connections, elements, config
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import process, net, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 from ..lib.constants import ActionName, StateName, TypeName
+
 
 DOC="""
 Element type: ``tinc``
@@ -83,47 +86,30 @@ Actions:
 """
 
 class Tinc(elements.Element):
-	port_attr = Attr("port", type="int")
-	port = port_attr.attribute()
-	path_attr = Attr("path")
-	path = path_attr.attribute()
-	mode_attr = Attr("mode", desc="Mode", states=[StateName.CREATED], options={"hub": "Hub (broadcast)", "switch": "Switch (learning)"}, default="switch")
-	mode = mode_attr.attribute()
-	privkey_attr = Attr("privkey", desc="Private key")
-	privkey = privkey_attr.attribute()
-	pubkey_attr = Attr("pubkey", desc="Public key")
-	pubkey = pubkey_attr.attribute()
-	peers_attr = Attr("peers", desc="Peers", states=[StateName.CREATED], default=[])
-	peers = peers_attr.attribute()
+
+	port = IntField()
+	path = StringField()
+	mode= StringField(choices=["hub", "switch"], default="switch")
+	privkey = StringField()
+	pubkey = StringField()
+	peers = ListField(default=[])
+
+
 
 	TYPE = TypeName.TINC
-	CAP_ACTIONS = {
-		ActionName.START: [StateName.CREATED],
-		ActionName.STOP: [StateName.STARTED],
-		elements.REMOVE_ACTION: [StateName.CREATED],
-	}
-	CAP_NEXT_STATE = {
-		ActionName.START: StateName.STARTED,
-		ActionName.STOP: StateName.CREATED,
-	}	
-	CAP_ATTRS = {
-		"mode": mode_attr,
-		"peers": peers_attr,
-		"timeout": elements.Element.timeout_attr
-	}
+
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DEFAULT_ATTRS = {"mode": "switch"}
 	DOC = DOC
 	__doc__ = DOC
-	
-	class Meta:
-		db_table = "tomato_tinc"
-		app_label = 'tomato'
-	
+
+	@property
+	def type(self):
+		return self.TYPE
+
 	def init(self, *args, **kwargs):
-		self.type = self.TYPE
 		self.state = StateName.CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
@@ -132,7 +118,7 @@ class Tinc(elements.Element):
 		self.pubkey = cmd.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
 
 	def _interfaceName(self):
-		return TypeName.TINC + "%d" % self.id
+		return TypeName.TINC + "%s" % str(self.id)[16:24] # Mongodb Ids are to long, so cut them
 
 	def interfaceName(self):
 		return self._interfaceName() if self.state == StateName.STARTED else None
@@ -238,7 +224,28 @@ class Tinc(elements.Element):
 			if not trafficA is None and not trafficB is None:
 				traffic = trafficA + trafficB
 				usage.updateContinuous("traffic", traffic, data)
-			
+
+	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
+	ATTRIBUTES.update({
+		"port": Attribute(field=port, readOnly=True, schema=schema.Int()),
+		"path": Attribute(field=path, readOnly=True),
+		"mode": Attribute(field=mode, set=modify_mode, label="Mode", schema=schema.String(options=["hub", "switch"]), default="switch"),
+		"privkey": Attribute(field=privkey, readOnly=True, label="Private key"),
+		"pubkey": Attribute(field=pubkey, readOnly=True, label="Public key"),
+		"peers": Attribute(field=peers, set=modify_peers, label="Peers", default=[]),
+	})
+
+	ACTIONS = elements.Element.ACTIONS.copy()
+	ACTIONS.update({
+		Entity.REMOVE_ACTION: StatefulAction(elements.Element.remove, check=elements.Element.checkRemove,
+											 allowedStates=[StateName.CREATED]),
+		ActionName.START: StatefulAction(action_start, allowedStates=[StateName.CREATED],
+										 stateChange=StateName.STARTED),
+		ActionName.STOP: StatefulAction(action_stop, allowedStates=[StateName.STARTED],
+										stateChange=StateName.CREATED),
+	})
+
+
 if not config.MAINTENANCE:
 	tincVersion = cmd.getDpkgVersion("tinc")
 	if [1, 0] <= tincVersion <= [2, 0]:

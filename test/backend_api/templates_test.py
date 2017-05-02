@@ -8,12 +8,12 @@ import time
 ### template_list
 - Scenario 1: No parameters
 - Scenario 2: Correct parameter
-- Scenario 3: Non existing technology
+- Scenario 3: Non existing type
 
 ### template_create
 - Scenario 1: Correct parameters
 - Scenario 2: Correct parameters, without permission
-- Scenario 3: Non existing technology
+- Scenario 3: Non existing type
 - Scenario 4: Already used name
 - Scenario 5: Incorrect attributes
 
@@ -55,20 +55,19 @@ class TemplateTestCase(ProxyHoldingTestCase):
 		cls.proxy_holder_tester = ProxyHolder(testuser_username, testuser_password)
 
 	def setUp(self):
-
 		#Create template
 		self.testtemplate_attrs = self.test_temps[0].copy()
-		self.testtemplate_technology = self.testtemplate_attrs['tech']
+		self.testtemplate_type = self.testtemplate_attrs['type']
 		self.testtemplate_name = self.testtemplate_attrs['name']
 		del self.testtemplate_attrs['name']
-		del self.testtemplate_attrs['tech']
+		del self.testtemplate_attrs['type']
 		
 		#second test_template
 		self.testtemplate2 = self.test_temps[1].copy()
 
-		self.proxy_holder.backend_core.template_create(self.testtemplate_technology, self.testtemplate_name, self.testtemplate_attrs)
+		self.proxy_holder.backend_core.template_create(self.testtemplate_type, self.testtemplate_name, self.testtemplate_attrs)
 
-		self.testtemplate_id = self.proxy_holder.backend_core.template_id(tech=self.testtemplate_technology, name=self.testtemplate_name)
+		self.testtemplate_id = self.proxy_holder.backend_core.template_id(type=self.testtemplate_type, name=self.testtemplate_name)
 
 
 	def tearDown(self):
@@ -94,32 +93,32 @@ class TemplateTestCase(ProxyHoldingTestCase):
 	#Get template list for specific technology  and check for correctness
 	def test_template_list_with_parameter(self):
 
-		template_list_api = self.proxy_holder.backend_api.template_list(self.testtemplate_technology)
+		template_list_api = self.proxy_holder.backend_api.template_list(self.testtemplate_type)
 		self.assertIsNotNone(template_list_api)
-		template_list_core = self.proxy_holder.backend_core.template_list(self.testtemplate_technology)
+		template_list_core = self.proxy_holder.backend_core.template_list(self.testtemplate_type)
 		self.assertIsNotNone(template_list_core)
 		self.assertEqual(template_list_api, template_list_core)
 
 	#Get template list for non existing technology and check for emptiness
-	def test_template_list_non_existing_technology(self):
+	def test_template_list_non_existing_type(self):
 
-		non_existing_technology = "closedvz"
+		non_existing_type = "closedvz"
 
-		template_list_api = self.proxy_holder.backend_api.template_list(non_existing_technology)
+		template_list_api = self.proxy_holder.backend_api.template_list(non_existing_type)
 		self.assertIsNotNone(template_list_api)
-		template_list_core = self.proxy_holder.backend_core.template_list(non_existing_technology)
+		template_list_core = self.proxy_holder.backend_core.template_list(non_existing_type)
 		self.assertIsNotNone(template_list_core)
 
 	#Create a template with correct parameters
 	def test_template_create(self):
 
 		template_attrs = self.testtemplate2.copy()
-		del template_attrs['tech']
+		del template_attrs['type']
 		del template_attrs['name']
 
-		template_api = self.proxy_holder.backend_api.template_create(self.testtemplate2['tech'], self.testtemplate2['name'], template_attrs)
+		template_api = self.proxy_holder.backend_api.template_create(self.testtemplate2['type'], self.testtemplate2['name'], template_attrs)
 		self.assertIsNotNone(template_api)
-		template_id = self.proxy_holder.backend_core.template_id(self.testtemplate2['tech'], self.testtemplate2['name'])
+		template_id = self.proxy_holder.backend_core.template_id(self.testtemplate2['type'], self.testtemplate2['name'])
 		template_core = self.proxy_holder.backend_core.template_info(template_id)
 		self.assertEqual(template_api, template_core)
 		self.assertDictContainsSubset(template_attrs, template_api)
@@ -128,38 +127,38 @@ class TemplateTestCase(ProxyHoldingTestCase):
 	def test_template_create_without_permission(self):
 
 		template_attrs = self.testtemplate2.copy()
-		del template_attrs['tech']
+		del template_attrs['type']
 		del template_attrs['name']
 
-		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.template_create, self.testtemplate2['tech'], self.testtemplate2['name'], template_attrs)
-		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.template_id, self.testtemplate2['tech'], self.testtemplate2['name'])
+		self.assertRaisesError(UserError, UserError.DENIED, self.proxy_holder_tester.backend_api.template_create, self.testtemplate2['type'], self.testtemplate2['name'], template_attrs)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.template_id, self.testtemplate2['type'], self.testtemplate2['name'])
 
 	#Create a template with an non existing technology
 
-	def test_template_create_non_exsting_technology(self):
+	def test_template_create_non_exsting_type(self):
 
-		template_technology = "closedvz"
+		template_type = "closedvz"
 		template_attrs = self.testtemplate2.copy()
-		del template_attrs['tech']
+		del template_attrs['type']
 		del template_attrs['name']
 
-		self.assertRaisesError(UserError, UserError.INVALID_VALUE, self.proxy_holder.backend_api.template_create, template_technology, self.testtemplate2['name'], template_attrs)
-		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.template_id, template_technology, self.testtemplate2['name'])
+		self.assertRaisesError(UserError, UserError.INVALID_VALUE, self.proxy_holder.backend_api.template_create, template_type, self.testtemplate2['name'], template_attrs)
+		self.assertRaisesError(UserError, UserError.ENTITY_DOES_NOT_EXIST, self.proxy_holder.backend_core.template_id, template_type, self.testtemplate2['name'])
 
 	#Create a duplicate and check for correct error
 	def test_template_create_name_already_used(self):
 
-		self.assertRaisesError(UserError, UserError.ALREADY_EXISTS, self.proxy_holder.backend_api.template_create,self.testtemplate_technology,self.testtemplate_name, self.testtemplate_attrs)
+		self.assertRaisesError(UserError, UserError.ALREADY_EXISTS, self.proxy_holder.backend_api.template_create,self.testtemplate_type,self.testtemplate_name, self.testtemplate_attrs)
 
 	#Try to create a invalid template
 	def test_template_create_incorrect_attributes(self):
 
 		template_attrs = self.testtemplate2.copy()
 		template_attrs['asdha1'] = "attribute not existing"
-		del template_attrs['tech']
+		del template_attrs['type']
 		del template_attrs['name']
 
-		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ATTRIBUTE, self.proxy_holder.backend_api.template_create, self.testtemplate2['tech'], self.testtemplate2['name'], template_attrs)
+		self.assertRaisesError(UserError, UserError.UNSUPPORTED_ATTRIBUTE, self.proxy_holder.backend_api.template_create, self.testtemplate2['type'], self.testtemplate2['name'], template_attrs)
 
 	#Modify a template and check for the correct changes
 	def test_template_modify(self):

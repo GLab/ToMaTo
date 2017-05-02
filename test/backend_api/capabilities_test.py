@@ -27,12 +27,12 @@ class CapabilitiesTestCase(ProxyHoldingTestCase):
 				cls.test_temp1_id = temp['id']
 
 		# Create test profile for container
-		cls.testprofile_tech = "container"
+		cls.testprofile_type = "container"
 		cls.testprofile_name = "normal"
 		cls.testprofile_args = {'diskspace': 10240, 'restricted': False, 'ram': 512, 'cpus': 1.0, 'label': 'Normal',
 								 'preference': 10, 'description': 'Test profile'}
 
-		cls.proxy_holder.backend_core.profile_create(cls.testprofile_tech, cls.testprofile_name,
+		cls.proxy_holder.backend_core.profile_create(cls.testprofile_type, cls.testprofile_name,
 													 cls.testprofile_args)
 
 		# Create user without permission to create profiles
@@ -61,7 +61,7 @@ class CapabilitiesTestCase(ProxyHoldingTestCase):
 			"template":  self.test_temps[0]['name']
 			}
 
-		self.testelement = self.proxy_holder.backend_core.element_create(top=self.testtopology_id, type=self.test_temps[0]['tech'], attrs=self.testelement_attrs)
+		self.testelement = self.proxy_holder.backend_core.element_create(top=self.testtopology_id, type=self.test_temps[0]['type'], attrs=self.testelement_attrs)
 		self.testelement_id = self.testelement['id']
 
 		self.proxy_holder.backend_core.topology_action(self.testtopology_id, "start")
@@ -100,7 +100,7 @@ class CapabilitiesTestCase(ProxyHoldingTestCase):
 		self.assertDictEqual(self.proxy_holder.backend_api.capabilities_connection("bridge"), self.proxy_holder.backend_core.capabilities_connection("bridge"))
 
 	def test_capabilities_connection_wrong_type(self):
-		self.assertRaisesError(UserError, UserError.INVALID_CONFIGURATION, self.proxy_holder.backend_api.capabilities_connection,"NoTech")
+		self.assertRaisesError(UserError, UserError.UNSUPPORTED_TYPE, self.proxy_holder.backend_api.capabilities_connection,"NoTech")
 
 	def test_capabilities(self):
 		self.assertDictEqual(self.proxy_holder.backend_api.capabilities(), self.proxy_holder.backend_core.capabilities())

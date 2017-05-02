@@ -17,26 +17,25 @@
 
 import os, sys, thread
 
+import monkey
+monkey.patch_all()
+
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
 os.environ['TOMATO_MODULE'] = "hostmanager"
 
-def db_migrate():
-	"""
-	NOT CALLABLE VIA XML-RPC
-	Migrates the database forward to the current structure using migrations
-	from the package tomato.migrations.
-	"""
-	from django.core.management import call_command
-	call_command('syncdb', verbosity=0)
-	from south.management.commands import migrate
-	cmd = migrate.Command()
-	cmd.handle(app="tomato", verbosity=1)
-
 
 import config
 
-	
+from lib.settings import settings
+
+
+from mongoengine import connect
+database_settings = settings.get_db_settings()
+database_connnection = connect(database_settings['database'], host=database_settings['host'], port=database_settings['port'])
+database_obj = getattr(database_connnection, database_settings['database'])
+
+
 import threading, signal
 _currentUser = threading.local()
 
@@ -49,7 +48,10 @@ def setCurrentUser(user):
 def login(commonName):
 	if not commonName:
 		return False
-	user, _ = User.objects.get_or_create(name=commonName)
+	user = User.objects(name=commonName).first()
+	if not user:
+		user = User(name=commonName)
+		user.save()
 	setCurrentUser(user)
 	return bool(commonName)
 
@@ -65,7 +67,7 @@ scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=2)
 
 from models import *
 
-from . import resources, rpcserver, firewall, dump #@UnresolvedImport
+from . import db, resources, rpcserver, firewall, dump #@UnresolvedImport
 from .resources import network
 from lib.cmd import fileserver, process #@UnresolvedImport
 from lib.newcmd import busybox
@@ -77,14 +79,18 @@ httpd_pid = None
 
 def start():
 	logging.openDefault(config.LOG_FILE)
+	if not os.environ.has_key("TOMATO_NO_MIGRATE"):
+		db.migrate()
+	else:
+		print >>sys.stderr, "Skipping migrations"
 	dump.init()
-	db_migrate()
 	firewall.add_all_networks(network.getAll())
 	global httpd_pid
 	httpd_pid = busybox.httpd_start(config.TEMPLATE_DIR, config.HTTPD_PORT)
 	fileserver.start()
 	rpcserver.start()
 	scheduler.start()
+
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."

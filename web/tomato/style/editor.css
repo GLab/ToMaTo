@@ -356,3 +356,14 @@ div.hoverdescription div.hiddenbox th {
     padding-right: 0.3cm;
     background: white;
 }
+
+
+input.command-doc {
+	border-bottom-left-radius: 0px;
+	border-bottom-right-radius: 0px;
+}
+pre.command-doc {
+	border-top: 0px;
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
+}

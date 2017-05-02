@@ -4,12 +4,13 @@ MAINTAINER Tim Gerhard <t_gerhard10@cs.uni-kl.de>
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-install-recommends -y \
   ca-certificates libssl-dev libsnappy-dev curl sudo file busybox gcc && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+ADD code/ /code/
+WORKDIR /code/service
+
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
 ENV PATH "/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 RUN ln -s /root/.cargo /.cargo && ln -s /root/.multirust /.multirust
 
-ADD code/ /code/
-WORKDIR /code/service
 
 ADD init.sh /init.sh
 ADD inittab /etc/inittab

@@ -39,6 +39,7 @@ def capabilities_connection(type, host=None): #@ReservedAssignment
 	:param host: the name of a certain host. If left 'None', all hosts will be looked at
 	:return: list of capabilities information
 	"""
+	UserError.check(type in ["bridge", "fixed_bridge"], code=UserError.UNSUPPORTED_TYPE, message="No such connection type", data={"type": type})
 	if host:
 		host = Host.get(name=host)
 		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})

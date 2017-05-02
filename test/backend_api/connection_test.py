@@ -56,7 +56,7 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 			}
 
 		cls.testelement1 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['tech'],
+																		type=cls.test_temps[0]['type'],
 																		attrs=cls.testelement1_attrs)
 		cls.testelement1_id = cls.testelement1['id']
 
@@ -67,12 +67,12 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 			}
 
 		cls.testelement2 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['tech'],
+																		type=cls.test_temps[0]['type'],
 																		attrs=cls.testelement2_attrs)
 		cls.testelement2_id = cls.testelement2['id']
 
 		cls.testelement2_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['tech']+"_interface",
+																		type=cls.testelement2['type']+"_interface",
 																		parent=cls.testelement2_id)
 		cls.testelement2_interface_id = cls.testelement2_interface["id"]
 
@@ -83,30 +83,27 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 			}
 
 		cls.testelement3 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['tech'],
+																		type=cls.test_temps[0]['type'],
 																		attrs=cls.testelement3_attrs)
 		cls.testelement3_id = cls.testelement3['id']
 
 		cls.testelement3_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																		type=cls.test_temps[0]['tech']+"_interface",
+																		type=cls.testelement3['type']+"_interface",
 																		parent=cls.testelement3_id)
 		cls.testelement3_interface_id = cls.testelement3_interface["id"]
 		
 		cls.testelement1_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																				  type=cls.test_temps[0][
-																						   'tech'] + "_interface",
+																				  type=cls.testelement1['type'] + "_interface",
 																				  parent=cls.testelement1_id)
 		cls.testelement1_interface_id = cls.testelement1_interface["id"]
 
 		cls.testelement1_interface_2 = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																				  type=cls.test_temps[0][
-																						   'tech'] + "_interface",
+																				  type=cls.testelement1['type'] + "_interface",
 																				  parent=cls.testelement1_id)
 		cls.testelement1_interface_2_id = cls.testelement1_interface_2["id"]
 
 		cls.testelement2_interface = cls.proxy_holder.backend_core.element_create(top=cls.testtopology_id,
-																				  type=cls.test_temps[0][
-																						   'tech'] + "_interface",
+																				  type=cls.testelement1['type'] + "_interface",
 																				  parent=cls.testelement2_id)
 		cls.testelement2_interface_id = cls.testelement2_interface["id"]
 
@@ -279,7 +276,7 @@ class ConnectionTestCase(ProxyHoldingTestCase):
 		tests whether the api returns correctly usage informations about a connection or not
 		"""
 
-		hostconnection_id = "%d@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
+		hostconnection_id = "%s@%s"%(self.testconnection['debug']['host_connections'][0][1],self.testconnection['debug']['host_connections'][0][0])
 
 		self.proxy_holder.backend_accounting.push_usage(elements={},connections={hostconnection_id: [(int(time.time()), 0.0, 0.0, 0.0, 0.0)]})
 		connection_info_api = self.proxy_holder.backend_api.connection_usage(self.testconnection_id)
@@ -356,15 +353,15 @@ class FullTechnologyTestCase(ProxyHoldingTestCase):
 
 	def test_connection_create_for_all_technologies(self):
 		"""
-		Create two elements and a connection between them for each template to test all technologies
+		Create two elements and a connection between them for each template to test all typenologies
 		"""
 		for temp in self.test_temps:
 
 			tech_attrs = {
 				"full": ["kvm", "kvmqm"],
-				"container": ["lxc", "openvz"],
+				"container": ["openvz"],
 				"repy": [None]  # None: dont set tech attribute
-			}[temp["tech"]]
+			}[temp["type"]]
 
 			for tech in tech_attrs:
 				testelement_attrs = {
@@ -377,16 +374,16 @@ class FullTechnologyTestCase(ProxyHoldingTestCase):
 
 				#Creat two elements of the same technology
 				testelement = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																		   type=temp['tech'],
+																		   type=temp['type'],
 																		   attrs=testelement_attrs)
 				testelement2 = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																			type=temp['tech'],
+																			type=temp['type'],
 																			attrs=testelement_attrs)
 
 				#Interface for element1
 				testelement_id = testelement['id']
 				testelement_interface = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																					  type="%s_interface" % temp['tech'],
+																					  type="%s_interface" % temp['type'],
 																					  parent=testelement_id)
 				testelement_interface_id = testelement_interface["id"]
 
@@ -395,7 +392,7 @@ class FullTechnologyTestCase(ProxyHoldingTestCase):
 				#Interface for element2
 				testelement2_id = testelement2['id']
 				testelement2_interface = self.proxy_holder.backend_api.element_create(top=self.testtopology_id,
-																					   type="%s_interface" % temp['tech'],
+																					   type="%s_interface" % temp['type'],
 																					   parent=testelement2_id)
 				testelement2_interface_id = testelement2_interface["id"]
 

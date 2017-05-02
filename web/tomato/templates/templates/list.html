@@ -14,8 +14,8 @@
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
   	<span class="glyphicon glyphicon-filter"></span>
-    {% if tech %}
-      Showing all templates of tech '{{tech}}'
+    {% if type %}
+      Showing all templates of type '{{type}}'
     {% else %}
       Showing all templates
     {% endif %}
@@ -24,8 +24,8 @@
   <ul class="dropdown-menu" role="menu">
     <li><a href="{% url "template_list" %}">Show all templates</a></li>
     <li class="divider"></li>
-    {% for name, label in techs_dict.iteritems %}
-      <li><a href="{% url "template_list_bytech" tech=name %}">Show all template of tech '{{label}}'</a></li>    
+    {% for name, label in types_dict.iteritems %}
+      <li><a href="{% url "template_list_bytype" type=name %}">Show all template of type '{{label}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
@@ -35,8 +35,8 @@
 {% if templ_list|length > 10 and request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" 
-  {% if tech %}
-  	formaction="{%url "template.add" tech%}"
+  {% if type %}
+  	formaction="{%url "template.add" type%}"
   {%else%}
   	formaction="{%url "template.add"%}"
   {%endif%}
@@ -48,7 +48,7 @@
 	<script src="/js/enhancetable.js"></script>
 	<table class="sortable,filterable table table-striped">
 	  <tr>
-	  	<th class="icononly">Tech</th>
+	  	<th class="icononly">type</th>
 	  	<th>Name</th>
 	    <th>Label</th>
 	    <th>Subtype</th>
@@ -60,8 +60,8 @@
 	  </tr>
 	{% for templ in templ_list %}
 	  <tr>
-	  	<td enhancetable_customkey="{{templ.tech}}" align="right" class="icononly">
-	  		<img src="/img/{{templ.tech}}16.png" title="{{techs_dict|get:templ.tech}}" />
+	  	<td enhancetable_customkey="{{templ.type}}" align="right" class="icononly">
+	  		<img src="/img/{{templ.type}}16.png" title="{{types_dict|get:templ.type}}" />
 		</td>
 	    <td><a href="{%url "template.info" templ.id%}">{{templ.name}}</a></td>
 	    <td>{{templ.label}}</td>
@@ -90,6 +90,12 @@
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
+
+			{% if templ.args_doc %}
+				<img src="/img/doc.png" />
+			{% else %}
+		    	<img src="/img/invisible16.png" />
+		    {%endif%}
 		    
 		    {% if templ.show_as_common %}
 		    	<img src="/img/tick.png"/>
@@ -97,7 +103,7 @@
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
 		    
-	    	{% if not templ.nlXTP_installed and not templ.tech == 'repy' %}
+	    	{% if not templ.nlXTP_installed and not templ.type == 'repy' %}
 		    	<img src="/img/warning16.png" alt="!"/>
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
@@ -109,7 +115,7 @@
 		    	<img src="/img/invisible16.png" />
 			{% endif %}
 
-			{% if templ.description or templ.show_as_common or not templ.nlXTP_installed and templ.tech != 'repy' or templ.restricted %}
+			{% if templ.description or templ.show_as_common or not templ.nlXTP_installed and templ.type != 'repy' or templ.restricted or templ.args_doc %}
 				<div class="hiddenbox"><table>
 				{% if templ.description %}
 					<tr>
@@ -118,6 +124,13 @@
 					</tr>
 				{%endif%}
 
+				{% if templ.args_doc %}
+					<tr>
+						<td><img src="/img/doc.png" /></td>
+						<td><pre style="border: 0px; background: transparent;">{{ templ.args_doc}}</pre></td>
+					</tr>
+				{% endif %}
+
 				{% if templ.show_as_common %}
 					<tr>
 						<td><img src="/img/tick.png"/></td>
@@ -125,7 +138,7 @@
 					</tr>
 				{% endif %}
 
-				{% if not templ.nlXTP_installed and not templ.tech == 'repy' %}
+				{% if not templ.nlXTP_installed and not templ.type == 'repy' %}
 					<tr>
 						<td><img src="/img/warning16.png" /></td>
 						<td>nlXTP Guest Modules not installed</td>
@@ -153,8 +166,8 @@
 {% if request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" 
-  {% if tech %}
-  	formaction="{%url "template.add" tech%}"
+  {% if type %}
+  	formaction="{%url "template.add" type%}"
   {%else%}
   	formaction="{%url "template.add"%}"
   {%endif%}
