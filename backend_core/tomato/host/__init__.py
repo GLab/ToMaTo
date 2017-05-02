@@ -168,6 +168,7 @@ class Host(Entity, BaseDocument):
 		self.accountingTimestamp = 0
 		self.lastResourcesSync = 0
 		Entity.init(self, **attrs)
+		self.update()
 		self.synchronizeResources()
 
 	def save_if_exists(self):
