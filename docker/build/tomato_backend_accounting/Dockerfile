@@ -6,7 +6,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-instal
 
 ADD code/ /code/
 WORKDIR /code/service
-ADD target/ /code/service/target
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
 ENV PATH "/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
