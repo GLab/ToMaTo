@@ -395,7 +395,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		if tmplName:
 			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
 		templ = self._template()
-		templ.fetch(detached=False, init=self.INITIALIZING)
+		templ.fetch(detached=False)
 		if self.state == StateName.PREPARED:
 			self._useImage(templ.getPath())
 
