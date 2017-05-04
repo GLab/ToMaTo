@@ -61,7 +61,7 @@ class Attribute(object):
 	def set(self, obj, value):
 		self.check(obj, value)
 		if self.setFn:
-			self.setFn(obj, init, value)
+			self.setFn(obj, value)
 		elif self.field:
 			self.field.__set__(obj, value)
 	def get(self, obj):
