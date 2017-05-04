@@ -314,7 +314,7 @@ class KVM(elements.Element, elements.RexTFVElement):
 			UserError.check(self.template, code=UserError.ENTITY_DOES_NOT_EXIST, message="The selected template does not exist on this host.")
 		if self.state == StateName.PREPARED:
 			templ = self._template()
-			templ.fetch(detached=FalseG)
+			templ.fetch(detached=False)
 			self._useImage(templ.getPath(), backing=True)
 
 	def _useImage(self, path_, backing=False):
