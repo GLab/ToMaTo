@@ -61,7 +61,7 @@ class Attribute(object):
 	def set(self, obj, value):
 		self.check(obj, value)
 		if self.setFn:
-			self.setFn(obj, init, value)
+			self.setFn(obj, value)
 		elif self.field:
 			self.field.__set__(obj, value)
 	def get(self, obj):
@@ -115,9 +115,10 @@ class Entity(object):
 		if not self.id:
 			self.save()
 		if not self.__class__.objects.with_id(str(self.id)):
-			self.save()
+			#If the object has a id but doesn't exist in the database it is the result of bad parallelization
+			#So don't save it
+			return
 		if kwargs:
-			print kwargs
 			self.update(**kwargs)
 		else:
 			self.save()
