@@ -118,6 +118,7 @@ class Entity(object):
 			#If the object has a id but doesn't exist in the database it is the result of bad parallelization
 			#So don't save it
 			return
+
 		if kwargs:
 			self.update(**kwargs)
 		else:

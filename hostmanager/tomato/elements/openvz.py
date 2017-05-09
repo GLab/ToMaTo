@@ -616,15 +616,15 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		"websocket_pid": Attribute(field=websocket_pid, readOnly=True, schema=schema.Int()),
 		"vncport": Attribute(field=vncport, readOnly=True, schema=schema.Int()),
 		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
-		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
-		"hostname": Attribute(field=hostname, label="Hostname", set=modify_hostname, schema=schema.String()),
+		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String(null=True)),
+		"hostname": Attribute(field=hostname, label="Hostname", set=modify_hostname, schema=schema.String(null=True)),
 		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
 		"ram": Attribute(field=ram, label="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"diskspace": Attribute(field=diskspace, label="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),
-		"rootpassword": Attribute(field=rootpassword, label="Root password", schema=schema.String()),
+		"rootpassword": Attribute(field=rootpassword, label="Root password", schema=schema.String(null=True)),
 		"template": Attribute(get=lambda self: self.template.name if self.template else None, set=modify_template, label="Template"),
-		"gateway4": Attribute(field=gateway4, label="IPv4 gateway", schema=schema.String()),
-		"gateway6": Attribute(field=gateway4, label="IPv6 gateway", schema=schema.String()),
+		"gateway4": Attribute(field=gateway4, label="IPv4 gateway", schema=schema.String(null=True)),
+		"gateway6": Attribute(field=gateway4, label="IPv6 gateway", schema=schema.String(null=True)),
 	})
 
 	ACTIONS = elements.Element.ACTIONS.copy()
@@ -717,8 +717,8 @@ class OpenVZ_Interface(elements.Element):
 		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
 		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
 		"name": Attribute(field=name, description="Name", schema = schema.String(regex="^eth[0-9]+$")),
-		"ip4address": Attribute(field=ip4address, description="IPv4 address", schema=schema.String()),
-		"ip6address": Attribute(field=ip6address, description="IPv6	address", schema=schema.String()),
+		"ip4address": Attribute(field=ip4address, description="IPv4 address", schema=schema.String(null=True)),
+		"ip6address": Attribute(field=ip6address, description="IPv6	address", schema=schema.String(null=True)),
 		"use_dhcp": Attribute(field=use_dhcp, description="Use DHCP", schema=schema.Bool(), default=False),
 		"timeout": elements.Element.ATTRIBUTES["timeout"],
 	})
@@ -749,6 +749,7 @@ class OpenVZ_Interface(elements.Element):
 		if not self.name:
 			self.name = self.getParent()._nextIfaceName()
 		self.mac = net.randomMac()
+		self.update_or_save()
 		
 	def _execute(self, cmd):
 		return self.getParent()._execute(cmd)

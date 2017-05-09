@@ -45,7 +45,8 @@ class ExternalNetwork(Element):
 		self.state = ST_CREATED
 		Element.init(self, *args, **kwargs)
 		if not self.name:
-			self.update_or_save(name=self.TYPE + str(self.id))
+			self.name = self.TYPE + str(self.id)
+			self.update_or_save(name=self.name)
 
 	def check_kind(self, val):
 		network = Network.get(val)
@@ -122,7 +123,8 @@ class ExternalNetworkEndpoint(Element, ConnectingElement):
 		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
-			self.update_or_save(name=self.parent._nextName("port"))
+			self.name = self.parent._nextName("port")
+			self.update_or_save(name=self.name)
 
 	@property
 	def mainElement(self):
