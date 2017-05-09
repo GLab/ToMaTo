@@ -158,7 +158,8 @@ class Element(LockedStatefulEntity, BaseDocument):
 		UserError.check(self.mainElement, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (not deployed)")
 		if not action in self.mainElement.getAllowedActions():
 			self.mainElement.updateInfo()
-			self.update_or_save(state=self.mainElement.state)
+			self.state=self.mainElement.state
+			self.update_or_save(state=self.state)
 		UserError.check(action in self.mainElement.getAllowedActions(),
 			code=UserError.UNSUPPORTED_ACTION, message="Unsupported action (not supported by deployed element)")
 		if action in [ActionName.PREPARE, ActionName.START, ActionName.UPLOAD_GRANT, ActionName.REXTFV_UPLOAD_GRANT]:
@@ -191,6 +192,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		if recursive:
 			for ch in self.children:
 				ch.setState(state, True)
+		self.state = state
 		self.update_or_save(state=self.state)
 
 	def _remove(self, recurse=True):

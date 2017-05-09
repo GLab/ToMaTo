@@ -45,9 +45,10 @@ class VpnCloud(ConnectingElement, Element):
 		self.state = ST_CREATED
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
-			self.update_or_save(name=self.TYPE+self.idStr)
+			self.name=self.TYPE+self.idStr
+			self.update_or_save(name=self.name)
 		self.network_id = random.randint(0, 2**31)
-		self.update_or_save(network_id=random.randint(0, 2**31))
+		self.update_or_save(network_id=self.network_id)
 	
 	def onChildAdded(self, iface):
 		if self.state == ST_PREPARED: #self is correct
@@ -167,7 +168,8 @@ class VpnCloudEndpoint(ConnectingElement, Element):
 		self.state = ST_CREATED
 		Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
-			self.update_or_save(name=self.parent._nextName("port"))
+			self.name=self.parent._nextName("port")
+			self.update_or_save(name=self.name)
 	
 	@property
 	def mainElement(self):

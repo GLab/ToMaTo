@@ -240,7 +240,8 @@ class VMElement(Element):
 			ch.triggerConnectionStart()
 
 	def after_upload_use(self):
-		self.update_or_save(customTemplate=True)
+		self.customTemplate = True
+		self.update_or_save(customTemplate=self.customTemplate)
 
 	ATTRIBUTES = Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
