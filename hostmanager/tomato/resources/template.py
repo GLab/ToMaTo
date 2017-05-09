@@ -75,7 +75,7 @@ class Template(resources.Resource):
 			return threading.Thread(target=self.fetch).start()
 		aria2.download(self.urls, path)
 		self.ready = True
-		self.save()
+		self.update_or_save()
 
 	def upcast(self):
 		return self

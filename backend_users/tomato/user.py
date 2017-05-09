@@ -99,13 +99,13 @@ class User(Entity, BaseDocument):
 		obj = cls(name=name,
 					lastLogin=time.time(),
 					password=password,
-							quota=Quota(
-								used=Usage(cputime=0, memory=0, diskspace=0, traffic=0),
-								monthly=Usage.from_settings(default_quota),
-								continousFactor=default_quota["continous-factor"],
-								usedTime=time.time()
-								)
-							)
+					quota=Quota(
+						used=Usage(cputime=0, memory=0, diskspace=0, traffic=0),
+						monthly=Usage.from_settings(default_quota),
+						continousFactor=default_quota["continous-factor"],
+						usedTime=time.time()
+						)
+					)
 		try:
 			obj.modify_organization(organization)
 			obj.modify(email=email, **attrs)
@@ -172,14 +172,14 @@ class User(Entity, BaseDocument):
 		orga = Organization.get(val)
 		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": val})
 		self.organization = orga
-		self.update(organization=self.organization)
+		self.update_or_save(organization=self.organization)
 
 	def modify_quota(self, val):
 		self.quota.modify(val)
 
 	def modify_password(self, password):
 		self.password = User.hashPassword(password)
-		self.update(password=self.password)
+		self.update_or_save(password=self.password)
 
 	def modify_flags(self, flags):
 		UserError.check(isinstance(flags, dict), code=UserError.INVALID_DATA, message="flags must be a dictionary")
@@ -188,7 +188,7 @@ class User(Entity, BaseDocument):
 				self.flags.remove(flag)
 			if (is_set) and (flag not in self.flags):
 				self.flags.append(flag)
-		self.update(flags=self.flags)
+		self.update_or_save(flags=self.flags)
 
 
 
