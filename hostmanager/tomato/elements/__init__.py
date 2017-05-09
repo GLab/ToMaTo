@@ -263,7 +263,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 			for ch in self.getChildren():
 				ch.setState(state, True)
 		self.state = state
-		self.save()
+		self.update_or_save(state=self.state)
 
 	def remove(self, recurse=True):
 		self.checkRemove(recurse)

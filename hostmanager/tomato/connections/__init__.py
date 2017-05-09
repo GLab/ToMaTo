@@ -107,9 +107,9 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		UserError.check(concept_, UserError.UNABLE_TO_CONNECT, "Not able to connect the two elements with this connection type",
 			data={"element_types": (el1.type, el2.type), "connection_type": self.type})
 		self.owner = currentUser()
-		self.save()
+		#self.save()
 		self.elements = [el1,el2]
-		self.save()
+		self.update_or_save()
 		self.getUsageStatistics() #triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
