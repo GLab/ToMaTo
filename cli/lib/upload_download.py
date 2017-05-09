@@ -70,16 +70,16 @@ def upload_and_use_rextfv(api, element_id, filename, wait_until_finished=False):
 		while True:
 			time.sleep(1)
 			el_info = api.element_info(element_id)
-			rextfv_info = el_info.get("rextfv_run_status", None)
 
-			if rextfv_info is None:
+			if "rextfv_run_status" not in el_info:
 				continue
 
-			if rextfv_info.get("done", False):
-				return
+			if el_info["rextfv_run_status"]["readable"]:
+				if el_info["rextfv_run_status"].get("done", False):
+					return
 
-			if not rextfv_info.get("isAlive", False):
-				raise Exception("nlXTP crashed")
+				if not el_info["rextfv_run_status"].get("isAlive", False):
+					raise Exception("nlXTP_mon crashed")
 
 			time.sleep(max(0, el_info.get("info_next_sync", 0) - el_info.get("info_last_sync", 0) - 1))  # time.time() is not an option due to timezones. 1 additional second of sleep at beginning of loop
 
