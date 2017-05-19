@@ -205,6 +205,7 @@ class KVM(elements.Element, elements.RexTFVElement):
 		self.vncpid, self.websocket_pid = self.vir.startVnc(self.vmid, self.vncpassword, self.vncport, self.websocket_port, '/etc/tomato/server.pem')
 
 
+
 	def action_stop(self):
 		self._checkState()
 		for interface in self.getChildren():
@@ -573,13 +574,13 @@ class KVM_Interface(elements.Element):#
 
 	def _start(self):
 		self.ipspy_pid = ipspy.start(self.interfaceName(), self.dataPath("ipspy.json"))
-		self.update_or_save()
+		self.update_or_save(ipspy_pid=self.ipspy_pid)
 
 	def _stop(self):
 		if self.ipspy_pid:
 			ipspy.stop(self.ipspy_pid)
 			del self.ipspy_pid
-		self.update_or_save()
+			self.update_or_save(ipspy_pid=self.ipspy_pid)
 
 	def info(self):
 		path = self.dataPath("ipspy.json")

@@ -570,13 +570,13 @@ class KVMQM_Interface(elements.Element):
 
 	def _start(self):
 		self.ipspy_pid = ipspy.start(self.interfaceName(), self.dataPath("ipspy.json"))
-		self.update_or_save()
+		self.update_or_save(ipspy_pid=self.ipspy_pid)
 	
 	def _stop(self):
 		if self.ipspy_pid:
 			ipspy.stop(self.ipspy_pid)
 			del self.ipspy_pid
-		self.update_or_save()
+			self.update_or_save(ipspy_pid=self.ipspy_pid)
 
 	def info(self):
 		path = self.dataPath("ipspy.json")

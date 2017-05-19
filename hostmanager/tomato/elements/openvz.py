@@ -795,7 +795,7 @@ class OpenVZ_Interface(elements.Element):
 	
 	def _start(self):
 		self.ipspy_pid = net.ipspy_start(self.interfaceName(), self.dataPath("ipspy.json"))
-		self.update_or_save()
+		self.update_or_save(ipspy_pid=self.ipspy_pid)
 		self._setAddresses()
 		self._setUseDhcp()
 		self._execute("ip link set up %s" % self.name)			
@@ -804,7 +804,7 @@ class OpenVZ_Interface(elements.Element):
 		if self.ipspy_pid:
 			process.kill(self.ipspy_pid)
 			del self.ipspy_pid
-		self.update_or_save()
+			self.update_or_save(ipspy_pid=self.ipspy_pid)
 	
 	def interfaceName(self):
 		if self.state != StateName.CREATED:
