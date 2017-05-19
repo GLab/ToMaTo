@@ -171,13 +171,6 @@ class Host(Entity, BaseDocument):
 		self.update()
 		self.synchronizeResources()
 
-	def save_if_exists(self):
-		try:
-			Host.objects.get(id=self.id)
-		except Host.DoesNotExist:
-			return
-		self.save()
-
 	def getProxy(self, always_try=False):
 		if not self.is_reachable() and not always_try:
 			raise TransportError(code=TransportError.CONNECT, message="host is unreachable", module="backend", data={"host": self.name}, todump=False)
@@ -193,11 +186,11 @@ class Host(Entity, BaseDocument):
 		# this value is reset on every sync
 		logging.logMessage("component error", category="host", host=self.name)
 		self.componentErrors += 1
-		self.save_if_exists()
+		self.update_or_save()
 
 	def update(self):
 		self.availability *= settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
-		self.save_if_exists()
+		self.update_or_save()
 		if not self.enabled:
 			return
 		before = time.time()
@@ -231,7 +224,7 @@ class Host(Entity, BaseDocument):
 		self.componentErrors = max(0, self.componentErrors / 2)
 		if not self.problems():
 			self.availability += 1.0 - settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
-		self.save_if_exists()
+		self.update_or_save()
 		logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)
 		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
 
@@ -464,7 +457,7 @@ class Host(Entity, BaseDocument):
 			tpl.update_host_state(self, tpl in avail)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()
-		self.save_if_exists()
+		self.update_or_save()
 
 	def updateAccountingData(self):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)
@@ -496,7 +489,7 @@ class Host(Entity, BaseDocument):
 
 			get_backend_accounting_proxy().push_usage(data["elements"], data["connections"])
 			self.accountingTimestamp = max_timestamp + 1  # one second greater than last record.
-			self.save_if_exists()
+			self.update_or_save()
 		finally:
 			logging.logMessage("accounting_sync end", category="host", name=self.name)
 
@@ -646,7 +639,7 @@ class Host(Entity, BaseDocument):
 						ref=Reference.host(self.name),
 						subject_group="host failure"
 					)
-		self.save_if_exists()
+		self.update_or_save()
 
 	def getLoad(self):
 		"""
@@ -691,7 +684,7 @@ class Host(Entity, BaseDocument):
 		try:
 			attrs_ = attrs.copy()
 			host.init(**attrs_)
-			host.save()
+			host.update_or_save()
 			logging.logMessage("create", category="host", info=host.info())
 		except:
 			host.remove()

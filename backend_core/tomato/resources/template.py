@@ -98,7 +98,7 @@ class Template(LockedEntity, BaseDocument):
 		if ready:
 			self.hosts.append(host.name)
 			self.host_urls.append(url)
-		self.save()
+		self.update_or_save()
 
 	@property
 	def all_urls(self):
@@ -196,11 +196,11 @@ class Template(LockedEntity, BaseDocument):
 
 	def on_selected(self):
 		self.popularity += 1
-		self.save()
+		self.update_or_save()
 
 	def update_popularity(self):
 		self.popularity = 0.9 * (self.popularity + self.elements.count())
-		self.save()
+		self.update_or_save()
 
 	@classmethod
 	def get(cls, type, name):
@@ -224,7 +224,7 @@ class Template(LockedEntity, BaseDocument):
 		obj = cls()
 		try:
 			obj.init(**attrs)
-			obj.save()
+			obj.update_or_save()
 			return obj
 		except:
 			obj.remove()

@@ -98,7 +98,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		self.getUsageStatistics()  # triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
-		self.save()
+		self.update_or_save()
 
 	def dumpException(self, **kwargs):
 		try:
@@ -115,7 +115,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 			stats.init()
 			stats.save()
 			self.usageStatistics = stats
-			self.save()
+			self.update_or_save()
 		return self.usageStatistics
 
 	def _saveAttributes(self):
@@ -529,7 +529,7 @@ def create(type_, parent=None, attrs=None):
 	el = TYPES[type_]()
 	try:
 		el.init(parent, attrs)
-		el.save()
+		el.update_or_save()
 	except:
 		el.remove()
 		raise

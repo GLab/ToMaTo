@@ -189,7 +189,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
-		self.save()
+		self.update_or_save()
 		#template: None, default template
 	
 	def _imagePath(self):
@@ -478,6 +478,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		if self.websocket_pid:
 			process.killTree(self.websocket_pid)
 			del self.websocket_pid
+		self.update_or_save(vncpid=self.vncpid, websocket_pid=self.websocket_pid)
 		self._vzctl("set", ["--hostname", "workaround", "--save"]) #Workaround for fault in vzctl 4.0-1pve6
 		self._vzctl(ActionName.STOP)
 		self._vzctl("set", ["--hostname", self.hostname, "--save"]) #Workaround for fault in vzctl 4.0-1pve6
@@ -794,7 +795,7 @@ class OpenVZ_Interface(elements.Element):
 	
 	def _start(self):
 		self.ipspy_pid = net.ipspy_start(self.interfaceName(), self.dataPath("ipspy.json"))
-		self.save()
+		self.update_or_save()
 		self._setAddresses()
 		self._setUseDhcp()
 		self._execute("ip link set up %s" % self.name)			
@@ -803,7 +804,7 @@ class OpenVZ_Interface(elements.Element):
 		if self.ipspy_pid:
 			process.kill(self.ipspy_pid)
 			del self.ipspy_pid
-		self.save()
+		self.update_or_save()
 	
 	def interfaceName(self):
 		if self.state != StateName.CREATED:

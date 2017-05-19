@@ -112,17 +112,44 @@ class Entity(object):
 		self.modify(**toSet)
 
 	def update_or_save(self, **kwargs):
+		created=False
 		if not self.id:
 			self.save()
+			created=True
 		if not self.__class__.objects.with_id(str(self.id)):
 			#If the object has a id but doesn't exist in the database it is the result of bad parallelization
 			#So don't save it
 			return
 
 		if kwargs:
+			#set,_ = self._delta()
+
+			set = self._get_changed_fields()
+
+			for field_name, field in self._fields.items():
+				if field_name in kwargs:
+					db_field_name = field.db_field
+					if db_field_name in set:
+						set.remove(db_field_name)
+
+			if set:
+				print("Warning: Document updated without passing all actually changed values. Missing parameters:")
+				print set
+				import traceback
+				traceback.print_stack()
 			self.update(**kwargs)
+
+			#Workaround: MongoEngine doesn't remove updated fields from the _changed_fields list
+			#Hence we do it manualy, so our debug checkup shows correct problems.
+			for field_name, field in self._fields.items():
+				if field_name in kwargs:
+					db_field_name = field.db_field
+					if db_field_name in self._changed_fields:
+						self._changed_fields.remove(db_field_name)
+
 		else:
-			self.save()
+			if not created:
+				self.save()
 
 	def checkUnknownAttribute(self, key, value):
 		raise Error(code=Error.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute")

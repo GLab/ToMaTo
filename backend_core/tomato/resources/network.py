@@ -74,7 +74,7 @@ class Network(Entity, BaseDocument):
 	def create(cls, **attrs):
 		obj = cls()
 		obj.init(**attrs)
-		obj.save()
+		obj.update_or_save()
 		return obj
 
 
@@ -143,5 +143,5 @@ class NetworkInstance(Entity, BaseDocument):
 	def create(cls, **attrs):
 		obj = cls()
 		obj.init(**attrs)
-		obj.save()
+		obj.update_or_save()
 		return obj

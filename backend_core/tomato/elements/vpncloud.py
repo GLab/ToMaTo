@@ -189,7 +189,7 @@ class VpnCloudEndpoint(ConnectingElement, Element):
 				if self.element:
 					self.element.remove()
 				self.element = None
-			self.save()
+				self.update_or_save(element=self.element)
 
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
@@ -198,7 +198,7 @@ class VpnCloudEndpoint(ConnectingElement, Element):
 		attrs = self._remoteAttrs
 		attrs.update(network_id=self.parent.network_id)
 		self.element = _host.createElement(self.remoteType, parent=None, attrs=attrs, ownerElement=self)
-		self.save()
+		self.update_or_save()
 		self.setState(ST_PREPARED, True)
 		
 	def action_destroy(self):

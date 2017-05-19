@@ -196,7 +196,7 @@ class Repy(elements.Element):
 
 	def _update_args_doc(self):
 		self.args_doc = read_repy_doc(self.dataPath("program.repy"))
-		self.save()
+		self.update_or_save()
 
 	def _useImage(self, path_):
 		if path.exists(self.dataPath("program.repy")):
@@ -246,6 +246,7 @@ class Repy(elements.Element):
 		iargs = sum((["-i", "%s,alias=%s" % (self._interfaceName(iface.name), iface.name)] for iface in self.getChildren()), [])
 		stdout = open(self.dataPath("program.log"), "w")
 		self.pid = cmd.spawn(["tomato-repy", "-p", self.dataPath("program.repy"), "-r", self.dataPath("resources"), "-v"] + iargs + self.args, stdout=stdout)
+		self.update_or_save(pid=self.pid)
 		self.setState(StateName.STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
@@ -283,6 +284,7 @@ class Repy(elements.Element):
 		if self.websocket_pid:
 			process.killTree(self.websocket_pid)
 			del self.websocket_pid
+		self.update_or_save(vncpid=self.vncpid, pid=self.pid, websocket_pid=self.websocket_pid)
 		self.setState(StateName.PREPARED, True)
 		
 	def action_upload_grant(self):
@@ -442,13 +444,13 @@ class Repy_Interface(elements.Element):
 
 	def _start(self):
 		self.ipspy_pid = net.ipspy_start(self.interfaceName(), self.dataPath("ipspy.json"))
-		self.save()
+		self.update_or_save()
 	
 	def _stop(self):
 		if self.ipspy_pid:
 			process.kill(self.ipspy_pid)
 			del self.ipspy_pid
-		self.save()
+		self.update_or_save()
 
 	def info(self):
 		if self.state == StateName.STARTED:

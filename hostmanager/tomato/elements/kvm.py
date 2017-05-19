@@ -216,6 +216,7 @@ class KVM(elements.Element, elements.RexTFVElement):
 			self.vir.stopVnc(self.vncpid, self.websocket_pid)
 			del self.vncpid
 			del self.websocket_pid
+			self.update_or_save(vncpid=self.vncpid, websocket_pid=self.websocket_pid)
 		self.vir.stop(self.vmid)
 		self.setState(StateName.PREPARED, True)
 
@@ -572,13 +573,13 @@ class KVM_Interface(elements.Element):#
 
 	def _start(self):
 		self.ipspy_pid = ipspy.start(self.interfaceName(), self.dataPath("ipspy.json"))
-		self.save()
+		self.update_or_save()
 
 	def _stop(self):
 		if self.ipspy_pid:
 			ipspy.stop(self.ipspy_pid)
 			del self.ipspy_pid
-		self.save()
+		self.update_or_save()
 
 	def info(self):
 		path = self.dataPath("ipspy.json")

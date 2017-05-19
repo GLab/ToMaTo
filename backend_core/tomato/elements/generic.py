@@ -72,12 +72,12 @@ class VMElement(Element):
 			self.nextSync = int(time.time()) + (time_passed / 24)
 		else: # more than one day:
 			self.nextSync = 0 #the process which syncs everything every hour is still active. do nothing more.
-		self.save()
+		self.update_or_save(element=self.element, nextSync=self.nextSync, lastSync=self.lastSync)
 		
 	def set_rextfv_last_started(self):
 		self.rextfvLastStarted = int(time.time())
 		self.nextSync = int(time.time()) + 1 #make sure sync process will be triggered.
-		self.save()
+		self.update_or_save(rextfvLastStarted=self.rextfvLastStarted, nextSync=self.nextSync)
 	
 	def init(self, topology, *args, **kwargs):
 		self.state = ST_CREATED
@@ -91,7 +91,7 @@ class VMElement(Element):
 		elements.Element.init(self, topology, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
-		self.save()
+		self.update_or_save()
 		self.rextfvLastStarted = 0
 		self.nextSync = 0
 
@@ -331,14 +331,14 @@ class VMInterface(Element):
 		assert parEl
 		attrs = self._remoteAttrs
 		self.element = parEl.createChild(self._create_type, attrs=attrs, ownerElement=self)
-		self.save()
+		self.update_or_save()
 		
 	def _remove(self, recurse=None):
 		if isinstance(self.element, HostElement):
 			hostElement = self.element
 			self.element = None
 			hostElement.remove()
-			self.save()
+			self.update_or_save()
 
 	@property
 	def readyToConnect(self):
