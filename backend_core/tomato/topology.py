@@ -83,8 +83,8 @@ class Topology(Entity, BaseDocument):
 		self.set_role(owner, Role.owner, skip_save=True)
 		self.timeout = time.time() + settings.get_topology_settings()[Config.TOPOLOGY_TIMEOUT_INITIAL]
 		self.timeoutStep = TimeoutStep.WARNED #not sending a warning for initial timeout
-		self.update_or_save()
 		self.name = "Topology [%s]" % self.idStr
+		self.update_or_save()
 		self.modify(**attrs)
 
 	def isBusy(self):
@@ -427,7 +427,7 @@ def timeout_task():
 			top.action_stop()
 			top.sendNotification(role=Role.owner, subject="Topology stopped: %s" % top, message="The topology %s has timed out and is now stopped. Your data is safe for now. The topology will be destroyed in the future, which may result in data loss. To stop this process, please log in and renew your topology, or download your data." % top)
 			top.timeoutStep = TimeoutStep.STOPPED
-			top.update_or_save()
+			top.update_or_save(timeoutStep=top.timeoutStep)
 		except:
 			wrap_and_handle_current_exception(re_raise=False)
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.STOPPED, timeout__lte=now-topology_config[Config.TOPOLOGY_TIMEOUT_DESTROY]):
@@ -435,7 +435,7 @@ def timeout_task():
 			logging.logMessage("timeout destroy", category="topology", id=top.idStr)
 			top.action_destroy()
 			top.timeoutStep = TimeoutStep.DESTROYED
-			top.update_or_save()
+			top.update_or_save(timeoutStep=top.timeoutStep)
 		except:
 			wrap_and_handle_current_exception(re_raise=False)
 	for top in Topology.objects.filter(timeoutStep=TimeoutStep.DESTROYED, timeout__lte=now-topology_config[Config.TOPOLOGY_TIMEOUT_REMOVE]):

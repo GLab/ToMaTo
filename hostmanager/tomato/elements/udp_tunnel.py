@@ -131,6 +131,7 @@ class UDP_Tunnel(elements.Element):
 		else:
 			cmd_.append("udp-listen:%d" % self.port)
 		self.pid = cmd.spawn(cmd_)
+		self.update_or_save(pid=self.pid)
 		self.setState(StateName.STARTED)
 		ifName = self._interfaceName()
 		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.ASSERTION,
@@ -146,6 +147,7 @@ class UDP_Tunnel(elements.Element):
 		if self.pid:
 			process.kill(self.pid)
 			del self.pid
+			self.update_or_save(pid=self.pid)
 		self.setState(StateName.CREATED)
 
 	def upcast(self):

@@ -91,9 +91,9 @@ class VMElement(Element):
 		elements.Element.init(self, topology, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
-		self.update_or_save()
 		self.rextfvLastStarted = 0
 		self.nextSync = 0
+		self.update_or_save(name=self.name, rextfvLastStarted=self.rextfvLastStarted, nextSync=self.nextSync)
 
 	@property
 	def mainElement(self):
@@ -190,7 +190,7 @@ class VMElement(Element):
 		})
 		attrs.update(self._profileAttrs)
 		self.element = _host.createElement(type_, parent=None, attrs=attrs, ownerElement=self)
-		self.update_or_save()
+		self.update_or_save(element=self.element)
 		for iface in self.children:
 			iface._create()
 		self.element.action(ActionName.PREPARE)
@@ -215,7 +215,7 @@ class VMElement(Element):
 			self.element = None
 			hostElement.remove()
 			self.customTemplate = False
-		self.update_or_save()
+			self.update_or_save(element=self.element, customTemplate=self.customTemplate)
 		self.setState(ST_CREATED, True)
 		
 	def action_stop(self):
@@ -317,6 +317,7 @@ class VMInterface(Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.parent._nextIfaceName()
+			self.update_or_save(name=self.name)
 
 	@property
 	def mainElement(self):
@@ -331,14 +332,14 @@ class VMInterface(Element):
 		assert parEl
 		attrs = self._remoteAttrs
 		self.element = parEl.createChild(self._create_type, attrs=attrs, ownerElement=self)
-		self.update_or_save()
+		self.update_or_save(element=self.element)
 		
 	def _remove(self, recurse=None):
 		if isinstance(self.element, HostElement):
 			hostElement = self.element
 			self.element = None
 			hostElement.remove()
-			self.update_or_save()
+			self.update_or_save(element=self.element)
 
 	@property
 	def readyToConnect(self):

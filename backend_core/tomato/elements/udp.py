@@ -78,7 +78,7 @@ class UDPEndpoint(Element):
 			"connect": self.connect,
 		})
 		self.element = _host.createElement(self.remoteType, parent=None, attrs=attrs, ownerElement=self)
-		self.update_or_save()
+		self.update_or_save(element=self.element)
 		self.setState(ST_PREPARED, True)
 		
 	def action_destroy(self):

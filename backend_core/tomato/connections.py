@@ -239,9 +239,9 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			except:  # try to rollback changes
 				try:
 					self.elementTo.connection = self
-					self.elementTo.update_or_save()
+					self.elementTo.update_or_save(connection=self)
 					self.elementFrom.connection = self
-					self.elementFrom.update_or_save()
+					self.elementFrom.update_or_save(connection=self)
 					if connTo:
 						connTo.update_or_save()
 					if connFrom:
