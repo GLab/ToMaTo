@@ -43,7 +43,6 @@ class Repy(VMElement):
 			return self.template.args_doc
 		else:
 			return None
-		self.update_or_save()
 
 
 	def action_prepare(self):
@@ -56,7 +55,7 @@ class Repy(VMElement):
 		})
 		attrs.update(self._profileAttrs)
 		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, ownerElement=self)
-		self.update_or_save()
+		self.update_or_save(element=self.element)
 		for iface in self.children:
 			iface._create()
 		self.setState(ST_PREPARED, True)
@@ -67,6 +66,7 @@ class Repy(VMElement):
 				iface._remove()
 			self.element.remove()
 			self.element = None
+			self.update_or_save(element=self.element)
 		self.setState(ST_CREATED, True)
 
 	ACTIONS = VMElement.ACTIONS.copy()

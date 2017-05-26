@@ -363,7 +363,6 @@ class Element(LockedStatefulEntity, BaseDocument):
 		el = TYPES[type_]()
 		try:
 			el.init(top, parent, **attrs)
-			el.save()
 		except:
 			#el.remove()
 			raise

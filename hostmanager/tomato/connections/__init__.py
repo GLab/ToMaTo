@@ -252,7 +252,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 
 	def setState(self, state, dummy=None):
 		self.state = state
-		self.save()
+		self.update_or_save(state=self.state)
 
 	def checkRemove(self):
 		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
@@ -342,7 +342,7 @@ def create(el1, el2, type_=None, attrs=None):
 		con = TYPES[type_]()
 		try:
 			con.init(el1, el2, attrs)
-			con.save()
+			con.update_or_save()
 		except:
 			con.remove()
 			raise

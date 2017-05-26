@@ -104,7 +104,7 @@ class Host(Entity, BaseDocument):
 	accountingTimestamp = FloatField(db_field='accounting_timestamp', required=True)
 	lastResourcesSync = FloatField(db_field='last_resource_sync', required=True)
 	enabled = BooleanField(default=True)
-	componentErrors = IntField(default=0, db_field='component_errors')
+	componentErrors = IntField(db_field='component_errors', default=0)
 	problemAge = FloatField(db_field='problem_age')
 	problemMailTime = FloatField(db_field='problem_mail_time')
 	availability = FloatField(default=1.0)
@@ -134,7 +134,7 @@ class Host(Entity, BaseDocument):
 
 
 	def action_forced_update(self):
-		self.update()
+		self.updateHostInformation()
 		self.synchronizeResources(True)
 		return self.info()
 
@@ -168,15 +168,8 @@ class Host(Entity, BaseDocument):
 		self.accountingTimestamp = 0
 		self.lastResourcesSync = 0
 		Entity.init(self, **attrs)
-		self.update()
+		self.updateHostInformation()
 		self.synchronizeResources()
-
-	def save_if_exists(self):
-		try:
-			Host.objects.get(id=self.id)
-		except Host.DoesNotExist:
-			return
-		self.save()
 
 	def getProxy(self, always_try=False):
 		if not self.is_reachable() and not always_try:
@@ -193,11 +186,11 @@ class Host(Entity, BaseDocument):
 		# this value is reset on every sync
 		logging.logMessage("component error", category="host", host=self.name)
 		self.componentErrors += 1
-		self.save_if_exists()
+		self.update_or_save(componentErrors=self.componentErrors)
 
-	def update(self):
+	def updateHostInformation(self):
 		self.availability *= settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
-		self.save_if_exists()
+		self.update_or_save(availability=self.availability)
 		if not self.enabled:
 			return
 		before = time.time()
@@ -231,7 +224,13 @@ class Host(Entity, BaseDocument):
 		self.componentErrors = max(0, self.componentErrors / 2)
 		if not self.problems():
 			self.availability += 1.0 - settings.get_host_connections_settings()[Config.HOST_AVAILABILITY_FACTOR]
-		self.save_if_exists()
+		self.update_or_save(hostInfo=self.hostInfo,
+		                    hostNetworks=self.hostNetworks,
+		                    elementTypes=self.elementTypes,
+		                    connectionTypes=self.connectionTypes,
+		                    hostInfoTimestamp=self.hostInfoTimestamp,
+		                    componentErrors=self.componentErrors,
+		                    availability=self.availability)
 		logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)
 		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)
 
@@ -464,7 +463,7 @@ class Host(Entity, BaseDocument):
 			tpl.update_host_state(self, tpl in avail)
 		logging.logMessage("resource_sync end", category="host", name=self.name)
 		self.lastResourcesSync = time.time()
-		self.save_if_exists()
+		self.update_or_save(lastResourcesSync=self.lastResourcesSync)
 
 	def updateAccountingData(self):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)
@@ -496,7 +495,7 @@ class Host(Entity, BaseDocument):
 
 			get_backend_accounting_proxy().push_usage(data["elements"], data["connections"])
 			self.accountingTimestamp = max_timestamp + 1  # one second greater than last record.
-			self.save_if_exists()
+			self.update_or_save(accountingTimestamp=self.accountingTimestamp)
 		finally:
 			logging.logMessage("accounting_sync end", category="host", name=self.name)
 
@@ -646,7 +645,7 @@ class Host(Entity, BaseDocument):
 						ref=Reference.host(self.name),
 						subject_group="host failure"
 					)
-		self.save_if_exists()
+		self.update_or_save(problemMailTime=self.problemMailTime, problemAge=self.problemAge)
 
 	def getLoad(self):
 		"""
@@ -691,7 +690,6 @@ class Host(Entity, BaseDocument):
 		try:
 			attrs_ = attrs.copy()
 			host.init(**attrs_)
-			host.save()
 			logging.logMessage("create", category="host", info=host.info())
 		except:
 			host.remove()
@@ -841,7 +839,7 @@ def synchronizeHost(host_name):
 	try:
 		try:
 			try:
-				host.update()
+				host.updateHostInformation()
 				host.synchronizeResources()
 			except Exception as e:
 				print >>sys.stderr, "Error updating host information from %s" % host_name
