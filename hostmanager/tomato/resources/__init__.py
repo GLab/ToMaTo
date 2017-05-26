@@ -74,7 +74,7 @@ class Resource(Entity, BaseDocument):
 	def init(self, attrs=None):
 		if not attrs: attrs = {}
 		self.attrs = {}
-		self.save()
+		self.update_or_save()
 		self.modify(attrs)
 		
 	def upcast(self):
@@ -95,7 +95,7 @@ class Resource(Entity, BaseDocument):
 			else:
 				self.attrs[key] = value
 		logging.logMessage("info", category="resource", type=self.type, id=str(self.id), info=self.info())
-		self.save()
+		self.update_or_save()
 	
 	def remove(self):
 		logging.logMessage("info", category="resource", type=self.type, id=str(self.id), info=self.info())
@@ -161,7 +161,7 @@ def create(type_, attrs=None):
 	UserError.check(type_ in TYPES, UserError.UNSUPPORTED_TYPE, "Unknown resource type", data={"type": type_})
 	res = TYPES[type_](owner=currentUser())
 	res.init(attrs)
-	res.save()
+	res.update_or_save()
 	logging.logMessage("create", category="resource", type=res.type, id=str(res.id), attrs=attrs)
 	logging.logMessage("info", category="resource", type=res.type, id=str(res.id), info=res.info())
 	return res

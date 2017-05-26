@@ -43,7 +43,6 @@ class Network(resources.Resource):
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		resources.Resource.init(self, *args, **kwargs)
-		self.save()
 		firewall.add_bridge(self.bridge)
 		
 	def remove(self):
