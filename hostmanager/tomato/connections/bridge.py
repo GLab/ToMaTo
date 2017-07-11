@@ -73,8 +73,9 @@ class Bridge(connections.Connection):
 	def init(self, *args, **kwargs):
 		self.state = StateName.CREATED
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
-		self.bridge = "br%s" % str(self.id)[13:24]
+		self.bridge = "br%s" % (str(self.getId())[13:24] if isinstance(self.getId(),type(str())) else str(self.getId()))
 		self.capture_port = self.getResource("port")
+		self.update_or_save(bridge=self.bridge, capture_port=self.capture_port)
 				
 	def _startCapturing(self):
 		if not self.capturing or self.state == StateName.CREATED:
@@ -245,6 +246,7 @@ class Bridge(connections.Connection):
 		if net.bridgeExists(self.bridge):
 			net.ifDown(self.bridge)
 			net.bridgeRemove(self.bridge)
+		self.update_or_save(bridge=self.bridge, capture_port=self.capture_port)
 		self.setState(StateName.CREATED)
 
 	def remove(self):

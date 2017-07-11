@@ -138,7 +138,7 @@ class KVM(elements.Element, elements.RexTFVElement):
 	vncport = IntField()
 	vncpid = IntField()
 	vncpassword =StringField()
-	cpus = IntField(default=1)
+	cpus = FloatField(default=1)
 	ram = IntField(default=256)
 	kblang = StringField(default=None, choises=kblang_options)
 	usbtablet = BooleanField(default=True)
@@ -359,27 +359,31 @@ class KVM(elements.Element, elements.RexTFVElement):
 		return os.path.join(self._imagePathDir(), file)
 
 	def updateUsage(self, usage, data):
-		self._checkState()
-		if self.state == StateName.CREATED:
-			return
-		if self.state == StateName.STARTED:
-			memory = 0
-			cputime = 0
-			stats = self.vir.getStatistics(self.vmid)
-			memory += stats.memory_used
-			cputime += stats.cputime_total
-			if self.vncpid and proc.isAlive(self.vncpid):
-				stats = proc.getStatistics(self.vncpid)
+		try:
+			self._checkState()
+			if self.state == StateName.CREATED:
+				return
+			if self.state == StateName.STARTED:
+				memory = 0
+				cputime = 0
+				stats = self.vir.getStatistics(self.vmid)
 				memory += stats.memory_used
 				cputime += stats.cputime_total
-			if self.websocket_pid and proc.isAlive(self.websocket_pid):
-				stats = proc.getStatistics(self.websocket_pid)
-				memory += stats.memory_used
-				cputime += stats.cputime_total
-			usage.memory = memory
-			usage.updateContinuous("cputime", cputime, data)
-		usage.diskspace = io.getSize(self._imagePathDir())
-
+				if self.vncpid and proc.isAlive(self.vncpid):
+					stats = proc.getStatistics(self.vncpid)
+					memory += stats.memory_used
+					cputime += stats.cputime_total
+				if self.websocket_pid and proc.isAlive(self.websocket_pid):
+					stats = proc.getStatistics(self.websocket_pid)
+					memory += stats.memory_used
+					cputime += stats.cputime_total
+				usage.memory = memory
+				usage.updateContinuous("cputime", cputime, data)
+			usage.diskspace = io.getSize(self._imagePathDir())
+		except InternalError.WRONG_DATA:
+			pass
+		except:
+			raise
 	"""
 	RexTFV
 	"""
@@ -527,7 +531,6 @@ Actions: None
 class KVM_Interface(elements.Element):#
 
 	num = IntField()
-	name = StringField()
 	mac = StringField()
 	ipspy_pid = IntField()
 	used_addresses = ListField(default=[])
@@ -604,7 +607,6 @@ class KVM_Interface(elements.Element):#
 		"num": Attribute(field=num, schema=schema.Int(), readOnly=True),
 		"mac": Attribute(field=mac, description="Mac Address", schema=schema.String(), readOnly=True),
 		"ipspy_id": Attribute(field=ipspy_pid, schema=schema.Int(), readOnly=True),
-		"name": Attribute(field=name, description="Name", schema=schema.String(regex="^eth[0-9]+$")),
 		"used_addresses": Attribute(field=used_addresses, schema=schema.List(), default=[], readOnly=True),
 	})
 

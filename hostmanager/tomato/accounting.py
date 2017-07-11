@@ -104,8 +104,8 @@ class UsageStatistics(BaseDocument):
     ATTRIBUTES = {
         "id": IdAttribute(),
         "begin": Attribute(field=begin, schema=schema.Number()),
-        "element":  Attribute(get=lambda self: self.element.id if self.element else None),
-        "connection":  Attribute(get=lambda self: self.connection.id if self.element else None)
+        "element":  Attribute(get=lambda self: self.element.getId() if self.element else None),
+        "connection":  Attribute(get=lambda self: self.connection.getId() if self.connection else None)
     }
 
     meta = {

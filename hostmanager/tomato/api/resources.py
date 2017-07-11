@@ -16,6 +16,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 def _getResource(id_):
+	import sys
+	try:
+		id_ = str(id_)
+		if sys.getsizeof(id_) < 60:
+			oldId=int(str(id_))
+			id_ = "{0:0{1}x}".format(oldId, 24)
+	except:
+		pass
 	res = resources.get(id_)
 	UserError.check(res, UserError.ENTITY_DOES_NOT_EXIST, "No such resource", data={"id": id_})
 	return res

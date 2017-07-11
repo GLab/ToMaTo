@@ -155,7 +155,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 	vncport = IntField()
 	vncpid = IntField()
 	vncpassword =StringField()
-	cpus = IntField(default=1)
+	cpus = FloatField(default=1)
 	ram = IntField(default=256)
 	diskspace = IntField(default=10240)
 	rootpassword = StringField()
@@ -189,7 +189,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
-		self.update_or_save()
+		self.update_or_save(vmid=self.vmid, vncport=self.vncport, websocket_port=self.websocket_port, vncpassword=self.vncpassword)
 		#template: None, default template
 	
 	def _imagePath(self):
@@ -596,18 +596,23 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 			path.diskspace(self._imagePath())
 
 	def updateUsage(self, usage, data):
-		self._checkState()
-		if self.state == StateName.CREATED:
-			return
-		cputime = self._cputime()
-		if cputime:
-			usage.updateContinuous("cputime", cputime, data)
-		memory = self._memory()
-		if memory:
-			usage.memory = memory
-		diskspace = self._diskspace()
-		if diskspace:
-			usage.diskspace = diskspace
+		try:
+			self._checkState()
+			if self.state == StateName.CREATED:
+				return
+			cputime = self._cputime()
+			if cputime:
+				usage.updateContinuous("cputime", cputime, data)
+			memory = self._memory()
+			if memory:
+				usage.memory = memory
+			diskspace = self._diskspace()
+			if diskspace:
+				usage.diskspace = diskspace
+		except InternalError.WRONG_DATA:
+			pass
+		except:
+			raise
 
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
@@ -619,7 +624,7 @@ class OpenVZ(elements.Element, elements.RexTFVElement):
 		"vncpid": Attribute(field=vncpid, readOnly=True, schema=schema.Int()),
 		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String(null=True)),
 		"hostname": Attribute(field=hostname, label="Hostname", set=modify_hostname, schema=schema.String(null=True)),
-		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=1,maxValue=4), default=1),
+		"cpus": Attribute(field=cpus, label="Number of CPUs", schema=schema.Number(minValue=0.1, maxValue=4.0), default=1.0),
 		"ram": Attribute(field=ram, label="RAM", schema=schema.Int(minValue=64, maxValue=8192), default=256),
 		"diskspace": Attribute(field=diskspace, label="Disk space in MB", schema=schema.Int(minValue=512, maxValue=102400), default=10240),
 		"rootpassword": Attribute(field=rootpassword, label="Root password", schema=schema.String(null=True)),

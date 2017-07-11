@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, shutil
+import os, sys, time, shutil
 from ..db import *
 from ..generic import *
 from .. import connections, elements, config
@@ -127,7 +127,7 @@ class Repy(elements.Element):
 	vncpassword =StringField()
 	args = ListField()
 	args_doc = StringField(default=None, required=False)
-	cpus = IntField(default=1)
+	cpus = FloatField(default=1)
 	ram = IntField(default=256)
 	bandwidth = IntField(min_value=1024, max_value=10000000000, default=1000000)
 	template = ReferenceField(template.Template, null=True)
@@ -150,8 +150,14 @@ class Repy(elements.Element):
 		return self.TYPE
 
 	def init(self, *args, **kwargs):
+
 		self.state = StateName.PREPARED
-		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		self.timeout = time.time() + config.MAX_TIMEOUT
+		#Workaround. We need repy to have a folder and be saved befor we start setting attributes.
+		self.update_or_save()
+		if not os.path.exists(self.dataPath()):
+			os.makedirs(self.dataPath())
+		elements.Element.init(self, *args, **kwargs)
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
@@ -324,15 +330,20 @@ class Repy(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
-		self._checkState()
-		usage.diskspace = path.diskspace(self.dataPath())
-		if self.state == StateName.STARTED:
-			usage.memory = process.memory(self.pid)
-			cputime = process.cputime(self.pid)
-			if self.vncpid:
-				usage.memory += process.memory(self.vncpid)
-				cputime += process.cputime(self.vncpid)
-			usage.updateContinuous("cputime", cputime, data)
+		try:
+			self._checkState()
+			usage.diskspace = path.diskspace(self.dataPath())
+			if self.state == StateName.STARTED:
+				usage.memory = process.memory(self.pid)
+				cputime = process.cputime(self.pid)
+				if self.vncpid:
+					usage.memory += process.memory(self.vncpid)
+					cputime += process.cputime(self.vncpid)
+				usage.updateContinuous("cputime", cputime, data)
+		except InternalError.WRONG_DATA:
+			pass
+		except:
+			raise
 
 	ATTRIBUTES = elements.Element.ATTRIBUTES.copy()
 	ATTRIBUTES.update({
@@ -344,8 +355,8 @@ class Repy(elements.Element):
 		"vncpassword": Attribute(field=vncpassword, readOnly=True, schema=schema.String()),
 		"args": Attribute(field=args, description="Arguments", set=modify_args, schema = schema.List(), default=[]),
 		"args_doc": Attribute(field=args_doc, description="Arguments Documentation", readOnly=True),
-		"cpus": Attribute(field=cpus, description="Number of CPUs", set=modify_cpus, schema=schema.Number(minValue=1,maxValue=4), default=1),
-		"ram": Attribute(field=ram, description="RAM", set=modify_ram, schema=schema.Int(minValue=64, maxValue=8192), default=256),
+		"cpus": Attribute(field=cpus, description="Number of CPUs", set=modify_cpus, schema=schema.Number(minValue=0.011,maxValue=4.0), default=0.25),
+		"ram": Attribute(field=ram, description="RAM", set=modify_ram, schema=schema.Int(minValue=10, maxValue=8192), default=25),
 		"bandwidth": Attribute(field=bandwidth, description="Bandwidth in bytes/s", set=modify_bandwidth, schema=schema.Int(minValue=1024, maxValue=10000000000), default=1000000),
 		"template": Attribute(field=templateId, description="Template", set=modify_template, schema=schema.Identifier()),
 	})
@@ -431,10 +442,13 @@ class Repy_Interface(elements.Element):
 		return self.TYPE
 
 	def init(self, *args, **kwargs):
+		print "Init a repy interface element"
 		self.state = StateName.PREPARED
+		print "State is set, now activate Element.Init for repy interface"
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), Repy)
 		self.name = self.getParent()._nextIfaceName()
+		self.update_or_save(name=self.name)
 		
 	def interfaceName(self):
 		return self.getParent()._interfaceName(self.name)

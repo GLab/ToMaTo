@@ -54,8 +54,8 @@ def accounting_statistics(type=None, after=None, before=None): #@ReservedAssignm
         are the connection ids (as strings) and the values are the usage 
         statistics.
     """
-    elSt = dict([(str(el.id), el.getUsageStatistics().info(type, after, before)) for el in elements.getAll(owner=currentUser())])
-    conSt = dict([(str(con.id), con.getUsageStatistics().info(type, after, before)) for con in connections.getAll(owner=currentUser())])
+    elSt = dict([(str(el.getId()), el.getUsageStatistics().info(type, after, before)) for el in elements.getAll(owner=currentUser())])
+    conSt = dict([(str(con.getId()), con.getUsageStatistics().info(type, after, before)) for con in connections.getAll(owner=currentUser())])
     return {"elements": elSt, "connections": conSt}
 
 def accounting_element_statistics(id, type=None, after=None, before=None): #@ReservedAssignment

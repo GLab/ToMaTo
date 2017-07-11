@@ -125,6 +125,7 @@ class HostElement(HostObject):
 			if (not self.topologyElement and not self.topologyConnection) or (self.host is None):
 				self.remove()
 				return
+			self.updateInfo()
 			self.modify(timeout=time.time() + settings.get_host_connections_settings()['component-timeout'])
 		except error.UserError, err:
 			if err.code == error.UserError.ENTITY_DOES_NOT_EXIST:
@@ -144,6 +145,6 @@ def synchronize(id_):
 	try:
 		HostElement.objects.get(id=id_).synchronize()
 	except DoesNotExist:
-		pass  # nothong to synchronize
+		pass  # nothing to synchronize
 
 scheduler.scheduleMaintenance(min(3600, settings.get_host_connections_settings()['component-timeout']), list, synchronize)

@@ -141,7 +141,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 		@param filename: a filename relative to the data path
 		@type filename: str
 		"""
-		return os.path.join(config.DATA_DIR, self.TYPE, str(self.id), filename)
+		return os.path.join(config.DATA_DIR, self.TYPE, str(self.getId()), filename)
 
 	def upcast(self):
 		"""
@@ -162,6 +162,20 @@ class Element(LockedStatefulEntity, BaseDocument):
 
 	def hasParent(self):
 		return not self.parent is None
+
+	def getId(self):
+		"""
+		Returns the element id, converts automatically back to old postgres IDs if possible
+		:return: String
+		"""
+		id_ = str(self.id)
+		try:
+			#As we converted old ids by adding zeros to the left, we can check if the first 12 characters are zeros
+			if id_[0:12] == "000000000000":
+				id_ = int(id_, 16)
+		except:
+			pass
+		return id_
 
 	def checkModify(self, attrs):
 		"""
@@ -331,7 +345,7 @@ class Element(LockedStatefulEntity, BaseDocument):
 
 	def info(self):
 		res = {
-			"id": str(self.id),
+			"id": str(self.getId()),
 			"type": self.type,
 			"parent": str(self.parent.id) if self.hasParent() else None,
 			"state": self.state,

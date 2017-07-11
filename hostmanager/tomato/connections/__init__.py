@@ -156,6 +156,20 @@ class Connection(LockedStatefulEntity, BaseDocument):
 			pass
 		raise InternalError(message="Failed to cast connection", code=InternalError.UPCAST, data={"id": str(self.id), "type": self.type})
 
+	def getId(self):
+		"""
+		Returns the element id, converts automatically back to old postgres IDs if possible
+		:return: String
+		"""
+		id_ = str(self.id)
+		try:
+			#As we converted old ids by adding zeros to the left, we can check if the first 12 characters are zeros
+			if id_[0:12] == "000000000000":
+				id_ = int(id_, 16)
+		except:
+			pass
+		return id_
+
 	def dataPath(self, filename=""):
 		"""
 		This method can be used to create filenames relative to a directory
@@ -170,7 +184,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 		@param filename: a filename relative to the data path
 		@type filename: str
 		"""
-		return os.path.join(config.DATA_DIR, self.TYPE, str(self.id), filename)		
+		return os.path.join(config.DATA_DIR, self.TYPE, str(self.getId()), filename)
 
 	@classmethod
 	def determineConcept(cls, el1, el2):
@@ -274,7 +288,7 @@ class Connection(LockedStatefulEntity, BaseDocument):
 	def info(self):
 		els = [str(el.id) for el in self.elements]
 		return {
-			"id": str(self.id),
+			"id": str(self.getId()),
 			"type": self.type,
 			"state": self.state,
 			"attrs": Entity.info(self),

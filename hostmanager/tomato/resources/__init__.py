@@ -96,7 +96,22 @@ class Resource(Entity, BaseDocument):
 				self.attrs[key] = value
 		logging.logMessage("info", category="resource", type=self.type, id=str(self.id), info=self.info())
 		self.update_or_save()
-	
+
+	def getId(self):
+		"""
+		Returns the element id, converts automatically back to old postgres IDs if possible
+		:return: String
+		"""
+		id_ = self.id
+		try:
+			#As we converted old ids by adding zeros to the left, we can check if the first 12 characters are zeros
+			if self.id[0:12] == "000000000000":
+				oldId = int(id_, 16)
+				id_ = "{0:0{1}x}".format(oldId, 24)
+		except:
+			pass
+		return id_
+
 	def remove(self):
 		logging.logMessage("info", category="resource", type=self.type, id=str(self.id), info=self.info())
 		logging.logMessage("remove", category="resource", type=self.type, id=str(self.id))
@@ -104,7 +119,7 @@ class Resource(Entity, BaseDocument):
 	
 	def info(self):
 		return {
-			"id": str(self.id),
+			"id": str(self.getId()),
 			"type": self.type,
 			"attrs": self.attrs.copy(),
 		}
@@ -117,15 +132,6 @@ class ResourceInstance(BaseDocument):
 	ownerConnection = ReferenceField(Connection, null=True, reverse_delete_rule=CASCADE)
 	ownerConnectionId = ReferenceFieldId(ownerConnection)
 	attrs = DictField()
-
-	ACTIONS = {}
-	ATTRIBUTES = {
-		"id": IdAttribute(),
-		"type": Attribute(field=type, schema=schema.String(options=TYPES)),
-		"num": Attribute(field=num,  schema=schema.Int(minValue=0)),
-		"ownerElement": Attribute(field=ownerElementId, schema=schema.Identifier()),
-		"ownerConnection": Attribute(field=ownerConnectionId, schema=schema.Identifier()),
-	}
 
 	def init(self, type, num, owner, attrs=None): #@ReservedAssignment
 		if not attrs: attrs = {}
@@ -140,6 +146,29 @@ class ResourceInstance(BaseDocument):
 				message="Owner must either be Element or Connection", data={"owner_type": owner.__class__.__name__})
 		self.attrs = attrs
 		self.save()
+
+	def getId(self):
+		"""
+		Returns the element id, converts automatically back to old postgres IDs if possible
+		:return: String
+		"""
+		id_ = str(self.id)
+		try:
+			#As we converted old ids by adding zeros to the left, we can check if the first 12 characters are zeros
+			if id_[0:12] == "000000000000":
+				id_ = int(id_, 16)
+		except:
+			pass
+		return id_
+
+	ACTIONS = {}
+	ATTRIBUTES = {
+		"id": IdAttribute(),
+		"type": Attribute(field=type, schema=schema.String(options=TYPES)),
+		"num": Attribute(field=num,  schema=schema.Int(minValue=0)),
+		"ownerElement": Attribute(field=ownerElementId, schema=schema.Identifier()),
+		"ownerConnection": Attribute(field=ownerConnectionId, schema=schema.Identifier()),
+	}
 
 
 def get(id_, **kwargs):

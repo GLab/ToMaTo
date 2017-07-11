@@ -16,6 +16,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 def _getElement(id_):
+	import sys
+	try:
+		id_ = str(id_)
+		if sys.getsizeof(id_) < 60:
+			oldId=int(str(id_))
+			id_ = "{0:0{1}x}".format(oldId, 24)
+	except:
+		pass
 	el = elements.get(id_, owner=currentUser())
 	UserError.check(el, UserError.ENTITY_DOES_NOT_EXIST, "No such element", data={"id": id_})
 	return el
